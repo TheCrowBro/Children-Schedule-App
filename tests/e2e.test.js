@@ -60,6 +60,14 @@ const server = http.createServer((req, res) => {
   const q = async (sql, params) => (await su.query(sql, params)).rows;
   const syncNow = async p => { await p.evaluate(() => Sync.run()); await p.waitForFunction(() => Sync.st.state !== 'syncing'); };
   const toastText = p => p.evaluate(() => document.querySelector('#toast').textContent);
+  const secrets = [];   // everything that must never reach the server in readable form
+  const rowOf = async id => (await q('select * from events where id=$1', [id]))[0];
+  const idOfType = (p, type) => p.evaluate(t => (db.events.find(e => e.type === t) || {}).id, type);
+  /** Decrypt a server row with the given phone's keys. */
+  const plainOf = async (p, id) => { const row = await rowOf(id); return p.evaluate(([b, r]) => E2EE.decryptRow(b, r), [await p.evaluate(() => db.meta.babyId), row]); };
+  const babyOf = p => p.evaluate(() => db.meta.babyId);
+  const epochOnServer = async () => (await q('select epoch from babies order by created_at limit 1'))[0].epoch;
+  const keysOf = p => p.evaluate(() => JSON.parse(localStorage.getItem('MOCKSECURE:e2ee.keys.' + db.meta.babyId)));
 
   // ================= part 1: app-only, sign-in, MFA, create log =================
   await step('outside the phone app, the web page only says "get the app"', async () => {
@@ -93,15 +101,21 @@ const server = http.createServer((req, res) => {
     await sleep(200); await A.fill('#lEmail', 'mum@x.com'); await A.click('#lSend'); await A.waitForSelector('#lCode');
     await A.fill('#lCode', '12345678'); await A.click('#lVerify'); await A.waitForSelector('#oCreate');
   });
-  let mumSecret;
+  let mumSecret, recoveryA;
   await step('a new parent must set up two-step verification before a log is created', async () => {
     await A.fill('#oMine', 'Mum'); await A.fill('#oName', 'Leo'); await A.fill('#oBirth', '2026-10-10'); await A.click('#oCreate');
     await A.waitForSelector('#eGo'); assert(/must use two-step/.test(await A.textContent('#view')));
     assert.equal((await q('select count(*)::int c from babies'))[0].c, 0, 'nothing created yet');
     mumSecret = await secretOf(A);
     await A.fill('#eCode', '000000'); await A.click('#eGo'); await A.waitForFunction(() => /not right/.test(document.body.textContent));
-    await enterTotp(A, mumSecret); await A.waitForSelector('#tabs');
+    await enterTotp(A, mumSecret); try { await A.waitForSelector('#rcDone', { timeout: 8000 }); } catch (e) { console.log('DEBUG view:', (await A.textContent('#view')).replace(/\s+/g, ' ').slice(0, 300), '| tabs visible:', await A.isVisible('#tabs'), '| errs:', A.errs); throw e; }
+    recoveryA = (await A.textContent('#view .code')).trim(); assert(/^([A-Z2-9]{4}-){7}[A-Z2-9]{4}$/.test(recoveryA), 'recovery code format: ' + recoveryA);
+    await A.click('#rcDone'); assert(/Tick the box/.test(await toastText(A)), 'must confirm the code was saved');
+    await A.click('input[name=rcAck]'); await A.click('#rcDone'); await A.waitForSelector('#tabs');
     assert.equal(await A.textContent('#title'), "Leo's Log");
+    assert.equal(await A.evaluate(() => db.meta.recoveryAck), true);
+    const bb = (await q('select profile, epoch from babies'))[0]; assert(!bb.profile.includes('Leo') && !bb.profile.includes('2026'), 'baby name and birthday are not on the server'); assert.equal(bb.epoch, 1);
+    assert.equal((await q('select count(*)::int c from key_grants'))[0].c, 2, 'one grant for this phone, one for the recovery key');
     const m = (await q(`select role, display_name from members`))[0]; assert.deepEqual([m.role, m.display_name], ['parent', 'Mum']);
     assert.equal(await A.evaluate(() => Auth.aal), 'aal2');
   });
@@ -111,12 +125,34 @@ const server = http.createServer((req, res) => {
     assert(secure.includes('MOCKSECURE:auth.v2'), 'session is in the keychain');
     const tok = JSON.parse(await A.evaluate(() => localStorage.getItem('MOCKSECURE:auth.v2'))).access;
     assert(!JSON.stringify(plain).includes(tok) && !JSON.stringify(plain).includes('refresh'), 'no token in ordinary storage: ' + Object.keys(plain));
+    const baby = await babyOf(A), k = await keysOf(A);
+    assert(secure.includes('MOCKSECURE:e2ee.keys.' + baby) && secure.some(x => x.startsWith('MOCKSECURE:e2ee.device.')), 'log keys and this phone\'s private key are in the keychain');
+    for (const v of [k.keys['1'].main, k.keys['1'].health]) { assert(!JSON.stringify(plain).includes(v), 'log keys are not in ordinary storage'); secrets.push(v); }
   });
   await step('entries sync to the server, stamped with who made them', async () => {
     await A.click('[data-add=feed]'); await A.click('input[value=bottle]'); await A.fill('#ml', '90'); await A.click('#save');
     await A.waitForFunction(() => Sync.st.state === 'ok' && !db.events.some(e => e.updated > db.meta.pushedAt));
-    const [e] = await q('select e.*, m.display_name from events e join members m on m.user_id=e.created_by'); assert.equal(e.display_name, 'Mum'); assert.equal(e.data.ml, 90);
+    const [e] = await q('select e.*, m.display_name from events e join members m on m.user_id=e.created_by'); assert.equal(e.display_name, 'Mum');
+    assert(!JSON.stringify(e).includes('bottle') && !/"?ml"?/.test(e.blob) && e.sensitive === false && e.epoch === 1, 'the server holds only ciphertext: ' + e.blob.slice(0, 30));
+    const d = await plainOf(A, e.id); assert.equal(d.entry.type, 'feed'); assert.equal(d.entry.data.ml, 90);
     assert((await q(`select * from activity where action='entry_added'`)).length === 1);
+  });
+
+  await step('encryption is bound to its context: moved, flipped or mis-classed ciphertext is rejected', async () => {
+    const r = await A.evaluate(async () => {
+      const b = db.meta.babyId, kind = x => Object.keys(x)[0];
+      const x = await E2EE.encryptEntry(b, { id: 't1', type: 'feed', ts: 1, data: { x: 1 }, note: 'n', updated: 1, by: 'author-1' }), row = { ...x, id: 't1', updated: 1, created_by: 'someone-else' };
+      const h = await E2EE.encryptEntry(b, { id: 't3', type: 'health', ts: 1, data: {}, note: '', updated: 1 }), hrow = { ...h, id: 't3', updated: 1 };
+      // someone without the health key plants a health-typed entry in the ordinary class
+      const cur = E2EE.keysOf(b)[E2EE.epoch(b)], u8 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0)), iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await crypto.subtle.importKey('raw', u8(cur.main), 'AES-GCM', false, ['encrypt']);
+      const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(`ll1|entry|${b}|t4|${E2EE.epoch(b)}|m`) }, key, new TextEncoder().encode(JSON.stringify({ type: 'health', ts: 1, end: null, data: {}, note: 'planted' }))));
+      const planted = { id: 't4', blob: btoa(String.fromCharCode(...iv, ...ct)), epoch: E2EE.epoch(b), sensitive: false, updated: 1 };
+      const okRow = await E2EE.decryptRow(b, row);
+      return { ok: kind(okRow), author: okRow.entry && okRow.entry.by, rollback: kind(await E2EE.decryptRow(b, { ...row, updated: 99 })), clamped: kind(await E2EE.decryptRow(b, { ...row, updated: 0 })), moved: kind(await E2EE.decryptRow(b, { ...row, id: 't2' })), flipped: kind(await E2EE.decryptRow(b, { ...row, sensitive: true })), otherEpoch: kind(await E2EE.decryptRow(b, { ...row, epoch: 9 })),
+        healthClass: h.sensitive, healthAsMain: kind(await E2EE.decryptRow(b, { ...hrow, sensitive: false })), planted: kind(await E2EE.decryptRow(b, planted)), noBlobText: !JSON.stringify(x).includes('"n"') };
+    });
+    assert.deepEqual(r, { ok: 'entry', author: 'author-1', rollback: 'bad', clamped: 'entry', moved: 'bad', flipped: 'bad', otherEpoch: 'locked', healthClass: true, healthAsMain: 'bad', planted: 'bad', noBlobText: true });
   });
 
   // (parts 2+ are appended below)
@@ -134,7 +170,7 @@ const server = http.createServer((req, res) => {
     return (await p.textContent('.invite .code')).trim();
   };
   const pendingFor = async (email) => (await q(`select * from join_requests where email=$1 and status='pending'`, [email]));
-  let inviteB;
+  let inviteB, feedId;
   await step('role buttons load sensible defaults and lock what a role may never have', async () => {
     await goTab(A, 'family'); await A.waitForSelector('#invCard');
     const st = sel => A.evaluate(s => { const e = document.querySelector(s); return { checked: e.checked, disabled: e.disabled }; }, sel);
@@ -155,14 +191,16 @@ const server = http.createServer((req, res) => {
       const xml = new XMLSerializer().serializeToString(document.querySelector('.invite .qr svg')), img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml); await img.decode();
       const c = document.createElement('canvas'); c.width = c.height = 400; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 400, 400); x.drawImage(img, 0, 0, 400, 400);
       const d = x.getImageData(0, 0, 400, 400); const r = jsQR(d.data, 400, 400); return r && r.data; });
-    assert.equal(decoded, 'app.littlelog.newborn://join?join=' + inviteB);
+    const m = /^app\.littlelog\.newborn:\/\/join\?join=([A-Z0-9]{10})&s=([A-Za-z0-9_-]{22})$/.exec(decoded); assert(m && m[1] === inviteB, 'QR carries code and secret: ' + decoded); secrets.push(m[2]);
+    assert.equal(await A.evaluate(c => E2EE.inviteSecret(c), inviteB), m[2], 'the parent keeps the secret in the keychain');
   });
 
-  const B = await device(); let dadSecretless = true;
+  const B = await device(); let fpB = '';
   await step('someone who redeems an invite only sends a request – they see nothing until approved', async () => {
     await B.waitForSelector('#lEmail'); await signIn(B, 'dad@x.com'); await B.waitForSelector('#oJoin');
     await B.fill('#oMine', 'Dad'); await B.fill('#oCode', inviteB); await B.click('#oJoin');
     await B.waitForSelector('#wCheck'); assert(/Waiting for approval/.test(await B.textContent('#view')));
+    fpB = (await B.textContent('#view .code')).trim(); assert(/^(\d{5} ){5}\d{5}$/.test(fpB), 'phone security code: ' + fpB);
     assert.equal((await pendingFor('dad@x.com')).length, 1);
     assert.equal((await q(`select count(*)::int c from members where email='dad@x.com'`))[0].c, 0);
   });
@@ -170,7 +208,12 @@ const server = http.createServer((req, res) => {
     await goTab(A, 'day'); await syncNow(A);
     assert.equal(await A.evaluate(() => document.querySelector('#famBadge').textContent), '1'); assert(await A.isVisible('#famBadge'));
     await goTab(A, 'family'); await A.waitForSelector('[data-approve]'); assert(/dad@x.com/.test(await A.textContent('#view')));
-    await A.click('[data-approve]'); await A.waitForFunction(() => !document.querySelector('[data-approve]'));
+    assert(/did not use your QR code/.test(await A.textContent('#view')), 'typed code: manual comparison required');
+    assert.equal((await A.textContent('#view .code.mono')).trim(), fpB, 'the parent sees the same security code the joiner sees');
+    await A.click('[data-approve]'); assert(/Compare the security code/.test(await toastText(A)), 'cannot approve without comparing'); assert.equal((await q(`select count(*)::int c from members where email='dad@x.com'`))[0].c, 0);
+    await A.click('input[name=vchk]'); await A.click('[data-approve]'); await A.waitForFunction(() => !document.querySelector('[data-approve]'));
+    const g = (await q(`select g.auth, g.tag from key_grants g join devices d on 'd:'||d.id::text = g.grantee join auth.users u on u.id = d.user_id where u.email='dad@x.com'`))[0];
+    assert.equal(g.auth, null, 'no QR, so no QR proof on this grant'); assert(g.tag, 'but it carries the key holder\'s MAC');
     const [m] = await q(`select role, display_name from members where email='dad@x.com'`); assert.deepEqual([m.role, m.display_name], ['family', 'Dad']);
     await B.click('#wCheck'); await B.waitForSelector('#tabs'); assert.equal(await B.evaluate(() => db.meta.role), 'family');
   });
@@ -186,18 +229,32 @@ const server = http.createServer((req, res) => {
     await goTab(B, 'family'); await B.waitForSelector('#syncNow');
     assert(!(await B.$('#invCard')) && !(await B.$('#actBtn')), 'no invites and no activity log for non-parents');
     assert(/Mum/.test(await B.textContent('#view')) && /mum@x.com/.test(await B.textContent('#view')), 'family can see who has access');
+    assert(await B.isVisible('#unvOk'), 'joined without a QR code: asked to compare the log security code');
+    const codeB = (await B.textContent('#view .card.alert .code')).trim(), codeA = await A.evaluate(() => Sync.securityCode());
+    assert.equal(codeB, codeA, 'same log security code on both phones'); await B.click('#unvOk'); assert.equal(await B.evaluate(() => !!db.meta.unverified), false);
   });
   await step('a modified phone cannot get around the rules: the server refuses, the app restores the original', async () => {
+    feedId = await idOfType(B, 'feed');
     await B.evaluate(() => { const e = db.events.find(x => x.type === 'feed'); e.data.ml = 999; e.updated = Date.now(); save(true); });
     await syncNow(B);
     { const ml = await B.evaluate(() => db.events.find(x => x.type === 'feed').data.ml); assert.equal(ml, 90, 'restored to the server version, local has ' + ml + ' denied=' + await B.evaluate(() => Sync.st.denied + ' ' + Sync.st.err)); }
-    assert.equal((await q(`select data from events where type='feed'`))[0].data.ml, 90);
+    assert.equal((await plainOf(A, feedId)).entry.data.ml, 90, 'server copy unchanged');
     assert.equal(await B.evaluate(() => Sync.st.denied), 1);
     await B.evaluate(() => { removeEvent(db.events.find(x => x.type === 'feed')); save(true); }); await syncNow(B);
     assert.equal(await B.evaluate(() => db.events.filter(x => x.type === 'feed').length), 1, 'deleted entry came back');
-    assert.equal((await q(`select deleted from events where type='feed'`))[0].deleted, false);
-    await B.evaluate(() => { db.events.push({ id: 'forged1', type: 'feed', ts: Date.now(), data: { x: 'y'.repeat(5000) }, note: '', updated: Date.now(), by: Auth.id }); save(true); }); await syncNow(B);
+    assert.equal((await rowOf(feedId)).deleted, false);
+    await B.evaluate(() => { db.events.push({ id: 'forged1', type: 'feed', ts: Date.now(), data: { x: 'y'.repeat(7000) }, note: '', updated: Date.now(), by: Auth.id }); save(true); }); await syncNow(B);
     assert.equal(await B.evaluate(() => db.events.some(x => x.id === 'forged1')), false, 'oversized entry refused and dropped');
+  });
+
+  await step('the server (or anyone with database access) cannot rearrange ciphertext: swapped entries are rejected by the phones', async () => {
+    const ids = (await q(`select id from events where deleted=false and id not like 'forged%' order by id limit 2`)).map(r => r.id); assert.equal(ids.length, 2);
+    const before = await A.evaluate(ids => ids.map(i => JSON.stringify(db.events.find(e => e.id === i))), ids), bad0 = await A.evaluate(() => Sync.st.bad);
+    const [r1, r2] = [await rowOf(ids[0]), await rowOf(ids[1])];
+    await su.query(`update events set blob=$2, synced_at=clock_timestamp() where id=$1`, [ids[0], r2.blob]); await su.query(`update events set blob=$2, synced_at=clock_timestamp() where id=$1`, [ids[1], r1.blob]);
+    await syncNow(A); assert((await A.evaluate(() => Sync.st.bad)) >= bad0 + 2, 'both swapped rows failed authentication');
+    assert.deepEqual(await A.evaluate(ids => ids.map(i => JSON.stringify(db.events.find(e => e.id === i))), ids), before, 'local entries were not overwritten');
+    await su.query(`update events set blob=$2, synced_at=clock_timestamp() where id=$1`, [ids[0], r1.blob]); await su.query(`update events set blob=$2, synced_at=clock_timestamp() where id=$1`, [ids[1], r2.blob]); await syncNow(A);
   });
 
   // second browser with a fake camera that shows the next invite QR
@@ -214,17 +271,21 @@ const server = http.createServer((req, res) => {
     C = await device({ br: b2 }); await signIn(C, 'nan@x.com'); await C.waitForSelector('#oScan');
     await C.fill('#oMine', 'Nan'); await C.click('#oScan'); await C.waitForSelector('#wCheck', { timeout: 20000 });
     assert.equal((await pendingFor('nan@x.com')).length, 1); assert.equal((await q('select used_by from invites where code=$1', [inviteC]))[0].used_by !== null, true, 'invite is single-use');
-    await syncNow(A); await goTab(A, 'family'); await A.waitForSelector('[data-approve]'); await A.click('[data-approve]'); await A.waitForFunction(() => !document.querySelector('[data-approve]'));
+    await syncNow(A); await goTab(A, 'family'); await A.waitForSelector('[data-approve]');
+    assert(/Verified: they scanned your QR code/.test(await A.textContent('#view')) && !(await A.$('input[name=vchk]')), 'QR proof checked automatically: nothing to compare');
+    await A.click('[data-approve]'); await A.waitForFunction(() => !document.querySelector('[data-approve]'));
     await C.click('#wCheck'); await C.waitForSelector('#tabs');
+    assert.equal(await C.evaluate(() => !!db.meta.unverified), false, 'the grant carried the parent\'s QR proof, so no manual check is needed');
+    assert((await q(`select g.auth from key_grants g join devices d on 'd:'||d.id::text = g.grantee join auth.users u on u.id=d.user_id where u.email='nan@x.com'`))[0].auth, 'grant is authenticated with the QR secret');
     const [m] = await q(`select perms from members where email='nan@x.com'`); assert.equal(m.perms.edit_others, true); assert.equal(m.perms.delete_own, false);
   });
   await step('the check boxes really take effect: this caregiver can edit others\' entries but not delete their own', async () => {
     await syncNow(C); await C.click('[data-edit]:has-text("Bottle")'); await C.waitForSelector('#save'); assert(!(await C.$('#del')), 'no delete button: delete_own is off'); await C.fill('#note', 'nan was here'); await C.click('#save');
     await C.waitForFunction(() => Sync.st.state === 'ok' && !db.events.some(e => e.updated > db.meta.pushedAt));
-    assert.equal((await q(`select note from events where type='feed'`))[0].note, 'nan was here');
+    assert.equal((await plainOf(A, feedId)).entry.note, 'nan was here');
     await C.click('[data-add=wake]'); await C.click('#save'); await C.waitForFunction(() => !db.events.some(e => e.updated > db.meta.pushedAt));
-    await C.evaluate(() => { removeEvent(db.events.find(x => x.type === 'wake')); save(true); }); await syncNow(C);
-    assert.equal((await q(`select deleted from events where type='wake'`))[0].deleted, false, 'server refused the delete');
+    const wakeId = await idOfType(C, 'wake'); await C.evaluate(() => { removeEvent(db.events.find(x => x.type === 'wake')); save(true); }); await syncNow(C);
+    assert.equal((await rowOf(wakeId)).deleted, false, 'server refused the delete');
     await goTab(C, 'family'); await C.waitForSelector('#syncNow'); assert(!/mum@x.com/.test(await C.textContent('#view')), 'no emails without the "see who has access" permission');
     assert(/Mum/.test(await C.textContent('#view')), 'but names are visible');
   });
@@ -239,6 +300,32 @@ const server = http.createServer((req, res) => {
     await goTab(C, 'day'); await syncNow(C);
     assert(await C.isVisible('[data-add=feed]') && !(await C.$('[data-add=health]')), 'other buttons remain, health button gone'); assert.equal(await C.evaluate(() => db.events.some(e => e.type === 'health' || e.type === 'med')), false, 'local health entries purged');
     assert.equal((await q(`select perms from members where email='nan@x.com'`))[0].perms.view_health, false);
+    // losing health access changes the keys: a parent's phone does it on its next sync
+    assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, true); const ep0 = await epochOnServer();
+    await syncNow(A); assert.equal(await epochOnServer(), ep0 + 1, 'keys rotated'); assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, false);
+    await syncNow(C); assert.equal(await C.evaluate(() => E2EE.epoch(db.meta.babyId)), ep0 + 1, 'Nan\'s phone moved to the new epoch');
+    assert.equal(await C.evaluate(() => { const k = E2EE.keysOf(db.meta.babyId); return !!k[E2EE.epoch(db.meta.babyId)].health; }), false, 'and got no health key');
+    await goTab(A, 'day'); await A.click('[data-add=feed]'); await A.click('input[value=bottle]'); await A.fill('#ml', '60'); await A.click('#save'); await A.waitForFunction(() => !db.events.some(e => e.updated > db.meta.pushedAt));
+    await syncNow(C); assert(await C.evaluate(() => db.events.some(e => e.data && e.data.ml === 60)), 'new entries (new key) are readable by people who still have access');
+    assert((await q('select count(*)::int c from events where epoch=$1', [ep0 + 1]))[0].c >= 1, 'new entries use the new epoch');
+  });
+  await step('giving health access back hands the phone the health key; a health key the server made up is refused', async () => {
+    const nanId = (await q(`select user_id from members where email='nan@x.com'`))[0].user_id, baby = await babyOf(C), ep = await epochOnServer();
+    await goTab(A, 'family'); await A.waitForSelector(`[data-person="${nanId}"]`); await A.click(`[data-person="${nanId}"]`); await A.waitForSelector('#pSave');
+    await A.click('input[name=pperm][value=view_health]:not(:checked)'); await A.click('#pSave'); await A.waitForFunction(() => document.querySelector('#sheet').hidden);
+    const grantee = (await q(`select 'd:'||d.id::text g from devices d join auth.users u on u.id=d.user_id where u.email='nan@x.com'`))[0].g;
+    const real = (await q('select wrap_health from key_grants where baby_id=$1 and grantee=$2', [baby, grantee]))[0].wrap_health; assert(real, 'the parent\'s phone wrapped the health key for Nan\'s phone');
+    // before Nan's phone fetches it, the server swaps in a health key of its own
+    const forged = await C.evaluate(async ([b, e, g]) => {
+      const u8 = x => Uint8Array.from(atob(x), c => c.charCodeAt(0)), cur = E2EE.keysOf(b)[e], r = crypto.getRandomValues(new Uint8Array(32));
+      return (await E2EE.makeGrant(b, e, { main: u8(cur.main), health: r }, g, E2EE.device.pub, { health: true })).wrap_health;
+    }, [baby, ep, grantee]);
+    await su.query('update key_grants set wrap_health=$3 where baby_id=$1 and grantee=$2', [baby, grantee, forged]);
+    await goTab(C, 'day'); await syncNow(C);
+    assert.match(await C.evaluate(() => Sync.st.err), /health key sent to this phone did not check out/); assert.equal(await C.evaluate(b => E2EE.hasHealthKey(b), baby), false, 'the made-up health key was not accepted');
+    await su.query('update key_grants set wrap_health=$3 where baby_id=$1 and grantee=$2', [baby, grantee, real]);   // the genuine one
+    await syncNow(C); assert.equal(await C.evaluate(() => Sync.st.state), 'ok'); assert.equal(await C.evaluate(b => E2EE.hasHealthKey(b), baby), true, 'the real health key was fetched');
+    assert(await C.isVisible('[data-add=health]') && await C.evaluate(() => db.events.some(e => e.type === 'health')), 'and Nan can see and add health notes again');
   });
   await step('invites can be rescinded, and a rescinded code no longer works', async () => {
     const code = await mkInvite(A, 'friend');
@@ -247,19 +334,58 @@ const server = http.createServer((req, res) => {
     const r = await C.evaluate(c => Auth.rpc('redeem_invite', { p_code: c }), code); assert.equal(r.status, 'invalid');
   });
   await step('the activity log shows who did what – to parents only', async () => {
-    await goTab(A, 'family'); await A.click('#actBtn'); await A.waitForFunction(() => /added a diaper entry/.test(document.querySelector('#actList').textContent));
+    await goTab(A, 'family'); await A.click('#actBtn'); await A.waitForFunction(() => /Dad added an entry/.test(document.querySelector('#actList').textContent));
     const t = await A.textContent('#actList');
-    for (const s of ['Mum created the log', 'Dad added a diaper entry', 'Mum approved dad@x.com as Family member', 'Nan edited a feed entry added by Mum', 'changed what Nan can do', 'rescinded a Friend invite']) assert(t.includes(s), 'missing: ' + s + '\n' + t.slice(0, 600));
-    assert(!t.includes('nan was here') && !t.includes('Rash'), 'entry contents are not in the log');
+    for (const s of ['Mum created the log', 'Dad added an entry', 'Mum added a private (health) entry', 'Mum approved dad@x.com as Family member', 'Nan edited an entry added by Mum', 'changed what Nan can do', 'rescinded a Friend invite']) assert(t.includes(s), 'missing: ' + s + '\n' + t.slice(0, 600));
+    assert(!t.includes('nan was here') && !t.includes('Rash') && t.includes('changed the encryption keys'), 'entry contents are not in the log; key changes are');
     await A.click('#actClose');
   });
   await step('removing a person cuts them off immediately and clears their phone', async () => {
-    const nanId = (await q(`select user_id from members where email='nan@x.com'`))[0].user_id;
+    const nanId = (await q(`select user_id from members where email='nan@x.com'`))[0].user_id, nanKeys = await keysOf(C), babyId = await babyOf(C), ep0 = await epochOnServer();
     await goTab(A, 'family'); await A.click(`[data-person="${nanId}"]`); await A.waitForSelector('#pRemove'); await A.click('#pRemove'); await A.waitForFunction(() => document.querySelector('#sheet').hidden);
+    assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, true, 'removal asks for new keys');
+    await syncNow(A); assert.equal(await epochOnServer(), ep0 + 1, 'the keys were changed right after the removal');
     await syncNow(C); await C.waitForSelector('#oCreate'); assert.equal(await C.evaluate(() => db.events.length), 0);
+    await goTab(A, 'day'); await A.click('[data-add=diaper]'); await A.click('input[name=poo]'); await A.fill('#note', 'after nan left'); await A.click('#save'); await A.waitForFunction(() => !db.events.some(e => e.updated > db.meta.pushedAt));
+    const fresh = (await q('select * from events where epoch=$1 order by synced_at desc limit 1', [ep0 + 1]))[0];
+    const withOld = await A.evaluate(([b, row, keys]) => E2EE.decryptWith(keys, b, row).then(x => Object.keys(x)[0]), [babyId, fresh, nanKeys.keys]);
+    const withNew = await A.evaluate(([b, row]) => E2EE.decryptRow(b, row).then(x => Object.keys(x)[0]), [babyId, fresh]);
+    assert.equal(withOld, 'locked', 'the removed person\'s old keys cannot open anything written after the change'); assert.equal(withNew, 'entry');
     await C.context().close(); await b2.close();
   });
 
+
+
+  await step('a forged key change is refused: keys the server makes up are not accepted by phones that hold the real ones', async () => {
+    await syncNow(B);   // Dad's phone catches up with the earlier key changes first
+    const baby = await babyOf(B), ep = await epochOnServer(), devId = await B.evaluate(() => E2EE.device.id), grantee = 'd:' + devId;
+    assert.equal(await B.evaluate(b => E2EE.epoch(b), baby), ep, 'Dad\'s phone is on the current epoch');
+    const orig = (await q('select * from key_grants where baby_id=$1 and grantee=$2', [baby, grantee]))[0]; assert(orig, 'Dad\'s phone has a grant');
+    // the server (attacker) wraps keys of its own choosing to Dad's phone's public key and announces a new epoch, without anyone's signature
+    const forged = await B.evaluate(async ([b, e, d]) => { const rnd = () => crypto.getRandomValues(new Uint8Array(32)); return E2EE.makeGrant(b, e + 1, { main: rnd(), health: rnd() }, 'd:' + d, E2EE.device.pub, { health: true }); }, [baby, ep, devId]);
+    await su.query('update babies set epoch=$2 where id=$1', [baby, ep + 1]); await su.query('delete from key_grants where baby_id=$1 and grantee=$2', [baby, grantee]);
+    await su.query('insert into key_grants(baby_id,grantee,epoch,wrap_main,wrap_health,auth,tag) values ($1,$2,$3,$4,$5,null,$6)', [baby, grantee, ep + 1, forged.wrap_main, forged.wrap_health, forged.tag]);
+    try {
+      await syncNow(B);
+      assert.match(await B.evaluate(() => Sync.st.err), /not signed by anyone who held the previous keys/); assert.equal(await B.evaluate(b => E2EE.epoch(b), baby), ep, 'the phone did not adopt the made-up keys');
+      assert.notEqual(await B.evaluate(() => Sync.st.state), 'ok');
+    } finally {   // put the real state back
+      await su.query('delete from key_grants where baby_id=$1 and grantee=$2', [baby, grantee]); await su.query('update babies set epoch=$2 where id=$1', [baby, ep]);
+      await su.query('insert into key_grants(baby_id,grantee,epoch,wrap_main,wrap_health,auth,tag,granted_by) values ($1,$2,$3,$4,$5,$6,$7,$8)', [baby, grantee, ep, orig.wrap_main, orig.wrap_health, orig.auth, orig.tag, orig.granted_by]);
+    }
+    await syncNow(B); assert.equal(await B.evaluate(() => Sync.st.state), 'ok');
+  });
+  await step('a QR joiner refuses keys that arrive without the inviting parent\'s proof (a stripped proof is as bad as a wrong one)', async () => {
+    await goTab(A, 'family'); const code = await mkInvite(A, 'friend'), secret = await A.evaluate(c => E2EE.inviteSecret(c), code); secrets.push(secret);
+    const E = await device({ launchUrl: `app.littlelog.newborn://join?join=${code}&s=${secret}` });   // opened from the link: the secret rides along
+    await signIn(E, 'eve@x.com'); await E.waitForSelector('#wCheck');
+    await goTab(A, 'day'); await syncNow(A); await goTab(A, 'family'); await A.waitForSelector('[data-approve]'); assert(/Verified: they scanned your QR code/.test(await A.textContent('#view'))); await A.click('[data-approve]'); await A.waitForFunction(() => !document.querySelector('[data-approve]'));
+    await su.query(`update key_grants set auth=null where grantee in (select 'd:'||d.id::text from devices d join auth.users u on u.id=d.user_id where u.email='eve@x.com')`);   // the server strips the proof
+    await E.click('#wCheck'); await E.waitForFunction(() => /did not come from the parent who invited you/.test((Sync.st.err || '') + document.body.textContent), null, { timeout: 15000 });
+    assert.equal(await E.evaluate(() => E2EE.hasKeys(db.meta.babyId)), false, 'no keys were accepted');
+    const eve = (await q(`select user_id from members where email='eve@x.com'`))[0].user_id; await A.evaluate(u => Sync.removeMember(u), eve); await syncNow(A);   // tidy up
+    await E.context().close();
+  });
 
   // ================= part 3: two-step on a new phone, app lock, backups, deletion, sign out everywhere =================
   let A2;
@@ -267,8 +393,14 @@ const server = http.createServer((req, res) => {
     A2 = await device(); await signIn(A2, 'mum@x.com'); await A2.waitForSelector('#mCode');
     assert(!(await A2.isVisible('#tabs'))); assert.equal(await A2.evaluate(() => db.events.length), 0, 'nothing downloaded yet');
     await A2.fill('#mCode', '000000'); await A2.click('#mGo'); await A2.waitForFunction(() => /not right/.test(document.body.textContent));
-    await A2.fill('#mCode', totp(mumSecret)); await A2.click('#mGo'); await A2.waitForSelector('#tabs');
-    await syncNow(A2); assert((await A2.evaluate(() => db.events.length)) >= 3);
+    await A2.fill('#mCode', totp(mumSecret)); await A2.click('#mGo'); await A2.waitForSelector('#aCheck');
+    assert(!(await A2.isVisible('#tabs')) && /doesn't have its encryption keys/.test(await A2.textContent('#view')), 'signed in and verified, but this phone has no keys yet');
+    assert.equal(await A2.evaluate(() => db.events.length), 0); const fpA2 = (await A2.textContent('#view .code')).trim(); assert(/^(\d{5} ){5}\d{5}$/.test(fpA2));
+    await goTab(A, 'family'); await syncNow(A); await A.waitForSelector('[data-approvephone]'); assert.equal((await A.textContent('.card:has([data-approvephone]) .code')).trim(), fpA2, 'the approving phone shows the same code');
+    await A.click('[data-approvephone]'); assert(/Compare the security code/.test(await toastText(A)), 'cannot approve without comparing');
+    await A.click('input[name=vchkp]'); await A.click('[data-approvephone]'); await A.waitForFunction(() => !document.querySelector('[data-approvephone]'));
+    await A2.click('#aCheck'); await A2.waitForSelector('#tabs'); await syncNow(A2);
+    assert((await A2.evaluate(() => db.events.length)) >= 3, 'entries decrypted on the new phone'); assert.equal(await A2.evaluate(() => db.baby.name), 'Leo', 'and the baby\'s name');
     assert.equal(await A2.evaluate(() => window.__bio.prompts), 0, 'no Face ID prompt right after signing in');
   });
   await step('a parent session without two-step verification gets no data even if the app is bypassed', async () => {
@@ -277,9 +409,11 @@ const server = http.createServer((req, res) => {
       const h = { apikey: 'anon', Authorization: 'Bearer ' + o.access_token, 'Content-Type': 'application/json' };
       const ev = await fetch('https://fake.supabase.co/rest/v1/events?select=*', { headers: h }).then(r => r.json());
       const push = await fetch('https://fake.supabase.co/rest/v1/rpc/push_events', { method: 'POST', headers: h, body: JSON.stringify({ p_baby: db.meta.babyId, p_rows: [] }) }).then(r => r.json());
-      return { ev, msg: push.message };
+      const grant = await fetch('https://fake.supabase.co/rest/v1/rpc/my_grant', { method: 'POST', headers: h, body: JSON.stringify({ p_baby: db.meta.babyId, p_device: E2EE.device.id }) }).then(r => r.json());
+      const rec = await fetch('https://fake.supabase.co/rest/v1/rpc/get_recovery', { method: 'POST', headers: h, body: JSON.stringify({ p_baby: db.meta.babyId }) }).then(r => r.json());
+      return { ev, msg: push.message, grant: grant.message, rec: rec.message };
     });
-    assert.deepEqual(r.ev, []); assert(/no access/.test(r.msg), r.msg);
+    assert.deepEqual(r.ev, []); assert(/no access/.test(r.msg), r.msg); assert(/no access/.test(r.grant) && /no access/.test(r.rec), 'no keys, no recovery material either');
   });
   await step('non-parents can optionally turn two-step verification on and off', async () => {
     await goTab(B, 'more'); await B.click('#mfaOn'); await B.waitForSelector('#eGo'); assert(await B.isVisible('#eCancel'), 'optional for non-parents');
@@ -331,18 +465,58 @@ const server = http.createServer((req, res) => {
     assert.equal(await A.evaluate(() => Cloud.connected('onedrive')), false, 'a sign-in return with an unknown state is ignored');
   });
 
-  let S;
+  let S, S2, soloCode;
+  const E2EE_norm = c => c.replace(/-/g, '');
   await step('deleting your account as the only parent removes the log; the phone returns to sign-in', async () => {
     S = await device(); await signIn(S, 'solo@x.com'); await S.waitForSelector('#oCreate');
-    await S.fill('#oName', 'Solo'); await S.click('#oCreate'); await S.waitForSelector('#eGo'); await enterTotp(S, await secretOf(S)); await S.waitForSelector('#tabs');
-    assert.equal((await q(`select count(*)::int c from babies where name='Solo'`))[0].c, 1);
-    await goTab(S, 'more'); await S.click('#delAcct'); await S.waitForSelector('#lEmail');
-    assert.equal((await q(`select count(*)::int c from babies where name='Solo'`))[0].c, 0); assert.equal((await q(`select count(*)::int c from auth.users where email='solo@x.com'`))[0].c, 0);
-    assert.deepEqual(await S.evaluate(() => [db.events.length, db.meta.babyId || null, Auth.signedIn]), [0, null, false]);
+    await S.fill('#oName', 'Solo'); await S.click('#oCreate'); await S.waitForSelector('#eGo'); const soloSecret = await secretOf(S); await enterTotp(S, soloSecret); await S.waitForSelector('#rcDone');
+    soloCode = (await S.textContent('#view .code')).trim(); await S.click('input[name=rcAck]'); await S.click('#rcDone'); await S.waitForSelector('#tabs');
+    await S.click('[data-add=feed]'); await S.click('input[value=bottle]'); await S.fill('#ml', '33'); await S.fill('#note', 'solo note'); await S.click('#save'); await S.waitForFunction(() => Sync.st.state === 'ok' && !db.events.some(e => e.updated > db.meta.pushedAt));
+    // the phone is lost: a brand-new phone with only the recovery code gets everything back
+    S2 = await device(); await signIn(S2, 'solo@x.com'); await S2.waitForSelector('#mCode'); await S2.fill('#mCode', totp(soloSecret)); await S2.click('#mGo'); await S2.waitForSelector('#aRecover');
+    assert(!(await S2.isVisible('#tabs'))); await S2.fill('#aCode', 'AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA'); await S2.click('#aRecover'); await S2.waitForFunction(() => /not right/.test(document.body.textContent));
+    await S2.fill('#aCode', soloCode.toLowerCase()); await S2.click('#aRecover'); await S2.waitForSelector('#tabs');
+    await syncNow(S2); const got = await S2.evaluate(() => db.events.find(e => e.type === 'feed')); assert.equal(got.data.ml, 33); assert.equal(got.note, 'solo note'); assert.equal(await S2.evaluate(() => db.baby.name), 'Solo');
+    assert.equal((await q(`select count(*)::int c from key_grants g join devices d on 'd:'||d.id::text = g.grantee join auth.users u on u.id=d.user_id where u.email='solo@x.com'`))[0].c, 2, 'the recovered phone registered itself for future key changes');
+    secrets.push(soloCode, E2EE_norm(soloCode));
+  });
+
+  await step('the server holds no readable data at all: a search of every table finds none of the baby\'s data, notes or keys', async () => {
+    const tables = (await q(`select tablename from pg_tables where schemaname='public'`)).map(r => r.tablename); let dump = '';
+    for (const t of tables) dump += (await q(`select coalesce(string_agg(to_jsonb(x)::text, E'\n'), '') d from ${t} x`))[0].d + '\n';
+    for (const sentinel of ['Leo', 'Solo', '2026-10-10', 'solo note', 'nan was here', 'after nan left', '"wet"', 'Rash', 'bottle', 'planted', 'Vit D']) assert(!dump.includes(sentinel), 'plaintext leaked to the server: ' + sentinel);
+    const ka = await keysOf(A), dev = await A.evaluate(() => E2EE.device);
+    for (const k of Object.values(ka.keys)) { secrets.push(k.main); if (k.health) secrets.push(k.health); } secrets.push(dev.priv.d);
+    for (const sec of secrets) assert(!dump.includes(sec), 'a secret reached the server: ' + sec.slice(0, 8) + '…');
+    assert(dump.length > 5000 && dump.includes('mum@x.com') && dump.includes('"Mum"'), 'sanity: the dump is real and still holds account metadata (emails, names)');
+  });
+
+  await step('deleting your account as the only parent removes the log (and its keys); the phone returns to sign-in', async () => {
+    assert.equal((await q(`select count(*)::int c from babies where created_by = (select id from auth.users where email='solo@x.com')`))[0].c, 1);
+    await goTab(S2, 'more'); await S2.click('#delAcct'); await S2.waitForSelector('#lEmail');
+    assert.equal((await q(`select count(*)::int c from babies where created_by in (select id from auth.users where email='solo@x.com')`))[0].c, 0); assert.equal((await q(`select count(*)::int c from auth.users where email='solo@x.com'`))[0].c, 0);
+    assert.deepEqual(await S2.evaluate(() => [db.events.length, db.meta.babyId || null, Auth.signedIn]), [0, null, false]);
+    assert.equal(await S2.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('MOCKSECURE:e2ee.')).length), 0, 'its keys were erased from the phone');
+  });
+
+  await step('removing a lost phone deletes its keys and changes the log\'s keys; that phone can read nothing new', async () => {
+    const a2id = await A2.evaluate(() => E2EE.device.id), ep0 = await epochOnServer(), a2keys = await keysOf(A2), babyId = await babyOf(A2);
+    await goTab(A, 'family'); await A.waitForSelector(`[data-rmphone="${a2id}"]`); await A.click(`[data-rmphone="${a2id}"]`); await A.waitForFunction(i => !document.querySelector(`[data-rmphone="${i}"]`), a2id);
+    assert.equal((await q(`select count(*)::int c from key_grants where grantee=$1`, ['d:' + a2id]))[0].c, 0, 'its grant is gone'); assert.equal((await q('select rotate_needed from babies where id=$1', [babyId]))[0].rotate_needed, true);
+    await syncNow(A); assert.equal(await epochOnServer(), ep0 + 1);
+    assert.equal((await q(`select count(*)::int c from key_grants where epoch=$1 and grantee=$2`, [ep0 + 1, 'd:' + a2id]))[0].c, 0, 'and it is not in the new key distribution');
+    await goTab(A, 'day'); await A.click('[data-add=feed]'); await A.click('input[value=bottle]'); await A.fill('#ml', '44'); await A.click('#save'); await A.waitForFunction(() => !db.events.some(e => e.updated > db.meta.pushedAt));
+    const fresh = (await q('select * from events where epoch=$1 order by synced_at desc limit 1', [ep0 + 1]))[0];
+    assert.equal(await A2.evaluate(([b, row, keys]) => E2EE.decryptWith(keys, b, row).then(x => Object.keys(x)[0]), [babyId, fresh, a2keys.keys]), 'locked', 'the removed phone\'s keys cannot open new entries');
+    await syncNow(A2); assert.notEqual(await A2.evaluate(() => Sync.st.state), 'ok', 'and it can no longer sync');
   });
 
   await step('"sign out everywhere" ends every session; a phone that was left signed in is cleared the next time it connects', async () => {
-    await goTab(A2, 'more'); await A2.click('#signOutAll'); await A2.waitForSelector('#lEmail'); assert.equal(await A2.evaluate(() => db.events.length), 0);
+    // the removed phone is back at "approve this phone" (it re-registered, without keys): that is the right place for it to be
+    assert(await A2.isVisible('#aCheck'), 'a removed phone has to be approved again');
+    await goTab(B, 'more'); await B.click('#signOutAll'); await B.waitForSelector('#lEmail'); assert.equal(await B.evaluate(() => db.events.length), 0);
+    assert.equal([...shim.sessions.values()].filter(s => s.email === 'dad@x.com').length, 0, 'server dropped all of Dad\'s sessions');
+    await A2.evaluate(() => Auth.signOut(true));   // Mum signs out everywhere (the same call the button makes)
     assert.equal([...shim.sessions.values()].filter(s => s.email === 'mum@x.com').length, 0, 'server dropped all of Mum\'s sessions');
     await A.evaluate(() => { const k = 'MOCKSECURE:auth.v2', s = JSON.parse(localStorage.getItem(k)); s.exp = 0; localStorage.setItem(k, JSON.stringify(s)); });   // her access token has now expired
     await A.reload(); await A.waitForSelector('#lEmail', { timeout: 15000 });

@@ -11,6 +11,8 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
   they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**. Parents get a private **activity log** of who did what.
 - **Locked-down accounts**: email one-time code + security check (CAPTCHA), **two-step verification** (required for parents), Face ID / fingerprint
   **app lock**, secrets in the **Keychain / Keystore**, "sign out everywhere", in-app account deletion
+- **End-to-end encryption**: the server can't read the baby's name, entries, notes or health data. Phones hold the keys (Keychain / Keystore); a recovery code
+  protects against losing every phone; keys change automatically when someone leaves or loses a phone
 - **Encrypted cloud backup** to Google Drive, Dropbox, OneDrive, or iCloud Drive / Files
 - Works offline; changes sync when you're back online
 

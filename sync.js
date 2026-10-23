@@ -1,10 +1,11 @@
 'use strict';
 /* Family sync. Local-first: the app always works from local storage; this module merges changes with the shared baby
-   log in Supabase (pull, then push). All writes go through the server's push_events(), which enforces each person's
-   role and permissions. Conflicts: newest `updated` timestamp wins.
+   log in Supabase (pull, then push). Everything is END-TO-END ENCRYPTED: entries and the baby's profile are encrypted on the
+   phone before upload and decrypted after download (see e2ee.js); the server only sees ciphertext. All writes go through the
+   server's push_events(), which enforces each person's role and permissions. Conflicts: newest `updated` timestamp wins.
    Relies on the globals `db` and `save()` from app.js (read lazily, at call time). */
 const Sync = (() => {
-  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, memberships: [], people: [], requests: [], invites: [], myRequests: [] };
+  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [] };
   const PAGE = 500, OVERLAP_MS = 5000;
   let busy = false, again = false, timer = null, started = false, peopleAt = 0;
 
@@ -55,8 +56,30 @@ const Sync = (() => {
     if (drop.size) db.events = db.events.filter(e => !drop.has(e.id));
     return n;
   }
-  const fromRow = r => ({ id: r.id, type: r.type, ts: +r.ts, end: r.end_ts == null ? null : +r.end_ts, data: r.data, note: r.note, updated: +r.updated, deleted: r.deleted, by: r.created_by });
-  const toRow = (e, deleted) => ({ id: e.id, type: e.type, ts: e.ts, end_ts: e.end ?? null, data: e.data || {}, note: e.note || '', updated: e.updated, deleted });
+  /** Decrypt server rows. Rows whose key we don't have yet are kept in meta.stash and retried after the next key refresh. */
+  async function decode(rows) {
+    const b = db.meta.babyId, out = [], stash = db.meta.stash || (db.meta.stash = {});
+    for (const r of rows) {
+      if (r.deleted) { out.push({ id: r.id, deleted: true, updated: +r.updated }); delete stash[r.id]; continue; }
+      const d = await E2EE.decryptRow(b, r);
+      if (d.entry) { out.push({ ...d.entry, deleted: false }); delete stash[r.id]; }
+      else if (d.locked) stash[r.id] = { id: r.id, blob: r.blob, epoch: r.epoch, sensitive: r.sensitive, updated: r.updated, deleted: false, created_by: r.created_by };
+      else st.bad++;   // failed authentication: tampered with, moved, or planted by someone without the right key – ignored
+    }
+    return out;
+  }
+  async function retryStash() {
+    const stash = db.meta.stash || {}, rows = Object.values(stash);
+    if (!rows.length) return 0;
+    const n = merge(await decode(rows)); if (!Object.keys(db.meta.stash || {}).length) delete db.meta.stash; return n;
+  }
+  const isSens = type => type === 'health' || type === 'med';
+  async function encodeRows(b) {
+    const cut = Date.now(), since = db.meta.pushedAt || 0, rows = [];
+    for (const e of db.events) if (e.updated > since && e.updated <= cut) { const x = await E2EE.encryptEntry(b, e); rows.push({ id: e.id, ...x, updated: e.updated, deleted: false }); }
+    for (const t of db.deleted) if (t.updated > since && t.updated <= cut) rows.push({ id: t.id, blob: '', epoch: E2EE.epoch(b) || 1, sensitive: isSens(t.type), updated: t.updated, deleted: true });
+    return { rows, cut };
+  }
 
   function reset() { db.events = []; db.deleted = []; db.meta.pulledAt = ''; db.meta.pushedAt = 0; }
 
@@ -67,17 +90,26 @@ const Sync = (() => {
     if (!mem.length) { lostAccess(); return false; }
     db.meta.role = mem[0].role; db.meta.perms = mem[0].perms || {};
     st.needMfa = false;
-    const baby = await Auth.api(`/babies?id=eq.${b}&select=name,birth`);
+    const baby = await Auth.api(`/babies?id=eq.${b}&select=profile,epoch,rotate_needed`);
     if (!baby.length) { st.needMfa = true; st.state = 'error'; st.err = 'Two-step verification is required'; return false; }   // a parent without an MFA session
+    st.rotateNeeded = !!baby[0].rotate_needed;
+    // Encryption keys: fetch them if this phone has none, or the log moved to a newer key epoch.
+    await E2EE.load(b);
+    const wantHealth = db.meta.role === 'parent' || !!db.meta.perms.view_health;   // e.g. just given health access: fetch the health key
+    const hadHealth = E2EE.hasHealthKey(b);
+    if (!E2EE.hasKeys(b) || E2EE.epoch(b) < baby[0].epoch || (wantHealth && !hadHealth)) await E2EE.refresh(b, db.meta, { health: wantHealth });
+    if (!hadHealth && E2EE.hasHealthKey(b)) db.meta.pulledAt = '';   // health entries were invisible until now, so the sync cursor skipped them: fetch everything again
+    if (!E2EE.hasKeys(b) || E2EE.epoch(b) < baby[0].epoch) { st.needsAccess = true; st.state = 'needs-access'; st.err = ''; return false; }
+    st.needsAccess = false;
     if (db.meta.babyDirty) {
       db.meta.babyDirty = false;
-      try { await Auth.rpc('update_baby', { p_baby: b, p_name: db.baby.name, p_birth: db.baby.birth || null }); baby[0] = { name: db.baby.name, birth: db.baby.birth }; } catch (e) { st.denied++; }
+      try { await Auth.rpc('update_baby', { p_baby: b, p_profile: await E2EE.encryptProfile(b, db.baby), p_epoch: E2EE.epoch(b) }); baby[0] = { ...baby[0], profile: null }; } catch (e) { st.denied++; }
     }
-    db.baby = { name: baby[0].name || '', birth: baby[0].birth || '' };
-    if (db.meta.role !== 'parent' && !db.meta.perms.view_health) db.events = db.events.filter(e => e.type !== 'health' && e.type !== 'med');   // access to health notes was taken away
+    if (baby[0].profile) { const p = await E2EE.decryptProfile(b, baby[0].profile, baby[0].epoch); if (p) db.baby = p; }
+    if (db.meta.role !== 'parent' && !db.meta.perms.view_health) db.events = db.events.filter(e => !isSens(e.type));   // access to health notes was taken away
     return true;
   }
-  function lostAccess() { reset(); db.meta.babyId = null; db.meta.role = null; db.meta.perms = null; db.baby = { name: '', birth: '' }; st.people = []; save(true); }
+  function lostAccess() { const b = db.meta.babyId; if (b) E2EE.forget(b); reset(); db.meta.babyId = null; db.meta.role = null; db.meta.perms = null; db.baby = { name: '', birth: '' }; st.people = []; save(true); }
 
   async function pull() {
     const b = db.meta.babyId;
@@ -85,7 +117,7 @@ const Sync = (() => {
     let changed = 0;
     for (;;) {
       const rows = await Auth.api(`/events?baby_id=eq.${b}&synced_at=gt.${q(since)}&order=synced_at.asc&limit=${PAGE}&select=*`);
-      changed += merge(rows.map(fromRow));
+      changed += merge(await decode(rows));
       if (rows.length) { since = rows[rows.length - 1].synced_at; db.meta.pulledAt = since; }
       if (rows.length < PAGE) break;
     }
@@ -93,15 +125,19 @@ const Sync = (() => {
   }
 
   async function push() {
-    const b = db.meta.babyId, cut = Date.now(), since = db.meta.pushedAt || 0;
-    const out = [
-      ...db.events.filter(e => e.updated > since && e.updated <= cut).map(e => toRow(e, false)),
-      ...db.deleted.filter(t => t.updated > since && t.updated <= cut).map(t => toRow(t, true)),
-    ];
-    const denied = [];
-    for (let i = 0; i < out.length; i += 200) {
-      const r = await Auth.rpc('push_events', { p_baby: b, p_rows: out.slice(i, i + 200) });
-      denied.push(...((r && r.denied) || []));
+    const b = db.meta.babyId;
+    let { rows, cut } = await encodeRows(b), denied = [];
+    for (let attempt = 0; ; attempt++) {
+      denied = []; let stale = null;
+      for (let i = 0; i < rows.length; i += 200) {
+        const r = await Auth.rpc('push_events', { p_baby: b, p_rows: rows.slice(i, i + 200) });
+        denied.push(...((r && r.denied) || [])); if (r && r.stale) stale = r.stale;
+      }
+      if (!stale) break;
+      // The log moved to newer keys than this phone used: fetch them and send again (nothing is lost).
+      await E2EE.refresh(b, db.meta);
+      if (E2EE.epoch(b) < stale || attempt) throw new Error('Waiting for the new encryption keys');
+      ({ rows, cut } = await encodeRows(b));
     }
     db.meta.pushedAt = cut;
     db.deleted = db.deleted.filter(t => t.updated > cut);   // tombstones now live on the server
@@ -111,7 +147,7 @@ const Sync = (() => {
   async function restore(ids) {
     const b = db.meta.babyId, safe = ids.filter(i => /^[A-Za-z0-9_-]{1,64}$/.test(i));
     st.denied += ids.length;
-    const rows = safe.length ? (await Auth.api(`/events?baby_id=eq.${b}&id=in.(${safe.join(',')})&select=*`)).map(fromRow) : [];
+    const rows = safe.length ? await decode(await Auth.api(`/events?baby_id=eq.${b}&id=in.(${safe.join(',')})&select=*`)) : [];
     const have = new Set(rows.map(r => r.id));
     merge(rows, false, true);
     merge(safe.filter(i => !have.has(i)).map(id => ({ id, deleted: true, updated: 0 })), false, true);   // never existed on the server: drop the local copy
@@ -125,12 +161,14 @@ const Sync = (() => {
     let changed = 0;
     try {
       if (await pullBaby()) {
-        changed = await pull();
+        if (st.rotateNeeded && db.meta.role === 'parent' && Auth.aal === 'aal2') { await E2EE.rotate(db.meta.babyId, db.baby); st.rotateNeeded = false; }
+        changed = await pull() + await retryStash();
         await push();
         if (Date.now() - peopleAt > 120000 || db.events.some(e => e.by && !st.people.some(p => p.user_id === e.by))) { await loadPeople().catch(() => {}); }
+        await loadDevices().catch(() => {});
         if (db.meta.role === 'parent') await loadAdmin().catch(() => {});
         st.state = 'ok'; st.at = Date.now(); st.err = '';
-      } else if (!st.needMfa) st.state = 'idle';   // access was removed; lostAccess() already reset this device
+      } else if (!st.needMfa && !st.needsAccess) st.state = 'idle';   // access was removed; lostAccess() already reset this device
     } catch (e) {
       st.state = (e instanceof TypeError || navigator.onLine === false) ? 'offline' : 'error';
       st.err = e.message;
@@ -146,24 +184,67 @@ const Sync = (() => {
   // ---- people, requests, invites, activity -------------------------------------------------
   async function loadPeople() { st.people = await Auth.rpc('list_people', { p_baby: db.meta.babyId }); peopleAt = Date.now(); return st.people; }
   async function loadAdmin() {   // parents only
-    [st.requests, st.invites] = await Promise.all([Auth.rpc('list_requests', { p_baby: db.meta.babyId }), Auth.rpc('list_invites', { p_baby: db.meta.babyId })]);
+    const [reqs, inv] = await Promise.all([Auth.rpc('list_requests', { p_baby: db.meta.babyId }), Auth.rpc('list_invites', { p_baby: db.meta.babyId })]);
+    for (const r of reqs) { r.qrVerified = await E2EE.verifyRequest(r); r.fingerprint = r.device_pub ? await E2EE.fingerprint(r.device_pub) : ''; }
+    st.requests = reqs; st.invites = inv;
   }
+  /** Phones of people in this log (parents see everyone's) and whether they hold keys yet. Phones without keys are waiting for approval. */
+  async function loadDevices() {
+    const rows = await Auth.rpc('list_devices', { p_baby: db.meta.babyId });
+    for (const d of rows) d.fingerprint = await E2EE.fingerprint(d.pubkey);
+    st.devices = rows; return rows;
+  }
+  const pendingPhones = () => st.devices.filter(d => !d.has_grant && !(E2EE.device && d.grantee === 'd:' + E2EE.device.id));
+  async function approvePhone(d) { await E2EE.approveDevice(db.meta.babyId, d); await loadDevices(); }
+  const myDevices = () => Auth.rpc('my_devices');
+  async function removePhone(id) { await Auth.rpc('remove_device', { p_id: id }); if (E2EE.device && E2EE.device.id === id) return; await loadDevices().catch(() => {}); schedule(300); }
+  async function recover(code) {
+    await E2EE.unlockWithRecovery(db.meta.babyId, code, db.meta);
+    st.needsAccess = false; save(true); run();
+  }
+  async function newRecoveryCode() { return E2EE.replaceRecovery(db.meta.babyId); }
+  const securityCode = () => E2EE.securityCode(db.meta.babyId);
   const activity = (before) => Auth.rpc('activity_log', { p_baby: db.meta.babyId, p_limit: 50, p_before: before || null });
-  const createInvite = async (role, perms) => { const c = await Auth.rpc('create_invite', { p_baby: db.meta.babyId, p_role: role, p_perms: perms }); await loadAdmin(); return c; };
+  /** The QR code carries `secret` too; it never goes to the server, and lets the joiner and the parent authenticate each other. */
+  const createInvite = async (role, perms) => {
+    const code = await Auth.rpc('create_invite', { p_baby: db.meta.babyId, p_role: role, p_perms: perms });
+    const secret = E2EE.newSecret(); await E2EE.rememberInvite(code, secret); await loadAdmin(); return { code, secret };
+  };
   const rescind = async code => { await Auth.rpc('rescind_invite', { p_code: code }); await loadAdmin(); };
-  const decide = async (id, approve, role, perms) => { await Auth.rpc('decide_request', { p_id: id, p_approve: approve, p_role: role || null, p_perms: perms || null }); await Promise.all([loadAdmin(), loadPeople()]); };
-  const setMember = async (user, role, perms) => { await Auth.rpc('set_member', { p_baby: db.meta.babyId, p_user: user, p_role: role, p_perms: perms }); await loadPeople(); };
+  /** `req` is a row from list_requests. Approving shares the log's encryption keys with the person's phone, so the parent must have
+      verified it really is their phone (QR proof, or {manualOk:true} after comparing security codes). */
+  const decide = async (req, approve, opts = {}) => {
+    const grant = approve ? await E2EE.grantForRequest(db.meta.babyId, req, opts) : null;
+    await Auth.rpc('decide_request', { p_id: req.id, p_approve: approve, p_role: null, p_perms: null, p_grant: grant });
+    await Promise.all([loadAdmin(), loadPeople(), loadDevices().catch(() => {})]);
+  };
+  async function setMember(user, role, perms) {
+    // Someone newly allowed to see health notes needs the health key for each of their phones.
+    const p = st.people.find(x => x.user_id === user), had = !!p && (p.role === 'parent' || !!(p.perms && p.perms.view_health));
+    const will = role === 'parent' || !!perms.view_health;
+    const grants = will && !had ? await E2EE.healthGrants(db.meta.babyId, user) : [];
+    await Auth.rpc('set_member', { p_baby: db.meta.babyId, p_user: user, p_role: role, p_perms: perms, p_health_grants: grants });
+    await loadPeople(); schedule(300);   // losing health access asks for new keys: a parent's phone does that on the next sync
+  }
   const resetMfa = user => Auth.rpc('reset_member_mfa', { p_baby: db.meta.babyId, p_user: user });
   const setDisplayName = async name => { await Auth.rpc('set_display_name', { p_name: name }); await loadPeople().catch(() => {}); };
   async function removeMember(userId) {
     await Auth.rpc('remove_member', { p_baby: db.meta.babyId, p_user: userId });
-    if (userId === Auth.id) { lostAccess(); await loadMemberships(); } else await loadPeople();
+    if (userId === Auth.id) { lostAccess(); await loadMemberships(); } else { await loadPeople(); schedule(300); }   // the keys are changed on the next sync
   }
 
   // ---- baby / membership management ---------------------------------------------------------
   async function loadMemberships() {
-    const rows = await Auth.api(`/members?user_id=eq.${Auth.id}&select=baby_id,role,perms,babies(name,birth)`);
-    st.memberships = rows.map(r => ({ id: r.baby_id, role: r.role, perms: r.perms || {}, name: (r.babies && r.babies.name) || '', birth: (r.babies && r.babies.birth) || '' }));
+    const rows = await Auth.api(`/members?user_id=eq.${Auth.id}&select=baby_id,role,perms`);
+    // Baby names are encrypted: show the ones this phone already has the key for.
+    let profiles = [];
+    try { profiles = await Auth.api('/babies?select=id,profile,epoch'); } catch (e) {}
+    st.memberships = [];
+    for (const r of rows) {
+      const b = profiles.find(x => x.id === r.baby_id); let p = null;
+      if (b && b.profile) { await E2EE.load(r.baby_id); p = await E2EE.decryptProfile(r.baby_id, b.profile, b.epoch); }
+      st.memberships.push({ id: r.baby_id, role: r.role, perms: r.perms || {}, name: p ? p.name : '', birth: p ? p.birth : '' });
+    }
     return st.memberships;
   }
   async function loadMyRequests() { st.myRequests = await Auth.rpc('my_requests'); return st.myRequests; }
@@ -171,21 +252,26 @@ const Sync = (() => {
   function choose(id) {
     const m = st.memberships.find(x => x.id === id);
     if (!m) return;
-    if (db.meta.babyId !== id) { reset(); db.meta.babyDirty = false; st.people = []; peopleAt = 0; }
+    if (db.meta.babyId !== id) { reset(); db.meta.babyDirty = false; db.meta.stash = undefined; db.meta.unverified = false; st.people = []; st.devices = []; st.needsAccess = false; peopleAt = 0; }
     db.meta.babyId = id; db.meta.role = m.role; db.meta.perms = m.perms; if (m.name) db.baby = { name: m.name, birth: m.birth };
     save(true); run();
   }
+  /** Creates the log with fresh encryption keys. Returns the one-time recovery code (shown to the parent once, never stored). */
   async function createBaby(name, birth, displayName) {
-    const id = await Auth.rpc('create_baby', { p_name: name, p_birth: birth || null, p_display_name: displayName || '' });
+    const { babyId: id, code } = await E2EE.createLog({ name, birth: birth || '' }, displayName);
     // Existing local entries (from before sign-in) are adopted by the new baby and uploaded.
-    db.meta.babyId = id; db.meta.role = 'parent'; db.meta.perms = null; db.meta.pulledAt = ''; db.meta.pushedAt = 0; db.meta.babyDirty = false;
+    db.meta.babyId = id; db.meta.role = 'parent'; db.meta.perms = null; db.meta.pulledAt = ''; db.meta.pushedAt = 0; db.meta.babyDirty = false; db.meta.recoveryAck = false; db.meta.unverified = false;
     db.events.forEach(e => { e.by = Auth.id; });
     db.baby = { name, birth: birth || '' };
     save(true); await loadMemberships(); run();
+    return code;
   }
   /** Redeem an invite code. This only sends a request; a parent has to approve it. */
-  async function requestJoin(code, displayName) {
-    const r = await Auth.rpc('redeem_invite', { p_code: code, p_display_name: displayName || '' });
+  async function requestJoin(code, displayName, secret) {
+    const dev = await E2EE.ensureDevice();
+    await E2EE.setJoinSecret(secret || null);
+    const proof = secret ? await E2EE.joinProof(secret, dev.id, dev.pub) : null;
+    const r = await Auth.rpc('redeem_invite', { p_code: code, p_display_name: displayName || '', p_device: dev.id, p_proof: proof });
     if (!r || r.status !== 'pending') throw new Error('This invite is invalid or has expired');
     await loadMyRequests();
   }
@@ -199,7 +285,7 @@ const Sync = (() => {
   const pendingRequest = () => st.myRequests.find(r => r.status === 'pending');
 
   // Invite links only open the installed app (custom URL scheme); people without the app scan the QR code inside it.
-  const inviteUrl = code => Native.scheme + '://join?join=' + code;
+  const inviteUrl = (code, secret) => Native.scheme + '://join?join=' + code + (secret ? '&s=' + secret : '');
   function pushBaby() { db.meta.babyDirty = true; save(); schedule(500); }
 
   function start() {
@@ -211,7 +297,7 @@ const Sync = (() => {
     run();
   }
 
-  return { st, enabled, linked, isParent, can, nameOf, merge, run, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
+  return { st, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
     createInvite, rescind, decide, setMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
     pendingRequest, inviteUrl, pushBaby, onChange: null, onSessionLost: null };
 })();

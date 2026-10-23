@@ -1,4 +1,4 @@
--- Little Log – Supabase schema (v2: roles, permissions, MFA, approved invites, audit log).
+-- Little Log – Supabase schema (v3: end-to-end encryption, roles, permissions, MFA, approved invites, audit log).
 -- Run once in the Supabase SQL editor on a fresh project. It replaces any earlier version of this file
 -- (drop the old tables first if you ran v1; there is no data migration).
 --
@@ -10,14 +10,50 @@
 --     has no more access than a stranger.
 --   * Joining needs an invite code AND a parent's approval. Invites last 2 hours, work once, and can be rescinded.
 --   * `activity` is an append-only log of who did what, readable only by parents.
+--   * END-TO-END ENCRYPTION: this database never sees the baby's name/birthday or any entry's type, time or contents.
+--     Entries are opaque ciphertext blobs (AES-GCM) made on the phones. Keys never reach the server in the clear: each
+--     phone has a keypair, and the log keys are stored only as copies wrapped to each approved phone (`key_grants`).
+--     The server still sees: emails and display names, roles and permissions, who wrote an entry and when it was
+--     uploaded, entry counts and sizes, and a `sensitive` flag marking health-class entries (so the "see health notes"
+--     permission is still enforced here as well as by a separate health key).
 
 -- ── tables ────────────────────────────────────────────────────────────────────────────────────
 create table babies (
   id uuid primary key default gen_random_uuid(),
-  name text not null default '' check (length(name) <= 100),
-  birth date,
+  profile text not null default '' check (length(profile) <= 4096),   -- encrypted {name, birth}
+  epoch int not null default 1,                                        -- current key generation
+  rotate_needed boolean not null default false,                        -- a parent's phone should rotate the keys
+  recovery_pub jsonb,                                                  -- public key of the recovery code
+  recovery_priv_wrapped text,                                          -- its private key, encrypted with the recovery code
+  keyring_main text,                                                   -- older main keys, encrypted with the current main key
+  keyring_health text,                                                 -- older health keys, encrypted with the current health key
+  health_check text,                                                   -- MAC (under the main key) of the health key's fingerprint: lets a phone verify a health key it is given
   created_by uuid not null,
   created_at timestamptz not null default now()
+);
+
+-- One row per phone (app install). Only the PUBLIC key is stored.
+create table devices (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null default '' check (length(name) <= 60),
+  pubkey jsonb not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, pubkey)
+);
+
+-- The log keys, wrapped (encrypted) to one phone or to the recovery key. Opaque to the server.
+create table key_grants (
+  baby_id uuid not null references babies(id) on delete cascade,
+  grantee text not null check (grantee = 'recovery' or grantee ~ '^d:[0-9a-f-]{36}$'),
+  epoch int not null,
+  wrap_main text not null check (length(wrap_main) <= 2048),
+  wrap_health text check (length(wrap_health) <= 2048),
+  auth text check (length(auth) <= 2048),    -- proof that the grant is genuine: from the QR invite secret, or (for a key change) a MAC under the previous keys
+  tag text check (length(tag) <= 256),       -- key-holder's MAC over (grantee, public key, epoch): proves a real key holder approved it
+  granted_by uuid,
+  created_at timestamptz not null default now(),
+  primary key (baby_id, grantee, epoch)
 );
 
 create table members (
@@ -51,6 +87,9 @@ create table join_requests (
   role text not null,
   perms jsonb not null default '{}',
   invited_by uuid,
+  invite_code text,
+  device_id uuid references devices(id) on delete cascade,
+  proof text check (length(proof) <= 256),     -- HMAC made with the secret inside the QR code (never sent to the server)
   created_at timestamptz not null default now(),
   expires_at timestamptz not null default now() + interval '24 hours',
   status text not null default 'pending' check (status in ('pending','approved','denied','cancelled'))
@@ -60,11 +99,9 @@ create unique index join_requests_one_pending on join_requests (baby_id, user_id
 create table events (
   baby_id uuid not null references babies(id) on delete cascade,
   id text not null,
-  type text not null,
-  ts bigint not null,
-  end_ts bigint,
-  data jsonb not null default '{}',
-  note text not null default '',
+  blob text not null default '' check (length(blob) <= 8192),   -- ciphertext of {type, ts, end, data, note}
+  epoch int not null,
+  sensitive boolean not null default false,                      -- health-class entry (separate key, separate permission)
   updated bigint not null,                 -- client clock (ms), clamped to the server clock; last write wins
   deleted boolean not null default false,
   created_by uuid not null,
@@ -140,32 +177,210 @@ alter table join_requests   enable row level security;
 alter table events          enable row level security;
 alter table activity        enable row level security;
 alter table invite_attempts enable row level security;
+alter table devices         enable row level security;
+alter table key_grants      enable row level security;
 
 create policy babies_read  on babies  for select using (is_member(id));
 create policy members_self on members for select using (user_id = auth.uid());   -- others via list_people()
 create policy events_read  on events  for select using (
-  is_member(baby_id) and (type not in ('health','med') or has_perm(baby_id, 'view_health')));
--- invites, join_requests, activity, invite_attempts: no policies = no direct access (functions only).
+  is_member(baby_id) and (not sensitive or has_perm(baby_id, 'view_health')));
+-- invites, join_requests, activity, invite_attempts, devices, key_grants: no policies = no direct access (functions only).
+
+-- ── devices, key grants, recovery ──────────────────────────────────────────────────────────────
+-- The server only stores public keys and wrapped (encrypted) keys. The checks here keep the data model sane;
+-- the cryptographic trust decisions (is this really that person's phone?) are made on the parents' phones.
+create function pub_ok(p jsonb) returns boolean language sql immutable as $$
+  select jsonb_typeof(p) = 'object' and p ->> 'kty' = 'EC' and p ->> 'crv' = 'P-256'
+         and length(coalesce(p ->> 'x', '')) between 40 and 64 and length(coalesce(p ->> 'y', '')) between 40 and 64 $$;
+
+create function register_device(p_name text, p_pub jsonb) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); id_ uuid; pk jsonb;
+begin
+  if me is null then raise exception 'not signed in'; end if;
+  if not pub_ok(p_pub) then raise exception 'bad public key'; end if;
+  pk := jsonb_build_object('kty', 'EC', 'crv', 'P-256', 'x', p_pub ->> 'x', 'y', p_pub ->> 'y');
+  select id into id_ from devices where user_id = me and pubkey = pk;
+  if found then return id_; end if;
+  if (select count(*) from devices where user_id = me) >= 10 then raise exception 'Too many phones on this account – remove one first'; end if;
+  insert into devices (user_id, name, pubkey) values (me, left(coalesce(p_name, ''), 60), pk) returning id into id_;
+  return id_;
+end $$;
+
+create function my_devices() returns table (id uuid, name text, created_at timestamptz, pubkey jsonb)
+language sql security definer stable set search_path = public as $$
+  select d.id, d.name, d.created_at, d.pubkey from devices d where d.user_id = auth.uid() order by d.created_at $$;
+
+-- Removing a phone (lost or stolen) deletes its keys; every log you belong to must then change its keys.
+create function remove_device(p_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid();
+begin
+  if not exists (select 1 from devices where id = p_id and user_id = me) then return; end if;
+  delete from key_grants where grantee = 'd:' || p_id::text;
+  delete from devices where id = p_id;
+  update babies set rotate_needed = true where id in (select baby_id from members where user_id = me);
+end $$;
+
+create function my_grant(p_baby uuid, p_device uuid)
+returns table (epoch int, wrap_main text, wrap_health text, auth text, granted_by_name text)
+language plpgsql security definer stable set search_path = public as $$
+begin
+  if not is_member(p_baby) then raise exception 'no access'; end if;
+  if not exists (select 1 from devices where id = p_device and user_id = auth.uid()) then raise exception 'unknown phone'; end if;
+  return query select g.epoch, g.wrap_main, case when has_perm(p_baby, 'view_health') then g.wrap_health end, g.auth, display_of(p_baby, g.granted_by)
+               from key_grants g join babies b on b.id = g.baby_id and b.epoch = g.epoch
+               where g.baby_id = p_baby and g.grantee = 'd:' || p_device::text;
+end $$;
+
+-- A new phone that has the recovery code fetches the recovery material (still encrypted with that code).
+create function get_recovery(p_baby uuid)
+returns table (epoch int, recovery_pub jsonb, recovery_priv_wrapped text, wrap_main text, wrap_health text)
+language plpgsql security definer stable set search_path = public as $$
+begin
+  if not is_member(p_baby) then raise exception 'no access'; end if;
+  return query select b.epoch, b.recovery_pub, b.recovery_priv_wrapped, g.wrap_main, case when has_perm(p_baby, 'view_health') then g.wrap_health end
+               from babies b join key_grants g on g.baby_id = b.id and g.epoch = b.epoch and g.grantee = 'recovery' where b.id = p_baby;
+end $$;
+
+create function get_keyring(p_baby uuid)
+returns table (epoch int, keyring_main text, keyring_health text, rotate_needed boolean, health_check text)
+language plpgsql security definer stable set search_path = public as $$
+begin
+  if not is_member(p_baby) then raise exception 'no access'; end if;
+  return query select b.epoch, b.keyring_main, case when has_perm(p_baby, 'view_health') then b.keyring_health end, b.rotate_needed, b.health_check from babies b where b.id = p_baby;
+end $$;
+
+-- Phones of the log's members and whether each already holds the keys. Parents see everyone's; others see their own.
+create function list_devices(p_baby uuid)
+returns table (grantee text, user_id uuid, person text, device_name text, pubkey jsonb, has_grant boolean, tag text, view_health boolean, created_at timestamptz)
+language plpgsql security definer stable set search_path = public as $$
+declare parent boolean;
+begin
+  if not is_member(p_baby) then raise exception 'no access'; end if;
+  parent := is_parent(p_baby);
+  return query
+    select 'd:' || d.id::text, d.user_id, display_of(p_baby, d.user_id), d.name, d.pubkey,
+           g.grantee is not null, g.tag,
+           (m.role = 'parent' or coalesce((m.perms ->> 'view_health')::boolean, false)), d.created_at
+    from devices d join members m on m.user_id = d.user_id and m.baby_id = p_baby
+    join babies b on b.id = p_baby
+    left join key_grants g on g.baby_id = p_baby and g.grantee = 'd:' || d.id::text and g.epoch = b.epoch
+    where parent or d.user_id = auth.uid()
+    order by d.created_at;
+end $$;
+
+create function list_recovery(p_baby uuid)
+returns table (recovery_pub jsonb, tag text)
+language plpgsql security definer stable set search_path = public as $$
+begin
+  if not is_parent(p_baby) then raise exception 'Only parents can do this'; end if;
+  return query select b.recovery_pub, g.tag from babies b left join key_grants g on g.baby_id = b.id and g.epoch = b.epoch and g.grantee = 'recovery' where b.id = p_baby;
+end $$;
+
+-- Gives one phone the keys. A parent may approve anyone's phone; a member may approve their own other phone
+-- (using keys they already hold). Health keys only go to people allowed to see health notes.
+create function grant_device(p_baby uuid, p_device uuid, p_wrap_main text, p_wrap_health text, p_auth text, p_tag text) returns void
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); owner_ uuid; m members; ep int; vh boolean;
+begin
+  if not is_member(p_baby) then raise exception 'no access'; end if;
+  select user_id into owner_ from devices where id = p_device;
+  if owner_ is null then raise exception 'unknown phone'; end if;
+  if owner_ <> me and not is_parent(p_baby) then raise exception 'Only parents can approve someone else''s phone'; end if;
+  select * into m from members where baby_id = p_baby and user_id = owner_;
+  if not found then raise exception 'not a member'; end if;
+  vh := m.role = 'parent' or coalesce((m.perms ->> 'view_health')::boolean, false);
+  if vh <> (p_wrap_health is not null) then raise exception 'health key must be given exactly to people who may see health notes'; end if;
+  select epoch into ep from babies where id = p_baby;
+  insert into key_grants (baby_id, grantee, epoch, wrap_main, wrap_health, auth, tag, granted_by)
+    values (p_baby, 'd:' || p_device::text, ep, p_wrap_main, p_wrap_health, p_auth, p_tag, me)
+    on conflict (baby_id, grantee, epoch) do update set wrap_main = excluded.wrap_main, wrap_health = excluded.wrap_health,
+      auth = excluded.auth, tag = excluded.tag, granted_by = excluded.granted_by, created_at = now();
+  perform log_activity(p_baby, 'device_approved', null, null, jsonb_build_object('person', display_of(p_baby, owner_), 'phone', (select name from devices where id = p_device)));
+end $$;
+
+-- Replaces the recovery code (a parent generated a new one and re-wrapped the current keys to it).
+create function set_recovery(p_baby uuid, p_pub jsonb, p_priv_wrapped text, p_wrap_main text, p_wrap_health text, p_tag text) returns void
+language plpgsql security definer set search_path = public as $$
+declare ep int;
+begin
+  if not is_parent(p_baby) then raise exception 'Only parents can do this'; end if;
+  if not pub_ok(p_pub) or p_wrap_main is null or p_wrap_health is null or p_priv_wrapped is null then raise exception 'bad recovery data'; end if;
+  select epoch into ep from babies where id = p_baby;
+  update babies set recovery_pub = p_pub, recovery_priv_wrapped = p_priv_wrapped where id = p_baby;
+  insert into key_grants (baby_id, grantee, epoch, wrap_main, wrap_health, tag, granted_by)
+    values (p_baby, 'recovery', ep, p_wrap_main, p_wrap_health, p_tag, auth.uid())
+    on conflict (baby_id, grantee, epoch) do update set wrap_main = excluded.wrap_main, wrap_health = excluded.wrap_health, tag = excluded.tag, granted_by = excluded.granted_by, created_at = now();
+  perform log_activity(p_baby, 'recovery_code_changed');
+end $$;
+
+-- A parent's phone changed the keys (after someone left, lost a phone, or lost health access).
+-- Old entries stay readable through the keyrings; new entries use the new epoch.
+create function rotate_keys(p_baby uuid, p_epoch int, p_grants jsonb, p_keyring_main text, p_keyring_health text, p_profile text, p_health_check text default null) returns void
+language plpgsql security definer set search_path = public as $$
+declare g jsonb; cur int; owner_ uuid; m members; vh boolean; seen_recovery boolean := false; me uuid := auth.uid();
+begin
+  if not is_parent(p_baby) then raise exception 'Only parents can change the keys'; end if;
+  select epoch into cur from babies where id = p_baby for update;
+  if p_epoch <> cur + 1 then raise exception 'stale epoch'; end if;
+  if jsonb_typeof(p_grants) <> 'array' or jsonb_array_length(p_grants) > 200 then raise exception 'bad grants'; end if;
+  if length(coalesce(p_profile, '')) > 4096 then raise exception 'profile too large'; end if;
+  if p_health_check is null then raise exception 'the health check is required'; end if;
+  delete from key_grants where baby_id = p_baby;
+  for g in select value from jsonb_array_elements(p_grants) loop
+    if g ->> 'grantee' = 'recovery' then
+      if (g ->> 'wrap_health') is null then raise exception 'recovery needs both keys'; end if;
+      seen_recovery := true;
+    else
+      select d.user_id into owner_ from devices d where 'd:' || d.id::text = g ->> 'grantee';
+      select * into m from members where baby_id = p_baby and user_id = owner_;
+      if not found then raise exception 'grant for someone who is not a member'; end if;
+      vh := m.role = 'parent' or coalesce((m.perms ->> 'view_health')::boolean, false);
+      if vh <> ((g ->> 'wrap_health') is not null) then raise exception 'health key must be given exactly to people who may see health notes'; end if;
+    end if;
+    insert into key_grants (baby_id, grantee, epoch, wrap_main, wrap_health, auth, tag, granted_by)
+      values (p_baby, g ->> 'grantee', p_epoch, g ->> 'wrap_main', g ->> 'wrap_health', g ->> 'auth', g ->> 'tag', me);
+  end loop;
+  if not seen_recovery then raise exception 'recovery grant is required'; end if;
+  update babies set epoch = p_epoch, keyring_main = p_keyring_main, keyring_health = p_keyring_health, health_check = p_health_check,
+                    profile = coalesce(p_profile, profile), rotate_needed = false where id = p_baby;
+  perform log_activity(p_baby, 'keys_rotated');
+end $$;
 
 -- ── babies & people ───────────────────────────────────────────────────────────────────────────
-create function create_baby(p_name text, p_birth date, p_display_name text default '') returns uuid
+-- p_grant / p_recovery_grant look like {"wrap_main": "...", "wrap_health": "...", "tag": "..."}.
+create function create_baby(p_profile text, p_display_name text, p_device uuid, p_grant jsonb, p_recovery_pub jsonb,
+                            p_recovery_priv_wrapped text, p_recovery_grant jsonb, p_id uuid default null, p_health_check text default null) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare b uuid; me uuid := auth.uid();
 begin
   if me is null then raise exception 'not signed in'; end if;
   if (select count(*) from babies where created_by = me) >= 5 then raise exception 'Baby limit reached'; end if;
-  insert into babies (name, birth, created_by) values (left(coalesce(p_name, ''), 100), p_birth, me) returning id into b;
+  if not exists (select 1 from devices where id = p_device and user_id = me) then raise exception 'unknown phone'; end if;
+  if not pub_ok(p_recovery_pub) or p_recovery_priv_wrapped is null then raise exception 'bad recovery data'; end if;
+  if p_health_check is null then raise exception 'the health check is required'; end if;
+  if (p_grant ->> 'wrap_main') is null or (p_grant ->> 'wrap_health') is null
+     or (p_recovery_grant ->> 'wrap_main') is null or (p_recovery_grant ->> 'wrap_health') is null then raise exception 'both keys are required'; end if;
+  -- The phone picks the log's id itself: it is part of the context the keys are wrapped under.
+  insert into babies (id, profile, created_by, recovery_pub, recovery_priv_wrapped, health_check)
+    values (coalesce(p_id, gen_random_uuid()), left(coalesce(p_profile, ''), 4096), me, p_recovery_pub, p_recovery_priv_wrapped, left(p_health_check, 256)) returning id into b;
   insert into members (baby_id, user_id, email, display_name, role, perms)
     values (b, me, coalesce(auth.jwt() ->> 'email', ''), left(coalesce(p_display_name, ''), 60), 'parent', role_preset('parent'));
+  insert into key_grants (baby_id, grantee, epoch, wrap_main, wrap_health, auth, tag, granted_by) values
+    (b, 'd:' || p_device::text, 1, p_grant ->> 'wrap_main', p_grant ->> 'wrap_health', null, p_grant ->> 'tag', me),
+    (b, 'recovery', 1, p_recovery_grant ->> 'wrap_main', p_recovery_grant ->> 'wrap_health', null, p_recovery_grant ->> 'tag', me);
   perform log_activity(b, 'log_created');
   return b;
 end $$;
 
-create function update_baby(p_baby uuid, p_name text, p_birth date) returns void
+create function update_baby(p_baby uuid, p_profile text, p_epoch int) returns void
 language plpgsql security definer set search_path = public as $$
 begin
   if not has_perm(p_baby, 'edit_profile') then raise exception 'You do not have permission to change the profile'; end if;
-  update babies set name = left(coalesce(p_name, ''), 100), birth = p_birth where id = p_baby;
+  if p_epoch <> (select epoch from babies where id = p_baby) then raise exception 'stale epoch'; end if;
+  if length(coalesce(p_profile, '')) > 4096 then raise exception 'profile too large'; end if;
+  update babies set profile = p_profile where id = p_baby;
   perform log_activity(p_baby, 'profile_changed');
 end $$;
 
@@ -189,9 +404,11 @@ end $$;
 create function set_display_name(p_name text) returns void language sql security definer set search_path = public as $$
   update members set display_name = left(trim(coalesce(p_name, '')), 60) where user_id = auth.uid() $$;
 
-create function set_member(p_baby uuid, p_user uuid, p_role text, p_perms jsonb) returns void
+-- p_health_grants: when the person newly gains health access, [{"device": "<uuid>", "wrap_health": "..."}] for each of
+-- their phones that already holds keys. Losing health access removes their health key and asks for a key rotation.
+create function set_member(p_baby uuid, p_user uuid, p_role text, p_perms jsonb, p_health_grants jsonb default '[]') returns void
 language plpgsql security definer set search_path = public as $$
-declare old members;
+declare old members; new_perms jsonb; old_vh boolean; new_vh boolean; g jsonb; n int;
 begin
   if not is_parent(p_baby) then raise exception 'Only parents can change access'; end if;
   if p_role not in ('parent','family','caregiver','babysitter','friend') then raise exception 'bad role'; end if;
@@ -201,7 +418,23 @@ begin
      and (select count(*) from members where baby_id = p_baby and role = 'parent') < 2 then
     raise exception 'A log needs at least one parent';
   end if;
-  update members set role = p_role, perms = normalize_perms(p_role, p_perms) where baby_id = p_baby and user_id = p_user;
+  new_perms := normalize_perms(p_role, p_perms);
+  old_vh := old.role = 'parent' or coalesce((old.perms ->> 'view_health')::boolean, false);
+  new_vh := p_role = 'parent' or coalesce((new_perms ->> 'view_health')::boolean, false);
+  if new_vh and not old_vh then
+    for g in select value from jsonb_array_elements(coalesce(p_health_grants, '[]')) loop
+      update key_grants k set wrap_health = g ->> 'wrap_health'
+        where k.baby_id = p_baby and k.grantee = 'd:' || (g ->> 'device') and k.epoch = (select epoch from babies where id = p_baby)
+          and (g ->> 'device')::uuid in (select id from devices where user_id = p_user);
+    end loop;
+    select count(*) into n from key_grants k join babies b on b.id = k.baby_id and b.epoch = k.epoch
+      where k.baby_id = p_baby and k.wrap_health is null and k.grantee in (select 'd:' || id::text from devices where user_id = p_user);
+    if n > 0 then raise exception 'health key grants are required for each of their phones'; end if;
+  elsif old_vh and not new_vh then
+    update key_grants set wrap_health = null where baby_id = p_baby and grantee in (select 'd:' || id::text from devices where user_id = p_user);
+    update babies set rotate_needed = true where id = p_baby;
+  end if;
+  update members set role = p_role, perms = new_perms where baby_id = p_baby and user_id = p_user;
   perform log_activity(p_baby, case when old.role <> p_role then 'role_changed' else 'permissions_changed' end,
                        null, null, jsonb_build_object('person', display_of(p_baby, p_user), 'role', p_role));
 end $$;
@@ -220,6 +453,8 @@ begin
   perform log_activity(p_baby, case when p_user = me then 'left' else 'member_removed' end, null, null,
                        jsonb_build_object('person', display_of(p_baby, p_user)));
   delete from members where baby_id = p_baby and user_id = p_user;
+  delete from key_grants where baby_id = p_baby and grantee in (select 'd:' || id::text from devices where user_id = p_user);
+  update babies set rotate_needed = true where id = p_baby;   -- they may still hold the keys: change them
 end $$;
 
 -- Lost authenticator: another parent can reset a member's two-step verification (they re-enrol on next sign-in).
@@ -271,8 +506,9 @@ begin
 end $$;
 
 -- Redeeming only creates a *request*; nothing is shared until a parent approves it.
+-- p_device is the redeemer's registered phone, p_proof an HMAC made with the secret inside the QR code (if they scanned it).
 -- Returns {status:'pending'} or {status:'invalid'} (wrong, used, rescinded or expired code).
-create function redeem_invite(p_code text, p_display_name text default '') returns jsonb
+create function redeem_invite(p_code text, p_display_name text default '', p_device uuid default null, p_proof text default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare i invites; me uuid := auth.uid(); mail text := coalesce(auth.jwt() ->> 'email', ''); rid uuid;
 begin
@@ -290,10 +526,12 @@ begin
   if exists (select 1 from members where baby_id = i.baby_id and user_id = me) then
     raise exception 'You already have access to this log';
   end if;
+  if not exists (select 1 from devices where id = p_device and user_id = me) then raise exception 'unknown phone'; end if;
   update invites set used_by = me where code = i.code;
   update join_requests set status = 'cancelled' where baby_id = i.baby_id and user_id = me and status = 'pending';
-  insert into join_requests (baby_id, user_id, email, display_name, role, perms, invited_by)
-    values (i.baby_id, me, mail, left(coalesce(nullif(trim(p_display_name), ''), split_part(mail, '@', 1)), 60), i.role, i.perms, i.created_by)
+  insert into join_requests (baby_id, user_id, email, display_name, role, perms, invited_by, invite_code, device_id, proof)
+    values (i.baby_id, me, mail, left(coalesce(nullif(trim(p_display_name), ''), split_part(mail, '@', 1)), 60), i.role, i.perms, i.created_by,
+            i.code, p_device, left(p_proof, 256))
     returning id into rid;
   perform log_activity(i.baby_id, 'join_requested', null, null, jsonb_build_object('email', mail, 'role', i.role));
   return jsonb_build_object('status', 'pending', 'request_id', rid);
@@ -308,26 +546,37 @@ create function cancel_my_request(p_id uuid) returns void language sql security 
   update join_requests set status = 'cancelled' where id = p_id and user_id = auth.uid() and status = 'pending' $$;
 
 create function list_requests(p_baby uuid)
-returns table (id uuid, email text, display_name text, role text, perms jsonb, created_at timestamptz, expires_at timestamptz)
+returns table (id uuid, email text, display_name text, role text, perms jsonb, created_at timestamptz, expires_at timestamptz,
+               device_id uuid, device_name text, device_pub jsonb, invite_code text, proof text)
 language plpgsql security definer stable set search_path = public as $$
 begin
   if not is_parent(p_baby) then raise exception 'Only parents can see requests'; end if;
-  return query select r.id, r.email, r.display_name, r.role, r.perms, r.created_at, r.expires_at
-               from join_requests r where r.baby_id = p_baby and r.status = 'pending' and r.expires_at > now() order by r.created_at;
+  return query select r.id, r.email, r.display_name, r.role, r.perms, r.created_at, r.expires_at, r.device_id, d.name, d.pubkey, r.invite_code, r.proof
+               from join_requests r left join devices d on d.id = r.device_id
+               where r.baby_id = p_baby and r.status = 'pending' and r.expires_at > now() order by r.created_at;
 end $$;
 
-create function decide_request(p_id uuid, p_approve boolean, p_role text default null, p_perms jsonb default null) returns void
+-- Approving needs p_grant: the log keys wrapped to the requester's phone ({"wrap_main","wrap_health","auth","tag"}).
+create function decide_request(p_id uuid, p_approve boolean, p_role text default null, p_perms jsonb default null, p_grant jsonb default null) returns void
 language plpgsql security definer set search_path = public as $$
-declare r join_requests; role_ text;
+declare r join_requests; role_ text; perms_ jsonb; vh boolean; ep int;
 begin
   select * into r from join_requests where id = p_id for update;
   if not found or r.status <> 'pending' or r.expires_at < now() then raise exception 'This request is no longer pending'; end if;
   if not is_parent(r.baby_id) then raise exception 'Only parents can decide requests'; end if;
   if p_approve then
     role_ := coalesce(p_role, r.role);
+    perms_ := normalize_perms(role_, coalesce(p_perms, r.perms));
+    vh := role_ = 'parent' or coalesce((perms_ ->> 'view_health')::boolean, false);
+    if p_grant is null or (p_grant ->> 'wrap_main') is null or r.device_id is null then raise exception 'the encryption keys must be shared when approving'; end if;
+    if vh <> ((p_grant ->> 'wrap_health') is not null) then raise exception 'health key must be given exactly to people who may see health notes'; end if;
+    select epoch into ep from babies where id = r.baby_id;
     insert into members (baby_id, user_id, email, display_name, role, perms)
-      values (r.baby_id, r.user_id, r.email, r.display_name, role_, normalize_perms(role_, coalesce(p_perms, r.perms)))
+      values (r.baby_id, r.user_id, r.email, r.display_name, role_, perms_)
       on conflict (baby_id, user_id) do nothing;
+    insert into key_grants (baby_id, grantee, epoch, wrap_main, wrap_health, auth, tag, granted_by)
+      values (r.baby_id, 'd:' || r.device_id::text, ep, p_grant ->> 'wrap_main', p_grant ->> 'wrap_health', p_grant ->> 'auth', p_grant ->> 'tag', auth.uid())
+      on conflict (baby_id, grantee, epoch) do update set wrap_main = excluded.wrap_main, wrap_health = excluded.wrap_health, auth = excluded.auth, tag = excluded.tag;
     update join_requests set status = 'approved' where id = p_id;
     perform log_activity(r.baby_id, 'member_approved', null, null, jsonb_build_object('email', r.email, 'role', role_));
   else
@@ -337,13 +586,14 @@ begin
 end $$;
 
 -- ── entries: the only write path ──────────────────────────────────────────────────────────────
--- Applies a batch of entries. Returns {"denied": [ids]} for rows this person may not write, so the client
--- can restore the server's version. Stale writes (older than what is stored) are ignored silently.
+-- p_rows: [{id, blob, epoch, sensitive, updated, deleted}]. The server cannot read `blob`; it checks who may write,
+-- sizes, and that new content uses the current key epoch. Returns {"denied": [ids], "stale": <current epoch or null>}:
+-- `stale` means the phone has old keys and must fetch the new ones and re-send (nothing is lost).
 create function push_events(p_baby uuid, p_rows jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
-  me uuid := auth.uid(); r jsonb; ex events; denied text[] := '{}';
-  v_id text; v_type text; v_ts bigint; v_end bigint; v_upd bigint; v_del boolean; v_data jsonb; v_note text;
+  me uuid := auth.uid(); r jsonb; ex events; denied text[] := '{}'; stale int := null; cur int;
+  v_id text; v_blob text; v_epoch int; v_sens boolean; v_upd bigint; v_del boolean;
   now_ms bigint := (extract(epoch from clock_timestamp()) * 1000)::bigint; need text; mine boolean;
 begin
   if me is null then raise exception 'not signed in'; end if;
@@ -352,36 +602,36 @@ begin
   if (select count(*) from events where baby_id = p_baby) + jsonb_array_length(p_rows) > 150000 then
     raise exception 'Entry limit reached for this log';
   end if;
+  select epoch into cur from babies where id = p_baby;
 
   for r in select value from jsonb_array_elements(p_rows) loop
-    v_id := r ->> 'id'; v_type := r ->> 'type'; v_note := coalesce(r ->> 'note', ''); v_data := coalesce(r -> 'data', '{}');
-    v_del := coalesce((r ->> 'deleted')::boolean, false);
+    v_id := r ->> 'id'; v_blob := coalesce(r ->> 'blob', '');
     begin
-      v_ts := (r ->> 'ts')::bigint; v_end := (r ->> 'end_ts')::bigint; v_upd := (r ->> 'updated')::bigint;
+      v_epoch := (r ->> 'epoch')::int; v_sens := coalesce((r ->> 'sensitive')::boolean, false);
+      v_upd := (r ->> 'updated')::bigint; v_del := coalesce((r ->> 'deleted')::boolean, false);
     exception when others then
       denied := denied || coalesce(v_id, '?'); continue;
     end;
-    if v_id is null or v_id !~ '^[A-Za-z0-9_-]{1,64}$'
-       or v_type is null or v_type not in ('feed','diaper','sleep','wake','vomit','play','health','med')
-       or v_ts is null or v_upd is null or v_ts < 946684800000 or v_ts > now_ms + 7 * 86400000
-       or (v_end is not null and (v_end < v_ts or v_end > now_ms + 7 * 86400000))
-       or jsonb_typeof(v_data) <> 'object' or octet_length(v_data::text) > 4096 or length(v_note) > 2000 then
+    if v_id is null or v_id !~ '^[A-Za-z0-9_-]{1,64}$' or v_upd is null or v_epoch is null or v_epoch < 1
+       or length(v_blob) > 8192 or (not v_del and length(v_blob) < 24) then
       denied := denied || coalesce(v_id, '?'); continue;
     end if;
-    v_upd := least(v_upd, now_ms + 60000);   -- a phone with a wrong clock can't pin an entry against future edits
+    if v_del then v_blob := ''; end if;
+    v_upd := least(v_upd, now_ms + 60000);   -- a phone with a wrong clock can't pin an entry against later edits
 
     select * into ex from events where baby_id = p_baby and id = v_id for update;
     if not found then
       if v_del then continue; end if;       -- deleting something the server never had: nothing to record
-      if not has_perm(p_baby, 'add_entries') or (v_type in ('health','med') and not has_perm(p_baby, 'view_health')) then
+      if not has_perm(p_baby, 'add_entries') or (v_sens and not has_perm(p_baby, 'view_health')) then
         denied := denied || v_id; continue;
       end if;
-      insert into events (baby_id, id, type, ts, end_ts, data, note, updated, deleted, created_by, updated_by)
-        values (p_baby, v_id, v_type, v_ts, v_end, v_data, v_note, v_upd, false, me, me);
-      perform log_activity(p_baby, 'entry_added', v_id, v_type, jsonb_build_object('at', v_ts));
+      if v_epoch <> cur then stale := cur; continue; end if;
+      insert into events (baby_id, id, blob, epoch, sensitive, updated, deleted, created_by, updated_by)
+        values (p_baby, v_id, v_blob, v_epoch, v_sens, v_upd, false, me, me);
+      perform log_activity(p_baby, 'entry_added', v_id, case when v_sens then 'private' end);
     else
       if v_upd <= ex.updated then continue; end if;
-      if v_type <> ex.type or (ex.type in ('health','med') and not has_perm(p_baby, 'view_health')) then
+      if v_sens <> ex.sensitive or (ex.sensitive and not has_perm(p_baby, 'view_health')) then
         denied := denied || v_id; continue;
       end if;
       mine := ex.created_by = me;
@@ -389,14 +639,15 @@ begin
                    else (case when mine then 'edit_own' else 'edit_others' end) end;
       if v_del and ex.deleted then continue; end if;
       if not has_perm(p_baby, need) then denied := denied || v_id; continue; end if;
-      update events set ts = v_ts, end_ts = v_end, data = v_data, note = v_note, updated = v_upd, deleted = v_del,
+      if not v_del and v_epoch <> cur then stale := cur; continue; end if;
+      update events set blob = v_blob, epoch = case when v_del then ex.epoch else v_epoch end, updated = v_upd, deleted = v_del,
                         updated_by = me, synced_at = clock_timestamp()
         where baby_id = p_baby and id = v_id;
-      perform log_activity(p_baby, case when v_del then 'entry_deleted' else 'entry_edited' end, v_id, v_type,
-                           jsonb_build_object('at', v_ts, 'author', display_of(p_baby, ex.created_by)));
+      perform log_activity(p_baby, case when v_del then 'entry_deleted' else 'entry_edited' end, v_id, case when ex.sensitive then 'private' end,
+                           jsonb_build_object('author', display_of(p_baby, ex.created_by)));
     end if;
   end loop;
-  return jsonb_build_object('denied', to_jsonb(denied));
+  return jsonb_build_object('denied', to_jsonb(denied), 'stale', stale);
 end $$;
 
 -- ── audit log (parents only) ──────────────────────────────────────────────────────────────────
@@ -418,25 +669,31 @@ language plpgsql security definer set search_path = public as $$
 declare me uuid := auth.uid(); b record;
 begin
   if me is null then raise exception 'not signed in'; end if;
-  for b in select baby_id from members where user_id = me and role = 'parent' loop
-    if not exists (select 1 from members where baby_id = b.baby_id and role = 'parent' and user_id <> me) then
-      delete from babies where id = b.baby_id;     -- cascades to events, invites, requests, members, activity
+  for b in select baby_id from members where user_id = me loop
+    if (select role from members where baby_id = b.baby_id and user_id = me) = 'parent'
+       and not exists (select 1 from members where baby_id = b.baby_id and role = 'parent' and user_id <> me) then
+      delete from babies where id = b.baby_id;     -- cascades to events, invites, requests, members, activity, grants
     else
       perform log_activity(b.baby_id, 'left', null, null, jsonb_build_object('person', display_of(b.baby_id, me), 'account_deleted', true));
+      update babies set rotate_needed = true where id = b.baby_id;
     end if;
   end loop;
-  delete from auth.users where id = me;            -- cascades to remaining memberships and requests
+  delete from auth.users where id = me;            -- cascades to remaining memberships, requests and phones
 end $$;
 
+-- ── My account, my requests ───────────────────────────────────────────────────────────────────
 -- ── privileges: clients read three tables and call the functions below; nothing else ──────────
 revoke all on all tables in schema public from anon, authenticated;
 grant select on babies, members, events to authenticated;
 revoke all on all functions in schema public from public, anon, authenticated;
 grant execute on function
   jwt_aal(), is_member(uuid), is_parent(uuid), has_perm(uuid, text),   -- used inside the read policies
-  create_baby(text, date, text), update_baby(uuid, text, date), list_people(uuid), set_display_name(text),
-  set_member(uuid, uuid, text, jsonb), remove_member(uuid, uuid), reset_member_mfa(uuid, uuid),
-  create_invite(uuid, text, jsonb), list_invites(uuid), rescind_invite(text), redeem_invite(text, text),
-  my_requests(), cancel_my_request(uuid), list_requests(uuid), decide_request(uuid, boolean, text, jsonb),
+  register_device(text, jsonb), my_devices(), remove_device(uuid), my_grant(uuid, uuid), get_recovery(uuid), get_keyring(uuid),
+  list_devices(uuid), list_recovery(uuid), grant_device(uuid, uuid, text, text, text, text), set_recovery(uuid, jsonb, text, text, text, text),
+  rotate_keys(uuid, int, jsonb, text, text, text, text),
+  create_baby(text, text, uuid, jsonb, jsonb, text, jsonb, uuid, text), update_baby(uuid, text, int), list_people(uuid), set_display_name(text),
+  set_member(uuid, uuid, text, jsonb, jsonb), remove_member(uuid, uuid), reset_member_mfa(uuid, uuid),
+  create_invite(uuid, text, jsonb), list_invites(uuid), rescind_invite(text), redeem_invite(text, text, uuid, text),
+  my_requests(), cancel_my_request(uuid), list_requests(uuid), decide_request(uuid, boolean, text, jsonb, jsonb),
   push_events(uuid, jsonb), activity_log(uuid, int, bigint), delete_my_account()
 to authenticated;

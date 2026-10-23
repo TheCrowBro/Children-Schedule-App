@@ -317,15 +317,15 @@ function openSheet(type, ev) {
     <label class="f">${type === 'sleep' ? 'Fell asleep at' : 'Time'}</label><input id="ts" type="datetime-local" value="${toLocalInput(defTs)}">
     <div class="mini">${[5, 15, 30, 60].map(m => `<button type="button" data-ago="${m}">${m < 60 ? m + ' min' : '1 hr'} ago</button>`).join('')}<button type="button" data-ago="0">Now</button></div>
     ${body}
-    <label class="f">Note (optional)</label><textarea id="note" rows="2" placeholder="Anything worth remembering">${esc(ev ? ev.note : '')}</textarea>
+    <label class="f">Note (optional)</label><textarea id="note" rows="2" maxlength="1000" placeholder="Anything worth remembering">${esc(ev ? ev.note : '')}</textarea>
     <div class="row" style="margin-top:16px">${editing && Sync.can('delete', ev) ? '<button class="btn d" id="del">Delete</button>' : ''}<button class="btn" id="cancel">Cancel</button><button class="btn p" id="save">Save</button></div>`;
   $('#sheet').hidden = $('#sheetBack').hidden = false;
 
   const S = $('#sheet'), checked = n => S.querySelector(`[name=${n}]:checked`);
   const val = n => { const c = checked(n); return c ? c.value : ''; };
   const sync = () => {
-    if (type === 'feed') { const b = val('kind') === 'bottle'; $('#fBreast').hidden = b; $('#fBottle').hidden = !b; }
-    if (type === 'diaper') $('#dColor').hidden = !checked('poo');
+    if (type === 'feed' && $('#fBreast')) { const b = val('kind') === 'bottle'; $('#fBreast').hidden = b; $('#fBottle').hidden = !b; }
+    if (type === 'diaper' && $('#dColor')) $('#dColor').hidden = !checked('poo');
   };
   S.onchange = sync; sync();
   S.querySelectorAll('[data-ago]').forEach(b => b.onclick = () => { $('#ts').value = toLocalInput(Date.now() - b.dataset.ago * MIN); });
@@ -387,7 +387,7 @@ Lock.onChange = () => render();
 Sync.onSessionLost = () => Acct.sessionLost();
 (async () => {
   if (Native.is) {
-    await Promise.all([Auth.init(), Cloud.init()]);   // secrets come from the Keychain / Keystore
+    await Promise.all([Auth.init(), Cloud.init(), Acct.init()]);   // secrets come from the Keychain / Keystore
     await Lock.init();
   }
   render();                                            // the gate decides what to show: sign-in, two-step check, lock, or the app

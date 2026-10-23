@@ -9,8 +9,8 @@ once, then fill in `config.js` (all values are public client IDs, not secrets) a
 
 ## 1. Supabase project (free tier is fine)
 1. Create a project at <https://supabase.com>.
-2. **SQL Editor** → paste and run [`supabase/schema.sql`](supabase/schema.sql). This is version 2 (roles, permissions,
-   approvals, audit log). If you ran an earlier version, drop its tables first; there is no data migration.
+2. **SQL Editor** → paste and run [`supabase/schema.sql`](supabase/schema.sql). This is version 3 (end-to-end encryption, roles,
+   permissions, approvals, audit log). If you ran an earlier version, drop its tables first; there is no data migration.
 3. **Project Settings → API**: copy the *Project URL* and *anon public* key into `supabaseUrl` / `supabaseKey`.
 
 ### Lock down sign-in (dashboard settings)
@@ -70,12 +70,49 @@ npm test          # database rules + end-to-end (needs postgres, playwright + ch
   real TOTP: sign-in, CAPTCHA, MFA, invites, QR scan with a fake camera, approvals, every permission, the audit log,
   app lock, secure-storage, backups, account deletion, sign-out-everywhere.
 
-## 5. Privacy and what is *not* protected
-* Entries are stored in your Supabase project, readable only by approved members (and, for health notes, only those
-  with that permission). They are **not** end-to-end encrypted in Supabase, so whoever administers the project can read them.
-  Cloud *backups* are encrypted.
-* Sign-in tokens, cloud tokens and the backup passphrase are in the iOS Keychain / Android Keystore. The local copy of the
-  log is in the app's private storage (protected by the phone's own encryption, excluded from device backups, and behind the
-  app lock), but it is not separately encrypted with a Keystore key.
-* Signing out clears the log from the phone.
+## 5. End-to-end encryption: what it protects, and what it doesn't
+
+**The server can't read the baby's data.** The baby's name and birthday, and every entry's type, time, contents and notes, are encrypted
+on the phones (AES-256-GCM) before they are uploaded. Supabase, its staff, and anyone who breaches your database see only ciphertext.
+Cloud *backups* are separately encrypted with your passphrase.
+
+**How the keys work** (see the top of `e2ee.js` for the full design)
+* Each log has a **main key** and a separate **health key**. The health key (health notes and medication) goes only to people allowed
+  to see health notes; without it that data is mathematically unreadable to them, on top of the database refusing to send it.
+* Each phone has its own key pair, kept in the Keychain / Keystore. The log's keys are stored on the server only as copies **wrapped to
+  each approved phone**; the server cannot open them.
+* **Joining:** a QR invite carries a secret the server never sees. It lets the joiner prove their phone's key and lets the parent
+  authenticate the keys they hand back, so a malicious server cannot swap in its own. If someone types the code instead of scanning,
+  the parent compares a security code with them before approving. A "log security code" in the Family tab lets everyone confirm they share the same keys.
+* **New phone for an existing person:** it shows a security code; a parent (or their other phone) compares it and approves it. Nobody
+  can add a phone just by having a stolen email code: keys only come from someone who already holds them.
+* **Recovery code:** shown once when the log is created, never stored anywhere. If you lose every phone, it restores your access.
+  Parents can create a new one at any time (Family → Encryption).
+* **Key changes:** when someone is removed or leaves, a phone is removed, or someone loses health access, a parent's phone creates new keys
+  and sends them only to the remaining phones. That person's old keys can't open anything written afterwards, even with help from the server.
+  Older entries stay readable through an encrypted key history.
+
+**Protections against a dishonest server** (all covered by tests that play the attacker)
+* *Substituted keys.* Anyone can wrap keys to a phone's public key, so every grant is authenticated: a QR joiner requires the inviting parent's proof (a stripped
+  proof is rejected too), and a key change must carry a MAC under keys the phone already trusts, or the phone ignores it. The health key must match a fingerprint
+  signed with the main key, so a made-up health key is refused.
+* *Added phones.* A rotating parent only re-wraps keys to phones whose grant carries a MAC from a real key holder, so a stolen sign-in or a phone slipped in by the
+  server never receives keys.
+* *Rearranged or forged data.* Each ciphertext is bound to its entry, key epoch and key class: swapped, moved or mis-classed entries fail authentication. Entries
+  seal their own edit time and author, so the server can't pass an old version off as new or mislabel who wrote it.
+* A health note planted by someone without the health key (encrypted with the main key) is rejected by every phone.
+
+**What the server still sees:** account emails and display names, who has which role and permission, which phones belong to whom (public keys only),
+that someone wrote an entry, who, and when it was uploaded, entry counts and sizes, and whether an entry is in the private health class.
+(That last flag lets the database enforce the "see health notes" permission as well; it does not say what the entry is.) The parents-only
+activity log therefore says "added an entry" or "added a private (health) entry", never what it was.
+
+**What encryption can't do**
+* It can't stop a malicious server from *withholding*, deleting or replaying data. It can detect rearranged or forged entries and ignores them.
+* A person who legitimately had access keeps whatever they already downloaded (and the old keys); only future data is protected.
+* **Lose every phone and the recovery code and the data is gone for good.** There is no back door. That is the point.
+* The local copy of the log on each phone is in the app's private storage (protected by the phone's encryption, excluded from device backups,
+  behind the app lock) but is not separately encrypted with a Keystore key.
+* Sign-in tokens, cloud tokens, the backup passphrase, the phone's private key and the log keys are in the iOS Keychain / Android Keystore.
+  Signing out clears the log from the phone but leaves the keys there, so you can sign back in; deleting your account erases them.
 * Third-party code in `vendor/`: qrcode-generator (MIT) and jsQR (Apache-2.0).

@@ -34,6 +34,8 @@ npm test            # database + end-to-end tests
   phone has a screen lock; the screen is covered in the app switcher.
 * **Strict CSP**, no web storage for secrets, Android auto-backup disabled, native HTTP.
 * **Two-step verification** (TOTP) required for parents, optional for others; CAPTCHA at sign-in when configured.
+* **End-to-end encryption** with per-phone keys, a recovery code and key rotation (see [SETUP.md](SETUP.md) §5). Test the whole key flow on two real phones:
+  create a log, scan an invite, approve a second phone, remove a phone, and restore with the recovery code.
 
 ## Android release
 ```bash
@@ -55,8 +57,8 @@ sort out signing.
 * Cloud backups encrypted on the phone.
 
 ## Still needed from you for the stores
-* A **privacy policy** URL covering: email address, children's health-related entries, who can see them (roles), the activity log,
-  Supabase as processor, and how to delete everything.
+* A **privacy policy** URL covering: email address, children's health-related entries (end-to-end encrypted; the provider cannot read them), who can see them (roles),
+  the activity log, Supabase as processor, and how to delete everything. Say plainly that a lost recovery code means unrecoverable data.
 * Store listing, screenshots, content rating, *App Privacy* (Apple) / *Data safety* (Google): email + health/fitness-type data entered by
   the user; no tracking, no ads.
 * Apple reviews web-wrapper apps strictly (guideline 4.2). Camera scanning, biometrics, Keychain, native sharing and offline use help;
