@@ -22,6 +22,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Little Log uses Face ID to keep your baby's log private when you open the app.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Little Log uses the camera only to scan a family member's invite QR code.</string>
 	<!-- ll:schemes:begin (managed by scripts/native-config.js) -->

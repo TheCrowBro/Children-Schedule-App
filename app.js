@@ -102,9 +102,9 @@ function render() {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   const s = activeSleep(), bn = $('#sleepBanner');
   bn.hidden = !s;
-  if (s) { bn.innerHTML = `<span>😴 Asleep since ${fmtTime(s.ts)} (${fmtDur((Date.now() - s.ts) / MIN)})</span><button id="wakeBtn">Woke up</button>`; $('#wakeBtn').onclick = () => { if (!Sync.canEdit()) return toast('View-only access'); s.end = Date.now(); s.updated = Date.now(); save(); render(); toast('Sleep saved'); }; }
+  if (s) { bn.innerHTML = `<span>😴 Asleep since ${fmtTime(s.ts)} (${fmtDur((Date.now() - s.ts) / MIN)})</span><button id="wakeBtn">Woke up</button>`; $('#wakeBtn').onclick = () => { if (!Sync.can('edit', s)) return toast("You can't change this entry"); s.end = Date.now(); s.updated = Date.now(); save(); render(); toast('Sleep saved'); }; }
   $('#view').innerHTML = { day: dayView, month: monthView, stats: statsView, family: Acct.familyHtml, more: moreView }[tab]();
-  bind();
+  bind(); Acct.updateBadge();
 }
 
 function dayView() {
@@ -123,16 +123,18 @@ function dayView() {
     <button data-nav="1" aria-label="Next day" ${isToday ? 'disabled' : ''}>›</button></div>
   ${quickButtons()}
   <div class="summary">${pills}</div>
-  ${evs.length ? evs.map(evRow).join('') : `<div class="empty">Nothing logged yet.${Sync.canEdit() ? '<br>Tap a button above to add an entry.' : ''}</div>`}`;
+  ${evs.length ? evs.map(evRow).join('') : `<div class="empty">Nothing logged yet.${Sync.can('add') ? '<br>Tap a button above to add an entry.' : ''}</div>`}`;
 }
-const quickButtons = () => Sync.canEdit()
-  ? `<div class="quick" style="margin-bottom:10px">${Object.entries(TYPES).map(([k, t]) => `<button data-add="${k}"><b>${t.icon}</b>${t.label}</button>`).join('')}</div>` : '';
+const quickButtons = () => Sync.can('add')
+  ? `<div class="quick" style="margin-bottom:10px">${Object.entries(TYPES).filter(([k]) => Sync.can('health') || (k !== 'health' && k !== 'med')).map(([k, t]) => `<button data-add="${k}"><b>${t.icon}</b>${t.label}</button>`).join('')}</div>` : '';
+/** "added by Dad" – only when the log is shared and the person is known. */
+const byLine = e => { const n = Sync.linked() && e.by ? Sync.nameOf(e.by) : ''; return n && n !== 'you' ? `<small>added by ${esc(n)}</small>` : ''; };
 function evRow(e) {
   const [a, b] = describe(e), t = TYPES[e.type];
   const warn = e.type === 'health' && (e.data.symptoms || []).some(s => URGENT.includes(s));
   return `<div class="card ev ${warn ? 'alert' : ''}" style="--c:${t.color}" data-edit="${e.id}">
     <div class="t">${fmtTime(e.ts)}</div>
-    <div class="b">${t.icon} <b>${esc(a)}</b>${b ? `<small>${esc(b)}</small>` : ''}${e.note ? `<small>“${esc(e.note)}”</small>` : ''}</div></div>`;
+    <div class="b">${t.icon} <b>${esc(a)}</b>${b ? `<small>${esc(b)}</small>` : ''}${e.note ? `<small>“${esc(e.note)}”</small>` : ''}${byLine(e)}</div></div>`;
 }
 function ageText(day) {
   if (!db.baby.birth) return '';
@@ -235,13 +237,13 @@ function moreView() {
     <div class="row"><button class="btn" id="impJson">Restore from JSON</button></div>
     <input type="file" id="impFile" accept="application/json" hidden></div>
   <div class="card"><b>Install</b><p class="note">Open this page in your phone browser and choose “Add to Home Screen” – it then works like an app, even offline.</p></div>
-  ${Sync.canEdit() ? '<div class="card"><button class="btn d" id="wipe" style="width:100%">Delete all entries</button></div>' : ''}`;
+  ${Sync.isParent() ? '<div class="card"><button class="btn d" id="wipe" style="width:100%">Delete all entries</button></div>' : ''}`;
 }
 
 // ---------- Bindings ----------
 function bind() {
   document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => openSheet(b.dataset.add));
-  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => Sync.canEdit() ? openSheet(null, db.events.find(e => e.id === b.dataset.edit)) : toast('View-only access'));
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.edit); Sync.can('edit', ev) ? openSheet(null, ev) : toast(`You can't change entries${ev && ev.by ? ' added by ' + (Sync.nameOf(ev.by) || 'someone else') : ''}`); });
   document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { viewDay = addDays(viewDay, +b.dataset.nav); render(); });
   document.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { viewDay = +b.dataset.day; render(); });
   document.querySelectorAll('[data-month]').forEach(b => b.onclick = () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + +b.dataset.month, 1); render(); });
@@ -252,8 +254,7 @@ function bind() {
 $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.tab; if (tab === 'month') calMonth = new Date(viewDay); render(); window.scrollTo(0, 0); } };
 
 function bindMore() {
-  const ro = !Sync.canEdit();
-  $('#bName').disabled = $('#bBirth').disabled = ro;
+  $('#bName').disabled = $('#bBirth').disabled = !Sync.can('profile');
   $('#bName').onchange = e => { db.baby.name = e.target.value.trim(); Sync.linked() ? Sync.pushBaby() : save(); render(); };
   $('#bBirth').onchange = e => { db.baby.birth = e.target.value; Sync.linked() ? Sync.pushBaby() : save(); toast('Saved'); };
   $('#expJson').onclick = () => download('little-log-backup.json', JSON.stringify({ app: 'littlelog', v: 1, baby: db.baby, events: db.events }, null, 2), 'application/json');
@@ -271,7 +272,7 @@ function bindMore() {
     catch (err) { toast(err.message && err.message.startsWith('That file') ? err.message : 'That file is not a valid backup'); }
     e.target.value = '';
   };
-  $('#wipe').onclick = () => {
+  if ($('#wipe')) $('#wipe').onclick = () => {
     const shared = Sync.linked() ? ' This also deletes them for everyone sharing this log.' : '';
     if (confirm('Delete ALL entries?' + shared + ' This cannot be undone.') && confirm('Really delete everything?')) { [...db.events].forEach(removeEvent); save(); render(); }
   };
@@ -288,9 +289,10 @@ const radios = (name, opts, cur, cls) => `<div class="chips">${opts.map(o => chi
 const num = (id, v, ph, step = 1) => `<input id="${id}" type="number" inputmode="decimal" min="0" step="${step}" value="${v ?? ''}" placeholder="${ph}">`;
 
 function openSheet(type, ev) {
-  if (!Sync.canEdit()) return toast('View-only access');
   const editing = !!ev;
   type = ev ? ev.type : type;
+  if (editing ? !Sync.can('edit', ev) : !Sync.can('add')) return toast("You don't have permission to do that");
+  if ((type === 'health' || type === 'med') && !Sync.can('health')) return toast("You don't have access to health notes");
   const d = (ev && ev.data) || {}, T = TYPES[type];
   // New entries default to now, or to noon of the viewed day when browsing past days.
   const defTs = ev ? ev.ts : (viewDay === startOfDay(Date.now()) ? Date.now() : viewDay + 12 * 60 * MIN);
@@ -316,7 +318,7 @@ function openSheet(type, ev) {
     <div class="mini">${[5, 15, 30, 60].map(m => `<button type="button" data-ago="${m}">${m < 60 ? m + ' min' : '1 hr'} ago</button>`).join('')}<button type="button" data-ago="0">Now</button></div>
     ${body}
     <label class="f">Note (optional)</label><textarea id="note" rows="2" placeholder="Anything worth remembering">${esc(ev ? ev.note : '')}</textarea>
-    <div class="row" style="margin-top:16px">${editing ? '<button class="btn d" id="del">Delete</button>' : ''}<button class="btn" id="cancel">Cancel</button><button class="btn p" id="save">Save</button></div>`;
+    <div class="row" style="margin-top:16px">${editing && Sync.can('delete', ev) ? '<button class="btn d" id="del">Delete</button>' : ''}<button class="btn" id="cancel">Cancel</button><button class="btn p" id="save">Save</button></div>`;
   $('#sheet').hidden = $('#sheetBack').hidden = false;
 
   const S = $('#sheet'), checked = n => S.querySelector(`[name=${n}]:checked`);
@@ -330,7 +332,7 @@ function openSheet(type, ev) {
   const en = S.querySelector('[data-endnow]'); if (en) en.onclick = () => { $('#end').value = toLocalInput(Date.now()); };
   const close = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; };
   $('#sheetBack').onclick = $('#cancel').onclick = close;
-  if (editing) $('#del').onclick = () => { if (confirm('Delete this entry?')) { removeEvent(ev); save(); close(); render(); toast('Deleted'); } };
+  if ($('#del')) $('#del').onclick = () => { if (confirm('Delete this entry?')) { removeEvent(ev); save(); close(); render(); toast('Deleted'); } };
   $('#save').onclick = () => {
     const ts = fromLocalInput($('#ts').value);
     if (!ts) return toast('Please pick a time');
@@ -352,7 +354,7 @@ function openSheet(type, ev) {
     }
     if (type === 'med') { data = { name: $('#mname').value.trim(), dose: $('#mdose').value.trim() }; if (!data.name) return toast('Enter a name'); }
     if (type === 'sleep' && !end) { const cur = activeSleep(); if (cur && cur !== ev) return toast('Already sleeping – tap “Woke up” first'); }
-    const rec = ev || { id: uid(), type };
+    const rec = ev || { id: uid(), type, by: Auth.id || undefined };
     Object.assign(rec, { ts, data, note: $('#note').value.trim(), updated: Date.now() });
     if (type === 'sleep') { if (end) rec.end = end; else delete rec.end; }
     if (!ev) db.events.push(rec);
@@ -361,7 +363,6 @@ function openSheet(type, ev) {
   };
 }
 
-if (!Native.is && 'serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 setInterval(() => { if (activeSleep() && tab === 'day') render(); }, 60000);
 
 // Re-render after a background sync, unless the user is in the middle of typing.
@@ -382,14 +383,16 @@ Native.onBack(() => {
   if (tab !== 'day') { tab = 'day'; render(); return true; }
   return false;
 });
-render();
+Lock.onChange = () => render();
+Sync.onSessionLost = () => Acct.sessionLost();
 (async () => {
-  const m = await Cloud.handleRedirect();
-  if (m) { tab = 'more'; render(); toast(m); }
-  if (Auth.configured && Auth.signedIn) {
-    try { await Sync.loadMemberships(); if (!db.meta.babyId && Sync.st.memberships.length) Sync.choose(Sync.st.memberships[0].id); } catch (e) {}
-    await Acct.processPending();
-    Sync.start(); render();
-    Cloud.autoBackup();
+  if (Native.is) {
+    await Promise.all([Auth.init(), Cloud.init()]);   // secrets come from the Keychain / Keystore
+    await Lock.init();
   }
+  render();                                            // the gate decides what to show: sign-in, two-step check, lock, or the app
+  if (!Native.is) return;
+  const launch = await Native.launchUrl();             // app opened from an invite link
+  if (launch) { const m = await Cloud.handleOAuthUrl(launch); if (!m) Acct.receiveJoin(launch); }
+  if (Auth.configured && Auth.signedIn) { await Acct.refreshAuth(); Cloud.autoBackup(); }
 })();

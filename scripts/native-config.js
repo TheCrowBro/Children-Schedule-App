@@ -1,13 +1,13 @@
 // Registers the app's custom URL schemes in the native projects (idempotent). The OS uses them to hand the app
 // back control after cloud sign-in (Dropbox / OneDrive / Google) and for invite links.
-// Reads config.js: appScheme, plus Google's reverse-client-id scheme when googleNativeClientId is set.
+// Reads config.js: appScheme, plus Google's reverse-client-id scheme when googleClientId is set.
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const root = path.join(__dirname, '..');
 const sandbox = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(root, 'config.js'), 'utf8'), sandbox);
 const cfg = sandbox.window.LL_CONFIG || {};
 const schemes = [cfg.appScheme || 'app.littlelog.newborn'];
-if (cfg.googleNativeClientId) schemes.push('com.googleusercontent.apps.' + cfg.googleNativeClientId.replace('.apps.googleusercontent.com', ''));
+if (cfg.googleClientId) schemes.push('com.googleusercontent.apps.' + cfg.googleClientId.replace('.apps.googleusercontent.com', ''));
 
 function patch(file, build) {
   const f = path.join(root, file);

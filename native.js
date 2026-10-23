@@ -1,26 +1,49 @@
 'use strict';
-/* Thin wrapper over Capacitor plugins so the rest of the app can stay plain web code.
-   In a normal browser `Native.is` is false and nothing here is used. */
+/* The phone-app layer. The product only runs inside the native app (Capacitor); in a browser the app shows a
+   "get the app" screen. Plugins come from native-plugins.js (window.LLPlugins). */
 const Native = (() => {
   const cap = window.Capacitor, CFG = window.LL_CONFIG || {};
   const is = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
-  const plug = n => cap.Plugins[n];
+  const P = () => window.LLPlugins || {};
+  let secureReady = null;
+  const prep = () => secureReady || (secureReady = (async () => {
+    const S = P().SecureStorage;
+    // Keychain items stay on this device only (no iCloud Keychain sync) and are readable only while unlocked.
+    try { await S.setSynchronize(false); await S.setDefaultKeychainAccess(P().KeychainAccess.whenUnlockedThisDeviceOnly); } catch (e) {}
+  })());
   return {
     is,
     platform: is ? cap.getPlatform() : 'web',
     /** URL scheme the OS routes back to this app (registered in AndroidManifest / Info.plist). */
     scheme: CFG.appScheme || 'app.littlelog.newborn',
-    openUrl: url => plug('Browser').open({ url }),
-    closeBrowser: () => plug('Browser').close().catch(() => {}),
-    onUrl(cb) { if (is) plug('App').addListener('appUrlOpen', e => cb(e.url)); },
+    openUrl: url => P().Browser.open({ url }),
+    closeBrowser: () => Promise.resolve(P().Browser.close()).catch(() => {}),
+    onUrl(cb) { if (is) P().App.addListener('appUrlOpen', e => cb(e.url)); },
     /** Android back button: return true from cb if it handled the press. */
-    onBack(cb) { if (is) plug('App').addListener('backButton', () => { if (!cb()) plug('App').exitApp(); }); },
+    /** URL the app was launched with (cold start from a link), or null. */
+    async launchUrl() { if (!is) return null; try { const r = await P().App.getLaunchUrl(); return (r && r.url) || null; } catch (e) { return null; } },
+    onBack(cb) { if (is) P().App.addListener('backButton', () => { if (!cb()) P().App.exitApp(); }); },
+    onAppState(cb) { if (is) P().App.addListener('appStateChange', e => cb(e.isActive)); },
     /** Write a text file and open the OS share sheet (Save to Files / iCloud Drive / Drive / email …). */
     async saveFile(name, text) {
       const dir = 'CACHE';
-      await plug('Filesystem').writeFile({ path: name, data: text, directory: dir, encoding: 'utf8' });
-      const { uri } = await plug('Filesystem').getUri({ path: name, directory: dir });
-      await plug('Share').share({ title: name, url: uri, dialogTitle: 'Save or share' });
+      await P().Filesystem.writeFile({ path: name, data: text, directory: dir, encoding: 'utf8' });
+      const { uri } = await P().Filesystem.getUri({ path: name, directory: dir });
+      await P().Share.share({ title: name, url: uri, dialogTitle: 'Save or share' });
+    },
+    /** iOS Keychain / Android Keystore-backed storage for secrets (sign-in tokens, backup passphrase, cloud tokens). */
+    Secure: {
+      async get(k) { await prep(); try { const v = await P().SecureStorage.get(k); return v == null ? null : String(v); } catch (e) { return null; } },
+      async set(k, v) { await prep(); await P().SecureStorage.set(k, String(v)); },
+      async remove(k) { await prep(); try { await P().SecureStorage.remove(k); } catch (e) {} },
+    },
+    /** Face ID / fingerprint, with the device passcode as fallback. */
+    Biometric: {
+      async available() { try { const r = await P().BiometricAuth.checkBiometry(); return !!(r.isAvailable || r.deviceIsSecure); } catch (e) { return false; } },
+      async authenticate(reason) {
+        try { await P().BiometricAuth.authenticate({ reason, cancelTitle: 'Cancel', allowDeviceCredential: true, iosFallbackTitle: 'Use passcode', androidTitle: 'Little Log', androidSubtitle: reason }); return true; }
+        catch (e) { return false; }
+      },
     },
   };
 })();

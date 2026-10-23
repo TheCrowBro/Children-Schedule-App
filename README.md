@@ -1,29 +1,25 @@
 # Little Log – newborn tracker
 
-A simple, offline-first web app for tracking a newborn's day: feeds, pee/poo, sleep, night wakings,
-vomit, play, health observations and medication — with a calendar and easy-to-read stats.
-
-## Run
-No build step or dependencies. Open `index.html`, or serve the folder (needed for install/offline):
-
-    python3 -m http.server 8000
-
-Then open it on your phone and choose **Add to Home Screen**.
+A **phone app** (Android and iOS; Windows and Mac later) for tracking a newborn's day: feeds, pee/poo, sleep, night wakings,
+vomit, play, health observations and medication, with a calendar and easy-to-read stats. Built with plain web code wrapped by Capacitor.
 
 ## Features
-- **Day view** – one-tap entry buttons, tick-box chips, time defaults to now with "5 min ago" shortcuts; tap any entry to edit/delete
-- **Sleep timer** – start sleep, tap "Woke up" later
-- **Month calendar** – coloured dots show what was logged each day
-- **Stats (7/14/30 days)** – feeds/day and gap between feeds, wet/dirty diapers, poo colours, sleep totals and longest stretch, night wakings, vomit, play, health-note counts
-- **Health checklist** – blue hands/feet, clicking joints, belly bulge, jaundice, etc.; urgent items trigger a "call your doctor" prompt
-- **Backup/restore (JSON), CSV export** for sharing with a pediatrician
-- **Email sign-in** (one-time code, no password), **family sync** across phones, and **QR-code invites** for partners and
-  relatives (caregiver = can log, or view-only). Owner can remove people.
+- **Day view**: one-tap entry buttons, tick-box chips, time defaults to now with "5 min ago" shortcuts; tap an entry to edit/delete
+- **Sleep timer**, **month calendar** with coloured dots, **stats** (7/14/30 days)
+- **Health checklist** (blue hands/feet, clicking hips, belly bulge, jaundice…) with "call your doctor" prompts
+- **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters* and *Friends*; per-person check boxes for exactly what
+  they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**. Parents get a private **activity log** of who did what.
+- **Locked-down accounts**: email one-time code + security check (CAPTCHA), **two-step verification** (required for parents), Face ID / fingerprint
+  **app lock**, secrets in the **Keychain / Keystore**, "sign out everywhere", in-app account deletion
 - **Encrypted cloud backup** to Google Drive, Dropbox, OneDrive, or iCloud Drive / Files
-- Works offline; changes sync when you're back online. Without setup, all data stays on the device (localStorage)
+- Works offline; changes sync when you're back online
 
-- **Android and iOS apps** (Capacitor wrapper around this same code): see **[MOBILE.md](MOBILE.md)**
-
-See **[SETUP.md](SETUP.md)** to enable sign-in, sync and cloud backup.
+## Build and test
+```bash
+npm install && npm run sync     # then npm run android / npm run ios / npm run apk
+npm test                        # database rules + end-to-end tests
+```
+- **[SETUP.md](SETUP.md)**: Supabase, sign-in hardening, roles and permissions, cloud providers, privacy notes
+- **[MOBILE.md](MOBILE.md)**: building and releasing the Android and iOS apps, store checklist
 
 *Not medical advice.*

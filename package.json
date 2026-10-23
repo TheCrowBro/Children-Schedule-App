@@ -10,18 +10,26 @@
     "ios": "npm run sync && cap open ios",
     "apk": "npm run sync && cd android && ./gradlew assembleDebug",
     "aab": "npm run sync && cd android && ./gradlew bundleRelease",
-    "icons": "node scripts/make-icons.js && npx @capacitor/assets generate"
+    "icons": "node scripts/make-icons.js && npx @capacitor/assets generate",
+    "test": "node tests/db.test.js && node tests/e2e.test.js",
+    "test:db": "node tests/db.test.js",
+    "test:e2e": "node tests/e2e.test.js"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^10.0.0",
+    "@aparajita/capacitor-secure-storage": "^8.0.1",
     "@capacitor/app": "^8.1.2",
     "@capacitor/browser": "^8.0.5",
     "@capacitor/core": "^8.5.3",
     "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/keyboard": "^8.0.6",
     "@capacitor/share": "^8.0.3"
   },
   "devDependencies": {
     "@capacitor/android": "^8.5.3",
     "@capacitor/cli": "^8.5.3",
-    "@capacitor/ios": "^8.5.3"
+    "@capacitor/ios": "^8.5.3",
+    "esbuild": "^0.28.2",
+    "pg": "^8.23.1"
   }
 }

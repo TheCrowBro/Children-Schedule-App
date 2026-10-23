@@ -43,5 +43,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- QR-code scanner for family invites -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Fingerprint / face unlock for the app lock -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>
