@@ -1,0 +1,9 @@
+{
+  "name": "Little Log – Newborn Tracker",
+  "short_name": "Little Log",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f5f6fb",
+  "theme_color": "#5b7cfa",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
