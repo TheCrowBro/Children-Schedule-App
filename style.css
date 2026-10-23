@@ -11,7 +11,7 @@ main{max-width:640px;margin:0 auto;padding:0 16px}
 .banner{margin-top:8px;background:var(--sleep);color:#fff;border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .banner button{background:#fff;color:var(--sleep);border:0;border-radius:8px;padding:6px 12px;font-weight:700}
 .tabs{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-.tabs button{flex:1;background:none;border:0;color:var(--mute);padding:8px 0 10px;font-size:12px;display:flex;flex-direction:column;align-items:center}
+.tabs button{flex:1;min-width:0;background:none;border:0;color:var(--mute);padding:8px 0 10px;font-size:12px;display:flex;flex-direction:column;align-items:center}
 .tabs button span{font-size:20px}.tabs .on{color:var(--brand);font-weight:700}
 .datenav{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
 .datenav button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;width:44px;height:44px;font-size:18px}
@@ -63,3 +63,13 @@ main{max-width:640px;margin:0 auto;padding:0 16px}
 .mini{display:flex;gap:6px;margin-top:6px}.mini button{padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--mute);font-size:13px}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:99px;z-index:9;font-size:14px}
 [hidden]{display:none!important}
+.gated .tabs{display:none}
+#syncLine{min-height:0;margin-top:2px}#syncLine:empty{display:none}
+.scan video{width:100%;border-radius:12px;background:#000;aspect-ratio:1;object-fit:cover}
+.invite{text-align:center;margin-top:14px}
+.qr{background:#fff;border-radius:12px;padding:8px;width:min(260px,70vw);margin:0 auto}.qr svg{display:block;width:100%;height:auto}
+.invite .code{font:700 26px/1.2 ui-monospace,Menlo,monospace;letter-spacing:.12em;margin:10px 0}
+.stat .btns{display:flex;gap:6px;flex-shrink:0}
+input[type=email],input[type=text],input[type=date],input[type=password]{font:inherit}
+.card input[type=email],.card input[type=text],.card input[type=password],.card input[type=date]{width:100%;padding:10px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.chip.on-card input:checked+span{background:var(--brand)}

@@ -28,10 +28,25 @@ const WAKE_WHY = ['Hungry', 'Diaper', 'Gas / fussy', 'Unknown'];
 const KEY = 'littlelog.v1';
 let db = load();
 function load() {
-  try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && Array.isArray(d.events)) return d; } catch (e) {}
-  return { baby: { name: '', birth: '' }, events: [] };
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  if (!d || !Array.isArray(d.events)) d = { baby: { name: '', birth: '' }, events: [] };
+  d.baby = d.baby || { name: '', birth: '' };
+  d.deleted = d.deleted || [];   // tombstones: deletions waiting to sync
+  d.meta = d.meta || {};         // babyId, role, sync cursors
+  const now = Date.now();
+  d.events.forEach(e => { if (!e.updated) e.updated = now; });   // entries from before sync existed
+  return d;
 }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { toast('Could not save – storage full or blocked'); } }
+// `quiet` saves skip scheduling a sync (used by the sync engine itself).
+function save(quiet) {
+  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { toast('Could not save – storage full or blocked'); }
+  if (!quiet) Sync.schedule();
+}
+function removeEvent(ev) {
+  db.events = db.events.filter(x => x !== ev);
+  db.deleted.push({ id: ev.id, type: ev.type, ts: ev.ts, updated: Date.now() });
+}
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 // ---------- Helpers ----------
@@ -80,11 +95,15 @@ const activeSleep = () => db.events.find(e => e.type === 'sleep' && !e.end);
 // ---------- Rendering ----------
 function render() {
   $('#title').textContent = db.baby.name ? `${db.baby.name}'s Log` : 'Little Log';
+  const g = Acct.gate();
+  document.body.classList.toggle('gated', !!g);
+  if (g) { $('#sleepBanner').hidden = true; $('#syncLine').textContent = ''; $('#view').innerHTML = g.html; g.bind(); return; }
+  $('#syncLine').textContent = Acct.syncLine();
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   const s = activeSleep(), bn = $('#sleepBanner');
   bn.hidden = !s;
-  if (s) { bn.innerHTML = `<span>😴 Asleep since ${fmtTime(s.ts)} (${fmtDur((Date.now() - s.ts) / MIN)})</span><button id="wakeBtn">Woke up</button>`; $('#wakeBtn').onclick = () => { s.end = Date.now(); save(); render(); toast('Sleep saved'); }; }
-  $('#view').innerHTML = { day: dayView, month: monthView, stats: statsView, more: moreView }[tab]();
+  if (s) { bn.innerHTML = `<span>😴 Asleep since ${fmtTime(s.ts)} (${fmtDur((Date.now() - s.ts) / MIN)})</span><button id="wakeBtn">Woke up</button>`; $('#wakeBtn').onclick = () => { if (!Sync.canEdit()) return toast('View-only access'); s.end = Date.now(); s.updated = Date.now(); save(); render(); toast('Sleep saved'); }; }
+  $('#view').innerHTML = { day: dayView, month: monthView, stats: statsView, family: Acct.familyHtml, more: moreView }[tab]();
   bind();
 }
 
@@ -102,10 +121,12 @@ function dayView() {
   <div class="datenav"><button data-nav="-1" aria-label="Previous day">‹</button>
     <div class="d">${isToday ? 'Today' : fmtDate(viewDay)}<small>${isToday ? fmtDate(viewDay) : ''}${ageText(viewDay)}</small></div>
     <button data-nav="1" aria-label="Next day" ${isToday ? 'disabled' : ''}>›</button></div>
-  <div class="quick">${Object.entries(TYPES).map(([k, t]) => `<button data-add="${k}"><b>${t.icon}</b>${t.label}</button>`).join('')}</div>
+  ${quickButtons()}
   <div class="summary">${pills}</div>
-  ${evs.length ? evs.map(evRow).join('') : '<div class="empty">Nothing logged yet.<br>Tap a button above to add an entry.</div>'}`;
+  ${evs.length ? evs.map(evRow).join('') : `<div class="empty">Nothing logged yet.${Sync.canEdit() ? '<br>Tap a button above to add an entry.' : ''}</div>`}`;
 }
+const quickButtons = () => Sync.canEdit()
+  ? `<div class="quick" style="margin-bottom:10px">${Object.entries(TYPES).map(([k, t]) => `<button data-add="${k}"><b>${t.icon}</b>${t.label}</button>`).join('')}</div>` : '';
 function evRow(e) {
   const [a, b] = describe(e), t = TYPES[e.type];
   const warn = e.type === 'health' && (e.data.symptoms || []).some(s => URGENT.includes(s));
@@ -137,7 +158,7 @@ function monthView() {
   <div class="cal">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<div class="h">${d}</div>`).join('')}${cells}</div>
   <div class="legend">${Object.values(TYPES).map(t => `<span><i style="--c:${t.color}"></i>${t.label}</span>`).join('')}</div>
   <h2>${fmtDate(viewDay)}</h2>
-  <div class="quick" style="margin-bottom:10px">${Object.entries(TYPES).map(([k, t]) => `<button data-add="${k}"><b>${t.icon}</b>${t.label}</button>`).join('')}</div>
+  ${quickButtons()}
   ${eventsOnDay(viewDay).map(evRow).join('') || '<div class="empty">No entries this day.</div>'}`;
 }
 
@@ -204,34 +225,38 @@ function ageDays() { return db.baby.birth ? Math.floor((Date.now() - new Date(db
 
 // ---------- More ----------
 function moreView() {
-  return `
+  return Acct.accountHtml() + `
   <div class="card"><b>Baby</b>
     <label class="f" style="display:block;margin-top:8px">Name<input id="bName" type="text" value="${esc(db.baby.name)}" style="width:100%;padding:10px;font-size:16px"></label>
     <label class="f" style="display:block;margin-top:8px">Birth date<input id="bBirth" type="date" value="${esc(db.baby.birth)}" style="width:100%;padding:10px;font-size:16px"></label></div>
-  <div class="card"><b>Your data</b><p class="note">Everything is stored only on this device. Export a backup regularly, and use it to share with your pediatrician or move to a new phone.</p>
+  ${Acct.cloudHtml()}
+  <div class="card"><b>Your data</b><p class="note">${Sync.linked() ? 'Entries are saved on this device and synced to your family log.' : 'Everything is stored only on this device.'} Export a plain-text copy to share with your pediatrician.</p>
     <div class="row"><button class="btn" id="expJson">Backup (JSON)</button><button class="btn" id="expCsv">Export CSV</button></div>
-    <div class="row"><button class="btn" id="impJson">Restore backup</button></div>
+    <div class="row"><button class="btn" id="impJson">Restore from JSON</button></div>
     <input type="file" id="impFile" accept="application/json" hidden></div>
   <div class="card"><b>Install</b><p class="note">Open this page in your phone browser and choose “Add to Home Screen” – it then works like an app, even offline.</p></div>
-  <div class="card"><button class="btn d" id="wipe" style="width:100%">Delete all data</button></div>`;
+  ${Sync.canEdit() ? '<div class="card"><button class="btn d" id="wipe" style="width:100%">Delete all entries</button></div>' : ''}`;
 }
 
 // ---------- Bindings ----------
 function bind() {
   document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => openSheet(b.dataset.add));
-  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openSheet(null, db.events.find(e => e.id === b.dataset.edit)));
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => Sync.canEdit() ? openSheet(null, db.events.find(e => e.id === b.dataset.edit)) : toast('View-only access'));
   document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { viewDay = addDays(viewDay, +b.dataset.nav); render(); });
   document.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { viewDay = +b.dataset.day; render(); });
   document.querySelectorAll('[data-month]').forEach(b => b.onclick = () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + +b.dataset.month, 1); render(); });
   document.querySelectorAll('[data-range]').forEach(b => b.onclick = () => { statDays = +b.dataset.range; render(); });
-  if (tab === 'more') bindMore();
+  if (tab === 'more') { bindMore(); Acct.bindMoreAccount(); }
+  if (tab === 'family') Acct.bindFamily();
 }
 $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.tab; if (tab === 'month') calMonth = new Date(viewDay); render(); window.scrollTo(0, 0); } };
 
 function bindMore() {
-  $('#bName').onchange = e => { db.baby.name = e.target.value.trim(); save(); render(); };
-  $('#bBirth').onchange = e => { db.baby.birth = e.target.value; save(); toast('Saved'); };
-  $('#expJson').onclick = () => download('little-log-backup.json', JSON.stringify(db, null, 2), 'application/json');
+  const ro = !Sync.canEdit();
+  $('#bName').disabled = $('#bBirth').disabled = ro;
+  $('#bName').onchange = e => { db.baby.name = e.target.value.trim(); Sync.linked() ? Sync.pushBaby() : save(); render(); };
+  $('#bBirth').onchange = e => { db.baby.birth = e.target.value; Sync.linked() ? Sync.pushBaby() : save(); toast('Saved'); };
+  $('#expJson').onclick = () => download('little-log-backup.json', JSON.stringify({ app: 'littlelog', v: 1, baby: db.baby, events: db.events }, null, 2), 'application/json');
   $('#expCsv').onclick = () => {
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = [['date', 'time', 'type', 'summary', 'details', 'end', 'note'].join(',')].concat([...db.events].sort((a, b) => a.ts - b.ts).map(e => {
@@ -242,14 +267,14 @@ function bindMore() {
   };
   $('#impJson').onclick = () => $('#impFile').click();
   $('#impFile').onchange = async e => {
-    try {
-      const d = JSON.parse(await e.target.files[0].text());
-      if (!d || !Array.isArray(d.events)) throw 0;
-      if (!confirm(`Replace current data with ${d.events.length} entries from the backup?`)) return;
-      db = { baby: d.baby || { name: '', birth: '' }, events: d.events }; save(); render(); toast('Restored');
-    } catch (err) { toast('That file is not a valid backup'); }
+    try { Acct.applyBackup(JSON.parse(await e.target.files[0].text())); }
+    catch (err) { toast(err.message && err.message.startsWith('That file') ? err.message : 'That file is not a valid backup'); }
+    e.target.value = '';
   };
-  $('#wipe').onclick = () => { if (confirm('Delete ALL entries? This cannot be undone.') && confirm('Really delete everything?')) { db = { baby: { name: '', birth: '' }, events: [] }; save(); render(); } };
+  $('#wipe').onclick = () => {
+    const shared = Sync.linked() ? ' This also deletes them for everyone sharing this log.' : '';
+    if (confirm('Delete ALL entries?' + shared + ' This cannot be undone.') && confirm('Really delete everything?')) { [...db.events].forEach(removeEvent); save(); render(); }
+  };
 }
 function download(name, text, type) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -262,6 +287,7 @@ const radios = (name, opts, cur, cls) => `<div class="chips">${opts.map(o => chi
 const num = (id, v, ph, step = 1) => `<input id="${id}" type="number" inputmode="decimal" min="0" step="${step}" value="${v ?? ''}" placeholder="${ph}">`;
 
 function openSheet(type, ev) {
+  if (!Sync.canEdit()) return toast('View-only access');
   const editing = !!ev;
   type = ev ? ev.type : type;
   const d = (ev && ev.data) || {}, T = TYPES[type];
@@ -303,7 +329,7 @@ function openSheet(type, ev) {
   const en = S.querySelector('[data-endnow]'); if (en) en.onclick = () => { $('#end').value = toLocalInput(Date.now()); };
   const close = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; };
   $('#sheetBack').onclick = $('#cancel').onclick = close;
-  if (editing) $('#del').onclick = () => { if (confirm('Delete this entry?')) { db.events = db.events.filter(x => x !== ev); save(); close(); render(); toast('Deleted'); } };
+  if (editing) $('#del').onclick = () => { if (confirm('Delete this entry?')) { removeEvent(ev); save(); close(); render(); toast('Deleted'); } };
   $('#save').onclick = () => {
     const ts = fromLocalInput($('#ts').value);
     if (!ts) return toast('Please pick a time');
@@ -326,7 +352,7 @@ function openSheet(type, ev) {
     if (type === 'med') { data = { name: $('#mname').value.trim(), dose: $('#mdose').value.trim() }; if (!data.name) return toast('Enter a name'); }
     if (type === 'sleep' && !end) { const cur = activeSleep(); if (cur && cur !== ev) return toast('Already sleeping – tap “Woke up” first'); }
     const rec = ev || { id: uid(), type };
-    Object.assign(rec, { ts, data, note: $('#note').value.trim() });
+    Object.assign(rec, { ts, data, note: $('#note').value.trim(), updated: Date.now() });
     if (type === 'sleep') { if (end) rec.end = end; else delete rec.end; }
     if (!ev) db.events.push(rec);
     save(); close(); viewDay = startOfDay(ts); render(); toast('Saved');
@@ -336,4 +362,22 @@ function openSheet(type, ev) {
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 setInterval(() => { if (activeSleep() && tab === 'day') render(); }, 60000);
+
+// Re-render after a background sync, unless the user is in the middle of typing.
+Sync.onChange = () => {
+  const a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return $('#syncLine').textContent = Acct.syncLine();
+  if (!$('#sheet').hidden) return $('#syncLine').textContent = Acct.syncLine();
+  render();
+};
 render();
+(async () => {
+  const m = await Cloud.handleRedirect();
+  if (m) { tab = 'more'; render(); toast(m); }
+  if (Auth.configured && Auth.signedIn) {
+    try { await Sync.loadMemberships(); if (!db.meta.babyId && Sync.st.memberships.length) Sync.choose(Sync.st.memberships[0].id); } catch (e) {}
+    await Acct.processPending();
+    Sync.start(); render();
+    Cloud.autoBackup();
+  }
+})();
