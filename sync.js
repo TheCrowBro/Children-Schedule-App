@@ -141,7 +141,13 @@ const Sync = (() => {
     await Auth.api(`/members?baby_id=eq.${db.meta.babyId}&user_id=eq.${userId}`, { method: 'DELETE' });
     if (userId === Auth.id) { lostAccess(); await loadMemberships(); }
   }
-  function inviteUrl(code) { return location.origin + location.pathname + '?join=' + code; }
+  // Browser: link to the web app. Phone app: the hosted web address if configured (so people without the app can
+  // still open it), otherwise a link that only opens the app.
+  function inviteUrl(code) {
+    const pub = (window.LL_CONFIG || {}).publicUrl;
+    if (!Native.is) return location.origin + location.pathname + '?join=' + code;
+    return pub ? pub.replace(/\/?$/, '/') + '?join=' + code : Native.scheme + '://join?join=' + code;
+  }
   function pushBaby() { db.meta.babyDirty = true; save(); schedule(500); }
 
   let started = false;

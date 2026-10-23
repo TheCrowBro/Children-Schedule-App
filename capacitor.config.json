@@ -1,0 +1,20 @@
+{
+  "appId": "app.littlelog.newborn",
+  "appName": "Little Log",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#f5f6fb"
+  },
+  "android": {
+    "backgroundColor": "#f5f6fb"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

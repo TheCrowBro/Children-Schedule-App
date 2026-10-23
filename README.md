@@ -22,6 +22,8 @@ Then open it on your phone and choose **Add to Home Screen**.
 - **Encrypted cloud backup** to Google Drive, Dropbox, OneDrive, or iCloud Drive / Files
 - Works offline; changes sync when you're back online. Without setup, all data stays on the device (localStorage)
 
+- **Android and iOS apps** (Capacitor wrapper around this same code): see **[MOBILE.md](MOBILE.md)**
+
 See **[SETUP.md](SETUP.md)** to enable sign-in, sync and cloud backup.
 
 *Not medical advice.*

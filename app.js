@@ -277,6 +277,7 @@ function bindMore() {
   };
 }
 function download(name, text, type) {
+  if (Native.is) return Native.saveFile(name, text).catch(e => { if (!/cancel/i.test(e.message)) toast('Could not share the file'); });
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
@@ -360,7 +361,7 @@ function openSheet(type, ev) {
   };
 }
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+if (!Native.is && 'serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 setInterval(() => { if (activeSleep() && tab === 'day') render(); }, 60000);
 
 // Re-render after a background sync, unless the user is in the middle of typing.
@@ -370,6 +371,17 @@ Sync.onChange = () => {
   if (!$('#sheet').hidden) return $('#syncLine').textContent = Acct.syncLine();
   render();
 };
+// Phone app: links opened by the OS (invite links, cloud sign-in returns) and the Android back button.
+Native.onUrl(async url => {
+  const m = await Cloud.handleOAuthUrl(url);
+  if (m) { tab = 'more'; render(); return toast(m); }
+  Acct.receiveJoin(url);
+});
+Native.onBack(() => {
+  if (!$('#sheet').hidden) { $('#sheetBack').click(); return true; }
+  if (tab !== 'day') { tab = 'day'; render(); return true; }
+  return false;
+});
 render();
 (async () => {
   const m = await Cloud.handleRedirect();

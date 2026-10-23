@@ -1,9 +1,28 @@
 {
-  "name": "Little Log – Newborn Tracker",
+  "name": "Little Log \u2013 Newborn Tracker",
   "short_name": "Little Log",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f5f6fb",
   "theme_color": "#5b7cfa",
-  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "icons": [
+    {
+      "src": "icons/icon-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
 }

@@ -125,5 +125,24 @@ begin
   return i.baby_id;
 end $$;
 
-revoke all on function create_baby(text,date), create_invite(uuid,text), redeem_invite(text) from public, anon;
-grant execute on function create_baby(text,date), create_invite(uuid,text), redeem_invite(text) to authenticated;
+-- In-app account deletion (required by the App Store / Play Store). Shared logs are handled so nobody is orphaned:
+-- an owner's log passes to its longest-standing caregiver; if there is none, the log is deleted with the account.
+create or replace function delete_my_account() returns void
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); b record; heir uuid;
+begin
+  if me is null then raise exception 'not signed in'; end if;
+  for b in select baby_id from members where user_id = me and role = 'owner' loop
+    select user_id into heir from members
+      where baby_id = b.baby_id and user_id <> me and role = 'caregiver' order by joined_at limit 1;
+    if heir is not null then
+      update members set role = 'owner' where baby_id = b.baby_id and user_id = heir;
+    else
+      delete from babies where id = b.baby_id;      -- cascades to events, invites, members
+    end if;
+  end loop;
+  delete from auth.users where id = me;              -- cascades to this user's remaining memberships
+end $$;
+
+revoke all on function create_baby(text,date), create_invite(uuid,text), redeem_invite(text), delete_my_account() from public, anon;
+grant execute on function create_baby(text,date), create_invite(uuid,text), redeem_invite(text), delete_my_account() to authenticated;

@@ -9,7 +9,7 @@ const Acct = (() => {
 
   const parseJoin = text => {
     text = String(text || '').trim();
-    try { const c = new URL(text).searchParams.get('join'); if (c) text = c; } catch (e) {}
+    try { const q = new URL(text).searchParams, c = q.get('join') || q.get('code'); if (c) text = c; } catch (e) {}
     return /^[A-Za-z0-9]{10}$/.test(text) ? text.toUpperCase() : null;
   };
   // An invite link opened in the browser (?join=CODE) is remembered until the user is signed in.
@@ -18,6 +18,14 @@ const Acct = (() => {
     if (c) { try { localStorage.setItem('ll.join', c); } catch (e) {} history.replaceState(null, '', location.pathname); }
     try { pendingJoin = parseJoin(localStorage.getItem('ll.join')); } catch (e) {}
   })();
+  /** An invite link opened while the app is running (phone app: OS hands it over; browser: not used). */
+  function receiveJoin(text) {
+    const code = parseJoin(text); if (!code) return false;
+    try { localStorage.setItem('ll.join', code); } catch (e) {}
+    pendingJoin = code;
+    if (Auth.signedIn) processPending().then(render); else render();
+    return true;
+  }
   const clearPending = () => { pendingJoin = null; try { localStorage.removeItem('ll.join'); } catch (e) {} };
 
   const ago = t => { const m = (Date.now() - t) / MIN; return m < 1 ? 'just now' : fmtDur(m) + ' ago'; };
@@ -120,6 +128,17 @@ const Acct = (() => {
     save(true); tab = 'day'; memFor = null; invite = null; render();
   }
 
+  async function deleteAccount() {
+    const owner = db.meta.role === 'owner';
+    if (!confirm('Permanently delete your account?' + (owner ? ' Because you own this log, it passes to its longest-standing caregiver, or is deleted for everyone if there is none.' : '') + ' This cannot be undone.')) return;
+    if (!confirm('Really delete your account and the data on this device?')) return;
+    try { await Auth.rpc('delete_my_account'); } catch (e) { return toast(err(e)); }
+    await Auth.signOut();
+    Cloud.reset();
+    db = { baby: { name: '', birth: '' }, events: [], deleted: [], meta: {} };
+    save(true); tab = 'day'; memFor = null; invite = null; render(); toast('Account deleted');
+  }
+
   // ---- QR scanning ------------------------------------------------------------------------------
   async function scan() {
     const S = $('#sheet'), back = $('#sheetBack');
@@ -212,7 +231,8 @@ const Acct = (() => {
 
   // ---- More tab: account + cloud backup ---------------------------------------------------------
   const accountHtml = () => !Auth.configured || !Auth.signedIn ? '' :
-    `<div class="card"><b>Account</b><div class="stat"><span>${esc(Auth.email)}</span><button class="btn" id="signOut" style="padding:6px 12px">Sign out</button></div></div>`;
+    `<div class="card"><b>Account</b><div class="stat"><span>${esc(Auth.email)}</span><button class="btn" id="signOut" style="padding:6px 12px">Sign out</button></div>
+     <div class="stat"><span>Delete account<br><small>Removes your sign-in. Shared logs you own pass to a caregiver, or are deleted if you're the only one.</small></span><button class="btn d" id="delAcct" style="padding:6px 12px">Delete</button></div></div>`;
 
   function cloudHtml() {
     const av = Cloud.available(), row = p => {
@@ -241,6 +261,7 @@ const Acct = (() => {
   }
   function bindMoreAccount() {
     if ($('#signOut')) $('#signOut').onclick = signOut;
+    if ($('#delAcct')) $('#delAcct').onclick = deleteAccount;
     if (!$('#cPass')) return;
     $('#cPass').onchange = e => { Cloud.pass = e.target.value; toast('Passphrase saved on this device'); };
     document.querySelector('[name=cAuto]').onchange = e => { Cloud.auto = e.target.checked; if (e.target.checked && !Cloud.pass) toast('Set a passphrase to enable daily backups'); };
@@ -254,7 +275,8 @@ const Acct = (() => {
       pass();
       try {
         const f = await Cloud.toFile();
-        if (navigator.canShare && navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: 'Little Log backup' });
+        if (Native.is) await Native.saveFile(f.name, await f.text());
+        else if (navigator.canShare && navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: 'Little Log backup' });
         else download(f.name, await f.text(), 'application/json');
       } catch (e) { if (e.name !== 'AbortError') toast(err(e)); }
     };
@@ -262,5 +284,5 @@ const Acct = (() => {
     $('#cFile').onchange = async e => { try { applyBackup(await Cloud.fromFile(e.target.files[0])); } catch (x) { toast(err(x)); } e.target.value = ''; };
   }
 
-  return { gate, familyHtml, bindFamily, accountHtml, cloudHtml, bindMoreAccount, applyBackup, syncLine, afterLogin, processPending, hasPending: () => !!pendingJoin };
+  return { gate, familyHtml, bindFamily, accountHtml, cloudHtml, bindMoreAccount, applyBackup, syncLine, afterLogin, processPending, receiveJoin, hasPending: () => !!pendingJoin };
 })();

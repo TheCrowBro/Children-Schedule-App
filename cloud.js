@@ -7,7 +7,9 @@ const Cloud = (() => {
   const CFG = window.LL_CONFIG || {};
   const K = 'littlelog.cloud.v1';
   const FILE = 'little-log-backup.json';
-  const REDIRECT = () => location.origin + location.pathname;
+  // Browser: come back to this page. Phone app: come back through a custom URL scheme the OS routes to the app.
+  const googleScheme = () => 'com.googleusercontent.apps.' + (CFG.googleNativeClientId || '').replace('.apps.googleusercontent.com', '');
+  const REDIRECT = p => !Native.is ? location.origin + location.pathname : p === 'google' ? googleScheme() + ':/oauth2redirect' : Native.scheme + '://oauth';
   let c = { tokens: {}, pass: '', auto: false, last: {} };
   try { Object.assign(c, JSON.parse(localStorage.getItem(K)) || {}); } catch (e) {}
   const persist = () => { try { localStorage.setItem(K, JSON.stringify(c)); } catch (e) {} };
@@ -36,6 +38,9 @@ const Cloud = (() => {
   async function challenge(v) { return b64(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''); }
   const PKCE = {
     dropbox: { id: () => CFG.dropboxKey, auth: 'https://www.dropbox.com/oauth2/authorize', token: 'https://api.dropboxapi.com/oauth2/token', extra: { token_access_type: 'offline' } },
+    // Google Drive inside the phone app: Google blocks its web sign-in in embedded webviews, so use the
+    // system browser + PKCE with an "iOS"-type OAuth client (custom-scheme redirect, no client secret).
+    google: { id: () => CFG.googleNativeClientId, auth: 'https://accounts.google.com/o/oauth2/v2/auth', token: 'https://oauth2.googleapis.com/token', scope: 'https://www.googleapis.com/auth/drive.appdata', extra: { access_type: 'offline', prompt: 'consent' } },
     onedrive: { id: () => CFG.msClientId, auth: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize', token: 'https://login.microsoftonline.com/common/oauth2/v2.0/token', scope: 'Files.ReadWrite.AppFolder offline_access', extra: { response_mode: 'query' } },
   };
   async function tokenCall(p, body) {
@@ -46,24 +51,37 @@ const Cloud = (() => {
     persist();
   }
   async function connectPkce(p) {
-    const verifier = rnd(64), state = 'll-' + p + '-' + rnd(12);
-    sessionStorage.setItem('ll.pkce', JSON.stringify({ verifier, state }));
-    const u = new URLSearchParams({ client_id: PKCE[p].id(), response_type: 'code', redirect_uri: REDIRECT(), state, code_challenge: await challenge(verifier), code_challenge_method: 'S256', ...PKCE[p].extra });
+    const verifier = rnd(64), state = 'll-' + p + '-' + rnd(12), redirect = REDIRECT(p);
+    localStorage.setItem('ll.pkce', JSON.stringify({ verifier, state, redirect }));   // survives the app being backgrounded
+    const u = new URLSearchParams({ client_id: PKCE[p].id(), response_type: 'code', redirect_uri: redirect, state, code_challenge: await challenge(verifier), code_challenge_method: 'S256', ...PKCE[p].extra });
     if (PKCE[p].scope) u.set('scope', PKCE[p].scope);
-    location.href = PKCE[p].auth + '?' + u;
+    const url = PKCE[p].auth + '?' + u;
+    if (Native.is) await Native.openUrl(url); else location.href = url;
   }
-  /** Call on page load: finishes an OAuth redirect if the URL carries one. Returns a message or null. */
-  async function handleRedirect() {
-    const u = new URLSearchParams(location.search), state = u.get('state') || '';
-    const m = /^ll-(dropbox|onedrive)-/.exec(state);
+  /** Finishes an OAuth redirect given its query params. Returns a message to show the user, or null if not ours. */
+  async function finishOAuth(q) {
+    const state = q.get('state') || '', m = /^ll-(dropbox|onedrive|google)-/.exec(state);
     if (!m) return null;
-    history.replaceState(null, '', REDIRECT());
-    let saved; try { saved = JSON.parse(sessionStorage.getItem('ll.pkce')); } catch (e) {}
-    sessionStorage.removeItem('ll.pkce');
+    let saved; try { saved = JSON.parse(localStorage.getItem('ll.pkce')); } catch (e) {}
+    localStorage.removeItem('ll.pkce');
     if (!saved || saved.state !== state) return 'Cloud sign-in was cancelled or expired. Please try again.';
-    if (u.get('error')) return 'Cloud sign-in was cancelled.';
-    try { await tokenCall(m[1], { grant_type: 'authorization_code', code: u.get('code'), redirect_uri: REDIRECT(), code_verifier: saved.verifier }); return 'Connected to ' + label(m[1]); }
+    if (q.get('error')) return 'Cloud sign-in was cancelled.';
+    try { await tokenCall(m[1], { grant_type: 'authorization_code', code: q.get('code'), redirect_uri: saved.redirect, code_verifier: saved.verifier }); return 'Connected to ' + label(m[1]); }
     catch (e) { return e.message; }
+  }
+  /** Browser: call on page load. */
+  async function handleRedirect() {
+    const q = new URLSearchParams(location.search);
+    if (!/^ll-/.test(q.get('state') || '')) return null;
+    history.replaceState(null, '', REDIRECT());
+    return finishOAuth(q);
+  }
+  /** Phone app: call with the URL the OS opened us with. Returns a message, or null if it is not an OAuth return. */
+  async function handleOAuthUrl(url) {
+    let q; try { q = new URL(url).searchParams; } catch (e) { return null; }
+    const msg = await finishOAuth(q);
+    if (msg) Native.closeBrowser();
+    return msg;
   }
   async function pkceToken(p) {
     const t = c.tokens[p];
@@ -95,8 +113,10 @@ const Cloud = (() => {
 
   // ---- provider operations ----------------------------------------------------------------------
   const NAMES = { dropbox: 'Dropbox', onedrive: 'OneDrive', google: 'Google Drive' };
+  // Google uses the OAuth browser flow on the phone, and the Google Identity Services popup on the web.
+  const gtoken = interactive => Native.is ? pkceToken('google') : googleToken(interactive);
   const label = p => NAMES[p] || p;
-  const available = () => ({ dropbox: !!CFG.dropboxKey, onedrive: !!CFG.msClientId, google: !!CFG.googleClientId });
+  const available = () => ({ dropbox: !!CFG.dropboxKey, onedrive: !!CFG.msClientId, google: Native.is ? !!CFG.googleNativeClientId : !!CFG.googleClientId });
   const connected = p => !!c.tokens[p];
   async function ok(r, what) { if (!r.ok) { const e = new Error(what + ' failed (' + r.status + ')'); e.status = r.status; throw e; } return r; }
 
@@ -112,13 +132,13 @@ const Cloud = (() => {
     google: {
       async find(t) { const r = await ok(await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(`name='${FILE}'`)}&fields=files(id)`, { headers: { Authorization: 'Bearer ' + t } }), 'Google Drive lookup'); return ((await r.json()).files || [])[0]; },
       async put(text, interactive) {
-        const t = await googleToken(interactive), f = await this.find(t);
+        const t = await gtoken(interactive), f = await this.find(t);
         if (f) return void await ok(await fetch(`https://www.googleapis.com/upload/drive/v3/files/${f.id}?uploadType=media`, { method: 'PATCH', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: text }), 'Google Drive upload');
         const bd = 'llb' + rnd(10);
         const body = `--${bd}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({ name: FILE, parents: ['appDataFolder'] })}\r\n--${bd}\r\nContent-Type: application/json\r\n\r\n${text}\r\n--${bd}--`;
         await ok(await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'multipart/related; boundary=' + bd }, body }), 'Google Drive upload');
       },
-      async get(interactive) { const t = await googleToken(interactive), f = await this.find(t); if (!f) throw new Error('No backup found in Google Drive yet'); return (await ok(await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, { headers: { Authorization: 'Bearer ' + t } }), 'Google Drive download')).text(); },
+      async get(interactive) { const t = await gtoken(interactive), f = await this.find(t); if (!f) throw new Error('No backup found in Google Drive yet'); return (await ok(await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, { headers: { Authorization: 'Bearer ' + t } }), 'Google Drive download')).text(); },
     },
   };
 
@@ -126,11 +146,13 @@ const Cloud = (() => {
   const payload = () => JSON.stringify({ app: 'littlelog', v: 1, baby: db.baby, events: db.events });
 
   return {
-    available, connected, label, NAMES, handleRedirect, encrypt, decrypt,
+    available, connected, label, NAMES, handleRedirect, handleOAuthUrl, encrypt, decrypt,
     get pass() { return c.pass; }, set pass(v) { c.pass = v; persist(); },
     get auto() { return c.auto; }, set auto(v) { c.auto = !!v; persist(); },
     last: p => c.last[p] || 0,
-    connect(p) { return p === 'google' ? googleToken(true).then(() => 'Connected to Google Drive') : connectPkce(p); },
+    connect(p) { return p === 'google' && !Native.is ? googleToken(true).then(() => 'Connected to Google Drive') : connectPkce(p); },
+    /** Forget all connections and the passphrase (used when the account is deleted). */
+    reset() { c = { tokens: {}, pass: '', auto: false, last: {} }; persist(); },
     disconnect(p) { delete c.tokens[p]; persist(); },
     async backup(p, interactive = true) { needPass(); await ops[p].put(await encrypt(payload(), c.pass), interactive); c.last[p] = Date.now(); persist(); },
     /** Returns the decoded backup object; the caller merges it into the local log. */
@@ -141,7 +163,7 @@ const Cloud = (() => {
     /** Daily silent backup to every connected provider that can refresh without a prompt. */
     async autoBackup() {
       if (!c.auto || !c.pass) return;
-      for (const p of ['dropbox', 'onedrive']) {
+      for (const p of ['dropbox', 'onedrive', ...(Native.is ? ['google'] : [])]) {
         if (connected(p) && Date.now() - (c.last[p] || 0) > 22 * 3600e3) { try { await this.backup(p, false); } catch (e) {} }
       }
     },

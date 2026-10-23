@@ -56,4 +56,18 @@ expect "owner removes caregiver" 'caregiver' "$(run $U_A "delete from members wh
 expect "removed member loses read access" '^$' "$(run $U_C "select id from events where baby_id='$BABY'")"
 expect "member can leave" 'viewer' "$(run $U_B "delete from members where user_id='$U_B' returning role")"
 expect "someone else's baby unaffected for owner" '^e1|e1' "$(run $U_A "select id from events where baby_id='$BABY' order by id")"
+# account deletion
+B2=$(run $U_D "select create_baby('Mia',null)" | tr -d ' ')
+run $U_D "insert into events(baby_id,id,type,ts,updated) values ('$B2','m1','feed',1,1)" >/dev/null
+CC2=$(run $U_D "select create_invite('$B2','caregiver')" | tr -d ' '); run $U_C "select redeem_invite('$CC2')" >/dev/null
+expect "anon cannot delete accounts" 'permission denied' "$(run anon "select delete_my_account()")"
+run $U_D "select delete_my_account()" >/dev/null
+q() { psql -h ${PGDIR:-/var/tmp/llpg} -p 5544 -U postgres -tA -q -c "$1" | tr -d ' '; }
+expect "deleted user is gone"                    '^0$' "$(q "select count(*) from auth.users where id='$U_D'")"
+expect "caregiver inherits ownership"            '^owner$' "$(q "select role from members where baby_id='$B2' and user_id='$U_C'")"
+expect "shared log and its entries survive"      '^1$' "$(q "select count(*) from events where baby_id='$B2'")"
+run $U_C "select delete_my_account()" >/dev/null
+expect "last owner deleting removes the log"     '^0$' "$(q "select count(*) from babies where id='$B2'")"
+expect "and its entries are gone"                '^0$' "$(q "select count(*) from events where baby_id='$B2'")"
+
 echo; [ $fail = 0 ] && echo "ALL RLS CHECKS PASSED" || echo "SOME CHECKS FAILED"

@@ -16,6 +16,7 @@ function rest(req, u, uid, body) {
   if (!uid) return J(401, { message: 'JWT missing' });
   if (p === '/rpc/create_baby') { const id = 'b' + (++srv.n); srv.babies[id] = { name: body.p_name, birth: body.p_birth }; srv.members.push({ baby_id: id, user_id: uid, email: srv.byId[uid], role: 'owner', joined_at: nowIso() }); return J(200, id); }
   if (p === '/rpc/create_invite') { if (role(body.p_baby) !== 'owner') return J(400, { message: 'only the owner can invite' }); const code = ('INV' + (++srv.n) + 'ABCDEFGHIJ').slice(0, 10).toUpperCase(); srv.invites[code] = { baby_id: body.p_baby, role: body.p_role, used: false }; return J(200, code); }
+  if (p === '/rpc/delete_my_account') { srv.members = srv.members.filter(x => x.user_id !== uid); srv.deletedUsers = (srv.deletedUsers || []).concat(uid); return J(200, null); }
   if (p === '/rpc/redeem_invite') { const i = srv.invites[body.p_code]; if (!i || i.used) return J(400, { message: 'This invite is invalid or has expired' }); i.used = true; if (!role(i.baby_id)) srv.members.push({ baby_id: i.baby_id, user_id: uid, email: srv.byId[uid], role: i.role, joined_at: nowIso() }); return J(200, i.baby_id); }
   if (p === '/members') {
     if (m === 'DELETE') { srv.members = srv.members.filter(x => !(x.baby_id === eq(u, 'baby_id') && x.user_id === eq(u, 'user_id'))); return J(204); }
@@ -179,6 +180,9 @@ const count = p => p.evaluate(() => db.events.length);
   const D = await device(b2); await signIn(D, 'd@x.com'); await D.waitForSelector('#oScan');
   await D.click('#oScan'); await D.waitForSelector('#tabs', { timeout: 15000 }); await syncNow(D);
   assert.equal(await D.evaluate(() => db.meta.role), 'caregiver'); assert(srv.invites[scode].used); pass('in-app camera scanned the invite QR and joined');
+  // account deletion from inside the app
+  await D.click('[data-tab=more]'); await D.click('#delAcct'); await D.waitForSelector('#lEmail');
+  assert.equal((srv.deletedUsers || []).length, 1); assert.deepEqual(await D.evaluate(() => [db.events.length, db.meta.babyId || null, Auth.signedIn]), [0, null, false]); pass('in-app account deletion removes the account and clears the device');
   assert.deepEqual(D.errs, []); await b2.close();
   for (const p of [A, B, C]) assert.deepEqual(p.errs, [], 'page errors: ' + p.errs);
   console.log(`\nall ${ok} checks passed`);
