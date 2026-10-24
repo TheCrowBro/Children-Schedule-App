@@ -26,13 +26,13 @@ function demoDb() {
   const kids = [{ id: 'c1', name: 'Leo', birth: '', sex: 'boy', color: '', formula: 'Similac 360 Total Care' }, { id: 'k2', name: 'Mia', birth: '', sex: 'girl', color: '' }, { id: 'k3', name: 'Sam', birth: '', sex: 'boy', color: '' }];
   const ks = Kids.clean(kids), born = new Date(t0); born.setMonth(born.getMonth() - 2); const iso = `${born.getFullYear()}-${String(born.getMonth() + 1).padStart(2, '0')}-${String(born.getDate()).padStart(2, '0')}`;
   ks.forEach(k => { k.birth = iso; });
-  const events = []; let n = 0;
+  const events = [], FORMULA = { c1: 'Similac 360 Total Care', k2: 'Enfamil NeuroPro' }; let n = 0;   // (Mia's usual formula is learned from her feeds)
   const add = (type, ts, data, kid, extra = {}) => { if (ts > Date.now()) return; events.push({ id: 'd' + (n++), type, ts, data, note: '', updated: Date.now(), child: kid.id, ...extra }); };
   for (let day = 6; day >= 0; day--) {
     const b = t0 - day * DAYMS;
     ks.forEach((k, i) => {
       const o = i * 0.15;
-      [0.8, 3.6, 6.4, 9.3, 12.2, 15.1, 18, 21].forEach((x, j) => add('feed', b + (x + o) * h, j % 3 ? { kind: 'bottle', ml: 70 + ((j * 7 + i * 5) % 30), milk: 'Formula' } : { kind: 'breast', side: j % 2 ? 'Left' : 'Right', min: 12 + j }, k));
+      [0.8, 3.6, 6.4, 9.3, 12.2, 15.1, 18, 21].forEach((x, j) => add('feed', b + (x + o) * h, j % 3 ? { kind: 'bottle', ml: 70 + ((j * 7 + i * 5) % 30), milk: 'Formula', ...(FORMULA[k.id] ? { formula: FORMULA[k.id] } : {}) } : { kind: 'breast', side: j % 2 ? 'Left' : 'Right', min: 12 + j }, k));
       [1.5, 4.5, 7.5, 10.5, 13.5, 16.5, 19.5].forEach((x, j) => add('diaper', b + (x + o) * h, { pee: true, poo: j % 2 === 0, rash: false, color: j % 2 === 0 ? 'Yellow' : undefined }, k));
       add('sleep', b + (0.3 + o) * h, {}, k, { end: b + (3.2 + o) * h }); add('sleep', b + (10.4 + o) * h, {}, k, { end: b + (12 + o) * h }); add('sleep', b + (14.2 + o) * h, {}, k, { end: b + (15.9 + o) * h });
       if ((day + i) % 3 === 0) add('vomit', b + (8 + o) * h, { amount: 'Spit-up', projectile: false }, k);

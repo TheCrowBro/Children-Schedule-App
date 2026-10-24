@@ -15,7 +15,11 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); **stats** with a chart for every section
 - **Guide tab**: common newborn worries (blue hands, belly bulge, clicking hips, jaundice, cord, spit-up, poop colours, fever…) with when to call,
   month-by-month milestones (a reminder pops up on each month birthday), and the **pediatrician's details** with a Call button
-- **Formula**: each child's usual formula, filled in on bottle feeds
+- **Formula**: pick from a drop-down of common formulas grouped by region (North America, Latin America, UK & Ireland, Europe,
+  Australia & New Zealand, Asia, Middle East & Africa; the phone's own region first, worked out from its time zone), or type in any other.
+  Each child's usual formula is filled in on bottle feeds. When every formula feed on three days running used the same one, it becomes
+  that child's default and stays so until another formula is used the same way; each phone works this out from the shared log, so nobody
+  has to save it. A parent can also choose it in More → Children
 - **People's contact details** (phone, work, notes) that each person adds for themselves, visible to those allowed to see the family list
 - **Appearance**: match the phone, light, dark, or automatic by **sunrise and sunset** (worked out from the phone's time zone, no location
   needed); switching plays a short sunset into dark or sunrise into light

@@ -26,9 +26,9 @@ const Kids = (() => {
       seen.add(k.id);
       const sex = k.sex === 'boy' || k.sex === 'girl' ? k.sex : '';
       out.push({ id: k.id, name: typeof k.name === 'string' ? k.name.slice(0, 60) : '', birth: typeof k.birth === 'string' && DATE.test(k.birth) ? k.birth : '', sex,
-        color: typeof k.color === 'string' && HEX.test(k.color) ? k.color.toLowerCase() : '', formula: typeof k.formula === 'string' ? k.formula.trim().slice(0, 60) : '' });
+        color: typeof k.color === 'string' && HEX.test(k.color) ? k.color.toLowerCase() : '', formula: typeof k.formula === 'string' ? k.formula.trim().slice(0, 60) : '', formulaAt: Number.isFinite(k.formulaAt) && k.formulaAt > 0 ? Math.floor(k.formulaAt) : 0 });
     }
-    if (!out.length) out.push({ id: 'c1', name: typeof name === 'string' ? name.slice(0, 60) : '', birth: typeof birth === 'string' && DATE.test(birth) ? birth : '', sex: '', color: '', formula: '' });
+    if (!out.length) out.push({ id: 'c1', name: typeof name === 'string' ? name.slice(0, 60) : '', birth: typeof birth === 'string' && DATE.test(birth) ? birth : '', sex: '', color: '', formula: '', formulaAt: 0 });
     out.forEach((k, i) => { if (!k.color) k.color = auto(out.slice(0, i), k.sex, k.id); });
     return out;
   }
@@ -36,6 +36,6 @@ const Kids = (() => {
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const mix = (a, b, t) => { const x = rgb(a), y = rgb(b); return '#' + x.map((v, i) => Math.round(v * (1 - t) + y[i] * t).toString(16).padStart(2, '0')).join(''); };
   const rgba = (h, a) => `rgba(${rgb(h).join(',')},${a})`;
-  const make = (kids, name = '', sex = '', birth = '') => ({ id: rid(), name, birth, sex, color: auto(kids, sex), formula: '' });
+  const make = (kids, name = '', sex = '', birth = '') => ({ id: rid(), name, birth, sex, color: auto(kids, sex), formula: '', formulaAt: 0 });
   return { PALETTE, MAX, auto, swatches, clean, make, group, mix, rgba };
 })();

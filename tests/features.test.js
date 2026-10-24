@@ -158,11 +158,11 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
 
     await step('a child\'s usual formula fills in on bottle feeds and is saved with the entry', async () => {
       await P.click('[data-tab=more]'); const k = await P.evaluate(() => db.baby.kids[0].id);
-      const f = P.locator(`[data-kf="${k}"]`); await f.fill('Similac 360 Total Care'); await f.blur();
+      await P.selectOption(`[data-kfs="${k}"]`, 'Similac 360 Total Care');
       assert.equal(await P.evaluate(() => db.baby.kids[0].formula), 'Similac 360 Total Care');
       await P.click('[data-tab=day]'); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]');
-      assert.equal(await P.isVisible('#formula'), false, 'only asked for formula feeds');
-      await P.click('[name=milk][value=Formula]'); assert.equal(await P.inputValue('#formula'), 'Similac 360 Total Care');
+      assert.equal(await P.isVisible('#formulaSel'), false, 'only asked for formula feeds');
+      await P.click('[name=milk][value=Formula]'); assert.equal(await P.inputValue('#formulaSel'), 'Similac 360 Total Care');
       await P.fill('#ml', '120'); await P.click('#save');
       const e = await P.evaluate(() => db.events.find(x => x.data.ml === 120)); assert.equal(e.data.formula, 'Similac 360 Total Care');
       assert.deepEqual(await P.evaluate(id => describe(db.events.find(x => x.id === id)), e.id), ['Bottle 120 ml', 'Formula · Similac 360 Total Care']);
@@ -177,6 +177,56 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       assert.equal(await D.evaluate(() => db.baby.kids[0].formula), 'Similac 360 Total Care');
       const dump = JSON.stringify(await q('select * from events')) + JSON.stringify(await q('select profile from babies'));
       assert(!/Similac/.test(dump), 'the server never sees it');
+    });
+
+    await step('the formula list: common formulas by region with the phone\'s region first, and "Other" to type in any formula', async () => {
+      const r = await P.evaluate(() => ({ map: ['Europe/London', 'Europe/Berlin', 'Australia/Sydney', 'Pacific/Auckland', 'America/Sao_Paulo', 'America/Mexico_City', 'Asia/Tokyo', 'Asia/Dubai', 'Africa/Lagos', 'America/Chicago', 'America/Toronto', 'Mars/Base'].map(z => Formulas.regionFor(z)),
+        first: Formulas.ordered('Europe/London')[0].name, here: Formulas.ordered()[0].name }));
+      assert.deepEqual(r.map, ['uk', 'eu', 'anz', 'anz', 'latam', 'latam', 'asia', 'mea', 'mea', 'na', 'na', 'na']);
+      assert.equal(r.first, 'UK & Ireland', 'a phone in London sees UK & Ireland first');
+      await P.click('[data-tab=day]'); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]');
+      const groups = await P.$$eval('#formulaSel optgroup', g => g.map(x => x.label));
+      assert.equal(groups[0], 'Usual and recent'); assert.equal(groups[1], r.here, 'then the phone\'s own region');
+      for (const g of ['North America (US & Canada)', 'Latin America', 'UK & Ireland', 'Europe', 'Australia & New Zealand', 'Asia', 'Middle East & Africa']) assert(groups.includes(g), g);
+      for (const f of ['Enfamil NeuroPro', 'Similac 360 Total Care', 'Kendamil Classic First Infant Milk', 'a2 Platinum Premium', 'HiPP Organic PRE', 'Meiji Hohoemi', 'NAN Optipro']) assert(await P.$(`#formulaSel option[value="${f}"]`), f);
+      await P.selectOption('#formulaSel', '__other'); assert.equal(await P.isVisible('#formula'), true, 'Other opens a box to type in');
+      await P.fill('#formula', "Grandma's special blend"); await P.fill('#ml', '60'); await P.click('#save');
+      assert.equal(await P.evaluate(() => db.events.find(e => e.data && e.data.ml === 60).data.formula), "Grandma's special blend");
+      await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]');
+      assert(await P.$('#formulaSel optgroup[label="Usual and recent"] option[value="Grandma\'s special blend"]'), 'a typed-in formula is offered next time'); await P.click('#cancel');
+    });
+
+    await step('a formula given at every formula feed three days running becomes the usual one on every phone, without anyone saving it; mixed days or a hand-picked choice are respected', async () => {
+      const L = await P.evaluate(() => { const d = 864e5, t = Date.now(), f = (x, n) => ({ ts: t - n * d, formula: x }), run = (x, ...n) => n.map(i => f(x, i)); return [
+        Formulas.learned(run('A', 0, 1, 2)), Formulas.learned(run('A', 0, 1)), Formulas.learned([...run('A', 0, 1, 2), f('B', 0)]),
+        Formulas.learned([...run('B', 0, 1, 2), f('A', 3)]), Formulas.learned([f('a', 0), ...run('A', 1, 6)]),
+        Formulas.learned([...run('A', 2, 3, 4), f('B', 1), f('A', 1), f('B', 0)]), Formulas.learned([...run('A', 3, 4, 5), ...run('B', 0, 1, 2)]), Formulas.learned([...run('A', 2, 3, 4), ...run('B', 0, 1)])]; });
+      assert.deepEqual(L, ['A', '', '', 'B', 'a', 'A', 'B', 'A'], 'three days the same; two is not enough; a mixed day stops a run; a switch is picked up; spelling case and gaps are fine; once settled it stays through a mixed day, until another formula has three days of its own');
+      const [leo, mia] = await P.evaluate(() => { const k = Kids.make(kids(), 'Mia', 'girl'); kids().push(k); Sync.pushBaby(); render(); return [kids()[0].id, k.id]; });
+      const t0 = await P.evaluate(() => startOfDay(Date.now()));
+      await P.evaluate(([id, t0]) => { for (const d of [-2, -2, -1]) db.events.push({ id: uid(), type: 'feed', ts: t0 + d * 864e5 + 9 * 3600e3, data: { kind: 'bottle', ml: 90, milk: 'Formula', formula: 'Enfamil NeuroPro' }, note: '', updated: stamp(), by: Auth.id, child: id }); save(); }, [mia, t0]);
+      assert.equal(await P.evaluate(id => `${kidById(id).formula}|${usualFormula(kidById(id))}`, mia), '|', 'two days: not yet');
+      await P.click('[data-tab=day]'); await P.click(`[data-kid="${mia}"]`); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]');
+      assert.equal(await P.inputValue('#formulaSel'), '', 'nothing chosen for her yet');
+      await syncNow(P); const bid = await P.evaluate(() => db.meta.babyId), [{ profile }] = await q('select profile from babies where id = $1', [bid]);
+      await P.selectOption('#formulaSel', 'Enfamil NeuroPro'); await P.fill('#ml', '100'); await P.click('#save');
+      assert.equal(await P.evaluate(id => `${kidById(id).formula}|${usualFormula(kidById(id))}`, mia), '|Enfamil NeuroPro', 'the third day makes it her usual formula, worked out from the feeds');
+      assert(/Enfamil NeuroPro is now Mia's usual formula/.test(await P.textContent('#toast')), await P.textContent('#toast'));
+      await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]');
+      assert.equal(await P.inputValue('#formulaSel'), 'Enfamil NeuroPro', 'and the default from now on');
+      assert.deepEqual(await P.$$eval('#formulaSel option[selected]', o => o.map(x => `${x.parentElement.label}: ${x.value}`)), ['Usual and recent: Enfamil NeuroPro'], 'marked once, at the top'); await P.click('#cancel');
+      // the other phone (a family member, who can't change the children's details) works out the same from the shared log, and no phone
+      // writes it into the shared profile (so a phone that was offline can never push an old copy of the profile because of it)
+      await syncNow(P); await syncNow(D);
+      assert.equal(await D.evaluate(id => usualFormula(kidById(id)), mia), 'Enfamil NeuroPro');
+      assert.equal((await q('select profile from babies where id = $1', [bid]))[0].profile, profile, 'the profile on the server is untouched');
+      // More shows it, and where it came from; a formula picked there by hand wins over the feeds before it
+      await P.click('[data-tab=more]'); assert.equal(await P.inputValue(`[data-kfs="${mia}"]`), 'Enfamil NeuroPro');
+      assert(/Picked up from the feeds/.test(await P.textContent(`.kidrow:has([data-kfs="${mia}"])`)), 'says it was picked up from the feeds');
+      await P.selectOption(`[data-kfs="${mia}"]`, 'Similac Advance');
+      assert.equal(await P.evaluate(id => `${kidById(id).formula}|${usualFormula(kidById(id))}`, mia), 'Similac Advance|Similac Advance', 'earlier NeuroPro feeds no longer count');
+      await syncNow(P); await syncNow(D); assert.equal(await D.evaluate(id => usualFormula(kidById(id)), mia), 'Similac Advance', 'and the choice reaches the other phones');
+      await P.click('[data-tab=day]'); await P.click(`[data-kid="${leo}"]`);
     });
 
     await step('the Guide tab: common newborn issues with when to call, and every month\'s milestones', async () => {

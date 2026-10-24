@@ -562,6 +562,30 @@ function milestoneCheck() {
   $('#msGuide').onclick = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; tab = 'guide'; render(); window.scrollTo(0, 0); };
 }
 
+// ---------- Formula ----------
+/** One child's formula feeds since `since` ([{ ts, formula }]). */
+const formulaFeeds = (k, since = 0) => db.events.filter(e => e.type === 'feed' && e.data && e.data.milk === 'Formula' && e.data.formula && e.ts > since && childOf(e) === k.id).map(e => ({ ts: e.ts, formula: e.data.formula }));
+/** The formula the feeds have settled on for a child since a parent last chose one by hand (see Formulas.learned), or ''. */
+const learnedFormula = k => Formulas.learned(formulaFeeds(k, k.formulaAt || 0));
+/** The formula to suggest for a child: what the feeds have settled on, else the one a parent chose. Worked out on every phone from the
+    shared log, so it is never written back into the profile by itself. */
+const usualFormula = k => (k ? learnedFormula(k) || k.formula || '' : '');
+/** Formulas given to these children in the last 30 days, most recent first (for the top of the list). */
+function recentFormulas(ks) {
+  const since = Date.now() - 30 * DAY, seen = new Map();
+  for (const k of ks) for (const f of formulaFeeds(k, since)) if (!seen.has(f.formula) || seen.get(f.formula) < f.ts) seen.set(f.formula, f.ts);
+  return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]).slice(0, 6);
+}
+/** The formula drop-down: usual and recent ones first, then common formulas by region (the phone's region first), then "Other". */
+function formulaPicker(attrs, cur, recent, dis = '') {
+  const opt = (v, sel) => `<option value="${esc(v)}"${sel && v === cur ? ' selected' : ''}>${esc(v)}</option>`, lately = [...new Set([cur, ...recent].filter(Boolean))];
+  return `<select class="fsel" ${attrs.sel} ${dis}><option value=""${cur ? '' : ' selected'}>Choose a formula…</option>
+    ${lately.length ? `<optgroup label="Usual and recent">${lately.map(v => opt(v, true)).join('')}</optgroup>` : ''}
+    ${Formulas.ordered().map(r => `<optgroup label="${esc(r.name)}">${r.items.map(v => opt(v, false)).join('')}</optgroup>`).join('')}
+    <option value="__other">Other (type it in)…</option></select>
+    <input type="text" class="fother" maxlength="60" placeholder="Type the formula's name" ${attrs.txt} ${dis} hidden>`;
+}
+
 // ---------- More ----------
 /** One block per child: name, birth date, boy/girl and colour. Only people who may edit the profile can change them. */
 function kidsHtml() {
@@ -571,7 +595,8 @@ function kidsHtml() {
       <div class="kh">${avatar(k, 'lg')}<input type="text" data-kn="${k.id}" maxlength="60" value="${esc(k.name)}" placeholder="Name" aria-label="Name" ${dis}></div>
       <label class="f">Birth date</label><input type="date" data-kb="${k.id}" value="${esc(k.birth)}" ${dis}>
       <label class="f">Boy or girl</label><div class="chips">${chip('ks-' + k.id, 'boy', 'Boy', k.sex === 'boy', '', true)}${chip('ks-' + k.id, 'girl', 'Girl', k.sex === 'girl', '', true)}${chip('ks-' + k.id, '', 'Not set', !k.sex, '', true)}</div>
-      <label class="f">Formula <small>(if they have formula)</small></label><input type="text" data-kf="${k.id}" maxlength="60" value="${esc(k.formula || '')}" placeholder="Brand and type, e.g. Similac 360 Total Care" ${dis}>
+      <label class="f">Usual formula</label>${formulaPicker({ sel: `data-kfs="${k.id}" aria-label="Usual formula"`, txt: `data-kft="${k.id}" aria-label="Formula name"` }, usualFormula(k), recentFormulas([k]), dis)}
+      <p class="note" style="margin:4px 0 0">${learnedFormula(k) && learnedFormula(k) !== k.formula ? 'Picked up from the feeds: it was given at every formula feed three days running.' : 'When one formula is given at every formula feed three days running, it becomes the usual one.'}</p>
       <label class="f">Colour</label><div class="swatches" role="radiogroup" aria-label="Colour">${Kids.swatches(k.sex).map(c => `<button type="button" class="sw ${c === k.color ? 'on' : ''}" data-kc="${k.id}" data-c="${c}" style="--k:${c}" role="radio" aria-checked="${c === k.color}" aria-label="${c}" ${dis}>${c === k.color ? '✓' : ''}</button>`).join('')}</div>
       ${can && ks.length > 1 ? `<button class="btn d" data-krm="${k.id}" style="margin-top:12px">Remove ${esc(kidName(k))}</button>` : ''}</div>`).join('')}
     ${can && ks.length < Kids.MAX ? '<button class="btn" id="kAdd" style="width:100%;margin-top:6px">+ Add a child</button>' : ''}</div>`;
@@ -632,7 +657,14 @@ function bindMore() {
   const commit = (msg) => { db.baby.name = kids()[0].name; db.baby.birth = kids()[0].birth; Sync.linked() ? Sync.pushBaby() : save(); render(); if (msg) toast(msg); };
   const K = id => kidById(id);
   document.querySelectorAll('[data-kn]').forEach(i => i.onchange = () => { const k = K(i.dataset.kn); if (k && Sync.can('profile')) { k.name = i.value.trim().slice(0, 60); commit(); } });
-  document.querySelectorAll('[data-kf]').forEach(i => i.onchange = () => { const k = K(i.dataset.kf); if (k && Sync.can('profile')) { k.formula = i.value.trim().slice(0, 60); commit('Saved'); } });
+  const setFormula = (k, name) => { k.formula = name.trim().slice(0, 60); k.formulaAt = Date.now(); commit('Saved'); };   // feeds before now don't count towards learning another
+  document.querySelectorAll('[data-kfs]').forEach(sel => sel.onchange = () => {
+    const k = K(sel.dataset.kfs), other = document.querySelector(`[data-kft="${sel.dataset.kfs}"]`);
+    if (!k || !Sync.can('profile')) return;
+    if (sel.value === '__other') { other.hidden = false; other.focus(); return; }
+    setFormula(k, sel.value);
+  });
+  document.querySelectorAll('[data-kft]').forEach(i => i.onchange = () => { const k = K(i.dataset.kft); if (k && Sync.can('profile') && i.value.trim()) setFormula(k, i.value); });
   document.querySelectorAll('[data-kb]').forEach(i => i.onchange = () => { const k = K(i.dataset.kb); if (k && Sync.can('profile')) { k.birth = i.value; commit('Saved'); } });
   kids().forEach(k => document.querySelectorAll(`[name="ks-${k.id}"]`).forEach(r => r.onchange = () => {
     if (!Sync.can('profile') || !r.checked) return;
@@ -679,6 +711,8 @@ const chip = (name, val, label, checked, cls = '', radio = false) =>
 const radios = (name, opts, cur, cls) => `<div class="chips">${opts.map(o => chip(name, o, esc(o), o === cur, cls, true)).join('')}</div>`;
 const num = (id, v, ph, step = 1) => `<input id="${id}" type="number" inputmode="decimal" min="0" step="${step}" value="${v ?? ''}" placeholder="${ph}">`;
 
+/** The child a feed is for (to suggest their formula): the entry's own, else the open page's, else the first. */
+const feedKid = ev => kidById(ev ? childOf(ev) : dayKid()) || kids()[0];
 function openSheet(type, ev) {
   const editing = !!ev;
   type = ev ? ev.type : type;
@@ -692,7 +726,7 @@ function openSheet(type, ev) {
     <label class="f">Type</label>${radios('kind', ['breast', 'bottle'], d.kind || 'breast')}
     <div id="fBreast"><label class="f">Side</label>${radios('side', ['Left', 'Right', 'Both'], d.side)}<label class="f">Minutes</label>${num('min', d.min, 'e.g. 15')}</div>
     <div id="fBottle"><label class="f">Amount (ml)</label>${num('ml', d.ml, 'e.g. 90')}<label class="f">Milk</label>${radios('milk', ['Breast milk', 'Formula'], d.milk)}
-      <div id="fFormula"><label class="f">Which formula</label><input id="formula" type="text" maxlength="60" value="${esc(ev ? d.formula || '' : ((kidById(ev ? childOf(ev) : (dayKid() === 'all' ? '' : dayKid())) || kids()[0]).formula || ''))}" placeholder="e.g. Similac 360 Total Care"></div></div>`;
+      <div id="fFormula"><label class="f">Which formula</label>${formulaPicker({ sel: 'id="formulaSel" aria-label="Which formula"', txt: 'id="formula" aria-label="Formula name"' }, ev ? d.formula || '' : usualFormula(feedKid(ev)), recentFormulas(ev ? [feedKid(ev)] : kids()))}</div></div>`;
   if (type === 'diaper') body = `
     <label class="f">What was in it?</label><div class="chips">${chip('pee', 1, '💧 Pee', d.pee ?? !editing)}${chip('poo', 1, '💩 Poo', d.poo)}${chip('rash', 1, 'Rash', d.rash, 'warn')}</div>
     <div id="dColor"><label class="f">Poo colour</label>${radios('color', STOOL, d.color, '')}</div>`;
@@ -721,10 +755,17 @@ function openSheet(type, ev) {
   const S = $('#sheet'), checked = n => S.querySelector(`[name=${n}]:checked`);
   const val = n => { const c = checked(n); return c ? c.value : ''; };
   const sync = () => {
-    if (type === 'feed' && $('#fBreast')) { const b = val('kind') === 'bottle'; $('#fBreast').hidden = b; $('#fBottle').hidden = !b; $('#fFormula').hidden = val('milk') !== 'Formula'; }
+    if (type === 'feed' && $('#fBreast')) {
+      const b = val('kind') === 'bottle'; $('#fBreast').hidden = b; $('#fBottle').hidden = !b; $('#fFormula').hidden = val('milk') !== 'Formula';
+      $('#formula').hidden = $('#formulaSel').value !== '__other';
+      // logging for several children: suggest the first ticked child's usual formula, until a formula is picked by hand
+      const first = S.querySelector('[name=kid]:checked');
+      if (!ev && first && !S.dataset.formulaPicked) { const u = usualFormula(kidById(first.value)); if (u && [...$('#formulaSel').options].some(o => o.value === u)) $('#formulaSel').value = u; }
+    }
     if (type === 'diaper' && $('#dColor')) $('#dColor').hidden = !checked('poo');
   };
-  S.onchange = sync; sync();
+  S.onchange = e => { if (e && e.target && (e.target.id === 'formulaSel' || e.target.id === 'formula')) S.dataset.formulaPicked = '1'; sync(); };
+  delete S.dataset.formulaPicked; sync();
   S.querySelectorAll('[data-ago]').forEach(b => b.onclick = () => { $('#ts').value = toLocalInput(Date.now() - b.dataset.ago * MIN); });
   const en = S.querySelector('[data-endnow]'); if (en) en.onclick = () => { $('#end').value = toLocalInput(Date.now()); };
   const close = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; };
@@ -734,8 +775,9 @@ function openSheet(type, ev) {
     const ts = fromLocalInput($('#ts').value);
     if (!ts) return toast('Please pick a time');
     const n = id => { const v = $(id).value; return v === '' ? undefined : +v; };
+    const formulaName = () => { const sel = $('#formulaSel'); return sel ? (sel.value === '__other' ? $('#formula').value : sel.value).trim().slice(0, 60) : ''; };
     let data = {}, end;
-    if (type === 'feed') data = val('kind') === 'bottle' ? { kind: 'bottle', ml: n('#ml'), milk: val('milk'), ...(val('milk') === 'Formula' && $('#formula').value.trim() ? { formula: $('#formula').value.trim().slice(0, 60) } : {}) } : { kind: 'breast', side: val('side'), min: n('#min') };
+    if (type === 'feed') data = val('kind') === 'bottle' ? { kind: 'bottle', ml: n('#ml'), milk: val('milk'), ...(val('milk') === 'Formula' && formulaName() ? { formula: formulaName() } : {}) } : { kind: 'breast', side: val('side'), min: n('#min') };
     if (type === 'diaper') {
       data = { pee: !!checked('pee'), poo: !!checked('poo'), rash: !!checked('rash') };
       if (data.poo) data.color = val('color');
@@ -753,6 +795,7 @@ function openSheet(type, ev) {
     const who = multi ? [...S.querySelectorAll('[name=kid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
     if (!who.length) return toast('Choose who this is for');
     if (type === 'sleep' && !end) { for (const id of who) { const cur = activeSleep(id); if (cur && cur !== ev) return toast(`${multi ? kidName(kidById(id)) + ' is' : 'Already'} sleeping – tap “Woke up” first`); } }
+    const usualBefore = new Map(who.map(id => [id, type === 'feed' ? usualFormula(kidById(id)) : '']));
     for (const id of who) {
       const rec = ev || { id: uid(), type, by: Auth.id || undefined };
       Object.assign(rec, { ts, data: structuredClone(data), note: $('#note').value.trim(), updated: stamp(), child: id });
@@ -761,6 +804,8 @@ function openSheet(type, ev) {
     }
     if (who.length === 1) { if (dayKid() !== who[0]) setKid(who[0]); } else if (dayKid() !== 'all' && !who.includes(dayKid())) setKid('all');
     save(); close(); viewDay = startOfDay(ts); render(); toast(who.length > 1 ? `Saved for ${who.length} children` : 'Saved');
+    const settled = type === 'feed' ? who.filter(id => learnedFormula(kidById(id)) && usualFormula(kidById(id)) !== usualBefore.get(id)) : [];
+    if (settled.length) toast(`${usualFormula(kidById(settled[0]))} is now ${settled.map(id => kidName(kidById(id))).join(' and ')}'s usual formula`);
     if (type === 'diaper' && data.poo && STOOL_WARN.includes(data.color)) setTimeout(() => alert('Red-streaked or pale / white stools can be a sign of a problem. Please tell your pediatrician (and call straight away if your baby seems unwell).'), 300);
     if (type === 'health' && data.symptoms.some(s => URGENT.includes(s))) setTimeout(() => alert('One of these symptoms can be urgent. If your baby has blue lips/face, trouble breathing, a fever (38°C / 100.4°F+ in a newborn) or is hard to wake, call your pediatrician or emergency services now.'), 300);
   };

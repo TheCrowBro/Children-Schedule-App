@@ -244,3 +244,5 @@ details.tbl{margin-top:4px}details.tbl>summary{min-height:36px;padding:6px 0;fon
 @keyframes stars-in{0%,45%{opacity:0}80%,100%{opacity:.9}}
 @keyframes stars-out{0%{opacity:.9}35%,100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.sky{display:none}}
+.card select.fsel{width:100%;padding:10px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.fother{margin-top:6px}
