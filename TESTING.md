@@ -78,7 +78,8 @@ Use a test Supabase project and throwaway email addresses. Tick each box per pla
 - [ ] Change the phone's time zone and clock (±1 h, across midnight, DST change): entries stay sensible, nothing disappears
 - [ ] Dark mode, 200% font size, small phone, large phone/tablet, landscape: nothing is cut off; sheets are not hidden by the keyboard; notch and gesture bar are respected
 - [ ] More → Appearance → Match phone: with the app open, turn the phone's dark mode on and off (quick settings / Control Centre): the sunset or sunrise plays and the app follows, also after coming back from the background; with Reduce Motion on it switches without the sky
-- [ ] The formula list opens as the phone's own picker, grouped by region with the phone's region first; "Other" brings up the keyboard
+- [ ] The formula list opens under the field: usual and recent formulas on top, then a twirl-down per region with More → Where you are first and open; the buttons are easy to tap, and "Other" brings up the keyboard
+- [ ] Starting a trip and tapping "We're home" play the journey smoothly, also on an older phone; with Reduce Motion (iOS) or Remove animations (Android) on, the page switches straight over
 - [ ] Travel mode on a real trip (or with the phone's date changed): the travel page appears on the start date and goes back to normal after the return date; the journey timer keeps counting with the screen off; the Android back button closes the tutorial before anything else
 - [ ] The tutorial with TalkBack / VoiceOver: each step is read out, and the Next / Back / Skip buttons can be reached
 - [ ] TalkBack / VoiceOver can reach the main buttons; Android back button closes sheets, then returns to Day, then exits
