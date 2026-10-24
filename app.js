@@ -84,12 +84,13 @@ const addDays = (t, n) => { const d = new Date(t); d.setDate(d.getDate() + n); r
 const dkey = t => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 const fmtTime = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const fmtDate = t => new Date(t).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+const fmtShort = t => new Date(t).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 const toLocalInput = t => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const fromLocalInput = v => new Date(v).getTime();
 const fmtDur = m => { m = Math.round(m); if (m < 60) return `${m}m`; return `${Math.floor(m / 60)}h ${m % 60 ? m % 60 + 'm' : ''}`.trim(); };
 const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 const r1 = n => Math.round(n * 10) / 10;
-function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, Math.max(2200, String(msg).length * 60)); }   // longer messages stay longer
 
 // ---------- Event description ----------
 function describe(e) { try { return describeEntry(e); } catch (err) { return [(TYPES[e.type] || {}).label || 'Entry', '']; } }
@@ -109,6 +110,8 @@ function describeEntry(e) {
     case 'play': return [d.activity || 'Play', d.min ? d.min + ' min' : ''];
     case 'health': return [(d.symptoms || []).join(', ') || 'Note', d.temp ? `Temp ${d.temp}°` : ''];
     case 'med': return [d.name || 'Medication', d.dose || ''];
+    case 'trip': return [`Trip ${Travel.MEANS[Travel.meansOf(e)].by}`, `${fmtShort(e.ts)} – ${fmtShort(Travel.ends(e) - 1)}`];
+    case 'leg': return [Travel.MEANS[Travel.meansOf(e)].moving, Number.isFinite(e.end) ? fmtDur((e.end - e.ts) / MIN) : 'under way'];
   }
   return [e.type, ''];
 }
@@ -134,7 +137,7 @@ function setKid(id) { selKid = id; if (id !== 'all') lastKid = id; db.meta.kid =
 /** The child whose numbers the Month and Stats tabs show (Everyone falls back to the last child looked at). */
 function viewKid() { const k = curKid(); return k !== 'all' ? k : (kidById(lastKid) ? lastKid : kids()[0].id); }
 const dayKid = () => (tab === 'day' ? curKid() : viewKid());
-const scoped = () => { const k = dayKid(); return k === 'all' ? db.events : db.events.filter(e => childOf(e) === k); };
+const scoped = () => { const k = dayKid(), log = db.events.filter(e => !Travel.isTravel(e.type)); return k === 'all' ? log : log.filter(e => childOf(e) === k); };
 const eventsOnDay = day => scoped().filter(e => e.ts >= day && e.ts < day + DAY).sort((a, b) => a.ts - b.ts);
 const activeSleep = id => db.events.find(e => e.type === 'sleep' && !e.end && (!id || childOf(e) === id));
 const initial = k => esc([...kidName(k)][0] || '?').toUpperCase();
@@ -143,16 +146,25 @@ const dark = () => Theme.isDark();   // light or dark, as chosen in More → App
 /** Colours the whole app in the open child's colour (set as plain hex, so no modern CSS colour functions are needed). */
 function theme() {
   const k = kidById(dayKid()), strong = k ? k.color : '#64759f', dk = dark(), R = document.documentElement.style, set = (n, v) => R.setProperty(n, v);
-  const brand = dk ? Kids.mix(strong, '#ffffff', 0.38) : strong;
-  set('--brand', brand); set('--on-brand', dk ? '#1d1b19' : '#ffffff');
-  set('--wash1', Kids.rgba(brand, dk ? 0.22 : 0.20)); set('--wash2', Kids.rgba(brand, dk ? 0.12 : 0.10)); set('--wash3', Kids.rgba(brand, dk ? 0.07 : 0.05));
-  const G = dk ? GCOLOR.dark : GCOLOR.light;
-  for (const g of GROUPS) set(`--g-${g.id}`, G[g.id]);
-  set('--g-poo', G.poo); set('--g-meds', Kids.mix(G.health, dk ? '#1d1b19' : '#ffffff', 0.45));
-  for (const t of Object.keys(TYPES)) { const c = G[groupOf(t).id]; set(`--${t}`, c); set(`--${t}-ink`, dk ? Kids.mix(c, '#ffffff', 0.3) : Kids.mix(c, INK, 0.25)); }
-  set('--poo-ink', dk ? '#d0b080' : '#7d5a2c');
+  const trip = tab === 'day' ? tripOn(viewDay) : null, accent = dk ? Travel.ACCENT.dark : Travel.ACCENT.light;
+  const brand = dk ? Kids.mix(strong, '#ffffff', 0.38) : strong, wash = trip ? accent : brand;
+  set('--brand', brand); set('--on-brand', dk ? '#1d1b19' : '#ffffff'); set('--trip', accent);
+  set('--wash1', Kids.rgba(wash, dk ? 0.22 : 0.20)); set('--wash2', Kids.rgba(wash, dk ? 0.12 : 0.10)); set('--wash3', Kids.rgba(wash, dk ? 0.07 : 0.05));
+  for (const [n, v] of paletteVars(trip ? Travel.PALETTE : GCOLOR, dk)) set(n, v);
+  document.body.classList.toggle('travel', !!trip);
   const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = dk ? '#1d1b19' : Kids.mix(brand, '#ffffff', 0.86);
 }
+
+/** The colour variables of a palette (the home set, or the travel set) for light or dark. */
+function paletteVars(P, dk) {
+  const G = P[dk ? 'dark' : 'light'], v = GROUPS.map(g => [`--g-${g.id}`, G[g.id]]);
+  v.push(['--g-poo', G.poo], ['--g-meds', Kids.mix(G.health, dk ? '#1d1b19' : '#ffffff', 0.45)]);
+  for (const t of Object.keys(TYPES)) { const c = G[groupOf(t).id]; v.push([`--${t}`, c], [`--${t}-ink`, dk ? Kids.mix(c, '#ffffff', 0.3) : Kids.mix(c, INK, 0.25)]); }
+  v.push(['--poo-ink', P === GCOLOR ? (dk ? '#d0b080' : '#7d5a2c') : G.poo]);
+  return v;
+}
+/** Inline style that colours a block in the travel set (a travel day shown outside the travel page, as in the month view). */
+const travelVars = () => paletteVars(Travel.PALETTE, dark()).map(([n, v]) => `${n}:${v}`).join(';');
 
 // ---------- Rendering ----------
 function syncLine() { const e = $('#syncLine'); e.textContent = Acct.syncLine(); Icons.paint(e); }
@@ -163,7 +175,7 @@ function render() {
   $('#title').textContent = dayKid() === 'all' ? 'Everyone' : (vk && vk.name ? `${vk.name}'s Log` : (multi ? `${kidName(vk)}'s Log` : 'Little Log'));
   $('#av').innerHTML = vk ? avatar(vk) : ''; $('#av').hidden = !vk;
   const g = Acct.gate();
-  document.body.classList.toggle('gated', !!g);
+  document.body.classList.toggle('gated', !!g); $('#helpBtn').hidden = !!g;
   if (g) { $('#sleepBanner').hidden = true; $('#syncLine').textContent = ''; $('#kidBar').hidden = true; $('#av').hidden = true; $('#view').innerHTML = g.html; g.bind(); Icons.paint($('#view')); return; }
   syncLine();
   // one tab per child (plus "Everyone" on the Day tab)
@@ -182,26 +194,27 @@ function render() {
   }
   $('#view').innerHTML = { day: dayView, month: monthView, stats: statsView, guide: guideView, family: Acct.familyHtml, more: moreView }[tab]();
   bind(); Icons.paint($('#view')); Acct.updateBadge();
-  milestoneCheck();
+  milestoneCheck(); autoTour();
 }
 
 function dayView() {
-  const evs = eventsOnDay(viewDay), isToday = viewDay === startOfDay(Date.now()), twelve = face12();
+  const evs = eventsOnDay(viewDay), isToday = viewDay === startOfDay(Date.now()), twelve = face12(), trip = tripOn(viewDay), TM = trip && Travel.MEANS[Travel.meansOf(trip)];
   const sp = clockSpan(viewDay), shown = evs.filter(e => e.ts >= sp.start && e.ts < sp.start + sp.len);
   const q = quad == null ? null : quadInfo(quad, viewDay), inQ = q ? evs.filter(e => e.ts >= q.start && e.ts < q.end) : null;
   const seg = (attr, opts, cur, label) => `<div class="seg mini" role="group" aria-label="${label}">${opts.map(([v, l]) => `<button data-${attr}="${v}" class="${v === cur ? 'on' : ''}" aria-pressed="${v === cur}">${l}</button>`).join('')}</div>`;
-  return `
+  return `${trip ? tripCard(trip) : ''}
   <div class="datenav"><button data-nav="-1" aria-label="Previous day">‹</button>
     <div class="d">${isToday ? 'Today' : fmtDate(viewDay)}<small>${isToday ? fmtDate(viewDay) : ''}${ageText(viewDay)}</small></div>
     <button data-nav="1" aria-label="Next day" ${isToday ? 'disabled' : ''}>›</button></div>
-  ${quickButtons()}
-  <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${GCOLOR.light[g.id]}`).join(';')}">${clockSvg(shown, viewDay)}
-    <div class="clockctl">${seg('face', [['24', '24 h'], ['12', '12 h']], twelve ? '12' : '24', 'Clock face')}${twelve ? seg('half', [['0', 'AM'], ['1', 'PM']], String(half), 'Half of the day') : ''}<button class="artbtn" data-art>🎨 ${esc(Art.byId(artOf()).name)}</button></div>
+  ${trip && isToday ? travelQuick() : quickButtons()}
+  <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${(trip ? Travel.PALETTE : GCOLOR).light[g.id]}`).join(';')};--trip:${Travel.ACCENT.light}">${clockSvg(shown, viewDay)}
+    <div class="clockctl">${seg('face', [['24', '24 h'], ['12', '12 h']], twelve ? '12' : '24', 'Clock face')}${twelve ? seg('half', [['0', 'AM'], ['1', 'PM']], String(half), 'Half of the day') : ''}${trip ? `<span class="artbtn tripart">${TM.icon} ${esc(Art.byId(TM.art).name)}</span>` : `<button class="artbtn" data-art>🎨 ${esc(Art.byId(artOf()).name)}</button>`}</div>
     ${clockLegend(shown)}
     <p class="note hint">${twelve ? `Showing ${half ? 'noon to midnight' : 'midnight to noon'}; switch AM and PM for the other half of the day.` : 'Midnight is at the top, noon at the bottom.'} Tap a dot to open an entry, or a quarter of the dial for just those hours.</p></div>
   ${q ? `<div class="card quadlist"><div class="qhead"><span><b>${q.label}</b> <small>${q.range} · ${inQ.length} ${inQ.length === 1 ? 'entry' : 'entries'}</small></span><button class="btn" data-quadclear style="padding:6px 12px">Whole day</button></div>
       ${inQ.length ? inQ.map(evRow).join('') : '<div class="empty">Nothing in these hours.</div>'}</div>`
-    : (evs.length ? `<h2>Details</h2>${groupedList(evs)}` : `<div class="empty">Nothing logged yet.${Sync.can('add') ? '<br>Tap a button above to add an entry.' : ''}</div>`)}`;
+    : (evs.length ? `<h2>Details</h2>${groupedList(evs)}` : `<div class="empty">Nothing logged yet.${Sync.can('add') ? '<br>Tap a button above to add an entry.' : ''}</div>`)}
+  ${!trip && isToday ? tripButton() : ''}`;
 }
 
 // ---------- Day clock ----------
@@ -237,7 +250,7 @@ function clockSvg(evs, day) {
   // The frame is a carriage-clock outline in thin soft-gold lines, like the lines of the dial, so the dial stays the focus. The painting
   // is a picture drawn once and reused. The dial is a plain white face with a black rim, the same in light and dark mode, so the entries
   // on it always read the same way.
-  const th = Art.byId(artOf()), dk = dark(), F = Art.FRAME, K = F.k, PW = Art.W * K, PH = Art.H * K;
+  const trip = tab === 'day' ? tripOn(day) : null, th = Art.byId(trip ? Travel.MEANS[Travel.meansOf(trip)].art : artOf()), dk = dark(), F = Art.FRAME, K = F.k, PW = Art.W * K, PH = Art.H * K;
   const C = { x: F.x + Art.DIAL.x * K, y: F.y + Art.DIAL.y * K }, RD = Art.DIAL.r * K, rr = r => r * K;
   const RR = { sleep: rr(90), feed: rr(78), diaper: rr(66), vomit: rr(54), play: rr(42), health: rr(30) };
   const sp = clockSpan(day), twelve = face12(), frac = t => (t - sp.start) / sp.len, ang = fr => fr * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C.x + r * Math.cos(a), C.y + r * Math.sin(a)];
@@ -281,11 +294,17 @@ function clockSvg(evs, day) {
     const s0 = Math.max(0, frac(e.ts)), s1 = Math.min(1, frac(e.end || Date.now()));
     if (s1 > s0) data += `<path class="sarc" d="${arc(ang(s0), ang(Math.max(s1, s0 + 0.004)), RR.sleep)}"/>`;
   }
+  // the journey: time on the move lights up the outer (railway) track of the dial, in the travel colour
+  if (trip) for (const l of Travel.legs(db.events, sp.start, sp.start + sp.len, Date.now())) {
+    const s0 = Math.max(0, frac(l.ts)), s1 = Math.min(1, frac(Number.isFinite(l.end) ? l.end : Date.now()));
+    if (s1 > s0) data += `<path class="leg" d="${arc(ang(s0), ang(Math.max(s1, s0 + 0.004)), rr(115))}"/>`;
+  }
   const all = dayKid() === 'all';
   for (const e of evs) {
     const g = groupOf(e.type).id, a = ang(frac(e.ts)), r = RR[g], [x, y] = P(a, r), [d] = describe(e), k = all ? kidById(childOf(e)) : null;
-    data += `<g class="ray" data-edit="${e.id}" role="button" tabindex="0" aria-label="${esc(fmtTime(e.ts) + ' ' + TYPES[e.type].label + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
-      <title>${esc(fmtTime(e.ts) + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
+    const about = e.data && e.data.approx ? 'about ' : '';
+    data += `<g class="ray${about ? ' approx' : ''}" data-edit="${e.id}" role="button" tabindex="0" aria-label="${esc(about + fmtTime(e.ts) + ' ' + TYPES[e.type].label + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
+      <title>${esc(about + fmtTime(e.ts) + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
       <path d="M${xy(a, rr(17))}L${xy(a, r - rr(5))}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/><circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
   }
   // blued-steel hands at the current time, when it is on the dial: one 24-hour hand, or an hour and a minute hand; then the centre boss
@@ -360,7 +379,7 @@ const isWarn = e => (e.type === 'health' && (e.data.symptoms || []).some(s => UR
 function evRow(e) {
   const [a, b] = describe(e), t = TYPES[e.type];
   return `<div class="card ev ${isWarn(e) ? 'alert' : ''}" style="--c:var(--${e.type})" data-edit="${e.id}">
-    <div class="t">${fmtTime(e.ts)}</div>
+    <div class="t">${e.data && e.data.approx ? '<span class="approx" title="About this time">~</span>' : ''}${fmtTime(e.ts)}</div>
     <div class="b">${kidTag(e)}${t.icon} <b>${esc(a)}</b>${b ? `<small>${esc(b)}</small>` : ''}${e.note ? `<small>“${esc(e.note)}”</small>` : ''}${byLine(e)}</div></div>`;
 }
 function ageText(day) {
@@ -374,26 +393,28 @@ function ageText(day) {
 function monthView() {
   const y = calMonth.getFullYear(), m = calMonth.getMonth();
   const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate(), today = startOfDay(Date.now());
-  let cells = '';
+  let cells = '', anyAway = false;
+  const tv = travelVars();
   for (let i = 0; i < first.getDay(); i++) cells += '<button class="blank" disabled></button>';
   for (let d = 1; d <= days; d++) {
-    const t = new Date(y, m, d).getTime(), evs = eventsOnDay(t);
-    const kinds = [...new Set(evs.map(e => e.type))];
-    cells += `<button data-day="${t}" class="${t === viewDay ? 'sel' : ''} ${t === today ? 'today' : ''}" aria-label="${esc(fmtDate(t))}${evs.length ? ', ' + evs.length + ' entries' : ''}">${d}<span class="dots">${GROUPS.filter(g => evs.some(e => g.types.includes(e.type))).map(g => `<i class="dot" style="--c:var(--g-${g.id})"></i>`).join('')}</span></button>`;
+    const t = new Date(y, m, d).getTime(), evs = eventsOnDay(t), away = Travel.during(db.events, t, addDays(t, 1));
+    if (away) anyAway = true;
+    cells += `<button data-day="${t}" class="${t === viewDay ? 'sel' : ''} ${t === today ? 'today' : ''} ${away ? 'tripday' : ''}"${away ? ` style="${tv}"` : ''} aria-label="${esc(fmtDate(t))}${away ? ', travelling' : ''}${evs.length ? ', ' + evs.length + ' entries' : ''}">${d}<span class="dots">${GROUPS.filter(g => evs.some(e => g.types.includes(e.type))).map(g => `<i class="dot" style="--c:var(--g-${g.id})"></i>`).join('')}</span></button>`;
   }
   return `
   <div class="datenav"><button data-month="-1" aria-label="Previous month">‹</button>
     <div class="d">${calMonth.toLocaleDateString([], { month: 'long', year: 'numeric' })}</div>
     <button data-month="1" aria-label="Next month">›</button></div>
   <div class="cal">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<div class="h">${d}</div>`).join('')}${cells}</div>
-  <div class="legend">${GROUPS.map(g => `<span><i style="--c:var(--g-${g.id})"></i>${g.label}</span>`).join('')}</div>
+  <div class="legend">${GROUPS.map(g => `<span><i style="--c:var(--g-${g.id})"></i>${g.label}</span>`).join('')}${anyAway ? '<span class="tripkey"><i></i>Travelling (its own colours)</span>' : ''}</div>
   ${monthDay()}`;
 }
 
 function monthDay() {
-  const evs = eventsOnDay(viewDay);
+  const evs = eventsOnDay(viewDay), away = Travel.during(db.events, viewDay, addDays(viewDay, 1)), M = away && Travel.MEANS[Travel.meansOf(away)];
   return `<h2>${fmtDate(viewDay)}</h2>
-  ${evs.length ? `${dayCounts(evs, viewDay)}<details class="more" data-grp="mAll" ${openGroups.has('mAll') ? 'open' : ''}><summary>All entries for this day<span class="chev" aria-hidden="true">›</span></summary>${groupedList(evs, 'm')}</details>` : '<div class="empty">No entries this day.</div>'}
+  <div class="${away ? 'travelday' : ''}"${away ? ` style="${travelVars()}"` : ''}>${away ? `<p class="tripnote">${M.icon} Travelling ${M.by}</p>` : ''}
+  ${evs.length ? `${dayCounts(evs, viewDay)}<details class="more" data-grp="mAll" ${openGroups.has('mAll') ? 'open' : ''}><summary>All entries for this day<span class="chev" aria-hidden="true">›</span></summary>${groupedList(evs, 'm')}</details>` : '<div class="empty">No entries this day.</div>'}</div>
   ${quickButtons()}`;
 }
 
@@ -500,9 +521,21 @@ function guideView() {
   <h2>Common with newborns</h2>
   ${Guide.COMMON.map(c => `<details class="gd" data-grp="g${c.id}" ${openGroups.has('g' + c.id) ? 'open' : ''}><summary><span class="gi">${c.icon}</span><span class="gt"><b>${esc(c.title)}</b></span><span class="chev" aria-hidden="true">›</span></summary>
     <p>${esc(c.body)}</p>${c.call ? `<p class="call">${esc(c.call)}</p>` : ''}</details>`).join('')}
+  <h2>Medicines</h2>
+  ${medsHtml()}
   <h2>Month by month</h2>
   ${ms.map(([n, M]) => milestoneDetails(+n, M)).join('')}
-  <p class="note">General information from AAP and CDC parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.</p>`;
+  <p class="note">General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.</p>`;
+}
+/** Over-the-counter medicines: one drop-down holding a drop-down per kind (fever and pain, colic, …) and the things never to give. */
+function medsHtml() {
+  const tw = (id, icon, title, sub, body, cls = '') => `<details class="gd ${cls}" data-grp="${id}" ${openGroups.has(id) ? 'open' : ''}><summary><span class="gi">${icon}</span><span class="gt"><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span><span class="chev" aria-hidden="true">›</span></summary>${body}</details>`;
+  const item = i => `<div class="medi"><b>${esc(i.name)}</b>${i.brands ? `<small>${esc(i.brands)}</small>` : ''}<p class="age">${esc(i.age)}</p><p>${esc(i.body)}</p></div>`;
+  const kinds = Guide.MEDS.map(c => tw('o' + c.id, c.icon, c.title, c.items.map(i => i.name).join(' · '),
+    `${c.note ? `<p class="note">${esc(c.note)}</p>` : ''}${c.items.map(item).join('')}${c.warn ? `<p class="call">${esc(c.warn)}</p>` : ''}`, 'med'));
+  const never = tw('onever', '⚠️', 'Never give a baby', '', `<ul>${Guide.NEVER.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`, 'med never');
+  return tw('omenu', '💊', 'Over-the-counter medicines', 'What is safe from what age, remedies parents mention, and what never to give',
+    `<div class="medbody"><p class="call">${esc(Guide.MEDS_INTRO[0])}</p><p class="note">${esc(Guide.MEDS_INTRO[1])}</p>${kinds.join('')}${never}</div>`, 'medmenu');
 }
 const milestoneBody = M => `${M.does.length ? `<p class="mh">What many babies do</p><ul>${M.does.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
   ${M.notice.length ? `<p class="mh">What parents often notice</p><ul>${M.notice.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
@@ -512,7 +545,7 @@ const milestoneDetails = (n, M) => `<details class="gd" data-grp="m${n}" ${openG
 function openArtPicker(forId = dayKid()) {
   const cur = artOf(forId), multi = kids().length > 1, who = forId === 'all' ? 'the All page' : `${kidName(kidById(forId))}'s page`;
   const close = popup(`<h3>🎨 Clock art</h3><p class="note">${multi ? `For ${esc(who)} on this phone.` : 'For this phone.'}</p>
-    <div class="artgrid">${Art.THEMES.map(t => { const u = Art.peek(t.id, 0.7); return `<button class="artopt ${t.id === cur ? 'on' : ''}" data-pick="${t.id}" aria-pressed="${t.id === cur}"><span class="thumb" style="background:${t.base}"><img alt="" data-th="${t.id}"${u ? ` src="${u}"` : ''}><i></i></span><span class="an">${t.name}</span></button>`; }).join('')}</div>
+    <div class="artgrid">${Art.THEMES.filter(t => !t.travel).map(t => { const u = Art.peek(t.id, 0.7); return `<button class="artopt ${t.id === cur ? 'on' : ''}" data-pick="${t.id}" aria-pressed="${t.id === cur}"><span class="thumb" style="background:${t.base}"><img alt="" data-th="${t.id}"${u ? ` src="${u}"` : ''}><i></i></span><span class="an">${t.name}</span></button>`; }).join('')}</div>
     ${multi && forId !== 'all' ? `<div class="chips" style="margin-top:12px">${chip('artAll', 1, 'Use it for every child', false)}</div>` : ''}
     <div class="row" style="margin-top:14px"><button class="btn" data-close>Done</button></div>`);
   $('#sheet').querySelectorAll('img[data-th]').forEach(img => { if (!img.getAttribute('src')) Art.url(img.dataset.th, 0.7).then(u => { img.src = u; }); });
@@ -549,7 +582,7 @@ function openDoctor(edit) {
 }
 /** Once a month, on each child's "month birthday", a sheet with what's common at that age. Remembered per phone. */
 function milestoneCheck() {
-  if (!$('#sheet').hidden || Acct.gate()) return;
+  if (!$('#sheet').hidden || Acct.gate() || Tour.active() || !Tour.seen('day')) return;   // (after the first tour of the home screen)
   const seen = db.meta.ms || (db.meta.ms = {});
   const due = kids().map(k => [k, Guide.monthsOld(k.birth)]).filter(([k, m]) => Guide.MILESTONES[m] && (seen[k.id] || 0) < m);
   if (!due.length) return;
@@ -584,6 +617,217 @@ function formulaPicker(attrs, cur, recent, dis = '') {
     ${Formulas.ordered().map(r => `<optgroup label="${esc(r.name)}">${r.items.map(v => opt(v, false)).join('')}</optgroup>`).join('')}
     <option value="__other">Other (type it in)…</option></select>
     <input type="text" class="fother" maxlength="60" placeholder="Type the formula's name" ${attrs.txt} ${dis} hidden>`;
+}
+
+// ---------- Travel ----------
+// A trip turns the Day tab into a travel page for its days (travel.js): the painting matches the way you travel, the entries take the
+// travel colours, logging is a tap or two, and the journey shows on the clock. The trip is shared with everyone in the log.
+/** The trip that makes a day a travel day: today, the one going on now; other days, one covering any of the day. */
+function tripOn(day) {
+  const now = Date.now();
+  return day === startOfDay(now) ? Travel.at(db.events, now) : Travel.during(db.events, day, addDays(day, 1));
+}
+/** The top of a travel day: the trip, the journey under way (with a reminder to stop on long drives), and tips for this way of travelling. */
+function tripCard(tr) {
+  const m = Travel.meansOf(tr), M = Travel.MEANS[m], now = Date.now(), live = tr.ts <= now && now < Travel.ends(tr), today = viewDay === startOfDay(now);
+  const first = startOfDay(tr.ts), last = startOfDay(Travel.ends(tr) - 1), days = Math.round((last - first) / DAY) + 1, n = Math.min(days, Math.max(1, Math.round((viewDay - first) / DAY) + 1));
+  const leg = live && today ? Travel.moving(db.events) : null, mins = leg ? (now - leg.ts) / MIN : 0, rest = !!leg && m === 'car' && mins >= 120;
+  const can = leg ? Sync.can('edit', leg) : Sync.can('add');
+  const journey = live && today ? `<div class="legrow ${rest ? 'warn' : ''}"><span>${leg ? `<b>${M.moving}</b> since ${fmtTime(leg.ts)} · <span class="nw">${fmtDur(mins)}</span>` : M.still}</span>${can ? `<button class="btn tbtn" data-leg>${leg ? M.stop : M.go}</button>` : ''}</div>
+    ${rest ? '<p class="call">Time for a break: many car seat makers advise taking young babies out of the seat at least every 2 hours.</p>' : ''}
+    ${leg && m === 'plane' ? '<p class="note">Coming in to land? Offer a feed, a bottle or a pacifier: swallowing helps their ears.</p>' : ''}` : '';
+  return `<div class="card tripcard"><div class="th"><span class="tm">${M.icon}</span><span class="tt"><b>Travelling ${M.by}</b><small>Day ${n} of ${days} · ${live ? 'back' : 'until'} ${fmtShort(last)}</small></span></div>
+    ${journey}
+    <details class="tips" data-grp="ttips" ${openGroups.has('ttips') ? 'open' : ''}><summary>Tips for travelling ${M.by}<span class="chev" aria-hidden="true">›</span></summary><ul>${Travel.TIPS[m].map(t => `<li>${esc(t)}</li>`).join('')}</ul></details>
+    ${Sync.can('edit', tr) ? `<div class="row"><button class="btn" data-tripedit="${tr.id}">Change trip</button>${live && today ? '<button class="btn" data-triphome>We\'re home</button>' : ''}</div>` : ''}</div>`;
+}
+/** At the bottom of today's page: switch to travel mode, or the trip coming up. */
+function tripButton() {
+  if (!Sync.can('add')) return '';
+  const up = Travel.upcoming(db.events, Date.now());
+  if (up) { const M = Travel.MEANS[Travel.meansOf(up)]; return `<button class="tripbtn" data-tripedit="${up.id}"><span class="tm">${M.icon}</span><span><b>Trip coming up ${M.by}</b><small>${fmtShort(up.ts)} – ${fmtShort(Travel.ends(up) - 1)}. Tap to change it.</small></span><span class="chev" aria-hidden="true">›</span></button>`; }
+  return `<button class="tripbtn" data-tripnew><span class="tm">🧳</span><span><b>Travelling?</b><small>Switch to travel mode for the trip: quicker logging and a clock to match the journey</small></span><span class="chev" aria-hidden="true">›</span></button>`;
+}
+/** Travel: the four things logged most, as big buttons with one-tap sheets; the rest are one more tap away. */
+function travelQuick() {
+  if (!Sync.can('add')) return '';
+  const P = Travel.PALETTE.light, label = { feed: 'Feed', diaper: 'Diaper', sleep: 'Asleep', vomit: 'Spit-up' };
+  return `<div class="quick tq">${Object.keys(label).map(k => `<button data-qadd="${k}" style="--cw:${Kids.rgba(P[groupOf(k).id], 0.3)}"><b>${TYPES[k].icon}</b>${label[k]}</button>`).join('')}</div>
+    <button class="qmore" data-qmore>More: play, night waking${Sync.can('health') ? ', health and medicine' : ''}</button>`;
+}
+function openMoreTypes() {
+  const types = ['play', 'wake', 'health', 'med'].filter(k => Sync.can('health') || (k !== 'health' && k !== 'med'));
+  const close = popup(`<h3>More to log</h3><div class="quick">${types.map(k => `<button data-more="${k}"><b>${TYPES[k].icon}</b>${TYPES[k].label}</button>`).join('')}</div>
+    <div class="row" style="margin-top:14px"><button class="btn" data-close>Close</button></div>`);
+  $('#sheet').querySelectorAll('[data-more]').forEach(b => b.onclick = () => { close(); openSheet(b.dataset.more); });
+}
+/** Start a trip or change one: how you're travelling, and from when until when. */
+function openTrip(ev) {
+  if (ev ? !Sync.can('edit', ev) : !Sync.can('add')) return toast("You don't have permission to do that");
+  const today = startOfDay(Date.now()), from = ev ? startOfDay(ev.ts) : today, to = ev ? startOfDay(Travel.ends(ev) - 1) : addDays(today, 2), cur = ev ? Travel.meansOf(ev) : 'car';
+  const close = popup(`<h3>🧳 ${ev ? 'Your trip' : 'Travelling'}</h3>
+    <label class="f">How are you travelling?</label>
+    <div class="means">${Travel.KINDS.map(k => `<label class="mean"><input type="radio" name="means" value="${k}" ${k === cur ? 'checked' : ''}><span><b>${Travel.MEANS[k].icon}</b>${Travel.MEANS[k].label}</span></label>`).join('')}</div>
+    <div class="dates"><span><label class="f" for="tripFrom">Leaving</label><input type="date" id="tripFrom" value="${dkey(from)}"></span><span><label class="f" for="tripTo">Back home</label><input type="date" id="tripTo" value="${dkey(to)}"></span></div>
+    <div class="mini">${[[0, 'Just today'], [2, '3 days'], [6, 'A week'], [13, 'Two weeks']].map(([n, l]) => `<button type="button" data-len="${n}">${l}</button>`).join('')}</div>
+    <p class="note">For these days the Day tab becomes a travel page on every phone sharing this log: a clock to match, its own colours, and logging in a tap or two.</p>
+    <div class="row" style="margin-top:14px">${ev && Sync.can('delete', ev) ? '<button class="btn d" id="tripDel">Delete</button>' : ''}<button class="btn" data-close>Cancel</button><button class="btn p" id="tripSave">${ev ? 'Save' : 'Start'}</button></div>`);
+  const S = $('#sheet'), F = $('#tripFrom'), T = $('#tripTo'), day = v => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v + 'T00:00').getTime() : NaN);
+  S.querySelectorAll('[data-len]').forEach(b => b.onclick = () => { const f = day(F.value); if (f) T.value = dkey(addDays(f, +b.dataset.len)); });
+  $('#tripSave').onclick = () => {
+    const f = day(F.value), t = day(T.value);
+    if (!f || !t) return toast('Pick both dates');
+    if (t < f) return toast('The day back is before the day you leave');
+    if (t - f > 92 * DAY) return toast('A trip can be up to three months');
+    const rec = ev || { id: uid(), type: 'trip', by: Auth.id || undefined };
+    Object.assign(rec, { ts: f, end: addDays(t, 1), data: { means: (S.querySelector('[name=means]:checked') || {}).value || 'car' }, note: '', updated: stamp() });
+    if (!ev) db.events.push(rec);
+    save(); close(); viewDay = startOfDay(Date.now()); quad = null; render(); window.scrollTo(0, 0);
+    toast(f > Date.now() ? `Saved: travel mode starts ${fmtShort(f)}` : 'Travel mode is on');
+  };
+  if ($('#tripDel')) $('#tripDel').onclick = () => { if (!confirm('Delete this trip? What you logged during it stays.')) return; removeEvent(ev); save(); close(); render(); toast('Trip deleted'); };
+}
+/** "We're home": the trip ends now (and so does a leg of the journey still running). */
+function endTrip() {
+  const now = Date.now(), tr = Travel.at(db.events, now), leg = Travel.moving(db.events);
+  if (!tr) return;
+  if (!Sync.can('edit', tr)) return toast("You can't change this trip");
+  tr.end = now; tr.updated = stamp();
+  if (leg && Sync.can('edit', leg)) { leg.end = Math.max(now, leg.ts + MIN); leg.updated = stamp(); }
+  save(); render(); window.scrollTo(0, 0); toast('Welcome home');
+}
+/** Set off / stopped: the legs of the journey, shown along the clock's outer track. */
+function toggleLeg() {
+  const now = Date.now(), tr = Travel.at(db.events, now); if (!tr) return;
+  const m = Travel.meansOf(tr), M = Travel.MEANS[m], leg = Travel.moving(db.events);
+  if (leg) {
+    if (!Sync.can('edit', leg)) return toast("You can't change this");
+    leg.end = Math.max(now, leg.ts + MIN); leg.updated = stamp(); save(); render();
+    return toast(m === 'car' ? 'Break time: a stretch out of the car seat, a feed and a fresh diaper' : M.stop);
+  }
+  if (!Sync.can('add')) return toast("You don't have permission to do that");
+  db.events.push({ id: uid(), type: 'leg', ts: now, data: { means: m }, note: '', updated: stamp(), by: Auth.id || undefined });
+  save(); render();
+  toast(m === 'plane' ? 'Offer a feed, bottle or pacifier for takeoff: swallowing helps their ears' : `${M.moving}. Safe travels!`);
+}
+/** Travel: a short sheet of big one-tap answers. A rough time is fine ("about 15 minutes ago"); such times are kept as estimates. */
+function openQuick(type) {
+  if (!Sync.can('add')) return toast("You don't have permission to do that");
+  const T = TYPES[type], multi = kids().length > 1, page = dayKid(), pre = page === 'all' ? kids().map(k => k.id) : [page];
+  const prev = db.events.filter(e => e.type === type && pre.includes(childOf(e))).sort((a, b) => b.ts - a.ts)[0], pd = (prev && prev.data) || {};
+  const big = (name, opts, cur, cls = '') => `<div class="chips big ${cls}">${opts.map(([v, l]) => chip(name, v, l, String(v) === String(cur), '', true)).join('')}</div>`;
+  const near = (v, list) => list.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
+  const who = multi ? `<div class="chips kidchips">${kids().map(k => `<label class="chip kidchip" style="--k:${k.color}"><input type="checkbox" name="qkid" value="${k.id}" ${pre.includes(k.id) ? 'checked' : ''}><span>${avatar(k)}${esc(kidName(k))}</span></label>`).join('')}</div>` : '';
+  const ML = [60, 90, 120, 150, 180];
+  let body = '', instant = false, title = T.label;
+  if (type === 'feed') body = `<label class="f">Bottle or breast?</label>${big('qkind', [['bottle', '🍼 Bottle'], ['breast', 'Breast']], pd.kind || 'bottle')}
+    <div id="qBottle"><label class="f">About how much?</label>${big('qml', ML.map(v => [v, v + ' ml']), pd.ml ? near(+pd.ml, ML) : 90)}${big('qmilk', [['Formula', 'Formula'], ['Breast milk', 'Breast milk']], pd.milk || 'Formula')}</div>
+    <div id="qBreast"><label class="f">Side <small>(if you like)</small></label>${big('qside', [['Left', 'Left'], ['Right', 'Right'], ['Both', 'Both']], '')}
+      <label class="f">About how long? <small>(if you like)</small></label>${big('qmin', [5, 10, 15, 20, 30].map(v => [v, v + ' min']), '')}</div>`;
+  if (type === 'diaper') { instant = true; body = `<label class="f">Tap one to save</label>${big('qdia', [['pee', '💧 Pee'], ['poo', '💩 Poo'], ['both', 'Both']], '', 'save')}`; }
+  if (type === 'vomit') { instant = true; title = 'Spit-up'; body = `<label class="f">Tap one to save</label>${big('qvom', [['Spit-up', 'A little'], ['Large', 'More than usual']], '', 'save')}`; }
+  if (type === 'sleep') title = 'Fell asleep';
+  const close = popup(`<h3>${T.icon} ${title}</h3>${who}<label class="f">When?</label>${big('qago', [[0, 'Just now'], [15, '~15 min ago'], [30, '~30 min ago'], [60, '~1 hr ago']], 0)}
+    ${body}<div class="row" style="margin-top:16px"><button class="btn" data-close>Cancel</button>${instant ? '' : '<button class="btn p" id="qSave">Save</button>'}</div>`);
+  const S = $('#sheet'), val = n => { const c = S.querySelector(`[name=${n}]:checked`); return c ? c.value : ''; };
+  const sync = () => { if ($('#qBottle')) { const b = val('qkind') === 'bottle'; $('#qBottle').hidden = !b; $('#qBreast').hidden = b; } };
+  S.onchange = sync; sync();
+  const commit = () => {
+    const ids = multi ? [...S.querySelectorAll('[name=qkid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
+    if (!ids.length) return toast('Choose who this is for');
+    const ago = +val('qago') || 0, ts = Date.now() - ago * MIN, est = ago ? { approx: true } : {};
+    let data = { ...est };
+    if (type === 'feed') data = val('qkind') === 'breast' ? { kind: 'breast', ...(val('qside') ? { side: val('qside') } : {}), ...(val('qmin') ? { min: +val('qmin') } : {}), ...est } : { kind: 'bottle', ml: +val('qml') || 90, milk: val('qmilk') || 'Formula', ...est };
+    if (type === 'diaper') { const v = val('qdia'); data = { pee: v !== 'poo', poo: v !== 'pee', rash: false, ...est }; }
+    if (type === 'vomit') data = { amount: val('qvom') || 'Spit-up', projectile: false, ...est };
+    if (type === 'sleep') { const busy = ids.find(id => activeSleep(id)); if (busy) return toast(`${kidName(kidById(busy))} is already asleep`); }
+    for (const id of ids) {
+      const d = structuredClone(data);
+      if (type === 'feed' && d.kind === 'bottle' && d.milk === 'Formula') { const f = usualFormula(kidById(id)); if (f) d.formula = f; }
+      db.events.push({ id: uid(), type, ts, data: d, note: '', updated: stamp(), by: Auth.id || undefined, child: id });
+    }
+    if (ids.length === 1) { if (dayKid() !== ids[0]) setKid(ids[0]); } else if (dayKid() !== 'all' && !ids.includes(dayKid())) setKid('all');
+    save(); close(); viewDay = startOfDay(ts); render(); toast(ids.length > 1 ? `Saved for ${ids.length} children` : 'Saved');
+  };
+  S.querySelectorAll('.save input').forEach(i => i.onclick = () => setTimeout(commit));   // one tap saves
+  if ($('#qSave')) $('#qSave').onclick = commit;
+}
+
+// ---------- Tutorial ----------
+// What each screen's tour points at, and why it's there (tour.js shows them). Steps for things that aren't on the screen right now (one
+// child, no permission, no trip) are left out by themselves.
+const TOURS = {
+  day: [
+    { sel: '#kidBar', title: 'A page for each child', why: 'Each child has their own page in their own colour. "All" shows everyone together.' },
+    { sel: '#view .quick', title: 'Log it in one tap', why: 'Tap what just happened. The time is filled in for you, with shortcuts for a few minutes ago.' },
+    { sel: '#sleepBanner', title: 'Asleep right now', why: 'While your baby sleeps the timer runs here. Tap "Woke up" when they wake.' },
+    { sel: 'svg.clock', title: 'The day at a glance', why: 'Each entry is a ray out to the time it happened, in its own colour. Tap a dot to open it, or a quarter of the dial for just those hours.' },
+    { sel: '.clockctl .seg', title: '24 or 12 hours', why: 'The whole day on one dial, or a classic 12-hour face with AM and PM.' },
+    { sel: '.clockctl .artbtn', title: 'Choose the painting', why: 'Pick the watercolour around the clock, for each child.' },
+    { sel: '.datenav', title: 'Other days', why: 'Use the arrows to look back at earlier days.' },
+    { sel: '#view details.grp', title: 'Every detail', why: 'Everything from the day, grouped: feeds, diapers, sleep and more. Tap a group to open it.' },
+    { sel: '.tripbtn', title: 'Going on a trip?', why: 'Travel mode gives you bigger buttons, rough times that are quick to log, and a clock to match the journey.' },
+    { sel: '#tabs', title: 'Everything else', why: 'The month, stats, the Guide with medicines and milestones, family sharing, and settings.' },
+    { sel: '#helpBtn', title: 'Help on every screen', why: 'Tap ? on any screen for a tour of it.' },
+  ],
+  travel: [
+    { sel: '.tripcard', title: 'Your trip', why: 'How you are travelling and until when. Change it any time, or tap "We\'re home" to end it.' },
+    { sel: '.legrow', title: 'The journey', why: 'Tap when you set off and when you stop. Time on the move lights up the clock\'s outer ring, and long drives get a reminder to take a break.' },
+    { sel: '.quick.tq', title: 'Big buttons for busy moments', why: 'Each opens a short sheet: tap a rough time and an answer. "About 15 minutes ago" is fine; estimated times show with a ~.' },
+    { sel: '.qmore', title: 'The rest', why: 'Play, night wakings, health notes and medicines are one more tap away.' },
+    { sel: 'svg.clock', title: 'A travel clock', why: 'The painting matches how you travel, and travel days have their own colours, so they stand out later in the month view.' },
+    { sel: '#helpBtn', title: 'Help on every screen', why: 'Tap ? on any screen for a tour of it.' },
+  ],
+  month: [
+    { sel: '.cal', title: 'The month', why: 'Dots show what was logged each day. Days away travelling are outlined.' },
+    { sel: '.cal button.sel', title: 'Pick a day', why: 'Tap a day to see its numbers below.' },
+    { sel: '#view .tiles', title: 'The day in numbers', why: 'Feeds, diapers, sleep and more for the day you picked.' },
+    { sel: 'details[data-grp=mAll]', title: 'Every entry', why: 'Open this to see each entry of that day, and tap one to change it.' },
+    { sel: '#view .quick', title: 'Add to that day', why: 'Log something you forgot, on the day you picked.' },
+  ],
+  stats: [
+    { sel: '#view .seg', title: 'How far back', why: 'Look at the last 7, 14 or 30 days.' },
+    { sel: '#view .chart', title: 'A chart for each section', why: 'Drawn to scale, one bar per day. Tap a bar for its numbers.' },
+    { sel: '#view details.tbl', title: 'The exact numbers', why: 'Each chart has a table with every day\'s numbers, handy for a checkup.' },
+  ],
+  guide: [
+    { sel: '#docBtn', title: 'Your pediatrician', why: 'Save their details once, and everyone sharing the log gets a Call button.' },
+    { sel: '.emer', title: 'Emergencies', why: 'The signs that need emergency help straight away.' },
+    { sel: '.nowcard', title: 'Right now', why: 'What is common at your baby\'s age.' },
+    { sel: '#view details.gd[data-grp^=g]', title: 'Common worries', why: 'What is normal with a newborn, and when to call.' },
+    { sel: 'details[data-grp=omenu]', title: 'Medicines', why: 'Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.' },
+    { sel: '#view details.gd[data-grp^=m]', title: 'Month by month', why: 'Milestones for every month. A reminder pops up on each month birthday.' },
+  ],
+  family: [
+    { sel: '#syncNow', title: 'Your shared log', why: 'When this phone last synced. Tap to sync now.' },
+    { sel: '#view .pbtn', title: 'People', why: 'Everyone with access and their role. Tap a person for their contact details.' },
+    { sel: '#invCard', title: 'Invite someone', why: 'Make a one-time QR code. You approve them before they see anything.' },
+    { sel: '#actBtn', title: 'Activity', why: 'Who added, changed or deleted what. Only parents see this.' },
+    { sel: '#view .code.mono', title: 'Security code', why: 'Everyone sharing the log sees the same code: a quick check that only your family has the keys.' },
+    { sel: '#fScan', title: 'Join another log', why: 'Scan the QR code from someone else\'s log to ask to join it.' },
+    { sel: '#view .card', title: 'Family sharing', why: 'Sign in to share the log with family and caregivers, end-to-end encrypted.' },
+  ],
+  more: [
+    { sel: '.kidrow', title: 'Your children', why: 'Names, birth dates and colours. "Add a child" for twins or triplets.' },
+    { sel: '[data-kfs]', title: 'Usual formula', why: 'Pick it from the list by region. After three days of the same formula it is picked for you.' },
+    { sel: '.card:has([data-art])', title: 'Clock art', why: 'The painting around each child\'s clock.' },
+    { sel: '.card:has([name=themeMode])', title: 'Light or dark', why: 'Match your phone, pick one, or follow sunrise and sunset.' },
+    { sel: '#expCsv', title: 'Your data', why: 'Back up the log, or export a copy for your pediatrician.' },
+  ],
+};
+/** The tour of the screen that is showing: the Day tab on a travel day has its own. */
+const tourPage = () => (tab === 'day' && tripOn(viewDay) ? 'travel' : tab);
+function startTour() {
+  if (Acct.gate()) return;
+  const page = tourPage();
+  if (!$('#sheet').hidden) $('#sheet').hidden = $('#sheetBack').hidden = true;
+  const steps = TOURS[page] || [], skipFamily = page === 'family' && document.querySelector('#syncNow');   // signed in: the "sharing is off" card isn't there
+  if (!Tour.start(skipFamily ? steps.filter(s => s.sel !== '#view .card') : steps, () => { if (page === 'day') { Tour.mark('day'); render(); } })) toast('Nothing to show on this screen yet');
+}
+/** The home screen's tour starts by itself the first time, once nothing else is open. */
+function autoTour() {
+  if (tab !== 'day' || Tour.active() || Tour.seen('day') || Acct.gate() || !$('#sheet').hidden || tripOn(viewDay)) return;
+  clearTimeout(autoTour.t); autoTour.t = setTimeout(() => { if (tab === 'day' && !Tour.active() && !Tour.seen('day') && $('#sheet').hidden && !Acct.gate() && !tripOn(viewDay)) startTour(); }, 500);   // (still so after a sync?)
 }
 
 // ---------- More ----------
@@ -644,11 +888,18 @@ function bind() {
   document.querySelectorAll('.bar[data-tip]').forEach(b => b.onclick = () => toast(b.dataset.tip));
   document.querySelectorAll('svg [role=button]').forEach(b => b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
   if ($('#docBtn')) $('#docBtn').onclick = () => openDoctor(false);
+  document.querySelectorAll('[data-qadd]').forEach(b => b.onclick = () => openQuick(b.dataset.qadd));
+  document.querySelectorAll('[data-qmore]').forEach(b => b.onclick = openMoreTypes);
+  document.querySelectorAll('[data-tripnew]').forEach(b => b.onclick = () => openTrip(null));
+  document.querySelectorAll('[data-tripedit]').forEach(b => b.onclick = () => { const t = db.events.find(e => e.id === b.dataset.tripedit); if (t) openTrip(t); });
+  document.querySelectorAll('[data-triphome]').forEach(b => b.onclick = endTrip);
+  document.querySelectorAll('[data-leg]').forEach(b => b.onclick = toggleLeg);
   document.querySelectorAll('[data-art]').forEach(b => b.onclick = () => openArtPicker(b.dataset.art || dayKid()));
   if (tab === 'more') { bindMore(); Acct.bindMoreAccount(); }
   if (tab === 'family') Acct.bindFamily();
 }
 $('#kidBar').onclick = e => { const b = e.target.closest('[data-kid]'); if (b) { setKid(b.dataset.kid); render(); window.scrollTo(0, 0); } };
+$('#helpBtn').onclick = startTour;
 $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.tab; if (tab === 'month') calMonth = new Date(viewDay); render(); window.scrollTo(0, 0); } };
 
 function bindMore() {
@@ -685,7 +936,7 @@ function bindMore() {
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = [['child', 'date', 'time', 'type', 'summary', 'details', 'end', 'note'].join(',')].concat([...db.events].sort((a, b) => a.ts - b.ts).map(e => {
       const [a, b] = describe(e);
-      return [kidName(kidById(childOf(e))), dkey(e.ts), fmtTime(e.ts), e.type, a, b, e.end ? fmtTime(e.end) : '', e.note].map(q).join(',');
+      return [Travel.isTravel(e.type) ? '' : kidName(kidById(childOf(e))), dkey(e.ts), fmtTime(e.ts), e.type, a, b, e.end ? fmtTime(e.end) : '', e.note].map(q).join(',');   // (a trip is everyone's)
     }));
     download('little-log.csv', rows.join('\n'), 'text/csv');
   };
@@ -792,6 +1043,7 @@ function openSheet(type, ev) {
       if (!data.symptoms.length && !data.temp && !$('#note').value.trim()) return toast('Tick a symptom or add a note');
     }
     if (type === 'med') { data = { name: $('#mname').value.trim(), dose: $('#mdose').value.trim() }; if (!data.name) return toast('Enter a name'); }
+    if (ev && ev.data && ev.data.approx && Math.floor(ts / MIN) === Math.floor(ev.ts / MIN)) data.approx = true;   // still the estimated time
     const who = multi ? [...S.querySelectorAll('[name=kid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
     if (!who.length) return toast('Choose who this is for');
     if (type === 'sleep' && !end) { for (const id of who) { const cur = activeSleep(id); if (cur && cur !== ev) return toast(`${multi ? kidName(kidById(id)) + ' is' : 'Already'} sleeping – tap “Woke up” first`); } }
@@ -811,7 +1063,7 @@ function openSheet(type, ev) {
   };
 }
 
-setInterval(() => { if (activeSleep() && tab === 'day') render(); }, 60000);
+setInterval(() => { if ((activeSleep() || Travel.moving(db.events)) && tab === 'day') render(); }, 60000);
 
 // Re-render after a background sync, unless the user is in the middle of typing.
 Sync.onChange = () => {
@@ -827,6 +1079,7 @@ Native.onUrl(async url => {
   Acct.receiveJoin(url);
 });
 Native.onBack(() => {
+  if (Tour.active()) { Tour.end(false); return true; }
   if (!$('#sheet').hidden) { $('#sheetBack').click(); return true; }
   if (tab !== 'day') { tab = 'day'; render(); return true; }
   return false;
@@ -835,7 +1088,7 @@ Lock.onChange = () => render();
 Sync.onSessionLost = () => Acct.sessionLost();
 (async () => {
   await Store.init(); db = normalize(await Store.load());   // before anything reads the log
-  Icons.init(); Icons.paint(document.querySelector('#tabs')); Icons.paint(document.querySelector('#cover'));
+  Icons.init(); Icons.paint(document.querySelector('#tabs')); Icons.paint(document.querySelector('#cover')); Icons.paint(document.querySelector('#helpBtn'));
   Theme.onChange = () => render();
   Store.st.onChange = () => { render(); if (!Store.st.ok) toast('Cannot save on this phone – free up space'); };
   if (Store.st.quarantined || Store.st.recovered) setTimeout(() => toast(Store.st.recovered ? 'Your saved log was damaged and has been restored from a recent backup' : 'A damaged copy of the log was set aside; it will be re-downloaded from your family log'), 600);

@@ -26,7 +26,7 @@ const page = `<title>Little Log Demo</title>
 <style>${css}\n${frame}</style>
 <script>\n${rd('theme.js')}\n</script>
 <div id="phone"><div id="scroll">${head}</div>${rest}</div>
-${['kids.js', 'icons.js', 'guide.js', 'formulas.js', 'art.js', 'demo/stubs.js'].map(f => `<script>\n${rd(f).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}
+${['kids.js', 'icons.js', 'guide.js', 'formulas.js', 'travel.js', 'tour.js', 'art.js', 'demo/stubs.js'].map(f => `<script>\n${rd(f).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}
 <script>\n${app.replace(/<\/script/gi, '<\\/script')}\n</script>
 `;
 fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, page); console.log('wrote', out, (page.length / 1024).toFixed(0) + ' KB');

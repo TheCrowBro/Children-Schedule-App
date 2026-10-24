@@ -1,6 +1,7 @@
 'use strict';
-/* The Guide tab: things parents commonly run into with a newborn, month-by-month milestones, and the pediatrician's details.
-   General information only, written from AAP / CDC parent guidance; it is not medical advice and every card says when to call. */
+/* The Guide tab: things parents commonly run into with a newborn, over-the-counter medicines, month-by-month milestones, and the
+   pediatrician's details. General information only, written from AAP / CDC / FDA and NHS parent guidance; it is not medical advice and
+   every card says when to call. */
 const Guide = (() => {
   // Each item: what it is, what's normal, and when to call. `urgent` lines are the "call now / emergency" signs.
   const COMMON = [
@@ -72,6 +73,65 @@ const Guide = (() => {
     18: { title: '18 months', does: ['Walks without holding on', 'Tries to say three or more words', 'Follows one-step directions', 'Scribbles'], notice: [], visit: '18-month checkup' },
     24: { title: '2 years', does: ['Kicks a ball', 'Says at least two words together, like "more milk"', 'Points to things in a book when you ask'], notice: [], visit: '2-year checkup' },
   };
+  // Over-the-counter medicines: what is generally considered safe for babies, from what age, and what to watch for. No doses: they go by
+  // weight and come from the pediatrician or pharmacist. Where the US (AAP / FDA) and the UK (NHS) set different ages, both are shown.
+  const MEDS_INTRO = ['Under 3 months, call your pediatrician before giving any medicine, and straight away for a fever of 100.4°F (38°C) or more.',
+    'Doses go by weight, not age: ask your pediatrician or pharmacist, use the syringe that comes with the medicine (never a kitchen spoon), and log every dose under Health & meds so nobody gives a second one by mistake.'];
+  const MEDS = [
+    { id: 'fever', icon: '💊', title: 'Fever and pain', items: [
+      { name: 'Acetaminophen (paracetamol)', brands: 'Infants\' Tylenol · Calpol · Panadol', age: 'US: from 12 weeks, younger only if your pediatrician says. UK: from 2 months.',
+        body: 'For fever or pain, for example after vaccines. Never give more doses in 24 hours than the label or your doctor allows, and check other medicines for the same ingredient so it isn\'t doubled.' },
+      { name: 'Ibuprofen', brands: 'Infants\' Motrin · Infants\' Advil · Nurofen for Children', age: 'US: from 6 months. UK: from 3 months and over 5 kg (11 lb).',
+        body: 'For fever or pain, best given with a feed. Not for a baby who is dehydrated (few wet diapers, vomiting) or has chickenpox; with asthma, ask first.' },
+    ] },
+    { id: 'colic', icon: '🍼', title: 'Gas and colic', items: [
+      { name: 'Simethicone gas drops', brands: 'Mylicon · Infacol · Ovol', age: 'From birth (check the label).',
+        body: 'It stays in the gut and isn\'t absorbed, so it is considered safe. Studies haven\'t shown it eases colic, but many parents find it helps a gassy baby.' },
+      { name: 'Probiotic drops (L. reuteri)', brands: 'BioGaia Protectis', age: 'From birth.',
+        body: 'Studies found less crying after two to three weeks in breastfed babies with colic. For formula-fed babies the evidence is unclear.' },
+      { name: 'Gripe water', brands: 'Mommy\'s Bliss · Woodward\'s', age: 'Usually from 1 month; check the label.',
+        body: 'A herbal mix, often dill, fennel or ginger, with little evidence that it works. Choose one without alcohol or sugar. Some contain sodium bicarbonate (baking soda), which is not for regular use.' },
+    ] },
+    { id: 'nose', icon: '💧', title: 'Stuffy nose and colds', items: [
+      { name: 'Saline (salt water) drops or spray', brands: 'Little Remedies · Ocean · Sterimar', age: 'Any age.',
+        body: 'A drop or two in each nostril loosens mucus. Follow with a bulb syringe or nasal aspirator, especially before feeds and sleep.' },
+      { name: 'Cool-mist humidifier', brands: '', age: 'Any age.', body: 'Moist air can ease a blocked nose. Clean it as the maker says.' },
+    ], warn: 'Cough and cold medicines (decongestants, cough syrups) are not for babies: the FDA says not under 2 years, the UK not under 6.' },
+    { id: 'skin', icon: '👶', title: 'Diaper rash and skin', items: [
+      { name: 'Zinc oxide or petroleum jelly cream', brands: 'Desitin · Sudocrem · Aquaphor · Vaseline · Bepanthen', age: 'From birth.',
+        body: 'A thick layer at each change protects sore skin. Let it air-dry when you can.' },
+      { name: 'Fragrance-free moisturizer', brands: 'Aquaphor · Cetaphil Baby · CeraVe Baby', age: 'From birth.', body: 'For dry or peeling skin and baby eczema.' },
+      { name: 'Hydrocortisone 1% cream', brands: 'Cortizone-10', age: 'Under 2 years, only if a doctor says.',
+        body: 'A mild steroid for itchy rashes. Doctors sometimes suggest it for a short time for eczema or a stubborn diaper rash.' },
+    ] },
+    { id: 'teething', icon: '🧸', title: 'Teething', items: [
+      { name: 'Teething ring', brands: 'Firm rubber, cooled in the fridge (not frozen)', age: 'Any age.',
+        body: 'Something cool and firm to chew on, or a clean finger rubbing the gums, is what pediatricians and the FDA suggest first.' },
+      { name: 'Pain relief', brands: 'Acetaminophen or ibuprofen', age: 'At the ages under Fever and pain.', body: 'For a baby who is really unsettled.' },
+    ], warn: 'Avoid numbing gels with benzocaine or lidocaine (Orajel, Anbesol): the FDA warns against them under 2 because of a rare, dangerous blood reaction. Avoid amber or teething necklaces and bracelets too: they can choke or strangle.' },
+    { id: 'vitamins', icon: '☀️', title: 'Vitamins', items: [
+      { name: 'Vitamin D drops', brands: 'D-Vi-Sol · Baby Ddrops · Abidec', age: 'From soon after birth.',
+        body: 'Breastfed and partly breastfed babies need vitamin D every day: 400 IU in the US, 8.5 to 10 micrograms in the UK. Babies having more than about 500 ml of formula a day get enough from the formula in the UK; in the US, ask your pediatrician.' },
+      { name: 'Iron drops', brands: '', age: 'Only if your pediatrician advises.', body: 'Some breastfed or premature babies need extra iron from around 4 months.' },
+    ] },
+    { id: 'herbal', icon: '🌿', title: 'Homeopathic and herbal remedies',
+      note: 'Many parents tell of good results with these. Studies haven\'t found homeopathic remedies to work better than a placebo, and they aren\'t tested for safety and strength the way medicines are. Treat them as optional extras, tell your pediatrician, and never use one instead of seeing a doctor when your baby is unwell.',
+      items: [
+        { name: 'Chamomilla teething drops', brands: 'Camilia (Boiron)', age: 'Check the label.', body: 'One of the remedies parents mention most for teething. Stop if your baby seems unwell or unusually sleepy.' },
+        { name: 'Homeopathic colic drops', brands: 'Colic Calm', age: 'Check the label.',
+          body: 'Popular for gas and fussiness. It contains vegetable charcoal, which turns poop dark grey or black for a while: harmless, but easy to mistake for blood.' },
+        { name: 'Calendula cream', brands: 'Weleda · Boiron', age: 'From birth.',
+          body: 'A gentle herbal cream parents like for diaper rash and dry skin. It is in the daisy family and rarely causes an allergy: stop if the rash gets worse.' },
+        { name: 'Arnica', brands: 'Pellets or gel', age: 'Check the label.', body: 'Used for bumps and bruises. The gel only goes on unbroken skin.' },
+      ],
+      warn: 'Don\'t use homeopathic teething tablets or gels: the FDA warned against them in 2016 and 2017 after some were found to contain far more belladonna than the label said, with reports of seizures.' },
+  ];
+  /** Never give a baby these. */
+  const NEVER = ['Aspirin, or anything containing it (it can cause Reye\'s syndrome)', 'Cough and cold medicines', 'Numbing teething gels (benzocaine, lidocaine)',
+    'Honey before 12 months, even in a remedy (it can cause infant botulism)', 'Adult medicines, or more than the label or your doctor says',
+    'Antihistamines (like Benadryl) or melatonin to make a baby sleep', 'Rubs with camphor or menthol (like Vicks VapoRub) under 2, or strong essential oils such as peppermint or eucalyptus near a baby\'s face',
+    'Teething necklaces and bracelets', 'Anything containing alcohol'];
+
   /** Whole months between the birth date (YYYY-MM-DD) and `now`. */
   function monthsOld(birth, now = Date.now()) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(birth || '')) return -1;
@@ -87,5 +147,5 @@ const Guide = (() => {
   const cleanDetails = d => { d = d && typeof d === 'object' ? d : {}; return { relation: str(d.relation, 40), phone: str(d.phone, 30), work: str(d.work, 80), workPhone: str(d.workPhone, 30), notes: str(d.notes, 300) }; };
   /** A tel: link target, or '' when the text has no usable number. */
   const tel = p => { const n = String(p || '').replace(/[^\d+]/g, '').replace(/(?!^)\+/g, ''); return n.replace(/\D/g, '').length >= 3 ? 'tel:' + n : ''; };
-  return { COMMON, MILESTONES, monthsOld, cleanDoctor, cleanDetails, tel };
+  return { COMMON, MILESTONES, MEDS_INTRO, MEDS, NEVER, monthsOld, cleanDoctor, cleanDetails, tel };
 })();

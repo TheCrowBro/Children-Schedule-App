@@ -39,6 +39,9 @@ function demoDb() {
       add('play', b + (11 + o) * h, { activity: 'Tummy time', min: 10 }, k);
     });
   }
+  // a car trip earlier in the week, with two stretches on the road (travel days keep their own look)
+  const away = t0 - 4 * DAYMS, leg = (a, b) => ({ id: 'd' + (n++), type: 'leg', ts: away + a * h, end: away + b * h, data: { means: 'car' }, note: '', updated: Date.now() });
+  events.push({ id: 'd' + (n++), type: 'trip', ts: away, end: t0 - 2 * DAYMS, data: { means: 'car' }, note: '', updated: Date.now() }, leg(9, 11.5), leg(13.5, 15.8));
   return { baby: { name: ks[0].name, birth: ks[0].birth, kids: ks }, events, deleted: [], meta: { kid: 'k2' } };
 }
 // the page's own scroll box stands in for the window on wide screens

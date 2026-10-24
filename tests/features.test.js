@@ -90,9 +90,9 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       assert.deepEqual(await P.$$eval('.clock .hand', h => h.map(x => x.dataset.hand)), ['d'], 'with its single 24-hour hand');
     });
 
-    await step('every painting draws, quickly, without errors', async () => {
+    await step('every painting draws, quickly, without errors (the eight to choose from and the four travel ones)', async () => {
       const r = await P.evaluate(async () => { const out = []; for (const t of Art.THEMES) { const t0 = performance.now(); const u = await Art.url(t.id, 1); const ok = await new Promise(res => { const i = new Image(); i.onload = () => res(i.naturalWidth > 0); i.onerror = () => res(false); i.src = u; }); out.push([t.id, ok, Math.round(performance.now() - t0)]); } return out; });
-      assert.deepEqual(r.map(x => x[0]), ['blossom', 'maple', 'ocean', 'forest', 'mountains', 'garden', 'night', 'classic']);
+      assert.deepEqual(r.map(x => x[0]), ['blossom', 'maple', 'ocean', 'forest', 'mountains', 'garden', 'night', 'classic', 'car', 'plane', 'train', 'ship'], 'the eight to choose from, and one for each way of travelling');
       assert(r.every(x => x[1]), JSON.stringify(r)); assert(r.every(x => x[2] < 3000), 'each under 3 s: ' + JSON.stringify(r));
     });
 
@@ -238,6 +238,27 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       assert(/911/.test(await P.textContent('.emer')), 'the emergency line is always on the page');
     });
 
+    await step('the Guide\'s medicines drop-down: what is safe from what age (US and UK), remedies parents mention with what the evidence says, what never to give, and no doses', async () => {
+      assert.equal(await P.isVisible('[data-grp=ofever]'), false, 'closed until opened');
+      await P.click('details[data-grp=omenu] > summary');
+      assert.deepEqual(await P.$$eval('details[data-grp=omenu] details.med > summary b', b => b.map(x => x.textContent)),
+        ['Fever and pain', 'Gas and colic', 'Stuffy nose and colds', 'Diaper rash and skin', 'Teething', 'Vitamins', 'Homeopathic and herbal remedies', 'Never give a baby']);
+      assert(/Under 3 months, call your pediatrician before giving any medicine/.test(await P.textContent('details[data-grp=omenu]')));
+      await P.click('details[data-grp=ofever] > summary');
+      const fever = await P.textContent('details[data-grp=ofever]');
+      assert(/US: from 12 weeks/.test(fever) && /UK: from 2 months/.test(fever) && /US: from 6 months\. UK: from 3 months and over 5 kg/.test(fever), fever);
+      await P.click('details[data-grp=oherbal] > summary');
+      const herbal = await P.textContent('details[data-grp=oherbal]');
+      assert(/Many parents tell of good results/.test(herbal) && /better than a placebo/.test(herbal) && /belladonna/.test(herbal), herbal);
+      await P.click('details[data-grp=onever] > summary');
+      const never = await P.textContent('details[data-grp=onever]');
+      for (const w of ['Aspirin', 'Honey before 12 months', 'benzocaine', 'Cough and cold medicines', 'Teething necklaces']) assert(never.includes(w), w);
+      const text = await P.evaluate(() => JSON.stringify([Guide.MEDS_INTRO, Guide.MEDS, Guide.NEVER]));
+      assert(!/\d\s*(mg|ml)\b|mg\/kg|teaspoon/i.test(text.replace(/500 ml of formula/g, '')), 'no doses anywhere: they go by weight and come from the pediatrician');
+      assert.equal(await P.$$eval('details[data-grp=omenu] .medi .age', a => a.filter(x => !x.textContent.trim()).length), 0, 'every medicine says from what age');
+      await P.click('details[data-grp=omenu] > summary');
+    });
+
     await step('parents save the pediatrician; everyone else sees the number with a Call button but cannot change it', async () => {
       await P.click('#docBtn'); await P.click('#docEdit');
       await P.fill('#dcName', 'Dr. Rivera'); await P.fill('#dcPractice', 'Oak Street Pediatrics'); await P.fill('#dcPhone', '(555) 010-2299'); await P.fill('#dcAfter', '555 010 3000'); await P.click('#dcSave');
@@ -341,6 +362,135 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       assert.deepEqual(r.london, { lat: 51.51, lon: -0.13, zone: 'London' });
       assert.equal(r.unknown.lat, 40); assert.equal(r.south.lat, -33, 'an unknown southern zone guesses the southern hemisphere');
       assert.equal(r.auto, 'dark,light,light,dark', 'dark until sunrise, light until sunset, then dark');
+    });
+
+    // ---------- travel mode ----------
+    const iso = t => new Date(t).toLocaleDateString('en-CA');
+    const [leo, mia] = await P.evaluate(() => { tab = 'day'; viewDay = startOfDay(Date.now()); db.meta.clock = '24'; quad = null; setKid(kids()[0].id); render(); return kids().map(k => k.id); });
+    await step('a "Travelling?" button at the bottom of today asks how (car, plane, train, ship) and when; Start turns the Day tab into a travel page with its own painting and colours', async () => {
+      assert(/Travelling\?/.test(await P.textContent('.tripbtn')));
+      assert.equal(await P.evaluate(() => document.querySelector('#view').lastElementChild.classList.contains('tripbtn')), true, 'at the bottom of the page');
+      await P.click('[data-tripnew]');
+      assert.deepEqual(await P.$$eval('[name=means]', r => r.map(x => x.value)), ['car', 'plane', 'train', 'ship']);
+      const today = await P.evaluate(() => startOfDay(Date.now()));
+      assert.equal(await P.inputValue('#tripFrom'), iso(today), 'leaving today');
+      await P.click('[data-len="6"]'); assert.equal(await P.inputValue('#tripTo'), iso(today + 6.5 * 864e5), 'a week');
+      await P.click('[name=means][value=plane]'); await P.click('#tripSave');
+      const r = await P.evaluate(() => ({ card: document.querySelector('.tripcard').textContent, painting: document.querySelector('svg.clock').dataset.painting, travel: document.body.classList.contains('travel'),
+        root: getComputedStyle(document.documentElement).getPropertyValue('--g-feed').trim(), clock: document.querySelector('.clockwrap').style.getPropertyValue('--g-feed'),
+        quick: [...document.querySelectorAll('#view [data-qadd]')].map(b => b.dataset.qadd), usual: document.querySelectorAll('#view .quick:not(.tq) [data-add]').length, button: !!document.querySelector('.tripbtn'),
+        trips: db.events.filter(e => e.type === 'trip').map(e => [e.data.means, Math.round((e.end - e.ts) / 864e5), e.child || null]) }));
+      assert(/Travelling by plane/.test(r.card) && /Day 1 of 7/.test(r.card), r.card);
+      assert.equal(r.painting, 'plane', 'a painting to match');
+      assert.deepEqual([r.travel, r.root, r.clock], [true, '#8b5f18', '#8b5f18'], 'the travel colours, on the page and on the clock');
+      assert.deepEqual(r.quick, ['feed', 'diaper', 'sleep', 'vomit']); assert.equal(r.usual, 0, 'the big travel buttons replace the usual ones'); assert.equal(r.button, false);
+      assert.deepEqual(r.trips, [['plane', 7, null]], 'one trip for the whole family');
+      await P.click('#helpBtn'); assert.equal(await P.textContent('#tourT'), 'Your trip', 'the travel page has its own tour'); await P.keyboard.press('Escape');
+    });
+
+    await step('logging on the move is a tap or two: a diaper saves on the tap, a rough time is kept as an estimate (dashed on the clock, ~ in the list), a bottle takes the usual formula, and "All" ticks every child', async () => {
+      await P.click('[data-qadd=diaper]'); await P.click('[name=qago][value="15"]'); await P.click('[name=qdia][value=pee]');
+      await P.waitForSelector('#sheet', { state: 'hidden' });
+      const d = await P.evaluate(() => { const e = db.events.filter(x => x.type === 'diaper').sort((a, b) => b.updated - a.updated)[0];
+        return { data: e.data, ago: Math.round((Date.now() - e.ts) / 60000), child: e.child, dashed: document.querySelector(`.ray[data-edit="${e.id}"]`).classList.contains('approx'), t: document.querySelector(`.ev[data-edit="${e.id}"] .t`).textContent }; });
+      assert.deepEqual(d.data, { pee: true, poo: false, rash: false, approx: true }); assert(d.ago >= 15 && d.ago <= 16, d.ago); assert.equal(d.child, leo);
+      assert(d.dashed, 'drawn dashed on the clock'); assert(/^~/.test(d.t), d.t);
+      await P.click('[data-qadd=feed]'); await P.click('[name=qkind][value=bottle]'); await P.click('[name=qml][value="120"]'); await P.click('[name=qmilk][value=Formula]'); await P.click('#qSave');
+      const f = await P.evaluate(() => { const e = db.events.filter(x => x.type === 'feed').sort((a, b) => b.updated - a.updated)[0]; return { data: e.data, usual: usualFormula(kidById(e.child)) }; });
+      assert(f.usual, 'Leo has a usual formula by now');
+      assert.deepEqual(f.data, { kind: 'bottle', ml: 120, milk: 'Formula', formula: f.usual }, '"just now" is not an estimate');
+      await P.click('[data-kid=all]'); await P.click('[data-qadd=vomit]');
+      assert.deepEqual(await P.$$eval('[name=qkid]:checked', c => c.map(x => x.value)), [leo, mia]);
+      await P.click('[name=qvom][value=Spit-up]'); await P.waitForSelector('#sheet', { state: 'hidden' });
+      assert.equal(await P.evaluate(() => db.events.filter(e => e.type === 'vomit' && Math.abs(Date.now() - e.ts) < 60000).length), 2, 'one for each child');
+      await P.click(`[data-kid="${leo}"]`);
+      // changing an estimated entry keeps it an estimate unless its time is changed
+      const id = await P.evaluate(() => db.events.filter(x => x.type === 'diaper' && x.data.approx)[0].id);
+      await P.evaluate(i => openSheet(null, db.events.find(e => e.id === i)), id); await P.fill('#note', 'in the airport'); await P.click('#save');
+      assert.equal(await P.evaluate(i => db.events.find(e => e.id === i).data.approx, id), true);
+    });
+
+    await step('the journey: "Taking off" and "Landed" light up the clock\'s outer track; on a car trip, two hours on the road asks for a break', async () => {
+      await P.click('[data-leg]');
+      assert(/In the air since/.test(await P.textContent('.legrow')));
+      assert.equal(await P.$$eval('svg.clock path.leg', p => p.length), 1, 'the flight shows on the track');
+      await P.click('[data-leg]'); assert(/Not flying right now/.test(await P.textContent('.legrow')));
+      assert.deepEqual(await P.evaluate(() => db.events.filter(e => e.type === 'leg').map(e => [e.data.means, Number.isFinite(e.end)])), [['plane', true]]);
+      await P.click('[data-tripedit]'); await P.click('[name=means][value=car]'); await P.click('#tripSave');
+      assert.equal(await P.evaluate(() => document.querySelector('svg.clock').dataset.painting), 'car');
+      await P.click('[data-leg]'); await P.evaluate(() => { Travel.moving(db.events).ts = Date.now() - 125 * 60000; render(); });
+      assert(await P.$('.legrow.warn'), 'two hours in'); assert(/Time for a break/.test(await P.textContent('.tripcard')));
+      await P.click('[data-leg]'); assert(/Break time/.test(await P.textContent('#toast')));
+    });
+
+    await step('the trip and the journey are shared, end-to-end encrypted: the other phones get the same travel page', async () => {
+      await syncNow(P); await syncNow(D);
+      await D.evaluate(() => { tab = 'day'; viewDay = startOfDay(Date.now()); render(); });
+      assert(/Travelling by car/.test(await D.textContent('.tripcard')));
+      assert.equal(await D.evaluate(() => document.querySelector('svg.clock').dataset.painting), 'car');
+      assert.equal(await D.evaluate(() => db.events.filter(e => e.type === 'leg').length), 2);
+      const blobs = (await q('select blob from events')).map(r => r.blob).join('');
+      assert(!blobs.includes('"means"') && !blobs.includes('"trip"') && !blobs.includes('"approx"'), 'the server only has ciphertext');
+    });
+
+    await step('"We\'re home" ends the trip now; past travel days keep their look, and the month view outlines them in their own colours', async () => {
+      await P.click('[data-triphome]');
+      const r = await P.evaluate(() => ({ card: !!document.querySelector('.tripcard'), travel: document.body.classList.contains('travel'), button: !!document.querySelector('.tripbtn'),
+        ended: Date.now() - db.events.find(e => e.type === 'trip').end < 60000, feed: getComputedStyle(document.documentElement).getPropertyValue('--g-feed').trim() }));
+      assert.deepEqual(r, { card: false, travel: false, button: true, ended: true, feed: '#c9761f' });
+      await P.evaluate(() => { const t = startOfDay(Date.now()); db.events.push({ id: 'oldtrip', type: 'trip', ts: addDays(t, -9), end: addDays(t, -6), data: { means: 'train' }, note: '', updated: stamp(), by: Auth.id }); viewDay = addDays(t, -8); render(); });
+      const past = await P.textContent('.tripcard');
+      assert(/Travelling by train/.test(past) && /Day 2 of 3 · until/.test(past), past);
+      assert.equal(await P.$('[data-triphome]'), null, 'no "We\'re home" on a past trip'); assert.equal(await P.$('.legrow'), null);
+      assert.equal(await P.$('#view [data-qadd]'), null, 'adding to a past day uses the usual sheets, which default to that day');
+      await P.click('[data-tab=month]');
+      const m = await P.evaluate(() => ({ day: document.querySelector(`.cal button[data-day="${viewDay}"]`).classList.contains('tripday'), key: !!document.querySelector('.legend .tripkey'),
+        note: document.querySelector('.tripnote').textContent, feed: document.querySelector('.travelday').style.getPropertyValue('--g-feed') }));
+      assert.deepEqual(m, { day: true, key: true, note: ' Travelling by train', feed: '#8b5f18' });
+      await P.evaluate(() => { removeEvent(db.events.find(e => e.id === 'oldtrip')); viewDay = startOfDay(Date.now()); save(); });
+      await P.click('[data-tab=day]');
+    });
+
+    await step('a trip coming up waits at the bottom of today, and can be changed or deleted', async () => {
+      await P.click('[data-tripnew]'); await P.click('[name=means][value=ship]');
+      const start = await P.evaluate(() => addDays(startOfDay(Date.now()), 3));
+      await P.fill('#tripFrom', iso(start)); await P.click('[data-len="2"]'); await P.click('#tripSave');
+      assert(/travel mode starts/.test(await P.textContent('#toast')));
+      assert.equal(await P.$('.tripcard'), null, 'not travelling yet');
+      assert(/Trip coming up by ship/.test(await P.textContent('.tripbtn')));
+      await P.click('.tripbtn'); await P.click('#tripDel');
+      assert(/Travelling\?/.test(await P.textContent('.tripbtn')));
+      assert.equal(await P.evaluate(() => db.events.filter(e => e.type === 'trip').length), 1, 'only the trip that happened');
+    });
+
+    // ---------- the tutorial ----------
+    await step('the tutorial: on a new phone the home screen\'s tour starts by itself, a box glides from button to button saying why, ? starts each screen\'s own tour, and it only starts by itself once', async () => {
+      await P.evaluate(() => { const d = new Date(); d.setMonth(d.getMonth() - 2); kids()[0].birth = d.toLocaleDateString('en-CA'); Sync.pushBaby(); }); await syncNow(P);   // a month birthday is due too
+      const G = await H.addMember(P, 'gran@x.com', 'family', {}, { name: 'Gran', tour: true });
+      await G.waitForSelector('.tour-tip', { timeout: 5000 });
+      assert.equal(await G.isVisible('#msGuide'), false, 'the milestone sheet waits for the tour');
+      const at = () => G.evaluate(() => { const b = document.querySelector('.tour-box').getBoundingClientRect(); return { n: document.querySelector('.tt-n').textContent, t: document.querySelector('#tourT').textContent, box: [b.left, b.top, b.width, b.height].map(Math.round) }; });
+      await G.waitForTimeout(600);
+      const s1 = await at(); assert.equal(s1.t, 'A page for each child'); assert(/^1 of \d+$/.test(s1.n), s1.n);
+      const kb = await G.evaluate(() => { const r = document.querySelector('#kidBar').getBoundingClientRect(); return [r.left - 6, r.top - 6].map(Math.round); });
+      assert(Math.abs(s1.box[0] - Math.max(4, kb[0])) <= 2 && Math.abs(s1.box[1] - Math.max(4, kb[1])) <= 2, `the box is around the children's tabs: ${s1.box} vs ${kb}`);
+      assert(/own colour/.test(await G.textContent('#tourW')), 'and says why');
+      await G.click('.tt-next'); await G.waitForTimeout(600); const s2 = await at();
+      assert.equal(s2.t, 'Log it in one tap'); assert.notDeepEqual(s2.box, s1.box, 'the box moved to the next button');
+      await G.click('.tt-back'); assert.equal((await at()).t, 'A page for each child');
+      const n = +s1.n.split(' of ')[1]; for (let i = 0; i < n; i++) await G.click('.tt-next');
+      assert.equal(await G.$('.tour'), null, '"Done" ends it');
+      assert.equal(await G.evaluate(() => localStorage.getItem('ll.tours')), '{"day":1}');
+      await G.waitForSelector('#msGuide', { timeout: 3000 }); await G.click('#sheet [data-close]');   // and then it shows
+      for (const [t, first] of [['month', 'The month'], ['stats', 'How far back'], ['guide', 'Your pediatrician'], ['family', 'Your shared log'], ['more', 'Your children']]) {
+        await G.click(`[data-tab=${t}]`); await G.waitForTimeout(700); assert.equal(await G.$('.tour'), null, `${t}: not by itself`);
+        await G.click('#helpBtn'); await G.waitForSelector('.tour-tip'); assert.equal((await at()).t, first, t);
+        await G.keyboard.press('Escape'); assert.equal(await G.$('.tour'), null, 'Escape closes it');
+      }
+      await G.reload(); await G.waitForSelector('#tabs'); await G.waitForTimeout(1200); assert.equal(await G.$('.tour'), null, 'not again after a restart');
+      await G.emulateMedia({ reducedMotion: 'reduce' }); await G.click('[data-tab=day]'); await G.click('#helpBtn');
+      assert.equal(await G.evaluate(() => getComputedStyle(document.querySelector('.tour-box')).transitionDuration), '0s', 'no gliding with reduced motion');
+      await G.keyboard.press('Escape');
     });
 
     const pageErrs = H.pages.flatMap(p => p.errs.concat(p.csp));

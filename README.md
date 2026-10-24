@@ -14,7 +14,16 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); **stats** with a chart for every section
 - **Guide tab**: common newborn worries (blue hands, belly bulge, clicking hips, jaundice, cord, spit-up, poop colours, fever…) with when to call,
-  month-by-month milestones (a reminder pops up on each month birthday), and the **pediatrician's details** with a Call button
+  **over-the-counter medicines** (a drop-down by kind: what's considered safe from what age, with US and UK ages where they differ; the
+  homeopathic and herbal remedies parents mention, with what the evidence says; what never to give; no doses, which go by weight and come
+  from the pediatrician), month-by-month milestones (a reminder pops up on each month birthday), and the **pediatrician's details** with a Call button
+- **Travel mode**: a "Travelling?" button at the bottom of today asks how (car, plane, train, ship) and the dates. For those days the Day tab
+  becomes a travel page on every phone in the log: a clock painted to match the journey, its own set of colours (checked for colour-blind
+  separation and contrast like the home set), big buttons whose sheets take a tap or two, rough times ("about 15 minutes ago") kept as
+  estimates and drawn dashed, a journey timer per way of travelling (time on the move lights up the clock's outer track; long drives get a
+  reminder to take the baby out of the car seat), and tips for each kind of trip. Travel days stay outlined in the month view
+- **Tutorial**: a ? on every screen starts a short tour of it: a highlight box glides from button to button with a line on why it's there.
+  The home screen's tour starts by itself the first time
 - **Formula**: pick from a drop-down of common formulas grouped by region (North America, Latin America, UK & Ireland, Europe,
   Australia & New Zealand, Asia, Middle East & Africa; the phone's own region first, worked out from its time zone), or type in any other.
   Each child's usual formula is filled in on bottle feeds. When every formula feed on three days running used the same one, it becomes

@@ -15,7 +15,7 @@
 const E2EE = (() => {
   const enc = new TextEncoder(), dec = new TextDecoder(), S = crypto.subtle;
   const ECDH = { name: 'ECDH', namedCurve: 'P-256' };
-  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med'];
+  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg'];
   const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // exactly 32 symbols = 5 bits each
 
   // ---- encoding helpers ---------------------------------------------------------------------
@@ -180,7 +180,9 @@ const E2EE = (() => {
       case 'play': s('activity', 30); n('min'); break;
       case 'health': o.symptoms = Array.isArray(d.symptoms) ? d.symptoms.filter(x => typeof x === 'string').slice(0, 20).map(x => x.slice(0, 60)) : []; n('temp'); break;
       case 'med': s('name', 60); s('dose', 60); break;
+      case 'trip': case 'leg': if (typeof d.means === 'string' && Travel.KINDS.includes(d.means)) o.means = d.means; break;
     }
+    if (d.approx === true) o.approx = true;   // logged on the go: the time is an estimate
     return o;
   }
   async function encryptEntry(baby, e) {

@@ -13,3 +13,4 @@ ios/App/build/
 *.keystore
 *.jks
 .DS_Store
+.claude/worktrees/

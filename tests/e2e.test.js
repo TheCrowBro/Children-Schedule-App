@@ -35,6 +35,7 @@ const server = http.createServer((req, res) => {
   async function device(opts = {}) {
     const ctx = await (opts.br || browser).newContext({ viewport: { width: 390, height: 800 } });
     if (opts.native !== false) await installFakeNative(ctx, opts);
+    await ctx.addInitScript(() => { try { if (!localStorage.getItem('ll.tours')) localStorage.setItem('ll.tours', '{"day":1}'); } catch (e) { /* no storage */ } });   // (the first-time tour is tested in features)
     await shim.install(ctx);
     await ctx.route('https://challenges.cloudflare.com/**', r => r.fulfill({ contentType: 'text/javascript', body: turnstile }));
     await ctx.route('https://api.dropboxapi.com/oauth2/token', r => { (opts.tokenCalls || (opts.tokenCalls = [])).push(r.request().postData()); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ access_token: 'dbx-at', refresh_token: 'dbx-rt', expires_in: 14400 }) }); });

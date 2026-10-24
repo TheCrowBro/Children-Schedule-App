@@ -594,7 +594,7 @@ const Acct = (() => {
     if (!d || !Array.isArray(d.events)) throw new Error('That file has no entries in it');
     if (d.events.length > 200000) throw new Error('That backup is too large');
     if (!Sync.can('add')) throw new Error('You do not have permission to add entries');
-    const rows = d.events.filter(e => e && typeof e.id === 'string' && TYPES[e.type] && Number.isFinite(+e.ts))
+    const rows = d.events.filter(e => e && typeof e.id === 'string' && (TYPES[e.type] || Travel.isTravel(e.type)) && Number.isFinite(+e.ts))
       .filter(e => Sync.can('health') || (e.type !== 'health' && e.type !== 'med'))
       .map(e => ({ ...e, ts: +e.ts, end: e.end == null ? null : +e.end, updated: +e.updated || 0, deleted: false, by: Auth.id || e.by }));
     const n = Sync.merge(rows, true);
