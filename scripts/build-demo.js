@@ -7,6 +7,15 @@ let css = rd('style.css');
 // colour tokens follow the viewer's light / dark choice as well as the system setting
 css = css.replace('body::before{', '#phone::before{');
 const app = rd('app.js');
+/** Files the demo makes (the doctor's PDF, the spreadsheet export): in the claude.ai page viewer a plain download link does nothing,
+    so they are offered through its downloads capability, which asks the viewer first; anywhere else they download as usual. */
+const saving = `const plainDownload = download;
+download = async (name, data, type) => {
+  let dl = null; try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { /* not in the viewer */ }
+  if (!dl) return plainDownload(name, data, type);
+  try { await dl.save({ filename: name, data: typeof data === 'string' ? data : new Blob([data], { type }) }); }
+  catch (e) { if (!e || e.code !== 'declined') toast(__('Could not share the file')); }
+};`;
 /** Every language's catalogue, embedded in the page (it is a single file), so each can be tried in the demo. */
 const languages = () => { const I18n = require('./i18n.js'); return I18n.languages().map(code => I18n.catalogue(code)).join(''); };
 /** The Guide's pictures, embedded in the page (it is a single file). */
@@ -39,5 +48,6 @@ ${['kids.js', 'icons.js', 'guide.js', 'formulas.js', 'travel.js', 'tour.js', 'ro
 <script>\n${pictures()}\n</script>
 <script>\n${app.replace(/<\/script/gi, '<\\/script')}\n</script>
 <script>\n// The demo has no server: reports of language problems are not sent anywhere.\nReport.can = () => true; Report.send = async () => 'sent';\n</script>
+<script>\n${saving}\n</script>
 `;
 fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, page); console.log('wrote', out, (page.length / 1024).toFixed(0) + ' KB');
