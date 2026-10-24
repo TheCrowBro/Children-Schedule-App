@@ -15,8 +15,8 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); **stats** with a chart for every section
-- **Routine** tab: the times of day that keep coming back, laid out like a day in a calendar (night, morning, afternoon, evening) with a
-  line at the time now. A feed, a meal of solid food, a nap, a kind of play or a medicine that happened within 45 minutes of the same time
+- **Routine** tab: the times of day that keep coming back, laid out like a day in a calendar from morning to night (morning, afternoon,
+  evening, then the night, which counts with the evening before it: the routine's day runs from 6 AM to 6 AM) with a line at the time now. A feed, a meal of solid food, a nap, a kind of play or a medicine that happened within 45 minutes of the same time
   on most of the last 7 days (and on at least 3) is part of the routine, with what it usually is (how long, how much, which medicine and
   dose). Nothing is set by hand and nothing is stored: it's worked out from the log every time, so it moves when the baby's day does.
   Today's times are ticked off as they're logged, and the next one is shown on top. Diapers, night wakings, vomiting and health notes are

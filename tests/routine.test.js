@@ -2,7 +2,7 @@
 // from the log every time so it follows the baby; diapers and the like left out; today's entries ticked off; one page per child.
 //   node tests/routine.test.js
 const assert = require('assert');
-/* global T */
+/* global T, routineView */
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
@@ -121,6 +121,24 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.deepEqual(r.done.list, [['8:00', 'done', '8:05'], ['8:40', 'done', '8:45'], ['13:00', 'done', '13:10']]); assert.deepEqual(r.done.next, ['8:00', true, 'later'], 'tomorrow\'s first');
     });
 
+    await step('the routine\'s day runs from morning to night (6 AM to 6 AM): the hours after midnight come last, and count with the evening before them', async () => {
+      const r = await P.evaluate(() => {
+        const { at, ev, hm } = T, base = [];
+        for (let i = 1; i <= 7; i++) base.push(ev('feed', at(i, 8)), ev('feed', at(i, 20)), ev('feed', at(i, 2)));   // 8 AM, 8 PM, and a feed at 2 in the night
+        const slots = Routine.find(base, T.now).slots, st = (evs, now) => { const x = Routine.today(slots, evs, now); return { list: x.list.map(o => [hm(o.slot.at), o.state]), next: [hm(x.next.slot.at), x.next.tomorrow, x.next.state] }; };
+        return {
+          order: slots.map(s => hm(s.at)),
+          night: st(base, at(0, 2, 30)),   // 2:30 in the night: yesterday's 8 AM and 8 PM are done, the night feed is due
+          dawn: st(base.concat(ev('feed', at(0, 2, 10))), at(0, 5, 50)),   // 5:50: the night is over; next is the morning's first
+          day: st(base.concat(ev('feed', at(0, 8, 5))), T.now),   // 3 PM: the night feed is still to come, tonight
+        };
+      });
+      assert.deepEqual(r.order, ['8:00', '20:00', '2:00']);
+      assert.deepEqual(r.night.list, [['8:00', 'done'], ['20:00', 'done'], ['2:00', 'now']]); assert.deepEqual(r.night.next, ['2:00', false, 'now']);
+      assert.deepEqual(r.dawn.list, [['8:00', 'done'], ['20:00', 'done'], ['2:00', 'done']]); assert.deepEqual(r.dawn.next, ['8:00', true, 'later']);
+      assert.deepEqual(r.day.list, [['8:00', 'done'], ['20:00', 'later'], ['2:00', 'later']]); assert.deepEqual(r.day.next, ['20:00', false, 'later']);
+    });
+
     // ---------- the page ----------
     await P.evaluate(() => {
       const { at, ev } = T, k = db.baby.kids[0].id, mk = (type, ts, data, x) => ({ ...ev(type, ts, data, x), by: Auth.id, child: k, updated: stamp() });
@@ -147,7 +165,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('"Next in the routine" says what is coming and when; the routine ticks off what is logged today as it happens', async () => {
       const next = await P.textContent('.rnext');
       // today's feed is logged; a routine time stays "next" until 45 minutes after it (the nap at 1 PM, the bath at 6:30 PM), then tomorrow's feed
-      const expected = await P.evaluate(() => { const d = new Date(), m = d.getHours() * 60 + d.getMinutes(); return m <= 13 * 60 + 45 ? 'Nap' : m <= 19 * 60 + 15 ? 'Bath' : 'Feed'; });
+      const expected = await P.evaluate(() => { const d = new Date(), m = d.getHours() * 60 + d.getMinutes(); return m < 6 * 60 ? 'Feed' : m <= 13 * 60 + 45 ? 'Nap' : m <= 19 * 60 + 15 ? 'Bath' : 'Feed'; });   // (before 6 AM it is still yesterday's routine, all done)
       assert(next.includes('Next in the routine') && next.includes(expected), next);
       await P.evaluate(() => { const k = db.baby.kids[0].id; db.events.push({ id: 'bath-today', type: 'play', ts: T.at(0, 18, 40), data: { activity: 'Bath', min: 10 }, note: '', by: Auth.id, child: k, updated: stamp() }); save(); render(); });
       assert(/✓ 6:40 PM/.test(await P.textContent('.rslot[data-slot="play:Bath"]')), 'ticked as soon as it is logged');
@@ -164,6 +182,21 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.equal(await P.$$eval('.rslot', x => x.length), 0);
       await P.click(`#kidBar [data-kid="${await P.evaluate(() => db.baby.kids[0].id)}"]`);
       assert.equal(await P.$$eval('.rslot', x => x.length), 3, 'Leo\'s routine again');
+    });
+
+    await step('on the page, the night comes last: Morning, Afternoon, Evening, then Night, with the line at the time now where it falls', async () => {
+      const k = await P.evaluate(() => db.baby.kids[0].id);
+      const r = await P.evaluate(k => {
+        for (let i = 1; i <= 7; i++) db.events.push({ id: 'night' + i, type: 'feed', ts: T.at(i, 2, 15), data: { kind: 'bottle', ml: 90 }, note: '', by: Auth.id, child: k, updated: stamp() });
+        save(); render();
+        const read = html => { const d = document.createElement('div'); d.innerHTML = html; return [...d.querySelectorAll('.rpart, .rslot, .rnow')].map(x => (x.classList.contains('rpart') ? x.textContent : x.classList.contains('rnow') ? 'now' : x.querySelector('.rt').textContent)); };
+        return { page: [...document.querySelectorAll('.rpart')].map(x => x.textContent), at3: read(routineView(T.at(0, 3))), at21: read(routineView(T.at(0, 21))), dawn: (() => { const d = document.createElement('div'); d.innerHTML = routineView(T.at(0, 5, 50)); return d.querySelector('.rnext').textContent; })() };
+      }, k);
+      assert.deepEqual(r.page, ['Morning', 'Afternoon', 'Evening', 'Night']);
+      assert.deepEqual(r.at3, ['Morning', '8:05 AM', 'Afternoon', '1:00 PM', 'Evening', '6:30 PM', 'Night', '2:15 AM', 'now'], 'at 3 in the night, the line is in the night, after the 2:15 feed');
+      assert.deepEqual(r.at21, ['Morning', '8:05 AM', 'Afternoon', '1:00 PM', 'Evening', '6:30 PM', 'now', 'Night', '2:15 AM'], 'at 9 PM, before the night');
+      assert(/at about 8:0\d AM, in 2h 1\dm/.test(r.dawn) && !/tomorrow/.test(r.dawn), 'at 5:50 AM the morning feed is today, not "tomorrow": ' + r.dawn);
+      await P.evaluate(() => { db.events = db.events.filter(e => !e.id.startsWith('night')); save(); render(); });
     });
 
     await step('the ? button walks through the Routine page', async () => {

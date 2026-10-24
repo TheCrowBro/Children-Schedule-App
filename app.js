@@ -569,8 +569,8 @@ function ageDays() { const k = kidById(viewKid()); return k && k.birth ? Math.fl
 // ---------- Routine ----------
 // The times of day that keep coming back, laid out like a day in a calendar. routine.js works them out from the last week every time
 // the page is drawn, so the routine follows the baby as it changes; today's entries tick off what has been done.
-function routineView() {
-  const k = viewKid(), now = Date.now(), mine = db.events.filter(e => !Travel.isTravel(e.type) && childOf(e) === k);
+function routineView(now = Date.now()) {
+  const k = viewKid(), mine = db.events.filter(e => !Travel.isTravel(e.type) && childOf(e) === k);
   const R = Routine.find(mine, now), T = Routine.today(R.slots, mine, now);
   const clock = m => { const d = new Date(now); d.setHours(0, m, 0, 0); return fmtTime(d.getTime()); };
   const night = s => s.at >= 19 * 60 || s.at < 5 * 60;
@@ -587,13 +587,14 @@ function routineView() {
   if (!R.enough) return `${head}<div class="empty">⏰ ${__h('Your routine will show up here after a few days of logging.')}<br><small>${__hn('{n} day logged in the last week so far.', '{n} days logged in the last week so far.', R.logged)}</small></div>${how}`;
   if (!R.slots.length) return `${head}<div class="empty">⏰ ${__h('No regular times yet.')}<br><small>${__h('Anything that happens at about the same time on most days will show up here.')}</small></div>${how}`;
   const nx = T.next, ni = nx && TYPES[nx.slot.type];
-  const next = nx ? `<div class="card rnext" style="--c:var(--${nx.slot.type})"><span class="rni">${nx.slot.key === 'solids' ? '🥄' : ni.icon}</span><span><small>${__h('Next in the routine')}</small><b>${esc(name(nx.slot))}</b><small>${esc(nx.tomorrow ? __('tomorrow at about {time}', { time: fmtTime(nx.at) })
+  const next = nx ? `<div class="card rnext" style="--c:var(--${nx.slot.type})"><span class="rni">${nx.slot.key === 'solids' ? '🥄' : ni.icon}</span><span><small>${__h('Next in the routine')}</small><b>${esc(name(nx.slot))}</b><small>${esc(nx.tomorrow && startOfDay(nx.at) > startOfDay(now) ? __('tomorrow at about {time}', { time: fmtTime(nx.at) })
     : nx.state === 'now' ? __('about now ({time})', { time: fmtTime(nx.at) }) : __('at about {time}, in {wait}', { time: fmtTime(nx.at), wait: fmtDur((nx.at - now) / MIN) }))}</small></span></div>` : '';
-  const nowMin = new Date(now).getHours() * 60 + new Date(now).getMinutes(), parts = [[0, 0], [6, 1], [12, 2], [18, 3]];
+  // from morning to night: the morning, afternoon and evening, then the night after them (the parts of the day as the clock names them)
+  const parts = [[0, 0], [6, 1], [12, 2], [18, 3]];
   let rows = '', part = -1, nowShown = false;
   for (const o of T.list) {
     const s = o.slot, p = parts.filter(([h]) => s.at >= h * 60).pop()[1];
-    if (!nowShown && s.at > nowMin) { rows += `<div class="rnow" aria-hidden="true"><span>${esc(fmtTime(now))}</span></div>`; nowShown = true; }
+    if (!nowShown && o.at > now) { rows += `<div class="rnow" aria-hidden="true"><span>${esc(fmtTime(now))}</span></div>`; nowShown = true; }
     if (p !== part) { rows += `<h2 class="rpart">${__h(QUAD_NAMES.day[p])}</h2>`; part = p; }
     const range = s.to - s.from >= 5 ? __('usually {from} – {to}', { from: clock(s.from), to: clock(s.to) }) : '';
     const often = __n('{days} of {n} day', '{days} of {n} days', s.of, { days: s.days }), w = what(s);
