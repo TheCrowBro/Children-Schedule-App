@@ -72,7 +72,7 @@ const Acct = (() => {
   }
   async function processPending() {
     const p = pendingJoin; clearPending();
-    if (p) await joinWith(p.code, p.secret);
+    if (p) await joinWith(p.code, p.secret, true);
   }
 
   // ---- after sign-in: two-step status, memberships ---------------------------------------------
@@ -84,7 +84,7 @@ const Acct = (() => {
       await Sync.loadMemberships(); await Sync.loadMyRequests().catch(() => {});
       const ms = Sync.st.memberships;
       if (ms.length) Sync.choose((ms.find(m => m.id === db.meta.babyId) || ms[0]).id);
-      else if (db.meta.babyId && Sync.st.state !== 'offline') { Sync.run(); }
+      else if (db.meta.babyId && Sync.st.state !== 'offline') { Sync.run(true); }
     } catch (e) { if (!Auth.signedIn) { await sessionLost(); return; } F.verified = Auth.aal === 'aal2'; }          // offline: trust the session we already have
     F.loading = false; F.loaded = true;
     Sync.start(); render();
@@ -139,12 +139,11 @@ const Acct = (() => {
          <div class="row"><button class="btn" id="lBack">Different email</button></div>`}
     ${alertP(L.err)}</div>
     ${pendingJoin ? '<div class="card">📨 You have a family invite waiting. Sign in to use it.</div>' : ''}`;
-  let captchaId = null;
   async function renderCaptcha() {
     if (!CFG.captchaSiteKey || !$('#captcha')) return;
     try {
       if (!window.turnstile) await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; s.onload = ok; s.onerror = () => no(new Error('Could not load the security check. Are you online?')); document.head.appendChild(s); });
-      captchaId = window.turnstile.render('#captcha', { sitekey: CFG.captchaSiteKey, theme: 'auto', callback: t => { L.captcha = t; }, 'expired-callback': () => { L.captcha = ''; }, 'error-callback': () => { L.captcha = ''; } });
+      window.turnstile.render('#captcha', { sitekey: CFG.captchaSiteKey, theme: 'auto', callback: t => { L.captcha = t; }, 'expired-callback': () => { L.captcha = ''; }, 'error-callback': () => { L.captcha = ''; } });
     } catch (e) { L.err = err(e); const el = $('#captcha'); if (el) el.textContent = L.err; }
   }
   function bindLogin() {
@@ -192,7 +191,7 @@ const Acct = (() => {
       M.busy = true; M.err = ''; render();
       try {
         const f = (await Auth.factors()).find(x => x.status === 'verified'); await Auth.mfaVerify(f.id, code);
-        M.busy = false; render(); Sync.run(); if (pendingJoin) processPending().then(render);
+        M.busy = false; render(); Sync.run(true); if (pendingJoin) processPending().then(render);
       } catch (e) { M.busy = false; M.err = /invalid|expired/i.test(err(e)) ? 'That code is not right. Try the newest one.' : err(e); render(); }
     };
     $('#mGo').onclick = go; $('#mCode').onkeydown = e => e.key === 'Enter' && go(); $('#mOut').onclick = () => signOut(false);
@@ -225,7 +224,7 @@ const Acct = (() => {
       try {
         await Auth.mfaVerify(M.enroll.id, code);
         F.verified = true; M.enroll = null; M.busy = false; F.enrollRequested = false;
-        if (O.create) { const c = O.create; O.create = null; await createLog(c); } else { render(); toast('Two-step verification is on'); Sync.run(); }
+        if (O.create) { const c = O.create; O.create = null; await createLog(c); } else { render(); toast('Two-step verification is on'); Sync.run(true); }
       } catch (e) { M.busy = false; M.err = /invalid|expired/i.test(err(e)) ? 'That code is not right. Try the newest one.' : err(e); render(); }
     };
     if ($('#eCancel')) $('#eCancel').onclick = () => { F.enrollRequested = F.enrollForCreate = false; M.enroll = null; O.create = null; render(); };
@@ -269,7 +268,9 @@ const Acct = (() => {
     O.busy = false; render();
   }
   /** Sends a join request; the person gets in only when a parent approves it. */
-  async function joinWith(code, secret) {
+  async function joinWith(code, secret, fromLink) {
+    // A link can arrive from any app or web page, so never act on one without asking.
+    if (fromLink && !confirm('You were sent an invitation to a baby log. Send a request to join it? A parent has to approve you before you see anything.')) return;
     if (db.events.length && !db.meta.babyId && !confirm(`The ${db.events.length} entries currently on this device won't be added to the shared log. Continue?`)) return;
     try { await Sync.requestJoin(code, O.mine || '', secret); toast('Request sent – a parent needs to approve it'); if (db.meta.babyId) tab = 'family'; }
     catch (e) { O.err = err(e); toast(err(e)); }
@@ -299,7 +300,7 @@ const Acct = (() => {
     <button class="btn p" id="rcDone" style="width:100%">Continue</button></div>`;
   function bindRecovery() {
     $('#rcCopy').onclick = () => (navigator.clipboard ? navigator.clipboard.writeText(F.recoveryCode) : Promise.reject()).then(() => toast('Copied. Paste it somewhere safe, then delete the copy here.'), () => toast('Press and hold the code to copy it'));
-    $('#rcShare').onclick = () => navigator.share ? navigator.share({ title: 'Little Log recovery code', text: F.recoveryCode }).catch(() => {}) : toast('Write the code down');
+    $('#rcShare').onclick = () => Native.shareText('Little Log recovery code', F.recoveryCode).catch(() => {});
     $('#rcDone').onclick = () => { if (!document.querySelector('[name=rcAck]').checked) return toast('Tick the box once you have saved it'); F.recoveryCode = null; db.meta.recoveryAck = true; save(true); render(); };
   }
   const accessHtml = () => `<div class="card"><b>🔐 Approve this phone</b>
@@ -311,7 +312,7 @@ const Acct = (() => {
     ${alertP(O.err)}
     <button class="btn" id="aOut" style="width:100%;margin-top:8px">Sign out</button></div>`;
   function bindAccessScreen() {
-    const check = async () => { await Sync.run(); if (!Sync.st.needsAccess) render(); };
+    const check = async () => { await Sync.run(true); if (!Sync.st.needsAccess) render(); };
     $('#aCheck').onclick = check; $('#aOut').onclick = () => signOut(false);
     $('#aRecover').onclick = async () => {
       const code = $('#aCode').value; if (E2EE.normCode(code).length < 32) { O.err = 'Enter the whole recovery code'; return render(); }
@@ -329,7 +330,7 @@ const Acct = (() => {
   /** The server ended this session (signed out everywhere, or the refresh token was revoked): clear this phone. */
   async function sessionLost() { await wipeLocal(); L.step = 'email'; L.err = 'You were signed out. Please sign in again.'; render(); }
   async function signOut(everywhere) {
-    if (Sync.linked() && !everywhere) await Sync.run();
+    if (Sync.linked() && !everywhere) await Sync.run(true);
     if (Sync.linked() && Sync.st.state !== 'ok' && !confirm('Some changes have not synced yet and would be lost. Sign out anyway?')) return;
     if (!confirm(everywhere ? 'Sign out of Little Log on ALL your devices? You will need to sign in again everywhere.' : 'Sign out? This clears the baby log from this device (it stays safe, encrypted, in the cloud). Your encryption keys stay in the phone\'s secure storage so you can sign back in.')) return;
     try { await Auth.signOut(everywhere); } catch (e) { return toast(everywhere ? 'Could not reach the server – try again when online' : err(e)); }
@@ -375,6 +376,7 @@ const Acct = (() => {
 
   // ---- Family tab -------------------------------------------------------------------------------
   function syncLine() {
+    if (!Store.st.ok) return '⚠️ Cannot save on this phone (storage full?). Your newest entries are only in memory – free up space';
     if (!Sync.linked()) return '';
     const s = Sync.st;
     const base = s.state === 'syncing' ? '⏳ Syncing…' : s.state === 'ok' ? `✅ Synced ${ago(s.at)}` : s.state === 'offline' ? '📴 Offline – will sync when connected' : s.state === 'error' ? '⚠️ Sync problem' : 'Not synced yet';
@@ -440,7 +442,7 @@ const Acct = (() => {
     const el = id => document.getElementById(id);
     if (!el('syncNow')) return;
     $('#famBadge').hidden = true;
-    el('syncNow').onclick = () => Sync.run();
+    el('syncNow').onclick = () => Sync.run(true);
     if (el('unvOk')) el('unvOk').onclick = () => { db.meta.unverified = false; save(true); render(); toast('Thanks'); };
     document.querySelectorAll('[data-rmphone]').forEach(b => b.onclick = async () => {
       if (!confirm('Remove this phone? Its keys are deleted and the log changes to new keys, so it can read nothing new.')) return;
@@ -460,7 +462,7 @@ const Acct = (() => {
       const a = read();
       try { const { code, secret } = await Sync.createInvite(a.role, a.perms); invite = { code, role: a.role, secret, url: Sync.inviteUrl(code, secret) }; render(); } catch (e) { toast(err(e)); }
     };
-    if (el('invShare')) el('invShare').onclick = () => navigator.share ? navigator.share({ title: 'Little Log invite', text: `Join ${db.baby.name || 'our baby'}'s log in the Little Log app. Invite code: ${invite.code} (valid for 2 hours)` }).catch(() => {}) : toast('Read the code out, or show the QR code');
+    if (el('invShare')) el('invShare').onclick = () => Native.shareText('Little Log invite', `Join ${db.baby.name || 'our baby'}'s log in the Little Log app. Invite code: ${invite.code} (valid for 2 hours)`).catch(() => {});
     document.querySelectorAll('[data-showinv]').forEach(b => b.onclick = async () => { const i = Sync.st.invites.find(x => x.code === b.dataset.showinv); const secret = await E2EE.inviteSecret(i.code); invite = { code: i.code, role: i.role, secret, url: Sync.inviteUrl(i.code, secret) }; render(); });
     document.querySelectorAll('[data-rescind]').forEach(b => b.onclick = async () => {
       if (!confirm('Rescind this invite? The code stops working immediately.')) return;
@@ -564,6 +566,7 @@ const Acct = (() => {
   }
   function applyBackup(d) {
     if (!d || !Array.isArray(d.events)) throw new Error('That file has no entries in it');
+    if (d.events.length > 200000) throw new Error('That backup is too large');
     if (!Sync.can('add')) throw new Error('You do not have permission to add entries');
     const rows = d.events.filter(e => e && typeof e.id === 'string' && TYPES[e.type] && Number.isFinite(+e.ts))
       .filter(e => Sync.can('health') || (e.type !== 'health' && e.type !== 'med'))

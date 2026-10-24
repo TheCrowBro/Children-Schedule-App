@@ -1,0 +1,69 @@
+'use strict';
+/* Where the baby log lives on the phone: IndexedDB, not localStorage.
+   localStorage holds ~5 MB, which a busy newborn log would fill in about two years; IndexedDB holds hundreds of MB.
+   - Writes are coalesced (one in flight; the newest state is always what ends up on disk).
+   - A rolling backup copy is kept (at most hourly), and a corrupt main copy is quarantined, not silently discarded:
+     the app then starts from the backup, and anything else is re-downloaded from the family log.
+   - If saving ever fails (disk full, storage blocked), `Store.st.ok` turns false so the UI can say so loudly.
+   - Falls back to localStorage where IndexedDB is unavailable, and imports the pre-IndexedDB localStorage copy once. */
+const Store = (() => {
+  const DB_NAME = 'littlelog', OS = 'kv', LEGACY = 'littlelog.v1', BACKUP_EVERY = 3600e3;
+  const st = { ok: true, err: '', quarantined: false, recovered: false, onChange: null };
+  let idb = null, busy = false, again = false, snap = null, lastBackup = 0, idle = Promise.resolve();
+  const valid = d => !!d && typeof d === 'object' && Array.isArray(d.events);
+
+  const open = () => new Promise((ok, no) => {
+    let r; try { r = indexedDB.open(DB_NAME, 1); } catch (e) { return no(e); }
+    r.onupgradeneeded = () => r.result.createObjectStore(OS);
+    r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); r.onblocked = () => no(new Error('storage blocked'));
+  });
+  const tx = (mode, fn) => new Promise((ok, no) => {
+    let t, req; try { t = idb.transaction(OS, mode); req = fn(t.objectStore(OS)); } catch (e) { return no(e); }
+    t.oncomplete = () => ok(req && req.result); t.onerror = () => no(t.error); t.onabort = () => no(t.error || new Error('write aborted'));
+  });
+  const get = k => tx('readonly', s => s.get(k));
+  const put = (k, v) => tx('readwrite', s => s.put(v, k));
+
+  async function init() { try { idb = await open(); } catch (e) { idb = null; } }
+
+  /** Returns the saved log (or null if there is none). Never throws. */
+  async function load() {
+    let d = null;
+    if (idb) {
+      try { d = await get('db'); } catch (e) { d = null; }
+      if (d && !valid(d)) { await put('corrupt.' + Date.now(), d).catch(() => {}); st.quarantined = true; d = null; }
+      if (!d) { try { const b = await get('db.bak'); if (valid(b)) { d = b; st.recovered = true; } } catch (e) {} }
+    }
+    if (!d) {   // the copy from before IndexedDB was used
+      let raw = null; try { raw = localStorage.getItem(LEGACY); } catch (e) {}
+      if (raw) { try { const p = JSON.parse(raw); if (valid(p)) d = p; else throw new Error('shape'); } catch (e) { st.quarantined = true; if (idb) await put('corrupt.' + Date.now(), raw).catch(() => {}); } }
+    }
+    return d;
+  }
+
+  async function write(db) {
+    if (idb) {
+      await put('db', db);
+      if (Date.now() - lastBackup > BACKUP_EVERY) { lastBackup = Date.now(); await put('db.bak', db).catch(() => {}); }
+      try { localStorage.removeItem(LEGACY); } catch (e) {}   // now safely in IndexedDB
+    } else localStorage.setItem(LEGACY, JSON.stringify(db));
+  }
+  async function flush() {
+    busy = true; let failed = false;
+    try { do { again = false; await write(snap); } while (again); }
+    catch (e) { failed = true; st.err = (e && e.message) || String(e); }
+    finally { busy = false; }
+    const was = st.ok; st.ok = !failed; if (!failed) st.err = '';
+    if (was !== st.ok && st.onChange) st.onChange();
+  }
+  /** Queue the current state for saving (the object is copied when the write starts, so keep mutating it freely). */
+  function save(db) { snap = db; if (busy) { again = true; return idle; } idle = flush(); return idle; }
+  /** Resolves when everything queued so far is on disk. */
+  const whenSaved = () => idle;
+  /** What is actually on disk right now (for tests and diagnostics). */
+  const peek = async () => (idb ? get('db') : JSON.parse(localStorage.getItem(LEGACY) || 'null'));
+  const backup = async () => (idb ? get('db.bak') : null);
+  const quarantine = async () => (idb ? tx('readonly', s => s.getAllKeys()).then(ks => ks.filter(k => String(k).startsWith('corrupt.'))) : []);
+
+  return { st, init, load, save, whenSaved, peek, backup, quarantine, get usingIndexedDB() { return !!idb; } };
+})();

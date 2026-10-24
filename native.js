@@ -12,6 +12,12 @@ const Native = (() => {
     try { await S.setSynchronize(false); await S.setDefaultKeychainAccess(P().KeychainAccess.whenUnlockedThisDeviceOnly); } catch (e) {}
   })());
   return {
+    /** fetch() that gives up (and reports a network error) instead of hanging forever. */
+    fetch(url, opt = {}, ms = CFG.netTimeoutMs || 30000) {
+      const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; let timer;
+      const timeout = new Promise((_, no) => { timer = setTimeout(() => { no(new TypeError('Network timeout')); try { if (ctl) ctl.abort(); } catch (e) { /* ignore */ } }, ms); });   // reject first, so the timeout (not the abort) is what callers see
+      return Promise.race([fetch(url, ctl ? { ...opt, signal: ctl.signal } : opt), timeout]).finally(() => clearTimeout(timer));
+    },
     is,
     platform: is ? cap.getPlatform() : 'web',
     /** URL scheme the OS routes back to this app (registered in AndroidManifest / Info.plist). */
@@ -24,6 +30,8 @@ const Native = (() => {
     async launchUrl() { if (!is) return null; try { const r = await P().App.getLaunchUrl(); return (r && r.url) || null; } catch (e) { return null; } },
     onBack(cb) { if (is) P().App.addListener('backButton', () => { if (!cb()) P().App.exitApp(); }); },
     onAppState(cb) { if (is) P().App.addListener('appStateChange', e => cb(e.isActive)); },
+    /** Share text through the OS share sheet (the Web Share API is missing from Android's WebView). */
+    async shareText(title, text) { await P().Share.share({ title, text, dialogTitle: title }); },
     /** Write a text file and open the OS share sheet (Save to Files / iCloud Drive / Drive / email …). */
     async saveFile(name, text) {
       const dir = 'CACHE';

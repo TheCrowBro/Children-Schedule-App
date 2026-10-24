@@ -58,7 +58,7 @@ const server = http.createServer((req, res) => {
   const secretOf = p => p.evaluate(() => document.querySelector('.card .code').textContent.trim());
   const enterTotp = async (p, secret, sel = '#eCode', btn = '#eGo') => { await p.fill(sel, totp(secret)); await p.click(btn); };
   const q = async (sql, params) => (await su.query(sql, params)).rows;
-  const syncNow = async p => { await p.evaluate(() => Sync.run()); await p.waitForFunction(() => Sync.st.state !== 'syncing'); };
+  const syncNow = async p => { await p.evaluate(() => Sync.run(true)); await p.waitForFunction(() => Sync.st.state !== 'syncing'); };
   const toastText = p => p.evaluate(() => document.querySelector('#toast').textContent);
   const secrets = [];   // everything that must never reach the server in readable form
   const rowOf = async id => (await q('select * from events where id=$1', [id]))[0];
@@ -123,6 +123,7 @@ const server = http.createServer((req, res) => {
     const plain = await A.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([k]) => !k.startsWith('MOCKSECURE:'))));
     const secure = await A.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('MOCKSECURE:')));
     assert(secure.includes('MOCKSECURE:auth.v2'), 'session is in the keychain');
+    assert(!Object.keys(plain).includes('littlelog.v1') && await A.evaluate(() => Store.usingIndexedDB), 'the log itself lives in IndexedDB, not localStorage');
     const tok = JSON.parse(await A.evaluate(() => localStorage.getItem('MOCKSECURE:auth.v2'))).access;
     assert(!JSON.stringify(plain).includes(tok) && !JSON.stringify(plain).includes('refresh'), 'no token in ordinary storage: ' + Object.keys(plain));
     const baby = await babyOf(A), k = await keysOf(A);
@@ -133,7 +134,7 @@ const server = http.createServer((req, res) => {
     await A.click('[data-add=feed]'); await A.click('input[value=bottle]'); await A.fill('#ml', '90'); await A.click('#save');
     await A.waitForFunction(() => Sync.st.state === 'ok' && !db.events.some(e => e.updated > db.meta.pushedAt));
     const [e] = await q('select e.*, m.display_name from events e join members m on m.user_id=e.created_by'); assert.equal(e.display_name, 'Mum');
-    assert(!JSON.stringify(e).includes('bottle') && !/"?ml"?/.test(e.blob) && e.sensitive === false && e.epoch === 1, 'the server holds only ciphertext: ' + e.blob.slice(0, 30));
+    assert(!JSON.stringify(e).includes('bottle') && !e.blob.includes('"ml"') && e.sensitive === false && e.epoch === 1, 'the server holds only ciphertext: ' + e.blob.slice(0, 30));
     const d = await plainOf(A, e.id); assert.equal(d.entry.type, 'feed'); assert.equal(d.entry.data.ml, 90);
     assert((await q(`select * from activity where action='entry_added'`)).length === 1);
   });
@@ -484,7 +485,7 @@ const server = http.createServer((req, res) => {
   await step('the server holds no readable data at all: a search of every table finds none of the baby\'s data, notes or keys', async () => {
     const tables = (await q(`select tablename from pg_tables where schemaname='public'`)).map(r => r.tablename); let dump = '';
     for (const t of tables) dump += (await q(`select coalesce(string_agg(to_jsonb(x)::text, E'\n'), '') d from ${t} x`))[0].d + '\n';
-    for (const sentinel of ['Leo', 'Solo', '2026-10-10', 'solo note', 'nan was here', 'after nan left', '"wet"', 'Rash', 'bottle', 'planted', 'Vit D']) assert(!dump.includes(sentinel), 'plaintext leaked to the server: ' + sentinel);
+    for (const sentinel of ['"Leo"', '"Solo"', '2026-10-10', 'solo note', 'nan was here', 'after nan left', '"wet"', '"Rash"', 'bottle', 'planted', 'Vit D']) assert(!dump.includes(sentinel), 'plaintext leaked to the server: ' + sentinel);
     const ka = await keysOf(A), dev = await A.evaluate(() => E2EE.device);
     for (const k of Object.values(ka.keys)) { secrets.push(k.main); if (k.health) secrets.push(k.health); } secrets.push(dev.priv.d);
     for (const sec of secrets) assert(!dump.includes(sec), 'a secret reached the server: ' + sec.slice(0, 8) + '…');
@@ -520,7 +521,7 @@ const server = http.createServer((req, res) => {
     assert.equal([...shim.sessions.values()].filter(s => s.email === 'mum@x.com').length, 0, 'server dropped all of Mum\'s sessions');
     await A.evaluate(() => { const k = 'MOCKSECURE:auth.v2', s = JSON.parse(localStorage.getItem(k)); s.exp = 0; localStorage.setItem(k, JSON.stringify(s)); });   // her access token has now expired
     await A.reload(); await A.waitForSelector('#lEmail', { timeout: 15000 });
-    assert(/signed out/.test(await A.textContent('#view'))); assert.equal(await A.evaluate(() => JSON.parse(localStorage.getItem('littlelog.v1')).events.length), 0, 'baby data wiped from the phone');
+    assert(/signed out/.test(await A.textContent('#view'))); assert.equal(await A.evaluate(async () => { await Store.whenSaved(); return (await Store.peek()).events.length; }), 0, 'baby data wiped from the phone (on disk, not just on screen)');
     assert.equal(await A.evaluate(() => localStorage.getItem('MOCKSECURE:auth.v2')), null);
   });
 

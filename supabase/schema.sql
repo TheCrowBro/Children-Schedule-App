@@ -123,6 +123,7 @@ create table activity (
   detail jsonb not null default '{}'
 );
 create index activity_by_baby on activity (baby_id, id desc);
+create index activity_by_age on activity (baby_id, at);
 
 create table invite_attempts (user_id uuid not null, at timestamptz not null default now());
 create index invite_attempts_recent on invite_attempts (user_id, at);
@@ -165,9 +166,13 @@ create function display_of(b uuid, u uuid) returns text language sql security de
   select coalesce(nullif(m.display_name, ''), split_part(m.email, '@', 1), '') from members m where m.baby_id = b and m.user_id = u $$;
 
 create function log_activity(b uuid, a text, eid text default null, etype text default null, d jsonb default '{}')
-returns void language sql security definer set search_path = public as $$
+returns void language plpgsql security definer set search_path = public as $$
+begin
   insert into activity (baby_id, user_id, actor, action, entry_id, entry_type, detail)
-  values (b, auth.uid(), coalesce(display_of(b, auth.uid()), ''), a, eid, etype, d) $$;
+  values (b, auth.uid(), coalesce(display_of(b, auth.uid()), ''), a, eid, etype, d);
+  -- keep the log bounded: now and then drop anything older than ~14 months
+  if random() < 0.02 then delete from activity where baby_id = b and at < now() - interval '14 months'; end if;
+end $$;
 
 -- ── row-level security: read-only for clients ─────────────────────────────────────────────────
 alter table babies          enable row level security;
@@ -465,6 +470,7 @@ begin
   if p_user = auth.uid() then raise exception 'Ask another parent to reset yours'; end if;
   if not exists (select 1 from members where baby_id = p_baby and user_id = p_user) then raise exception 'not a member'; end if;
   delete from auth.mfa_factors where user_id = p_user;
+  delete from auth.sessions where user_id = p_user;   -- a session that already passed MFA must not outlive the reset (it may be the compromised one)
   perform log_activity(p_baby, 'mfa_reset', null, null, jsonb_build_object('person', display_of(p_baby, p_user)));
 end $$;
 
@@ -587,7 +593,7 @@ end $$;
 
 -- ── entries: the only write path ──────────────────────────────────────────────────────────────
 -- p_rows: [{id, blob, epoch, sensitive, updated, deleted}]. The server cannot read `blob`; it checks who may write,
--- sizes, and that new content uses the current key epoch. Returns {"denied": [ids], "stale": <current epoch or null>}:
+-- sizes, and that new content uses the current key epoch. Returns {"denied": [ids], "stale": <current epoch or null>, "ceiling": the newest edit time it accepts}:
 -- `stale` means the phone has old keys and must fetch the new ones and re-send (nothing is lost).
 create function push_events(p_baby uuid, p_rows jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -647,7 +653,7 @@ begin
                            jsonb_build_object('author', display_of(p_baby, ex.created_by)));
     end if;
   end loop;
-  return jsonb_build_object('denied', to_jsonb(denied), 'stale', stale);
+  return jsonb_build_object('denied', to_jsonb(denied), 'stale', stale, 'ceiling', now_ms + 60000);
 end $$;
 
 -- ── audit log (parents only) ──────────────────────────────────────────────────────────────────

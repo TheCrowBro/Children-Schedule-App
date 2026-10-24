@@ -22,6 +22,7 @@ npm install && npm run sync     # then npm run android / npm run ios / npm run a
 npm test                        # database rules + end-to-end tests
 ```
 - **[SETUP.md](SETUP.md)**: Supabase, sign-in hardening, roles and permissions, cloud providers, privacy notes
+- **[TESTING.md](TESTING.md)**: what the automated tests prove, what they can't, and the physical-device release checklist
 - **[MOBILE.md](MOBILE.md)**: building and releasing the Android and iOS apps, store checklist
 
 *Not medical advice.*

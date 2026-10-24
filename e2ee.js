@@ -23,6 +23,8 @@ const E2EE = (() => {
   const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   const unb64u = s => unb64(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
   const rand = n => crypto.getRandomValues(new Uint8Array(n));
+  /** crypto.randomUUID() needs iOS 15.4+; this works everywhere. */
+  const uuid = () => { if (crypto.randomUUID) return crypto.randomUUID(); const b = rand(16); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128; const h = Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`; };
   const cat = (...a) => { const o = new Uint8Array(a.reduce((n, x) => n + x.length, 0)); let i = 0; for (const x of a) { o.set(x, i); i += x.length; } return o; };
   const pubOf = j => ({ kty: 'EC', crv: 'P-256', x: j.x, y: j.y });
   const canon = pub => cat(unb64u(pub.x), unb64u(pub.y));
@@ -164,6 +166,23 @@ const E2EE = (() => {
 
   // ---- entries & profile ---------------------------------------------------------------------------
   const isSensitive = type => type === 'health' || type === 'med';
+  // Whatever a (possibly buggy or hostile) writer put inside an entry, only known fields of the right type reach the screens.
+  const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+  const num = v => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(v, 1e6)) : undefined);
+  function sanitize(type, d) {
+    d = d && typeof d === 'object' && !Array.isArray(d) ? d : {};
+    const o = {}, n = k => { const v = num(d[k]); if (v !== undefined) o[k] = v; }, s = (k, len) => { if (typeof d[k] === 'string') o[k] = str(d[k], len); }, b = k => { if (typeof d[k] === 'boolean') o[k] = d[k]; };
+    switch (type) {
+      case 'feed': if (d.kind === 'bottle' || d.kind === 'breast') o.kind = d.kind; s('side', 10); s('milk', 20); n('min'); n('ml'); break;
+      case 'diaper': b('pee'); b('poo'); b('rash'); s('color', 20); break;
+      case 'wake': n('min'); s('why', 30); break;
+      case 'vomit': s('amount', 20); b('projectile'); break;
+      case 'play': s('activity', 30); n('min'); break;
+      case 'health': o.symptoms = Array.isArray(d.symptoms) ? d.symptoms.filter(x => typeof x === 'string').slice(0, 20).map(x => x.slice(0, 60)) : []; n('temp'); break;
+      case 'med': s('name', 60); s('dose', 60); break;
+    }
+    return o;
+  }
   async function encryptEntry(baby, e) {
     const cur = current(baby), sens = isSensitive(e.type), key = cur && (sens ? cur.health : cur.main);
     if (!key) throw new Error('no key');
@@ -182,7 +201,7 @@ const E2EE = (() => {
       // The row's edit time may only be *lower* than the sealed one (the server clamps wild clocks). A higher one means the server is passing an
       // old version off as newer, to roll a phone back.
       if (!Number.isFinite(p.u) || !(+r.updated <= p.u)) return { bad: true };
-      return { entry: { id: r.id, type: p.type, ts: p.ts, ...(p.end != null ? { end: p.end } : {}), data: p.data || {}, note: p.note || '', updated: +r.updated, by: p.a || r.created_by } };
+      return { entry: { id: r.id, type: p.type, ts: p.ts, ...(Number.isFinite(p.end) ? { end: p.end } : {}), data: sanitize(p.type, p.data), note: str(p.note, 1000), updated: +r.updated, by: typeof p.a === 'string' ? p.a.slice(0, 64) : r.created_by } };
     } catch (e) { return { bad: true }; }
   }
   const decryptRow = (baby, r) => decryptWith((store[baby] && store[baby].keys) || {}, baby, r);
@@ -276,7 +295,7 @@ const E2EE = (() => {
   // ---- parent operations ---------------------------------------------------------------------------
   async function createLog(profile, displayName) {
     await ensureDevice();
-    const baby = crypto.randomUUID(), keys = { main: rand(32), health: rand(32) }, rec = await newRecovery();
+    const baby = uuid(), keys = { main: rand(32), health: rand(32) }, rec = await newRecovery();
     const mine = await makeGrant(baby, 1, keys, 'd:' + dev.id, dev.pub, { health: true });
     const recG = await makeGrant(baby, 1, keys, 'recovery', rec.pub, { health: true });
     const id = await Auth.rpc('create_baby', { p_profile: await sealProfile(baby, 1, keys.main, profile), p_display_name: displayName || '', p_device: dev.id,
@@ -342,7 +361,7 @@ const E2EE = (() => {
   return {
     load, ensureDevice, refresh, createLog, makeGrant, unlockWithRecovery, grantForRequest, approveDevice, healthGrants, rotate, replaceRecovery,
     encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile,
-    newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,
+    uuid, newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,
     fingerprint, securityCode, forget, wipeUser,
     get device() { return dev; },
     hasKeys: baby => !!(store[baby] && raw(baby, store[baby].epoch, 'main')),

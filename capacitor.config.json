@@ -7,14 +7,18 @@
   },
   "ios": {
     "contentInset": "never",
-    "backgroundColor": "#f5f6fb"
+    "backgroundColor": "#f5f6fb",
+    "webContentsDebuggingEnabled": false
   },
   "android": {
-    "backgroundColor": "#f5f6fb"
+    "backgroundColor": "#f5f6fb",
+    "webContentsDebuggingEnabled": false,
+    "allowMixedContent": false
   },
   "plugins": {
     "CapacitorHttp": {
       "enabled": true
     }
-  }
+  },
+  "loggingBehavior": "none"
 }

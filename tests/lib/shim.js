@@ -140,7 +140,11 @@ function createShim(superUrl, opts = {}) {
       await ready;
       await ctx.route(origin + '/**', async route => {
         const req = route.request(), url = new URL(req.url());
-        if (o.down) return route.abort('internetdisconnected');
+        if (o.down || ctx.__down) return route.abort('internetdisconnected');
+        if (ctx.__hang) return new Promise(() => {});   // the connection stays open and nothing ever comes back
+        if (ctx.__flaky && Math.random() < ctx.__flaky) return route.fulfill(J(500, { message: 'injected failure' }));
+        if (ctx.__garbage && url.pathname.startsWith('/rest/v1')) return route.fulfill({ status: 200, contentType: 'text/html', headers: { 'access-control-allow-origin': '*' }, body: '<html>captive portal login</html>' });
+        if (o.refreshFail && url.pathname === '/auth/v1/token') return route.fulfill(J(500, { message: 'auth service unavailable' }));
         if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
         let body = null; try { body = req.postData() ? JSON.parse(req.postData()) : null; } catch (e) {}
         try { route.fulfill(url.pathname.startsWith('/auth/') ? await auth(req, url.pathname, body) : await rest(req, url, body)); }

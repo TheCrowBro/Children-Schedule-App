@@ -7,12 +7,14 @@
 const Sync = (() => {
   const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [] };
   const PAGE = 500, OVERLAP_MS = 5000;
-  let busy = false, again = false, timer = null, started = false, peopleAt = 0;
+  let busy = false, busyAt = 0, again = false, timer = null, started = false, peopleAt = 0, failures = 0, retryAt = 0;
 
   const enabled = () => Auth.configured && Auth.signedIn;
   const linked = () => enabled() && !!db.meta.babyId;
   const notify = changed => { if (Sync.onChange) Sync.onChange(changed); };
   const q = encodeURIComponent;
+  /** Server lists must really be lists. Anything else is a broken or foreign reply: fail (and retry later) instead of acting on it. */
+  const list = r => { if (!Array.isArray(r)) throw new TypeError('Unexpected reply from the server'); return r; };
 
   // ---- permissions (UI only – the server enforces the same rules) -----------------------------
   const isParent = () => !linked() || db.meta.role === 'parent';
@@ -41,10 +43,11 @@ const Sync = (() => {
     const drop = new Set();
     let n = 0;
     for (const r of rows) {
+      if (!touch && r.updated > (db.meta.hlc || 0)) db.meta.hlc = r.updated;   // learn the log's clock, so our next edit is newer than anything seen
       const cur = live.get(r.id) || tomb.get(r.id);
       if (!force && cur && (cur.updated || 0) >= r.updated) continue;
       if (r.deleted) { if (live.has(r.id)) { drop.add(r.id); live.delete(r.id); n++; } if (force && tomb.has(r.id)) { db.deleted = db.deleted.filter(t => t.id !== r.id); tomb.delete(r.id); } continue; }
-      const rec = { id: r.id, type: r.type, ts: r.ts, data: r.data || {}, note: r.note || '', updated: touch ? Date.now() : r.updated };
+      const rec = { id: r.id, type: r.type, ts: r.ts, data: r.data || {}, note: r.note || '', updated: touch ? stamp() : r.updated };
       if (r.end != null) rec.end = r.end;
       if (r.by) rec.by = r.by;
       const mineRec = live.get(r.id);
@@ -63,7 +66,7 @@ const Sync = (() => {
       if (r.deleted) { out.push({ id: r.id, deleted: true, updated: +r.updated }); delete stash[r.id]; continue; }
       const d = await E2EE.decryptRow(b, r);
       if (d.entry) { out.push({ ...d.entry, deleted: false }); delete stash[r.id]; }
-      else if (d.locked) stash[r.id] = { id: r.id, blob: r.blob, epoch: r.epoch, sensitive: r.sensitive, updated: r.updated, deleted: false, created_by: r.created_by };
+      else if (d.locked) { if (Object.keys(stash).length < 5000) stash[r.id] = { id: r.id, blob: r.blob, epoch: r.epoch, sensitive: r.sensitive, updated: r.updated, deleted: false, created_by: r.created_by }; }
       else st.bad++;   // failed authentication: tampered with, moved, or planted by someone without the right key – ignored
     }
     return out;
@@ -75,7 +78,7 @@ const Sync = (() => {
   }
   const isSens = type => type === 'health' || type === 'med';
   async function encodeRows(b) {
-    const cut = Date.now(), since = db.meta.pushedAt || 0, rows = [];
+    const cut = Math.max(Date.now(), db.meta.hlc || 0), since = db.meta.pushedAt || 0, rows = [];
     for (const e of db.events) if (e.updated > since && e.updated <= cut) { const x = await E2EE.encryptEntry(b, e); rows.push({ id: e.id, ...x, updated: e.updated, deleted: false }); }
     for (const t of db.deleted) if (t.updated > since && t.updated <= cut) rows.push({ id: t.id, blob: '', epoch: E2EE.epoch(b) || 1, sensitive: isSens(t.type), updated: t.updated, deleted: true });
     return { rows, cut };
@@ -86,11 +89,11 @@ const Sync = (() => {
   // ---- remote operations -------------------------------------------------------------------
   async function pullBaby() {
     const b = db.meta.babyId;
-    const mem = await Auth.api(`/members?baby_id=eq.${b}&user_id=eq.${Auth.id}&select=role,perms`);
-    if (!mem.length) { lostAccess(); return false; }
+    const mem = list(await Auth.api(`/members?baby_id=eq.${b}&user_id=eq.${Auth.id}&select=role,perms`));
+    if (!mem.length) { lostAccess(); return false; }   // an empty, well-formed list: our membership really is gone
     db.meta.role = mem[0].role; db.meta.perms = mem[0].perms || {};
     st.needMfa = false;
-    const baby = await Auth.api(`/babies?id=eq.${b}&select=profile,epoch,rotate_needed`);
+    const baby = list(await Auth.api(`/babies?id=eq.${b}&select=profile,epoch,rotate_needed`));
     if (!baby.length) { st.needMfa = true; st.state = 'error'; st.err = 'Two-step verification is required'; return false; }   // a parent without an MFA session
     st.rotateNeeded = !!baby[0].rotate_needed;
     // Encryption keys: fetch them if this phone has none, or the log moved to a newer key epoch.
@@ -116,7 +119,7 @@ const Sync = (() => {
     let since = db.meta.pulledAt ? new Date(new Date(db.meta.pulledAt).getTime() - OVERLAP_MS).toISOString() : '1970-01-01T00:00:00Z';
     let changed = 0;
     for (;;) {
-      const rows = await Auth.api(`/events?baby_id=eq.${b}&synced_at=gt.${q(since)}&order=synced_at.asc&limit=${PAGE}&select=*`);
+      const rows = list(await Auth.api(`/events?baby_id=eq.${b}&synced_at=gt.${q(since)}&order=synced_at.asc&limit=${PAGE}&select=*`));
       changed += merge(await decode(rows));
       if (rows.length) { since = rows[rows.length - 1].synced_at; db.meta.pulledAt = since; }
       if (rows.length < PAGE) break;
@@ -126,18 +129,23 @@ const Sync = (() => {
 
   async function push() {
     const b = db.meta.babyId;
-    let { rows, cut } = await encodeRows(b), denied = [];
+    let { rows, cut } = await encodeRows(b), denied = [], ceiling = Infinity;
     for (let attempt = 0; ; attempt++) {
-      denied = []; let stale = null;
+      denied = []; let stale = null; ceiling = Infinity;
       for (let i = 0; i < rows.length; i += 200) {
         const r = await Auth.rpc('push_events', { p_baby: b, p_rows: rows.slice(i, i + 200) });
         denied.push(...((r && r.denied) || [])); if (r && r.stale) stale = r.stale;
+        if (r && Number.isFinite(r.ceiling)) ceiling = Math.min(ceiling, r.ceiling);
       }
       if (!stale) break;
       // The log moved to newer keys than this phone used: fetch them and send again (nothing is lost).
       await E2EE.refresh(b, db.meta);
       if (E2EE.epoch(b) < stale || attempt) throw new Error('Waiting for the new encryption keys');
       ({ rows, cut } = await encodeRows(b));
+    }
+    if (cut > ceiling) {   // this phone's clock runs fast: the server stored these edits no later than its ceiling, so do the same here
+      for (const x of db.events.concat(db.deleted)) if (x.updated > ceiling) x.updated = ceiling;
+      cut = ceiling; if ((db.meta.hlc || 0) > ceiling) db.meta.hlc = ceiling;
     }
     db.meta.pushedAt = cut;
     db.deleted = db.deleted.filter(t => t.updated > cut);   // tombstones now live on the server
@@ -147,17 +155,19 @@ const Sync = (() => {
   async function restore(ids) {
     const b = db.meta.babyId, safe = ids.filter(i => /^[A-Za-z0-9_-]{1,64}$/.test(i));
     st.denied += ids.length;
-    const rows = safe.length ? await decode(await Auth.api(`/events?baby_id=eq.${b}&id=in.(${safe.join(',')})&select=*`)) : [];
+    const rows = safe.length ? await decode(list(await Auth.api(`/events?baby_id=eq.${b}&id=in.(${safe.join(',')})&select=*`))) : [];
     const have = new Set(rows.map(r => r.id));
     merge(rows, false, true);
     merge(safe.filter(i => !have.has(i)).map(id => ({ id, deleted: true, updated: 0 })), false, true);   // never existed on the server: drop the local copy
   }
 
-  async function run() {
+  /** `manual` (a button, an edit, coming back online) ignores the backoff that follows failures. */
+  async function run(manual) {
     if (!linked()) return;
+    if (manual !== true && Date.now() < retryAt) return;
     if (db.meta.role === 'parent' && Auth.aal !== 'aal2') { st.needMfa = true; st.state = 'error'; st.err = 'Two-step verification is required'; return notify(); }
-    if (busy) { again = true; return; }
-    busy = true; st.state = 'syncing'; notify();
+    if (busy && Date.now() - busyAt < 120000) { again = true; return; }   // (a sync stuck for 2 minutes is treated as dead)
+    busy = true; busyAt = Date.now(); st.state = 'syncing'; notify();
     let changed = 0;
     try {
       if (await pullBaby()) {
@@ -167,11 +177,11 @@ const Sync = (() => {
         if (Date.now() - peopleAt > 120000 || db.events.some(e => e.by && !st.people.some(p => p.user_id === e.by))) { await loadPeople().catch(() => {}); }
         await loadDevices().catch(() => {});
         if (db.meta.role === 'parent') await loadAdmin().catch(() => {});
-        st.state = 'ok'; st.at = Date.now(); st.err = '';
+        st.state = 'ok'; st.at = Date.now(); st.err = ''; failures = 0; retryAt = 0;
       } else if (!st.needMfa && !st.needsAccess) st.state = 'idle';   // access was removed; lostAccess() already reset this device
     } catch (e) {
-      st.state = (e instanceof TypeError || navigator.onLine === false) ? 'offline' : 'error';
-      st.err = e.message;
+      st.state = (e instanceof TypeError || e.name === 'AbortError' || navigator.onLine === false) ? 'offline' : 'error';
+      st.err = e.message; failures++; retryAt = Date.now() + Math.min(300000, 5000 * 2 ** failures);   // 10s, 20s, 40s … up to 5 minutes
       if (!Auth.signedIn && Sync.onSessionLost) { busy = false; Sync.onSessionLost(); }
     } finally {
       busy = false; save(true);
@@ -179,7 +189,7 @@ const Sync = (() => {
       if (again) { again = false; schedule(1500); }
     }
   }
-  function schedule(ms = 2000) { if (!linked()) return; clearTimeout(timer); timer = setTimeout(run, ms); }
+  function schedule(ms = 2000) { if (!linked()) return; clearTimeout(timer); timer = setTimeout(() => run(true), ms); }
 
   // ---- people, requests, invites, activity -------------------------------------------------
   async function loadPeople() { st.people = await Auth.rpc('list_people', { p_baby: db.meta.babyId }); peopleAt = Date.now(); return st.people; }
@@ -235,10 +245,10 @@ const Sync = (() => {
 
   // ---- baby / membership management ---------------------------------------------------------
   async function loadMemberships() {
-    const rows = await Auth.api(`/members?user_id=eq.${Auth.id}&select=baby_id,role,perms`);
+    const rows = list(await Auth.api(`/members?user_id=eq.${Auth.id}&select=baby_id,role,perms`));
     // Baby names are encrypted: show the ones this phone already has the key for.
     let profiles = [];
-    try { profiles = await Auth.api('/babies?select=id,profile,epoch'); } catch (e) {}
+    try { profiles = list(await Auth.api('/babies?select=id,profile,epoch')); } catch (e) { /* names only: fine to skip */ }
     st.memberships = [];
     for (const r of rows) {
       const b = profiles.find(x => x.id === r.baby_id); let p = null;
@@ -258,9 +268,12 @@ const Sync = (() => {
   }
   /** Creates the log with fresh encryption keys. Returns the one-time recovery code (shown to the parent once, never stored). */
   async function createBaby(name, birth, displayName) {
-    const { babyId: id, code } = await E2EE.createLog({ name, birth: birth || '' }, displayName);
+    db.meta.recoveryAck = false; save(true);   // set first: if the app dies before the code is shown, the reminder is still there
+    let created;
+    try { created = await E2EE.createLog({ name, birth: birth || '' }, displayName); } catch (e) { delete db.meta.recoveryAck; save(true); throw e; }
+    const { babyId: id, code } = created;
     // Existing local entries (from before sign-in) are adopted by the new baby and uploaded.
-    db.meta.babyId = id; db.meta.role = 'parent'; db.meta.perms = null; db.meta.pulledAt = ''; db.meta.pushedAt = 0; db.meta.babyDirty = false; db.meta.recoveryAck = false; db.meta.unverified = false;
+    db.meta.babyId = id; db.meta.role = 'parent'; db.meta.perms = null; db.meta.pulledAt = ''; db.meta.pushedAt = 0; db.meta.babyDirty = false; db.meta.unverified = false;
     db.events.forEach(e => { e.by = Auth.id; });
     db.baby = { name, birth: birth || '' };
     save(true); await loadMemberships(); run();
@@ -289,12 +302,12 @@ const Sync = (() => {
   function pushBaby() { db.meta.babyDirty = true; save(); schedule(500); }
 
   function start() {
-    if (started) return run();
+    if (started) return run(true);
     started = true;
     setInterval(() => { if (!document.hidden) run(); }, 30000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) run(); });
-    window.addEventListener('online', run);
-    run();
+    window.addEventListener('online', () => run(true));
+    run(true);
   }
 
   return { st, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,

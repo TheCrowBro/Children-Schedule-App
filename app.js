@@ -1,5 +1,5 @@
 'use strict';
-/* Little Log – newborn tracker. All data stays in this browser (localStorage). */
+/* Little Log – newborn tracker. The log is kept on the phone (store.js) and synced, end-to-end encrypted, when signed in. */
 
 // ---------- Config ----------
 const TYPES = {
@@ -25,12 +25,11 @@ const PLAYS = ['Tummy time', 'Play', 'Walk / outing', 'Bath', 'Skin-to-skin'];
 const WAKE_WHY = ['Hungry', 'Diaper', 'Gas / fussy', 'Unknown'];
 
 // ---------- Storage ----------
-const KEY = 'littlelog.v1';
-let db = load();
-function load() {
-  let d = null;
-  try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
-  if (!d || !Array.isArray(d.events)) d = { baby: { name: '', birth: '' }, events: [] };
+// The log lives in memory (`db`) and is persisted by store.js (IndexedDB). It is loaded once at startup, before the first render.
+const emptyDb = () => ({ baby: { name: '', birth: '' }, events: [], deleted: [], meta: {} });
+let db = emptyDb();
+function normalize(d) {
+  if (!d || !Array.isArray(d.events)) d = emptyDb();
   d.baby = d.baby || { name: '', birth: '' };
   d.deleted = d.deleted || [];   // tombstones: deletions waiting to sync
   d.meta = d.meta || {};         // babyId, role, sync cursors
@@ -38,16 +37,22 @@ function load() {
   d.events.forEach(e => { if (!e.updated) e.updated = now; });   // entries from before sync existed
   return d;
 }
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 // `quiet` saves skip scheduling a sync (used by the sync engine itself).
 function save(quiet) {
-  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { toast('Could not save – storage full or blocked'); }
+  Store.save(db);
   if (!quiet) Sync.schedule();
+}
+/** A timestamp for an edit that is always newer than anything this phone has seen, even if its clock is behind
+    (last-write-wins compares these, so a slow clock must not make a fresh edit look old). */
+function stamp() {
+  const t = Math.max(Date.now(), (db.meta.hlc || 0) + 1);
+  db.meta.hlc = t; return t;
 }
 function removeEvent(ev) {
   db.events = db.events.filter(x => x !== ev);
-  db.deleted.push({ id: ev.id, type: ev.type, ts: ev.ts, updated: Date.now() });
+  db.deleted.push({ id: ev.id, type: ev.type, ts: ev.ts, updated: stamp() });
 }
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 // ---------- Helpers ----------
 const $ = s => document.querySelector(s);
@@ -67,7 +72,8 @@ const r1 = n => Math.round(n * 10) / 10;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
 
 // ---------- Event description ----------
-function describe(e) {
+function describe(e) { try { return describeEntry(e); } catch (err) { return [(TYPES[e.type] || {}).label || 'Entry', '']; } }
+function describeEntry(e) {
   const d = e.data || {};
   switch (e.type) {
     case 'feed':
@@ -102,7 +108,7 @@ function render() {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   const s = activeSleep(), bn = $('#sleepBanner');
   bn.hidden = !s;
-  if (s) { bn.innerHTML = `<span>😴 Asleep since ${fmtTime(s.ts)} (${fmtDur((Date.now() - s.ts) / MIN)})</span><button id="wakeBtn">Woke up</button>`; $('#wakeBtn').onclick = () => { if (!Sync.can('edit', s)) return toast("You can't change this entry"); s.end = Date.now(); s.updated = Date.now(); save(); render(); toast('Sleep saved'); }; }
+  if (s) { bn.innerHTML = `<span>😴 Asleep since ${fmtTime(s.ts)} (${fmtDur((Date.now() - s.ts) / MIN)})</span><button id="wakeBtn">Woke up</button>`; $('#wakeBtn').onclick = () => { if (!Sync.can('edit', s)) return toast("You can't change this entry"); s.end = Date.now(); s.updated = stamp(); save(); render(); toast('Sleep saved'); }; }
   $('#view').innerHTML = { day: dayView, month: monthView, stats: statsView, family: Acct.familyHtml, more: moreView }[tab]();
   bind(); Acct.updateBadge();
 }
@@ -131,7 +137,7 @@ const quickButtons = () => Sync.can('add')
 const byLine = e => { const n = Sync.linked() && e.by ? Sync.nameOf(e.by) : ''; return n && n !== 'you' ? `<small>added by ${esc(n)}</small>` : ''; };
 function evRow(e) {
   const [a, b] = describe(e), t = TYPES[e.type];
-  const warn = e.type === 'health' && (e.data.symptoms || []).some(s => URGENT.includes(s));
+  const warn = (e.type === 'health' && (e.data.symptoms || []).some(s => URGENT.includes(s))) || (e.type === 'diaper' && !!e.data.poo && STOOL_WARN.includes(e.data.color));
   return `<div class="card ev ${warn ? 'alert' : ''}" style="--c:${t.color}" data-edit="${e.id}">
     <div class="t">${fmtTime(e.ts)}</div>
     <div class="b">${t.icon} <b>${esc(a)}</b>${b ? `<small>${esc(b)}</small>` : ''}${e.note ? `<small>“${esc(e.note)}”</small>` : ''}${byLine(e)}</div></div>`;
@@ -355,10 +361,11 @@ function openSheet(type, ev) {
     if (type === 'med') { data = { name: $('#mname').value.trim(), dose: $('#mdose').value.trim() }; if (!data.name) return toast('Enter a name'); }
     if (type === 'sleep' && !end) { const cur = activeSleep(); if (cur && cur !== ev) return toast('Already sleeping – tap “Woke up” first'); }
     const rec = ev || { id: uid(), type, by: Auth.id || undefined };
-    Object.assign(rec, { ts, data, note: $('#note').value.trim(), updated: Date.now() });
+    Object.assign(rec, { ts, data, note: $('#note').value.trim(), updated: stamp() });
     if (type === 'sleep') { if (end) rec.end = end; else delete rec.end; }
     if (!ev) db.events.push(rec);
     save(); close(); viewDay = startOfDay(ts); render(); toast('Saved');
+    if (type === 'diaper' && data.poo && STOOL_WARN.includes(data.color)) setTimeout(() => alert('Red-streaked or pale / white stools can be a sign of a problem. Please tell your pediatrician (and call straight away if your baby seems unwell).'), 300);
     if (type === 'health' && data.symptoms.some(s => URGENT.includes(s))) setTimeout(() => alert('One of these symptoms can be urgent. If your baby has blue lips/face, trouble breathing, a fever (38°C / 100.4°F+ in a newborn) or is hard to wake, call your pediatrician or emergency services now.'), 300);
   };
 }
@@ -386,6 +393,9 @@ Native.onBack(() => {
 Lock.onChange = () => render();
 Sync.onSessionLost = () => Acct.sessionLost();
 (async () => {
+  await Store.init(); db = normalize(await Store.load());   // before anything reads the log
+  Store.st.onChange = () => { render(); if (!Store.st.ok) toast('Cannot save on this phone – free up space'); };
+  if (Store.st.quarantined || Store.st.recovered) setTimeout(() => toast(Store.st.recovered ? 'Your saved log was damaged and has been restored from a recent backup' : 'A damaged copy of the log was set aside; it will be re-downloaded from your family log'), 600);
   if (Native.is) {
     await Promise.all([Auth.init(), Cloud.init(), Acct.init()]);   // secrets come from the Keychain / Keystore
     await Lock.init();

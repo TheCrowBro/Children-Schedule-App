@@ -9,9 +9,12 @@ const Auth = (() => {
   const persist = () => (s ? Native.Secure.set(K, JSON.stringify(s)) : Native.Secure.remove(K)).catch(() => {});
 
   async function raw(path, opt = {}) {
-    const r = await fetch(CFG.supabaseUrl.replace(/\/$/, '') + path, opt);
+    const r = await Native.fetch(CFG.supabaseUrl.replace(/\/$/, '') + path, opt);
     const txt = await r.text();
-    let j = null; try { j = txt ? JSON.parse(txt) : null; } catch (e) { j = { message: txt }; }
+    let j = null, junk = false; try { j = txt ? JSON.parse(txt) : null; } catch (e) { j = { message: txt }; junk = true; }
+    // A reply that is not JSON although the request "succeeded" is a captive portal / proxy login page, not our server: treat it as no connection
+    // (never as an answer, or the app could mistake it for "you were removed").
+    if (r.ok && junk) throw new TypeError('This network is not letting Little Log reach its server (is there a login page?)');
     if (!r.ok) {
       const err = new Error((j && (j.msg || j.message || j.error_description || j.error)) || 'Request failed (' + r.status + ')');
       err.status = r.status; throw err;
@@ -78,10 +81,17 @@ const Auth = (() => {
 
     /** PostgREST call: api('/events?...', {method, body, headers}) */
     async api(path, opt = {}) {
-      const tok = await token();
-      const o = { method: opt.method || 'GET', headers: { ...hdr(tok), ...(opt.headers || {}) } };
-      if (opt.body !== undefined) o.body = JSON.stringify(opt.body);
-      return raw('/rest/v1' + path, o);
+      const call = async tok => {
+        const o = { method: opt.method || 'GET', headers: { ...hdr(tok), ...(opt.headers || {}) } };
+        if (opt.body !== undefined) o.body = JSON.stringify(opt.body);
+        return raw('/rest/v1' + path, o);
+      };
+      try { return await call(await token()); }
+      catch (e) {
+        // The server says our token has expired although our clock disagrees (a phone with a slow clock never refreshes in time): refresh once and retry.
+        if (e.status !== 401 || !s) throw e;
+        await refresh(); return call(s.access);
+      }
     },
     rpc(name, args) { return this.api('/rpc/' + name, { method: 'POST', body: args || {} }); },
   };

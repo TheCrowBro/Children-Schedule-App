@@ -310,7 +310,10 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F'];
     await t('lost authenticator: another parent can reset MFA, never your own', async () => {
       await su.query(`insert into auth.mfa_factors(user_id,status) values ($1,'verified')`, [id.C]);
       await rejects(B('select reset_member_mfa($1,$2)', [baby, id.C]), /Only parents/); await rejects(A('select reset_member_mfa($1,$2)', [baby, id.A]), /another parent/);
+      await su.query(`insert into auth.sessions(user_id) values ($1),($1),($2)`, [id.C, id.A]);
       await A('select reset_member_mfa($1,$2)', [baby, id.C]); assert.equal((await q(`select count(*)::int c from auth.mfa_factors where user_id=$1`, [id.C]))[0].c, 0);
+      assert.equal((await q(`select count(*)::int c from auth.sessions where user_id=$1`, [id.C]))[0].c, 0, 'their sessions (including any that already passed MFA) are ended');
+      assert.equal((await q(`select count(*)::int c from auth.sessions where user_id=$1`, [id.A]))[0].c, 1, 'other people\'s sessions are untouched');
     });
 
     await t('activity log: parents only, records who did what (never entry types or contents), cannot be altered', async () => {

@@ -49,7 +49,7 @@ const Cloud = (() => {
     google: { id: () => CFG.googleClientId, auth: 'https://accounts.google.com/o/oauth2/v2/auth', token: 'https://oauth2.googleapis.com/token', scope: 'https://www.googleapis.com/auth/drive.appdata', extra: { access_type: 'offline', prompt: 'consent' } },
   };
   async function tokenCall(p, body) {
-    const r = await fetch(PKCE[p].token, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: PKCE[p].id(), ...body }).toString() });
+    const r = await Native.fetch(PKCE[p].token, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: PKCE[p].id(), ...body }).toString() });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error_description || j.error || 'Sign-in with ' + label(p) + ' failed');
     c.tokens[p] = { access: j.access_token, refresh: j.refresh_token || (c.tokens[p] && c.tokens[p].refresh), exp: Date.now() + (j.expires_in || 3600) * 1000 };
@@ -94,23 +94,23 @@ const Cloud = (() => {
 
   const ops = {
     dropbox: {
-      async put(text) { const t = await token('dropbox'); await ok(await fetch('https://content.dropboxapi.com/2/files/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Dropbox-API-Arg': JSON.stringify({ path: '/' + FILE, mode: 'overwrite', mute: true }), 'Content-Type': 'application/octet-stream' }, body: text }), 'Dropbox upload'); },
-      async get() { const t = await token('dropbox'); const r = await fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Dropbox-API-Arg': JSON.stringify({ path: '/' + FILE }) } }); if (r.status === 409) throw new Error('No backup found in Dropbox yet'); return (await ok(r, 'Dropbox download')).text(); },
+      async put(text) { const t = await token('dropbox'); await ok(await Native.fetch('https://content.dropboxapi.com/2/files/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Dropbox-API-Arg': JSON.stringify({ path: '/' + FILE, mode: 'overwrite', mute: true }), 'Content-Type': 'application/octet-stream' }, body: text }), 'Dropbox upload'); },
+      async get() { const t = await token('dropbox'); const r = await Native.fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Dropbox-API-Arg': JSON.stringify({ path: '/' + FILE }) } }); if (r.status === 409) throw new Error('No backup found in Dropbox yet'); return (await ok(r, 'Dropbox download')).text(); },
     },
     onedrive: {
-      async put(text) { const t = await token('onedrive'); await ok(await fetch(`https://graph.microsoft.com/v1.0/me/drive/special/approot:/${FILE}:/content`, { method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/octet-stream' }, body: text }), 'OneDrive upload'); },
-      async get() { const t = await token('onedrive'); const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/special/approot:/${FILE}:/content`, { headers: { Authorization: 'Bearer ' + t } }); if (r.status === 404) throw new Error('No backup found in OneDrive yet'); return (await ok(r, 'OneDrive download')).text(); },
+      async put(text) { const t = await token('onedrive'); await ok(await Native.fetch(`https://graph.microsoft.com/v1.0/me/drive/special/approot:/${FILE}:/content`, { method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/octet-stream' }, body: text }), 'OneDrive upload'); },
+      async get() { const t = await token('onedrive'); const r = await Native.fetch(`https://graph.microsoft.com/v1.0/me/drive/special/approot:/${FILE}:/content`, { headers: { Authorization: 'Bearer ' + t } }); if (r.status === 404) throw new Error('No backup found in OneDrive yet'); return (await ok(r, 'OneDrive download')).text(); },
     },
     google: {
-      async find(t) { const r = await ok(await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(`name='${FILE}'`)}&fields=files(id)`, { headers: { Authorization: 'Bearer ' + t } }), 'Google Drive lookup'); return ((await r.json()).files || [])[0]; },
+      async find(t) { const r = await ok(await Native.fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(`name='${FILE}'`)}&fields=files(id)`, { headers: { Authorization: 'Bearer ' + t } }), 'Google Drive lookup'); return ((await r.json()).files || [])[0]; },
       async put(text) {
         const t = await token('google'), f = await this.find(t);
-        if (f) return void await ok(await fetch(`https://www.googleapis.com/upload/drive/v3/files/${f.id}?uploadType=media`, { method: 'PATCH', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: text }), 'Google Drive upload');
+        if (f) return void await ok(await Native.fetch(`https://www.googleapis.com/upload/drive/v3/files/${f.id}?uploadType=media`, { method: 'PATCH', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: text }), 'Google Drive upload');
         const bd = 'llb' + rnd(10);
         const body = `--${bd}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({ name: FILE, parents: ['appDataFolder'] })}\r\n--${bd}\r\nContent-Type: application/json\r\n\r\n${text}\r\n--${bd}--`;
-        await ok(await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'multipart/related; boundary=' + bd }, body }), 'Google Drive upload');
+        await ok(await Native.fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'multipart/related; boundary=' + bd }, body }), 'Google Drive upload');
       },
-      async get() { const t = await token('google'), f = await this.find(t); if (!f) throw new Error('No backup found in Google Drive yet'); return (await ok(await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, { headers: { Authorization: 'Bearer ' + t } }), 'Google Drive download')).text(); },
+      async get() { const t = await token('google'), f = await this.find(t); if (!f) throw new Error('No backup found in Google Drive yet'); return (await ok(await Native.fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, { headers: { Authorization: 'Bearer ' + t } }), 'Google Drive download')).text(); },
     },
   };
 
@@ -133,7 +133,7 @@ const Cloud = (() => {
     async restore(p) { needPass(); return JSON.parse(await decrypt(await ops[p].get(), c.pass)); },
     /** Encrypted backup as a file the user can save to Files / iCloud Drive (or anywhere). */
     async toFile() { needPass(); return new File([await encrypt(payload(), c.pass)], FILE, { type: 'application/json' }); },
-    async fromFile(file) { needPass(); return JSON.parse(await decrypt(await file.text(), c.pass)); },
+    async fromFile(file) { needPass(); if (file.size > 25e6) throw new Error('That file is too large to be a Little Log backup'); return JSON.parse(await decrypt(await file.text(), c.pass)); },
     /** Daily silent backup to every connected provider. */
     async autoBackup() {
       if (!c.auto || !c.pass) return;
