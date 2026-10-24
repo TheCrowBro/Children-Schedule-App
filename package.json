@@ -16,7 +16,8 @@
     "test:e2e": "node tests/e2e.test.js",
     "lint": "eslint .",
     "test:robust": "node tests/robust.test.js",
-    "test:children": "node tests/children.test.js"
+    "test:children": "node tests/children.test.js",
+    "demo": "node scripts/build-demo.js"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",

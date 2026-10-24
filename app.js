@@ -304,7 +304,6 @@ function moreView() {
     <div class="row"><button class="btn" id="expJson">Backup (JSON)</button><button class="btn" id="expCsv">Export CSV</button></div>
     <div class="row"><button class="btn" id="impJson">Restore from JSON</button></div>
     <input type="file" id="impFile" accept="application/json" hidden></div>
-  <div class="card"><b>Install</b><p class="note">Open this page in your phone browser and choose “Add to Home Screen” – it then works like an app, even offline.</p></div>
   ${Sync.isParent() ? '<div class="card"><button class="btn d" id="wipe" style="width:100%">Delete all entries</button></div>' : ''}`;
 }
 

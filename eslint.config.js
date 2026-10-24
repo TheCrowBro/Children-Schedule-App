@@ -5,7 +5,7 @@ const shared = ['Auth', 'Sync', 'Cloud', 'Lock', 'Acct', 'E2EE', 'Native', 'Stor
 const rules = { eqeqeq: ['error', 'always', { null: 'ignore' }], 'no-eval': 'error', 'no-implied-eval': 'error', 'no-new-func': 'error', 'no-var': 'error', 'no-prototype-builtins': 'off',
   'no-empty': ['warn', { allowEmptyCatch: true }], 'no-constant-condition': ['error', { checkLoops: false }], 'no-redeclare': ['error', { builtinGlobals: false }], 'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }] };
 module.exports = [
-  { ignores: ['node_modules/**', 'www/**', 'android/**', 'ios/**', 'vendor/**', 'src/**', 'resources/**'] },
+  { ignores: ['demo/**', 'node_modules/**', 'www/**', 'android/**', 'ios/**', 'vendor/**', 'src/**', 'resources/**'] },
   js.configs.recommended,
   { files: ['auth.js', 'sync.js', 'e2ee.js', 'cloud.js', 'lock.js', 'account.js', 'app.js', 'native.js', 'store.js', 'config.js', 'kids.js', 'icons.js'],
     languageOptions: { sourceType: 'script', ecmaVersion: 2022, globals: { ...globals.browser, ...Object.fromEntries(shared.map(n => [n, 'writable'])), google: 'readonly', turnstile: 'readonly', LL_CONFIG: 'writable' } }, rules },
