@@ -169,6 +169,7 @@ const travelVars = () => paletteVars(Travel.PALETTE, dark()).map(([n, v]) => `${
 // ---------- Rendering ----------
 function syncLine() { const e = $('#syncLine'); e.textContent = Acct.syncLine(); Icons.paint(e); }
 function render() {
+  if (voyageFirst()) return;   // travel mode is switching: the page changes under the journey in a moment
   document.querySelectorAll('#view details[data-grp]').forEach(d => { d.open ? openGroups.add(d.dataset.grp) : openGroups.delete(d.dataset.grp); });   // keep twirl-downs as the user left them
   const multi = kids().length > 1, vk = kidById(dayKid()), single = kids()[0];
   theme();
@@ -407,7 +408,16 @@ function monthView() {
     <button data-month="1" aria-label="Next month">›</button></div>
   <div class="cal">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<div class="h">${d}</div>`).join('')}${cells}</div>
   <div class="legend">${GROUPS.map(g => `<span><i style="--c:var(--g-${g.id})"></i>${g.label}</span>`).join('')}${anyAway ? '<span class="tripkey"><i></i>Travelling (its own colours)</span>' : ''}</div>
+  ${monthTrip()}
   ${monthDay()}`;
+}
+/** On the calendar: plan a trip leaving on the day picked (or today), or change the trip that covers it. */
+function monthTrip() {
+  if (!Sync.can('add')) return '';
+  const tr = Travel.during(db.events, viewDay, addDays(viewDay, 1)), today = startOfDay(Date.now());
+  if (tr) { if (!Sync.can('edit', tr)) return ''; const M = Travel.MEANS[Travel.meansOf(tr)]; return `<button class="tripbtn" data-tripedit="${tr.id}"><span class="tm">${M.icon}</span><span><b>Trip ${M.by}</b><small>${fmtShort(tr.ts)} – ${fmtShort(Travel.ends(tr) - 1)}. Tap to change it.</small></span><span class="chev" aria-hidden="true">›</span></button>`; }
+  const from = Math.max(today, viewDay);
+  return `<button class="tripbtn" data-tripplan="${from}"><span class="tm">🧳</span><span><b>Plan a trip</b><small>Leaving ${from === today ? 'today' : fmtShort(from)}: travel mode switches on by itself that day</small></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
 
 function monthDay() {
@@ -514,23 +524,34 @@ function guideView() {
   const cur = ks.map(k => [k, Guide.monthsOld(k.birth, now)]).filter(([, m]) => m >= 0);
   const ms = Object.entries(Guide.MILESTONES);
   return `${doctorHtml()}
-  <p class="note emer"><b>Emergency?</b> Call 911 (or your local emergency number) for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.</p>
+  <p class="note emer"><b>Emergency?</b> Call ${esc(Guide.sos(myRegion()))} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.</p>
   ${cur.length ? `<h2>Right now</h2>${cur.map(([k, m]) => { const key = ms.map(([n]) => +n).filter(n => n <= Math.max(1, m)).pop() || 1, M = Guide.MILESTONES[key];
     return `<div class="card nowcard" style="--k:${k.color}">${kids().length > 1 ? avatar(k) + ' ' : ''}<b>${esc(kidName(k))} is ${m < 1 ? (w => `${w} week${w === 1 ? '' : 's'}`)(Math.max(0, Math.floor((now - new Date(k.birth + 'T00:00').getTime()) / DAY / 7))) : `${m} month${m === 1 ? '' : 's'}`} old</b>
       <p class="note">${m < 1 ? 'The first month is mostly feeding, sleeping and getting to know each other. Here is what is common around one month:' : `Around ${M.title}:`}</p><ul>${M.does.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`; }).join('')}` : ''}
   <h2>Common with newborns</h2>
   ${Guide.COMMON.map(c => `<details class="gd" data-grp="g${c.id}" ${openGroups.has('g' + c.id) ? 'open' : ''}><summary><span class="gi">${c.icon}</span><span class="gt"><b>${esc(c.title)}</b></span><span class="chev" aria-hidden="true">›</span></summary>
-    <p>${esc(c.body)}</p>${c.call ? `<p class="call">${esc(c.call)}</p>` : ''}</details>`).join('')}
+    <p>${esc(c.body)}</p>${c.call ? `<p class="call">${esc(Guide.local(c.call, myRegion()))}</p>` : ''}</details>`).join('')}
   <h2>Medicines</h2>
   ${medsHtml()}
   <h2>Month by month</h2>
   ${ms.map(([n, M]) => milestoneDetails(+n, M)).join('')}
   <p class="note">General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.</p>`;
 }
+/** A medicine's brand names, those sold where you are first. */
+const medBrands = (i, here) => { const at = b => (!i.where || !i.where[b] || i.where[b].split(' ').includes(here) ? 0 : 1), list = i.brands.split(' · '); return list.map((b, n) => [at(b), n, b]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]).join(' · '); };
+/** From what age: one rule, or the US and UK ones (yours first, the other smaller; both elsewhere, where labels differ by country). */
+function medAge(age, here) {
+  if (typeof age === 'string') return esc(age);
+  const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+  if (here === 'na') return `${esc(cap(age.us))}. <small>(UK: ${esc(age.uk)})</small>`;
+  if (here === 'uk') return `${esc(cap(age.uk))}. <small>(US: ${esc(age.us)})</small>`;
+  return `US: ${esc(age.us)}. UK: ${esc(age.uk)}. <small>Ages on labels differ by country: check the one where you live.</small>`;
+}
 /** Over-the-counter medicines: one drop-down holding a drop-down per kind (fever and pain, colic, …) and the things never to give. */
 function medsHtml() {
+  const here = myRegion();
   const tw = (id, icon, title, sub, body, cls = '') => `<details class="gd ${cls}" data-grp="${id}" ${openGroups.has(id) ? 'open' : ''}><summary><span class="gi">${icon}</span><span class="gt"><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span><span class="chev" aria-hidden="true">›</span></summary>${body}</details>`;
-  const item = i => `<div class="medi"><b>${esc(i.name)}</b>${i.brands ? `<small>${esc(i.brands)}</small>` : ''}<p class="age">${esc(i.age)}</p><p>${esc(i.body)}</p></div>`;
+  const item = i => `<div class="medi"><b>${esc(i.name)}</b>${i.brands ? `<small>${esc(medBrands(i, here))}</small>` : ''}<p class="age">${medAge(i.age, here)}</p><p>${esc(i.body)}</p></div>`;
   const kinds = Guide.MEDS.map(c => tw('o' + c.id, c.icon, c.title, c.items.map(i => i.name).join(' · '),
     `${c.note ? `<p class="note">${esc(c.note)}</p>` : ''}${c.items.map(item).join('')}${c.warn ? `<p class="call">${esc(c.warn)}</p>` : ''}`, 'med'));
   const never = tw('onever', '⚠️', 'Never give a baby', '', `<ul>${Guide.NEVER.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`, 'med never');
@@ -609,14 +630,37 @@ function recentFormulas(ks) {
   for (const k of ks) for (const f of formulaFeeds(k, since)) if (!seen.has(f.formula) || seen.get(f.formula) < f.ts) seen.set(f.formula, f.ts);
   return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]).slice(0, 6);
 }
-/** The formula drop-down: usual and recent ones first, then common formulas by region (the phone's region first), then "Other". */
+/** Where this phone is (More → Where you are), or a guess from its time zone. The formula list and the Guide put this region first. */
+const myRegion = () => (Formulas.REGIONS.some(r => r.id === db.meta.region) ? db.meta.region : Formulas.regionFor());
+/** The formula picker: a button showing the choice, opening a list with the usual and recent formulas on top, then a twirl-down for each
+    region (where you are first, and open), then "Other". The value lives in a hidden field (`attrs.sel`), read like any other field. */
 function formulaPicker(attrs, cur, recent, dis = '') {
-  const opt = (v, sel) => `<option value="${esc(v)}"${sel && v === cur ? ' selected' : ''}>${esc(v)}</option>`, lately = [...new Set([cur, ...recent].filter(Boolean))];
-  return `<select class="fsel" ${attrs.sel} ${dis}><option value=""${cur ? '' : ' selected'}>Choose a formula…</option>
-    ${lately.length ? `<optgroup label="Usual and recent">${lately.map(v => opt(v, true)).join('')}</optgroup>` : ''}
-    ${Formulas.ordered().map(r => `<optgroup label="${esc(r.name)}">${r.items.map(v => opt(v, false)).join('')}</optgroup>`).join('')}
-    <option value="__other">Other (type it in)…</option></select>
-    <input type="text" class="fother" maxlength="60" placeholder="Type the formula's name" ${attrs.txt} ${dis} hidden>`;
+  const lately = [...new Set([cur, ...recent].filter(Boolean))], here = myRegion();
+  const opt = v => `<button type="button" class="fopt" data-fv="${esc(v)}" aria-pressed="${v === cur}">${esc(v)}</button>`;
+  return `<div class="fpick"><input type="hidden" ${attrs.sel} value="${esc(cur)}">
+    <button type="button" class="fcur" aria-expanded="false" ${dis}><span class="fv">${esc(cur) || 'Choose a formula…'}</span><span class="chev" aria-hidden="true">›</span></button>
+    <div class="flist" hidden>${lately.length ? `<p class="fh">Usual and recent</p><div class="fopts">${lately.map(opt).join('')}</div>` : ''}
+      ${Formulas.ordered(here).map(r => `<details class="freg" data-region="${r.id}" ${r.id === here ? 'open' : ''}><summary><span>${esc(r.name)}${r.id === here ? ' <small>Where you are</small>' : ''}</span><span class="chev" aria-hidden="true">›</span></summary><div class="fopts">${r.items.map(opt).join('')}</div></details>`).join('')}
+      <button type="button" class="fopt fo-other" data-fv="__other">Other (type it in)…</button></div>
+    <input type="text" class="fother" maxlength="60" placeholder="Type the formula's name" ${attrs.txt} ${dis} hidden></div>`;
+}
+/** Show `v` as a picker's choice (no change event: used to suggest the usual formula). */
+function setPick(fp, v) {
+  fp.querySelector('input[type=hidden]').value = v; fp.querySelector('.fv').textContent = v === '__other' ? 'Other' : v || 'Choose a formula…';
+  fp.querySelectorAll('[data-fv]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.fv === v)));
+}
+/** Open and close the formula pickers under `root`; choosing one closes the list and sends a change event from the hidden field. */
+function bindFormulaPickers(root) {
+  root.querySelectorAll('.fpick').forEach(fp => {
+    const val = fp.querySelector('input[type=hidden]'), btn = fp.querySelector('.fcur'), list = fp.querySelector('.flist'), other = fp.querySelector('.fother');
+    const show = open => { list.hidden = !open; btn.setAttribute('aria-expanded', String(open)); };
+    btn.onclick = () => show(list.hidden);
+    fp.querySelectorAll('[data-fv]').forEach(b => b.onclick = () => {
+      setPick(fp, b.dataset.fv); show(false); other.hidden = b.dataset.fv !== '__other';
+      if (!other.hidden) other.focus(); else btn.focus();
+      val.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
 }
 
 // ---------- Travel ----------
@@ -661,29 +705,35 @@ function openMoreTypes() {
     <div class="row" style="margin-top:14px"><button class="btn" data-close>Close</button></div>`);
   $('#sheet').querySelectorAll('[data-more]').forEach(b => b.onclick = () => { close(); openSheet(b.dataset.more); });
 }
-/** Start a trip or change one: how you're travelling, and from when until when. */
-function openTrip(ev) {
+/** Plan a trip or change one: how you're travelling, and from when until when. A new trip leaves on `start` (a day; today by default). */
+function openTrip(ev, start) {
   if (ev ? !Sync.can('edit', ev) : !Sync.can('add')) return toast("You don't have permission to do that");
-  const today = startOfDay(Date.now()), from = ev ? startOfDay(ev.ts) : today, to = ev ? startOfDay(Travel.ends(ev) - 1) : addDays(today, 2), cur = ev ? Travel.meansOf(ev) : 'car';
-  const close = popup(`<h3>🧳 ${ev ? 'Your trip' : 'Travelling'}</h3>
+  const today = startOfDay(Date.now()), from = ev ? startOfDay(ev.ts) : Math.max(today, start || today), to = ev ? startOfDay(Travel.ends(ev) - 1) : addDays(from, 2), cur = ev ? Travel.meansOf(ev) : 'car';
+  const close = popup(`<h3>🧳 ${ev ? 'Your trip' : 'Plan a trip'}</h3>
     <label class="f">How are you travelling?</label>
     <div class="means">${Travel.KINDS.map(k => `<label class="mean"><input type="radio" name="means" value="${k}" ${k === cur ? 'checked' : ''}><span><b>${Travel.MEANS[k].icon}</b>${Travel.MEANS[k].label}</span></label>`).join('')}</div>
     <div class="dates"><span><label class="f" for="tripFrom">Leaving</label><input type="date" id="tripFrom" value="${dkey(from)}"></span><span><label class="f" for="tripTo">Back home</label><input type="date" id="tripTo" value="${dkey(to)}"></span></div>
     <div class="mini">${[[0, 'Just today'], [2, '3 days'], [6, 'A week'], [13, 'Two weeks']].map(([n, l]) => `<button type="button" data-len="${n}">${l}</button>`).join('')}</div>
-    <p class="note">For these days the Day tab becomes a travel page on every phone sharing this log: a clock to match, its own colours, and logging in a tap or two.</p>
-    <div class="row" style="margin-top:14px">${ev && Sync.can('delete', ev) ? '<button class="btn d" id="tripDel">Delete</button>' : ''}<button class="btn" data-close>Cancel</button><button class="btn p" id="tripSave">${ev ? 'Save' : 'Start'}</button></div>`);
+    <p class="note">Plan it as far ahead as you like: travel mode switches on by itself on the day you leave, and off after the day you're back, on every phone sharing this log.</p>
+    <div class="row" style="margin-top:14px">${ev && Sync.can('delete', ev) ? '<button class="btn d" id="tripDel">Delete</button>' : ''}<button class="btn" data-close>Cancel</button><button class="btn p" id="tripSave">Save</button></div>`);
   const S = $('#sheet'), F = $('#tripFrom'), T = $('#tripTo'), day = v => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v + 'T00:00').getTime() : NaN);
+  const label = () => { if (!ev) $('#tripSave').textContent = day(F.value) > today ? 'Plan it' : 'Start'; };
   S.querySelectorAll('[data-len]').forEach(b => b.onclick = () => { const f = day(F.value); if (f) T.value = dkey(addDays(f, +b.dataset.len)); });
+  F.onchange = label; label();
   $('#tripSave').onclick = () => {
-    const f = day(F.value), t = day(T.value);
+    const f = day(F.value), t = day(T.value), now = Date.now();
     if (!f || !t) return toast('Pick both dates');
     if (t < f) return toast('The day back is before the day you leave');
     if (t - f > 92 * DAY) return toast('A trip can be up to three months');
+    // one trip at a time (one that has already ended may share its last day with a new one)
+    const clash = db.events.find(e => e.type === 'trip' && e !== ev && Travel.ends(e) > now && e.ts < addDays(t, 1) && Travel.ends(e) > f);
+    if (clash) return toast(`That overlaps the trip ${Travel.MEANS[Travel.meansOf(clash)].by} (${fmtShort(clash.ts)} – ${fmtShort(Travel.ends(clash) - 1)}). Change that one instead.`);
     const rec = ev || { id: uid(), type: 'trip', by: Auth.id || undefined };
     Object.assign(rec, { ts: f, end: addDays(t, 1), data: { means: (S.querySelector('[name=means]:checked') || {}).value || 'car' }, note: '', updated: stamp() });
     if (!ev) db.events.push(rec);
-    save(); close(); viewDay = startOfDay(Date.now()); quad = null; render(); window.scrollTo(0, 0);
-    toast(f > Date.now() ? `Saved: travel mode starts ${fmtShort(f)}` : 'Travel mode is on');
+    if (tab === 'month') { viewDay = f; calMonth = new Date(f); } else viewDay = startOfDay(now);   // the calendar shows the trip's days
+    save(); close(); quad = null; render(); window.scrollTo(0, 0);
+    if (!voyage) toast(f > now ? `Saved: travel mode switches on by itself on ${fmtShort(f)}` : 'Travel mode is on');
   };
   if ($('#tripDel')) $('#tripDel').onclick = () => { if (!confirm('Delete this trip? What you logged during it stays.')) return; removeEvent(ev); save(); close(); render(); toast('Trip deleted'); };
 }
@@ -694,7 +744,50 @@ function endTrip() {
   if (!Sync.can('edit', tr)) return toast("You can't change this trip");
   tr.end = now; tr.updated = stamp();
   if (leg && Sync.can('edit', leg)) { leg.end = Math.max(now, leg.ts + MIN); leg.updated = stamp(); }
-  save(); render(); window.scrollTo(0, 0); toast('Welcome home');
+  save(); render(); window.scrollTo(0, 0); if (!voyage) toast('Welcome home');
+}
+// When travel mode switches on or off for today (a trip starting or ending: here, on another phone, or on the day itself) while the Day
+// tab shows today, a little journey crosses the screen and the page changes under it, like the sunset between light and dark.
+let awayFor, voyage = null;
+/** True when this render has to wait: a journey is about to cover the screen, and the page changes then. */
+function voyageFirst() {
+  if (voyage && !voyage.open) return true;
+  const tr = Travel.at(db.events, Date.now()), id = tr ? tr.id : '', was = awayFor;
+  awayFor = id;
+  if (was === undefined || was === id || voyage || tab !== 'day' || viewDay !== startOfDay(Date.now()) || Acct.gate()) return false;
+  if (document.hidden || !document.body.animate || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return false;
+  const left = !tr && db.events.find(e => e.id === was && e.ts <= Date.now());   // back home (not a trip deleted, or moved to a later date)
+  if (!tr && !left) return false;
+  playVoyage(!!tr, Travel.meansOf(tr || left));
+  return true;
+}
+/** Off on a trip (from the house, out of the screen) or home again (back to the house), along a dashed path. */
+function playVoyage(away, m) {
+  const M = Travel.MEANS[m], air = m === 'plane', W = innerWidth / 100, H = innerHeight / 100, D = 2600;
+  const P = air ? [[-12, 78], [22, 76], [50, 44], [112, 20]] : [[-12, 64], [28, 54], [66, 72], [112, 60]];   // in % of the screen
+  const pt = t => { const u = 1 - t, w = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t]; return [0, 1].map(k => w.reduce((a, c, i) => a + c * P[i][k], 0)); };
+  const [t0, t1, th] = away ? [0.2, 1, 0.2] : [0, 0.72, 0.8];   // where the vehicle starts and stops, and where the house is (along the path)
+  const el = document.createElement('div'), [hx, hy] = pt(th);
+  el.className = `voyage ${away ? 'away' : 'home'}`; el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = `<i class="vsky"></i><svg class="vpath" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M${P[0]}C${P[1]} ${P[2]} ${P[3]}"/></svg>
+    <span class="vhome" style="left:${hx}vw;top:${hy}vh">${Icons.svg('home')}</span><span class="vgo">${Icons.svg(m)}</span>
+    <p class="vmsg"><b>${away ? `Travelling ${M.by}` : 'Welcome home'}</b><small>${away ? 'Have a good trip!' : 'Back to the usual page'}</small></p>`;
+  document.body.appendChild(el);
+  const frames = [];
+  for (let i = 0; i <= 16; i++) {
+    const t = t0 + ((t1 - t0) * i) / 16, [x, y] = pt(t), [a, b] = pt(Math.max(0, t - 0.01)), [c, d] = pt(Math.min(1, t + 0.01));
+    frames.push({ transform: `translate(${x.toFixed(2)}vw, ${y.toFixed(2)}vh) rotate(${((Math.atan2((d - b) * H, (c - a) * W) * 180) / Math.PI + (air ? 90 : 0)).toFixed(1)}deg)` });
+  }
+  const move = { duration: D * 0.68, delay: D * 0.1, easing: 'cubic-bezier(.45,.05,.35,1)', fill: 'both' };
+  el.animate([{ opacity: 0, easing: 'ease-out' }, { opacity: 1, offset: 0.28 }, { opacity: 1, offset: 0.74, easing: 'ease-in' }, { opacity: 0 }], { duration: D, fill: 'forwards' });   // fully covered when the page changes
+  el.querySelector('.vgo').animate(frames, move);
+  el.querySelector('.vpath').animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: `inset(0 ${Math.max(0, 100 - pt(t1)[0]).toFixed(1)}% 0 0)` }], move);
+  el.querySelector('.vhome').animate(away ? [{ transform: 'translate(-50%,-50%) scale(1)' }, { transform: 'translate(-50%,-50%) scale(1)', offset: 0.3 }, { transform: 'translate(-50%,-50%) scale(.9)', opacity: 0.5 }]
+    : [{ transform: 'translate(-50%,-50%) scale(.8)', opacity: 0.5 }, { transform: 'translate(-50%,-50%) scale(.8)', opacity: 0.5, offset: 0.72 }, { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 1, offset: 0.82 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }], { duration: D, fill: 'both' });
+  el.querySelector('.vmsg').animate([{ opacity: 0, transform: 'translateY(12px)', easing: 'ease-out' }, { opacity: 1, transform: 'none', offset: 0.3 }, { opacity: 1, offset: 0.74 }, { opacity: 0 }], { duration: D, fill: 'both' });
+  voyage = { open: false };
+  setTimeout(() => { voyage.open = true; render(); }, D * 0.36);   // the page changes while the journey covers it
+  setTimeout(() => { el.remove(); voyage = null; }, D);
 }
 /** Set off / stopped: the legs of the journey, shown along the clock's outer track. */
 function toggleLeg() {
@@ -781,6 +874,7 @@ const TOURS = {
   month: [
     { sel: '.cal', title: 'The month', why: 'Dots show what was logged each day. Days away travelling are outlined.' },
     { sel: '.cal button.sel', title: 'Pick a day', why: 'Tap a day to see its numbers below.' },
+    { sel: '#view .tripbtn', title: 'Plan a trip', why: 'Plan trips ahead: pick the day you leave, then tap here. Travel mode switches on by itself that day.' },
     { sel: '#view .tiles', title: 'The day in numbers', why: 'Feeds, diapers, sleep and more for the day you picked.' },
     { sel: 'details[data-grp=mAll]', title: 'Every entry', why: 'Open this to see each entry of that day, and tap one to change it.' },
     { sel: '#view .quick', title: 'Add to that day', why: 'Log something you forgot, on the day you picked.' },
@@ -809,7 +903,8 @@ const TOURS = {
   ],
   more: [
     { sel: '.kidrow', title: 'Your children', why: 'Names, birth dates and colours. "Add a child" for twins or triplets.' },
-    { sel: '[data-kfs]', title: 'Usual formula', why: 'Pick it from the list by region. After three days of the same formula it is picked for you.' },
+    { sel: '.kidrow .fpick', title: 'Usual formula', why: 'Pick it from the list; each region folds open. After three days of the same formula it is picked for you.' },
+    { sel: '#regionSel', title: 'Where you are', why: 'Formulas sold here come first, and the Guide gives your emergency number and medicine names first.' },
     { sel: '.card:has([data-art])', title: 'Clock art', why: 'The painting around each child\'s clock.' },
     { sel: '.card:has([name=themeMode])', title: 'Light or dark', why: 'Match your phone, pick one, or follow sunrise and sunset.' },
     { sel: '#expCsv', title: 'Your data', why: 'Back up the log, or export a copy for your pediatrician.' },
@@ -845,6 +940,14 @@ function kidsHtml() {
       ${can && ks.length > 1 ? `<button class="btn d" data-krm="${k.id}" style="margin-top:12px">Remove ${esc(kidName(k))}</button>` : ''}</div>`).join('')}
     ${can && ks.length < Kids.MAX ? '<button class="btn" id="kAdd" style="width:100%;margin-top:6px">+ Add a child</button>' : ''}</div>`;
 }
+/** Where you are: the formula list and the Guide put this region first (kept on this phone). */
+function regionHtml() {
+  const cur = Formulas.REGIONS.some(r => r.id === db.meta.region) ? db.meta.region : '';
+  return `<div class="card"><b>📍 Where you are</b>
+    <select id="regionSel" class="fsel" aria-label="Where you are" style="margin-top:10px"><option value=""${cur ? '' : ' selected'}>Automatic: ${esc(Formulas.name(Formulas.regionFor()).replace(/ \(.*\)$/, ''))}</option>
+      ${Formulas.REGIONS.map(r => `<option value="${r.id}"${r.id === cur ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select>
+    <p class="note">Formulas sold here come first in the formula list, and the Guide gives this region's emergency number, medicine names and ages first.${cur ? '' : " Worked out from your phone's time zone."} Kept on this phone.</p></div>`;
+}
 function artHtml() {
   const pages = (kids().length > 1 ? [...kids().map(k => [k.id, kidName(k)]), ['all', 'All']] : [[kids()[0].id, kidName(kids()[0])]]);
   return `<div class="card"><b>🎨 Clock art</b><p class="note">The watercolour painting around the day clock. Kept on this phone.</p>
@@ -862,6 +965,7 @@ function appearanceHtml() {
 function moreView() {
   return Acct.accountHtml() + `
   ${kidsHtml()}
+  ${regionHtml()}
   ${artHtml()}
   ${appearanceHtml()}
   ${Acct.cloudHtml()}
@@ -891,6 +995,7 @@ function bind() {
   document.querySelectorAll('[data-qadd]').forEach(b => b.onclick = () => openQuick(b.dataset.qadd));
   document.querySelectorAll('[data-qmore]').forEach(b => b.onclick = openMoreTypes);
   document.querySelectorAll('[data-tripnew]').forEach(b => b.onclick = () => openTrip(null));
+  document.querySelectorAll('[data-tripplan]').forEach(b => b.onclick = () => openTrip(null, +b.dataset.tripplan));
   document.querySelectorAll('[data-tripedit]').forEach(b => b.onclick = () => { const t = db.events.find(e => e.id === b.dataset.tripedit); if (t) openTrip(t); });
   document.querySelectorAll('[data-triphome]').forEach(b => b.onclick = endTrip);
   document.querySelectorAll('[data-leg]').forEach(b => b.onclick = toggleLeg);
@@ -904,6 +1009,8 @@ $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) { tab =
 
 function bindMore() {
   document.querySelectorAll('[name=themeMode]').forEach(r => r.onchange = () => { if (r.checked) { Theme.set(r.value); render(); } });
+  $('#regionSel').onchange = e => { if (e.target.value) db.meta.region = e.target.value; else delete db.meta.region; Store.save(db); render(); toast(`Where you are: ${Formulas.name(myRegion())}`); };
+  bindFormulaPickers($('#view'));
   /** Keep `name`/`birth` mirroring the first child, then save and (when shared) send the new profile. */
   const commit = (msg) => { db.baby.name = kids()[0].name; db.baby.birth = kids()[0].birth; Sync.linked() ? Sync.pushBaby() : save(); render(); if (msg) toast(msg); };
   const K = id => kidById(id);
@@ -1004,6 +1111,7 @@ function openSheet(type, ev) {
   Icons.paint($('#sheet')); $('#sheet').hidden = $('#sheetBack').hidden = false;
 
   const S = $('#sheet'), checked = n => S.querySelector(`[name=${n}]:checked`);
+  bindFormulaPickers(S);
   const val = n => { const c = checked(n); return c ? c.value : ''; };
   const sync = () => {
     if (type === 'feed' && $('#fBreast')) {
@@ -1011,7 +1119,7 @@ function openSheet(type, ev) {
       $('#formula').hidden = $('#formulaSel').value !== '__other';
       // logging for several children: suggest the first ticked child's usual formula, until a formula is picked by hand
       const first = S.querySelector('[name=kid]:checked');
-      if (!ev && first && !S.dataset.formulaPicked) { const u = usualFormula(kidById(first.value)); if (u && [...$('#formulaSel').options].some(o => o.value === u)) $('#formulaSel').value = u; }
+      if (!ev && first && !S.dataset.formulaPicked) { const u = usualFormula(kidById(first.value)); if (u) setPick(S.querySelector('.fpick'), u); }
     }
     if (type === 'diaper' && $('#dColor')) $('#dColor').hidden = !checked('poo');
   };

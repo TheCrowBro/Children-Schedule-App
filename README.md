@@ -17,18 +17,23 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
   **over-the-counter medicines** (a drop-down by kind: what's considered safe from what age, with US and UK ages where they differ; the
   homeopathic and herbal remedies parents mention, with what the evidence says; what never to give; no doses, which go by weight and come
   from the pediatrician), month-by-month milestones (a reminder pops up on each month birthday), and the **pediatrician's details** with a Call button
-- **Travel mode**: a "Travelling?" button at the bottom of today asks how (car, plane, train, ship) and the dates. For those days the Day tab
+- **Travel mode**: plan a trip ahead from the Month page (always there: it leaves on the day picked) or with the "Travelling?" button at
+  the bottom of today; it asks how (car, plane, train, ship) and the dates, and refuses overlapping trips. For those days the Day tab
   becomes a travel page on every phone in the log: a clock painted to match the journey, its own set of colours (checked for colour-blind
   separation and contrast like the home set), big buttons whose sheets take a tap or two, rough times ("about 15 minutes ago") kept as
   estimates and drawn dashed, a journey timer per way of travelling (time on the move lights up the clock's outer track; long drives get a
-  reminder to take the baby out of the car seat), and tips for each kind of trip. Travel days stay outlined in the month view
+  reminder to take the baby out of the car seat), and tips for each kind of trip. Travel days stay outlined in the month view. Leaving
+  and coming home play a short journey across the screen (from the house, or back to it) while the page changes under it
 - **Tutorial**: a ? on every screen starts a short tour of it: a highlight box glides from button to button with a line on why it's there.
   The home screen's tour starts by itself the first time
-- **Formula**: pick from a drop-down of common formulas grouped by region (North America, Latin America, UK & Ireland, Europe,
-  Australia & New Zealand, Asia, Middle East & Africa; the phone's own region first, worked out from its time zone), or type in any other.
+- **Formula**: pick from a list with the usual and recent formulas on top, then a twirl-down of common formulas for each region (North
+  America, Latin America, UK & Ireland, Europe, Australia & New Zealand, Asia, Middle East & Africa; where you are comes first and open),
+  or type in any other.
   Each child's usual formula is filled in on bottle feeds. When every formula feed on three days running used the same one, it becomes
   that child's default and stays so until another formula is used the same way; each phone works this out from the shared log, so nobody
   has to save it. A parent can also choose it in More → Children
+- **Where you are** (More): automatic from the phone's time zone, or one of the seven regions. The formula list puts its formulas first,
+  and the Guide gives its emergency number (911, 999, 112, 000 / 111, or "your local emergency number"), medicine names and ages first
 - **People's contact details** (phone, work, notes) that each person adds for themselves, visible to those allowed to see the family list
 - **Appearance**: match the phone, light, dark, or automatic by **sunrise and sunset** (worked out from the phone's time zone, no location
   needed); switching plays a short sunset into dark or sunrise into light

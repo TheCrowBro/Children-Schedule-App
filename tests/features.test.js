@@ -7,6 +7,13 @@ let ok = 0, failed = 0;
 const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', name); } catch (e) { failed++; console.log('✗', name, '\n   ', (e.stack || e.message || e).toString().split('\n').slice(0, 4).join('\n    ')); } };
 const lum = h => { const f = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2]; };
 const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+/** Choose a formula in a picker: open it, open the region it's listed under if it isn't showing, and tap it. */
+const pickFormula = async (page, scope, name) => {
+  await page.click(`${scope} .fcur`);
+  const b = page.locator(`${scope} [data-fv="${name}"]`).first();
+  if (!(await b.isVisible())) await b.evaluate(x => { const d = x.closest('details'); if (d) d.open = true; });
+  await b.click();
+};
 
 (async () => {
   const H = await setup({ port: 8129 }), { q, syncNow } = H;
@@ -158,10 +165,10 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
 
     await step('a child\'s usual formula fills in on bottle feeds and is saved with the entry', async () => {
       await P.click('[data-tab=more]'); const k = await P.evaluate(() => db.baby.kids[0].id);
-      await P.selectOption(`[data-kfs="${k}"]`, 'Similac 360 Total Care');
+      await pickFormula(P, `.kidrow:has([data-kfs="${k}"])`, 'Similac 360 Total Care');
       assert.equal(await P.evaluate(() => db.baby.kids[0].formula), 'Similac 360 Total Care');
       await P.click('[data-tab=day]'); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]');
-      assert.equal(await P.isVisible('#formulaSel'), false, 'only asked for formula feeds');
+      assert.equal(await P.isVisible('#fFormula'), false, 'only asked for formula feeds');
       await P.click('[name=milk][value=Formula]'); assert.equal(await P.inputValue('#formulaSel'), 'Similac 360 Total Care');
       await P.fill('#ml', '120'); await P.click('#save');
       const e = await P.evaluate(() => db.events.find(x => x.data.ml === 120)); assert.equal(e.data.formula, 'Similac 360 Total Care');
@@ -179,21 +186,28 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       assert(!/Similac/.test(dump), 'the server never sees it');
     });
 
-    await step('the formula list: common formulas by region with the phone\'s region first, and "Other" to type in any formula', async () => {
+    await step('the formula list: usual and recent ones on top, then a twirl-down for each region (where you are first, and open), and "Other" for any formula', async () => {
       const r = await P.evaluate(() => ({ map: ['Europe/London', 'Europe/Berlin', 'Australia/Sydney', 'Pacific/Auckland', 'America/Sao_Paulo', 'America/Mexico_City', 'Asia/Tokyo', 'Asia/Dubai', 'Africa/Lagos', 'America/Chicago', 'America/Toronto', 'Mars/Base'].map(z => Formulas.regionFor(z)),
-        first: Formulas.ordered('Europe/London')[0].name, here: Formulas.ordered()[0].name }));
+        first: Formulas.ordered('uk')[0].name, here: myRegion() }));
       assert.deepEqual(r.map, ['uk', 'eu', 'anz', 'anz', 'latam', 'latam', 'asia', 'mea', 'mea', 'na', 'na', 'na']);
-      assert.equal(r.first, 'UK & Ireland', 'a phone in London sees UK & Ireland first');
+      assert.equal(r.first, 'UK & Ireland'); assert.equal(r.here, 'na', 'this test phone is on UTC, which counts as North America');
       await P.click('[data-tab=day]'); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]');
-      const groups = await P.$$eval('#formulaSel optgroup', g => g.map(x => x.label));
-      assert.equal(groups[0], 'Usual and recent'); assert.equal(groups[1], r.here, 'then the phone\'s own region');
-      for (const g of ['North America (US & Canada)', 'Latin America', 'UK & Ireland', 'Europe', 'Australia & New Zealand', 'Asia', 'Middle East & Africa']) assert(groups.includes(g), g);
-      for (const f of ['Enfamil NeuroPro', 'Similac 360 Total Care', 'Kendamil Classic First Infant Milk', 'a2 Platinum Premium', 'HiPP Organic PRE', 'Meiji Hohoemi', 'NAN Optipro']) assert(await P.$(`#formulaSel option[value="${f}"]`), f);
-      await P.selectOption('#formulaSel', '__other'); assert.equal(await P.isVisible('#formula'), true, 'Other opens a box to type in');
+      assert.equal(await P.isVisible('#fFormula .flist'), false, 'folded away until tapped');
+      await P.click('#fFormula .fcur');
+      const regs = await P.$$eval('#fFormula details.freg', d => d.map(x => [x.dataset.region, x.open]));
+      assert.deepEqual(regs.map(x => x[0]), ['na', 'latam', 'uk', 'eu', 'anz', 'asia', 'mea'], 'every region, where you are first');
+      assert.deepEqual(regs.map(x => x[1]), [true, false, false, false, false, false, false], 'yours open, the rest folded');
+      assert(/Where you are/.test(await P.textContent('#fFormula details.freg[data-region=na] > summary')));
+      assert.equal(await P.isVisible('#fFormula details.freg[data-region=eu] [data-fv="HiPP Organic PRE"]'), false, 'a folded region hides its formulas');
+      await P.click('#fFormula details.freg[data-region=eu] > summary'); await P.click('#fFormula details.freg[data-region=eu] [data-fv="HiPP Organic PRE"]');
+      assert.equal(await P.inputValue('#formulaSel'), 'HiPP Organic PRE'); assert.equal(await P.textContent('#fFormula .fv'), 'HiPP Organic PRE');
+      assert.equal(await P.isVisible('#fFormula .flist'), false, 'choosing one folds the list away');
+      for (const [reg, f] of [['na', 'Enfamil NeuroPro'], ['uk', 'Kendamil Classic First Infant Milk'], ['anz', 'a2 Platinum Premium'], ['asia', 'Meiji Hohoemi'], ['latam', 'NAN Optipro'], ['mea', 'Bebelac']]) assert(await P.$(`#fFormula details.freg[data-region=${reg}] [data-fv="${f}"]`), f);
+      await P.click('#fFormula .fcur'); await P.click('#fFormula [data-fv=__other]'); assert.equal(await P.isVisible('#formula'), true, 'Other opens a box to type in');
       await P.fill('#formula', "Grandma's special blend"); await P.fill('#ml', '60'); await P.click('#save');
       assert.equal(await P.evaluate(() => db.events.find(e => e.data && e.data.ml === 60).data.formula), "Grandma's special blend");
-      await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]');
-      assert(await P.$('#formulaSel optgroup[label="Usual and recent"] option[value="Grandma\'s special blend"]'), 'a typed-in formula is offered next time'); await P.click('#cancel');
+      await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]'); await P.click('#fFormula .fcur');
+      assert(await P.$('#fFormula .flist > .fopts [data-fv="Grandma\'s special blend"]'), 'a typed-in formula is offered next time, at the top'); await P.click('#cancel');
     });
 
     await step('a formula given at every formula feed three days running becomes the usual one on every phone, without anyone saving it; mixed days or a hand-picked choice are respected', async () => {
@@ -209,12 +223,12 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       await P.click('[data-tab=day]'); await P.click(`[data-kid="${mia}"]`); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]');
       assert.equal(await P.inputValue('#formulaSel'), '', 'nothing chosen for her yet');
       await syncNow(P); const bid = await P.evaluate(() => db.meta.babyId), [{ profile }] = await q('select profile from babies where id = $1', [bid]);
-      await P.selectOption('#formulaSel', 'Enfamil NeuroPro'); await P.fill('#ml', '100'); await P.click('#save');
+      await pickFormula(P, '#fFormula', 'Enfamil NeuroPro'); await P.fill('#ml', '100'); await P.click('#save');
       assert.equal(await P.evaluate(id => `${kidById(id).formula}|${usualFormula(kidById(id))}`, mia), '|Enfamil NeuroPro', 'the third day makes it her usual formula, worked out from the feeds');
       assert(/Enfamil NeuroPro is now Mia's usual formula/.test(await P.textContent('#toast')), await P.textContent('#toast'));
       await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]');
       assert.equal(await P.inputValue('#formulaSel'), 'Enfamil NeuroPro', 'and the default from now on');
-      assert.deepEqual(await P.$$eval('#formulaSel option[selected]', o => o.map(x => `${x.parentElement.label}: ${x.value}`)), ['Usual and recent: Enfamil NeuroPro'], 'marked once, at the top'); await P.click('#cancel');
+      assert.equal(await P.textContent('#fFormula .fv'), 'Enfamil NeuroPro'); assert(await P.$('#fFormula .flist > .fopts [data-fv="Enfamil NeuroPro"][aria-pressed=true]'), 'marked at the top'); await P.click('#cancel');
       // the other phone (a family member, who can't change the children's details) works out the same from the shared log, and no phone
       // writes it into the shared profile (so a phone that was offline can never push an old copy of the profile because of it)
       await syncNow(P); await syncNow(D);
@@ -223,7 +237,7 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       // More shows it, and where it came from; a formula picked there by hand wins over the feeds before it
       await P.click('[data-tab=more]'); assert.equal(await P.inputValue(`[data-kfs="${mia}"]`), 'Enfamil NeuroPro');
       assert(/Picked up from the feeds/.test(await P.textContent(`.kidrow:has([data-kfs="${mia}"])`)), 'says it was picked up from the feeds');
-      await P.selectOption(`[data-kfs="${mia}"]`, 'Similac Advance');
+      await pickFormula(P, `.kidrow:has([data-kfs="${mia}"])`, 'Similac Advance');
       assert.equal(await P.evaluate(id => `${kidById(id).formula}|${usualFormula(kidById(id))}`, mia), 'Similac Advance|Similac Advance', 'earlier NeuroPro feeds no longer count');
       await syncNow(P); await syncNow(D); assert.equal(await D.evaluate(id => usualFormula(kidById(id)), mia), 'Similac Advance', 'and the choice reaches the other phones');
       await P.click('[data-tab=day]'); await P.click(`[data-kid="${leo}"]`);
@@ -245,8 +259,9 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
         ['Fever and pain', 'Gas and colic', 'Stuffy nose and colds', 'Diaper rash and skin', 'Teething', 'Vitamins', 'Homeopathic and herbal remedies', 'Never give a baby']);
       assert(/Under 3 months, call your pediatrician before giving any medicine/.test(await P.textContent('details[data-grp=omenu]')));
       await P.click('details[data-grp=ofever] > summary');
-      const fever = await P.textContent('details[data-grp=ofever]');
-      assert(/US: from 12 weeks/.test(fever) && /UK: from 2 months/.test(fever) && /US: from 6 months\. UK: from 3 months and over 5 kg/.test(fever), fever);
+      const fever = (await P.textContent('details[data-grp=ofever]')).replace(/\s+/g, ' ');
+      assert(/Infants' Tylenol · Calpol · Panadol/.test(fever), 'the brands sold where you are first: ' + fever);
+      assert(/From 12 weeks, younger only if your pediatrician says\. \(UK: from 2 months\)/.test(fever) && /From 6 months\. \(UK: from 3 months and over 5 kg/.test(fever), 'the age where you are first: ' + fever);
       await P.click('details[data-grp=oherbal] > summary');
       const herbal = await P.textContent('details[data-grp=oherbal]');
       assert(/Many parents tell of good results/.test(herbal) && /better than a placebo/.test(herbal) && /belladonna/.test(herbal), herbal);
@@ -257,6 +272,29 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       assert(!/\d\s*(mg|ml)\b|mg\/kg|teaspoon/i.test(text.replace(/500 ml of formula/g, '')), 'no doses anywhere: they go by weight and come from the pediatrician');
       assert.equal(await P.$$eval('details[data-grp=omenu] .medi .age', a => a.filter(x => !x.textContent.trim()).length), 0, 'every medicine says from what age');
       await P.click('details[data-grp=omenu] > summary');
+    });
+
+    await step('"Where you are" in More puts that region first: its formulas, and in the Guide its emergency number, medicine names and ages', async () => {
+      await P.click('[data-tab=more]');
+      assert.equal(await P.inputValue('#regionSel'), '', 'automatic at first'); assert.equal(await P.textContent('#regionSel option[value=""]'), 'Automatic: North America');
+      await P.selectOption('#regionSel', 'uk'); assert.equal(await P.evaluate(() => db.meta.region), 'uk');
+      await P.click('[data-tab=day]'); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]'); await P.click('#fFormula .fcur');
+      assert.deepEqual(await P.$$eval('#fFormula details.freg', d => d.slice(0, 2).map(x => [x.dataset.region, x.open])), [['uk', true], ['na', false]]);
+      await P.click('#cancel');
+      await P.click('[data-tab=guide]'); assert(/Call 999 for blue lips/.test(await P.textContent('.emer')));
+      await P.click('details[data-grp=gblue] > summary'); assert(/Call 999 if the lips/.test(await P.textContent('details[data-grp=gblue]')));
+      await P.click('details[data-grp=omenu] > summary'); await P.click('details[data-grp=ofever] > summary');
+      const uk = (await P.textContent('details[data-grp=ofever]')).replace(/\s+/g, ' ');
+      assert(/Calpol · Panadol · Infants' Tylenol/.test(uk) && /From 2 months\. \(US: from 12 weeks/.test(uk) && /Nurofen for Children · Infants' Motrin/.test(uk), uk);
+      for (const [reg, sos] of [['eu', 'Call 112'], ['anz', 'Call 000 \\(Australia\\) or 111 \\(New Zealand\\)'], ['asia', 'Call your local emergency number']]) {
+        await P.click('[data-tab=more]'); await P.selectOption('#regionSel', reg); await P.click('[data-tab=guide]');
+        assert(new RegExp(sos).test(await P.textContent('.emer')), reg);
+      }
+      const asia = (await P.textContent('details[data-grp=ofever]')).replace(/\s+/g, ' ');
+      assert(/US: from 12 weeks, younger only if your pediatrician says\. UK: from 2 months\./.test(asia) && /check the one where you live/.test(asia), 'both rules where labels differ: ' + asia);
+      await P.click('[data-tab=more]'); await P.selectOption('#regionSel', ''); assert.equal(await P.evaluate(() => db.meta.region), undefined, 'back to automatic');
+      await P.evaluate(() => { openGroups.delete('gblue'); openGroups.delete('omenu'); openGroups.delete('ofever'); });
+      await P.click('[data-tab=guide]');
     });
 
     await step('parents save the pediatrician; everyone else sees the number with a Call button but cannot change it', async () => {
@@ -366,6 +404,7 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
 
     // ---------- travel mode ----------
     const iso = t => new Date(t).toLocaleDateString('en-CA');
+    await P.emulateMedia({ reducedMotion: 'reduce' }); await D.emulateMedia({ reducedMotion: 'reduce' });   // (the journey between home and away has its own step)
     const [leo, mia] = await P.evaluate(() => { tab = 'day'; viewDay = startOfDay(Date.now()); db.meta.clock = '24'; quad = null; setKid(kids()[0].id); render(); return kids().map(k => k.id); });
     await step('a "Travelling?" button at the bottom of today asks how (car, plane, train, ship) and when; Start turns the Day tab into a travel page with its own painting and colours', async () => {
       assert(/Travelling\?/.test(await P.textContent('.tripbtn')));
@@ -455,12 +494,67 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       await P.click('[data-tripnew]'); await P.click('[name=means][value=ship]');
       const start = await P.evaluate(() => addDays(startOfDay(Date.now()), 3));
       await P.fill('#tripFrom', iso(start)); await P.click('[data-len="2"]'); await P.click('#tripSave');
-      assert(/travel mode starts/.test(await P.textContent('#toast')));
+      assert(/switches on by itself/.test(await P.textContent('#toast')));
       assert.equal(await P.$('.tripcard'), null, 'not travelling yet');
       assert(/Trip coming up by ship/.test(await P.textContent('.tripbtn')));
       await P.click('.tripbtn'); await P.click('#tripDel');
       assert(/Travelling\?/.test(await P.textContent('.tripbtn')));
       assert.equal(await P.evaluate(() => db.events.filter(e => e.type === 'trip').length), 1, 'only the trip that happened');
+    });
+
+    await step('the calendar always has a way to plan a trip ahead, from the day picked; the trip shows on its days, and overlapping trips are refused', async () => {
+      await P.click('[data-tab=month]');
+      await P.evaluate(() => { viewDay = addDays(startOfDay(Date.now()), -20); calMonth = new Date(viewDay); render(); });
+      assert(/Plan a trip/.test(await P.textContent('#view .tripbtn')) && /Leaving today/.test(await P.textContent('#view .tripbtn')), 'a day gone by: leaving today');
+      const day = await P.evaluate(() => addDays(startOfDay(Date.now()), 10));
+      await P.evaluate(d => { viewDay = d; calMonth = new Date(d); render(); }, day);
+      assert((await P.textContent('#view .tripbtn')).includes(await P.evaluate(d => fmtShort(d), day)), 'leaving on the day picked');
+      await P.click('#view [data-tripplan]');
+      assert.equal(await P.inputValue('#tripFrom'), iso(day)); assert.equal(await P.textContent('#tripSave'), 'Plan it');
+      await P.click('[name=means][value=train]'); await P.click('#tripSave');
+      assert(/switches on by itself/.test(await P.textContent('#toast')));
+      const m = await P.evaluate(d => ({ tab, picked: viewDay === d, outlined: !!document.querySelector(`.cal button.tripday[data-day="${d}"]`), button: document.querySelector('#view .tripbtn').textContent }), day);
+      assert.deepEqual([m.tab, m.picked, m.outlined], ['month', true, true], 'still on the calendar, with the trip\'s days outlined'); assert(/Trip by train/.test(m.button), m.button);
+      // a family member (who can add entries, but never change other people's) can plan a trip, but isn't offered to change this one
+      await syncNow(P); await syncNow(D);
+      const fam = await D.evaluate(d => { tab = 'month'; const b = t => { viewDay = t; calMonth = new Date(t); render(); const e = document.querySelector('#view .tripbtn'); return e ? e.textContent.replace(/\s+/g, ' ').trim() : ''; };
+        const r = [b(d), b(addDays(d, -5))]; tab = 'day'; viewDay = startOfDay(Date.now()); render(); return r; }, day);
+      assert.equal(fam[0], '', 'nothing to change on the trip\'s days'); assert(/Plan a trip/.test(fam[1]), fam[1]);
+      await P.click('[data-tab=day]'); assert(/Travelling by train/.test(await P.textContent('.tripcard')), 'the Day tab shows the day picked: the trip\'s first day');
+      await P.evaluate(() => { viewDay = startOfDay(Date.now()); render(); });
+      assert.equal(await P.$('.tripcard'), null, 'today: not travelling yet'); assert(/Trip coming up by train/.test(await P.textContent('.tripbtn')));
+      await P.click('[data-tab=month]'); await P.evaluate(d => { viewDay = addDays(d, -1); render(); }, day);
+      await P.click('#view [data-tripplan]'); await P.click('#tripSave');
+      assert(/overlaps the trip by train/.test(await P.textContent('#toast')), 'one trip at a time'); await P.click('#sheet [data-close]');
+      await P.evaluate(() => { db.events.filter(e => e.type === 'trip' && e.ts > Date.now()).forEach(removeEvent); save(); viewDay = startOfDay(Date.now()); render(); });
+      await syncNow(P); await syncNow(D);
+      await P.click('[data-tab=day]');
+    });
+
+    await step('leaving and coming home: a little journey crosses the screen and the page changes under it; with reduced motion it switches straight over', async () => {
+      await P.emulateMedia({ reducedMotion: 'no-preference' });
+      await P.click('[data-tripnew]'); await P.click('[name=means][value=ship]'); await P.click('#tripSave');
+      const s1 = await P.evaluate(() => ({ away: !!document.querySelector('.voyage.away'), msg: (document.querySelector('.voyage .vmsg') || {}).textContent, card: !!document.querySelector('.tripcard') }));
+      assert.deepEqual(s1, { away: true, msg: 'Travelling by shipHave a good trip!', card: false }, 'the journey starts and the page waits under it');
+      await P.waitForSelector('.tripcard', { timeout: 3000 });
+      assert.equal(await P.evaluate(() => getComputedStyle(document.querySelector('.voyage')).opacity), '1', 'fully covered when the page changes');
+      await P.waitForSelector('.voyage', { state: 'detached', timeout: 4000 });
+      await P.click('[data-triphome]');
+      assert.equal(await P.textContent('.voyage.home .vmsg'), 'Welcome homeBack to the usual page');
+      await P.waitForSelector('.voyage', { state: 'detached', timeout: 4000 }); assert.equal(await P.$('.tripcard'), null);
+      // a trip moved to a later date, or deleted, is no homecoming: the page just changes back
+      const tomorrow = iso(await P.evaluate(() => addDays(startOfDay(Date.now()), 1)));
+      for (const how of ['moved', 'deleted']) {
+        await P.click('[data-tripnew]'); await P.click('#tripSave'); await P.waitForSelector('.voyage', { state: 'detached', timeout: 4000 });
+        await P.click('[data-tripedit]');
+        if (how === 'moved') { await P.fill('#tripFrom', tomorrow); await P.click('[data-len="2"]'); await P.click('#tripSave'); } else await P.click('#tripDel');
+        assert.deepEqual(await P.evaluate(() => [!!document.querySelector('.voyage'), !!document.querySelector('.tripcard')]), [false, false], `${how}: no journey home`);
+        if (how === 'moved') { await P.click('.tripbtn'); await P.click('#tripDel'); }
+      }
+      await P.emulateMedia({ reducedMotion: 'reduce' });
+      await P.click('[data-tripnew]'); await P.click('#tripSave');
+      assert.deepEqual(await P.evaluate(() => [!!document.querySelector('.voyage'), !!document.querySelector('.tripcard')]), [false, true], 'reduced motion: straight to the travel page');
+      await P.click('[data-triphome]'); assert.equal(await P.$('.tripcard'), null);
     });
 
     // ---------- the tutorial ----------

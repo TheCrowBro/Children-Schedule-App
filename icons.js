@@ -42,13 +42,15 @@ const Icons = (() => {
     train:   ['<rect x="7.500" y="4.500" width="17" height="19.500" rx="5"/>', '<rect x="7.500" y="4.500" width="17" height="19.500" rx="5"/><path d="M7.500 15h17M12 9h8M11.500 19.500h.01M20.500 19.500h.01M11 24l-3 4.500M21 24l3 4.500M9.300 26.500h13.400"/>'],
     ship:    ['<path d="M4 19.500h24l-3.500 6.500h-17z"/><rect x="9" y="12.500" width="13" height="7" rx="1"/>', '<path d="M4 19.500h24l-3.500 6.500h-17zM9 19.500v-7h13v7M13.500 12.500V8.500h5v4M12.500 16h.01M15.500 16h.01M18.500 16h.01M4 29.500c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1 2 1 4 1"/>'],
     trip:    ['<rect x="5" y="10" width="22" height="16" rx="3.500"/>', '<rect x="5" y="10" width="22" height="16" rx="3.500"/><path d="M12 10V7.500A1.500 1.500 0 0 1 13.500 6h5A1.500 1.500 0 0 1 20 7.500V10M11 10v16M21 10v16"/>'],
+    home:    ['<path d="M5.500 15.500L16 6.500l10.500 9V27h-21z"/>', '<path d="M4 16L16 6l12 10M7.500 13.500V27h17V13.500M13.500 27v-6.500h5V27"/>'],
+    pin:     ['<path d="M16 28.500s-8.500-8.400-8.500-14.700a8.500 8.500 0 0 1 17 0c0 6.300-8.500 14.700-8.500 14.700z"/>', '<path d="M16 28.500s-8.500-8.400-8.500-14.700a8.500 8.500 0 0 1 17 0c0 6.300-8.500 14.700-8.500 14.700z"/><circle cx="16" cy="13.800" r="3.200"/>'],
     help:    ['<circle cx="16" cy="16" r="11.500"/>', '<circle cx="16" cy="16" r="11.500"/><path d="M12.500 12.700a3.600 3.600 0 1 1 5.100 3.200c-1 .5-1.600 1.300-1.600 2.400v.7M16 22.300h.01"/>'],
   };
   // emoji (without the optional variation selector) → icon name
   const MAP = { '🍼': 'feed', '💧': 'diaper', '😴': 'sleep', '🌙': 'wake', '🤮': 'vomit', '🧸': 'play', '🩺': 'health', '💊': 'med', '💩': 'poo',
     '📅': 'day', '🗓': 'month', '📊': 'stats', '👨‍👩‍👧': 'family', '⚙': 'more', '🔒': 'lock', '🔐': 'lock', '🔑': 'key', '📷': 'camera', '🔗': 'link',
     '👶': 'baby', '📨': 'mail', '⚠': 'warn', '✅': 'check', '⏳': 'clock', '📴': 'offline', '☁': 'cloud', '📞': 'phone', '📖': 'guide', '🌟': 'star', '🎨': 'palette', '🌗': 'theme',
-    '🌿': 'leaf', '☀': 'day', '🚗': 'car', '✈': 'plane', '🚆': 'train', '🚢': 'ship', '🧳': 'trip', '❓': 'help' };
+    '🌿': 'leaf', '☀': 'day', '🚗': 'car', '✈': 'plane', '🚆': 'train', '🚢': 'ship', '🧳': 'trip', '❓': 'help', '📍': 'pin' };
   const RE = new RegExp(Object.keys(MAP).sort((a, b) => b.length - a.length).join('|') + '(?:\\uFE0F)?', 'gu');
   const bare = s => s.replace(/️/g, '');
   /** The icon as an SVG string. `size` is in px (default: 1.15em, so it sits in text). */

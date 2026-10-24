@@ -6,7 +6,7 @@ const Guide = (() => {
   // Each item: what it is, what's normal, and when to call. `urgent` lines are the "call now / emergency" signs.
   const COMMON = [
     { id: 'blue', icon: '💧', title: 'Blue hands and feet', body: 'Very common in the first days. A newborn\'s circulation is still settling, so hands and feet can look bluish or purple, especially when cold, while the lips, tongue and face stay pink.',
-      call: 'Call 911 if the lips, tongue or face look blue or grey, or your baby is struggling to breathe.' },
+      call: 'Call {sos} if the lips, tongue or face look blue or grey, or your baby is struggling to breathe.' },
     { id: 'belly', icon: '🩺', title: 'A bulge in the belly', body: 'A soft bulge at the belly button that gets bigger when crying is usually an umbilical hernia. It often closes on its own in the first years. A ridge down the middle of the tummy when straining is the belly muscles not yet joined (diastasis recti) and usually goes away as your baby grows.',
       call: 'Call your pediatrician straight away if a bulge is hard, tender or discoloured, can\'t be gently pushed back, or comes with vomiting.' },
     { id: 'hips', icon: '🧸', title: 'Clicking joints and hips', body: 'Soft clicks from knees, shoulders and hips are common as ligaments stretch. Doctors check the hips at every early checkup.',
@@ -22,7 +22,7 @@ const Guide = (() => {
     { id: 'diapers', icon: '💧', title: 'How many wet diapers', body: 'Expect about one wet diaper per day of age for the first few days, then at least 6 wet diapers a day from about day 5.',
       call: 'Call if there are fewer than 6 wet diapers a day after the first week, a dry diaper for 6 hours or more, or a sunken soft spot.' },
     { id: 'breathing', icon: '😴', title: 'Noisy or irregular breathing', body: 'Sneezing, snuffly noses, hiccups and breathing that speeds up and slows down with short pauses (under about 10 seconds) are normal in newborns.',
-      call: 'Call 911 for pauses of 20 seconds or more, blue colour, or hard work to breathe: skin pulling in between the ribs, flaring nostrils, or grunting with every breath.' },
+      call: 'Call {sos} for pauses of 20 seconds or more, blue colour, or hard work to breathe: skin pulling in between the ribs, flaring nostrils, or grunting with every breath.' },
     { id: 'fever', icon: '🩺', title: 'Fever under 3 months', body: 'Take the temperature rectally for an accurate reading in young babies. A fever is 100.4°F (38°C) or higher.',
       call: 'Under 3 months, any fever of 100.4°F (38°C) or higher means calling your pediatrician or going to the emergency room now, even if your baby seems well.' },
     { id: 'skin', icon: '🧸', title: 'Spots, rashes and peeling', body: 'Tiny white bumps (milia), baby acne, blotchy red newborn rash, dry peeling skin and cradle cap are common and harmless. Gentle washing is all they need.',
@@ -74,33 +74,37 @@ const Guide = (() => {
     24: { title: '2 years', does: ['Kicks a ball', 'Says at least two words together, like "more milk"', 'Points to things in a book when you ask'], notice: [], visit: '2-year checkup' },
   };
   // Over-the-counter medicines: what is generally considered safe for babies, from what age, and what to watch for. No doses: they go by
-  // weight and come from the pediatrician or pharmacist. Where the US (AAP / FDA) and the UK (NHS) set different ages, both are shown.
+  // weight and come from the pediatrician or pharmacist. Where the US (AAP / FDA) and the UK (NHS) set different ages, `age` has both
+  // ({ us, uk }) and the one for where the phone is comes first. `where` says which regions a brand is mostly sold in, so the brands
+  // people will find on their shelves are named first; brands not listed there are sold widely.
   const MEDS_INTRO = ['Under 3 months, call your pediatrician before giving any medicine, and straight away for a fever of 100.4°F (38°C) or more.',
     'Doses go by weight, not age: ask your pediatrician or pharmacist, use the syringe that comes with the medicine (never a kitchen spoon), and log every dose under Health & meds so nobody gives a second one by mistake.'];
   const MEDS = [
     { id: 'fever', icon: '💊', title: 'Fever and pain', items: [
-      { name: 'Acetaminophen (paracetamol)', brands: 'Infants\' Tylenol · Calpol · Panadol', age: 'US: from 12 weeks, younger only if your pediatrician says. UK: from 2 months.',
+      { name: 'Acetaminophen (paracetamol)', brands: 'Infants\' Tylenol · Calpol · Panadol', where: { 'Infants\' Tylenol': 'na latam asia', Calpol: 'uk mea asia', Panadol: 'anz asia mea uk' },
+        age: { us: 'from 12 weeks, younger only if your pediatrician says', uk: 'from 2 months' },
         body: 'For fever or pain, for example after vaccines. Never give more doses in 24 hours than the label or your doctor allows, and check other medicines for the same ingredient so it isn\'t doubled.' },
-      { name: 'Ibuprofen', brands: 'Infants\' Motrin · Infants\' Advil · Nurofen for Children', age: 'US: from 6 months. UK: from 3 months and over 5 kg (11 lb).',
+      { name: 'Ibuprofen', brands: 'Infants\' Motrin · Infants\' Advil · Nurofen for Children', where: { 'Infants\' Motrin': 'na', 'Infants\' Advil': 'na', 'Nurofen for Children': 'uk eu anz asia mea' },
+        age: { us: 'from 6 months', uk: 'from 3 months and over 5 kg (11 lb)' },
         body: 'For fever or pain, best given with a feed. Not for a baby who is dehydrated (few wet diapers, vomiting) or has chickenpox; with asthma, ask first.' },
     ] },
     { id: 'colic', icon: '🍼', title: 'Gas and colic', items: [
-      { name: 'Simethicone gas drops', brands: 'Mylicon · Infacol · Ovol', age: 'From birth (check the label).',
+      { name: 'Simethicone gas drops', brands: 'Mylicon · Infacol · Ovol', where: { Mylicon: 'na', Infacol: 'uk anz mea', Ovol: 'na' }, age: 'From birth (check the label).',
         body: 'It stays in the gut and isn\'t absorbed, so it is considered safe. Studies haven\'t shown it eases colic, but many parents find it helps a gassy baby.' },
       { name: 'Probiotic drops (L. reuteri)', brands: 'BioGaia Protectis', age: 'From birth.',
         body: 'Studies found less crying after two to three weeks in breastfed babies with colic. For formula-fed babies the evidence is unclear.' },
-      { name: 'Gripe water', brands: 'Mommy\'s Bliss · Woodward\'s', age: 'Usually from 1 month; check the label.',
+      { name: 'Gripe water', brands: 'Mommy\'s Bliss · Woodward\'s', where: { 'Mommy\'s Bliss': 'na', 'Woodward\'s': 'uk mea asia' }, age: 'Usually from 1 month; check the label.',
         body: 'A herbal mix, often dill, fennel or ginger, with little evidence that it works. Choose one without alcohol or sugar. Some contain sodium bicarbonate (baking soda), which is not for regular use.' },
     ] },
     { id: 'nose', icon: '💧', title: 'Stuffy nose and colds', items: [
-      { name: 'Saline (salt water) drops or spray', brands: 'Little Remedies · Ocean · Sterimar', age: 'Any age.',
+      { name: 'Saline (salt water) drops or spray', brands: 'Little Remedies · Ocean · Sterimar', where: { 'Little Remedies': 'na', Ocean: 'na', Sterimar: 'uk eu anz' }, age: 'Any age.',
         body: 'A drop or two in each nostril loosens mucus. Follow with a bulb syringe or nasal aspirator, especially before feeds and sleep.' },
       { name: 'Cool-mist humidifier', brands: '', age: 'Any age.', body: 'Moist air can ease a blocked nose. Clean it as the maker says.' },
     ], warn: 'Cough and cold medicines (decongestants, cough syrups) are not for babies: the FDA says not under 2 years, the UK not under 6.' },
     { id: 'skin', icon: '👶', title: 'Diaper rash and skin', items: [
-      { name: 'Zinc oxide or petroleum jelly cream', brands: 'Desitin · Sudocrem · Aquaphor · Vaseline · Bepanthen', age: 'From birth.',
+      { name: 'Zinc oxide or petroleum jelly cream', brands: 'Desitin · Sudocrem · Aquaphor · Vaseline · Bepanthen', where: { Desitin: 'na', Sudocrem: 'uk eu anz', Aquaphor: 'na', Bepanthen: 'uk eu anz asia mea' }, age: 'From birth.',
         body: 'A thick layer at each change protects sore skin. Let it air-dry when you can.' },
-      { name: 'Fragrance-free moisturizer', brands: 'Aquaphor · Cetaphil Baby · CeraVe Baby', age: 'From birth.', body: 'For dry or peeling skin and baby eczema.' },
+      { name: 'Fragrance-free moisturizer', brands: 'Aquaphor · Cetaphil Baby · CeraVe Baby', where: { Aquaphor: 'na', 'CeraVe Baby': 'na uk' }, age: 'From birth.', body: 'For dry or peeling skin and baby eczema.' },
       { name: 'Hydrocortisone 1% cream', brands: 'Cortizone-10', age: 'Under 2 years, only if a doctor says.',
         body: 'A mild steroid for itchy rashes. Doctors sometimes suggest it for a short time for eczema or a stubborn diaper rash.' },
     ] },
@@ -110,7 +114,7 @@ const Guide = (() => {
       { name: 'Pain relief', brands: 'Acetaminophen or ibuprofen', age: 'At the ages under Fever and pain.', body: 'For a baby who is really unsettled.' },
     ], warn: 'Avoid numbing gels with benzocaine or lidocaine (Orajel, Anbesol): the FDA warns against them under 2 because of a rare, dangerous blood reaction. Avoid amber or teething necklaces and bracelets too: they can choke or strangle.' },
     { id: 'vitamins', icon: '☀️', title: 'Vitamins', items: [
-      { name: 'Vitamin D drops', brands: 'D-Vi-Sol · Baby Ddrops · Abidec', age: 'From soon after birth.',
+      { name: 'Vitamin D drops', brands: 'D-Vi-Sol · Baby Ddrops · Abidec', where: { 'D-Vi-Sol': 'na', 'Baby Ddrops': 'na uk', Abidec: 'uk' }, age: 'From soon after birth.',
         body: 'Breastfed and partly breastfed babies need vitamin D every day: 400 IU in the US, 8.5 to 10 micrograms in the UK. Babies having more than about 500 ml of formula a day get enough from the formula in the UK; in the US, ask your pediatrician.' },
       { name: 'Iron drops', brands: '', age: 'Only if your pediatrician advises.', body: 'Some breastfed or premature babies need extra iron from around 4 months.' },
     ] },
@@ -120,12 +124,17 @@ const Guide = (() => {
         { name: 'Chamomilla teething drops', brands: 'Camilia (Boiron)', age: 'Check the label.', body: 'One of the remedies parents mention most for teething. Stop if your baby seems unwell or unusually sleepy.' },
         { name: 'Homeopathic colic drops', brands: 'Colic Calm', age: 'Check the label.',
           body: 'Popular for gas and fussiness. It contains vegetable charcoal, which turns poop dark grey or black for a while: harmless, but easy to mistake for blood.' },
-        { name: 'Calendula cream', brands: 'Weleda · Boiron', age: 'From birth.',
+        { name: 'Calendula cream', brands: 'Weleda · Boiron', where: { Weleda: 'eu uk anz', Boiron: 'na eu' }, age: 'From birth.',
           body: 'A gentle herbal cream parents like for diaper rash and dry skin. It is in the daisy family and rarely causes an allergy: stop if the rash gets worse.' },
         { name: 'Arnica', brands: 'Pellets or gel', age: 'Check the label.', body: 'Used for bumps and bruises. The gel only goes on unbroken skin.' },
       ],
       warn: 'Don\'t use homeopathic teething tablets or gels: the FDA warned against them in 2016 and 2017 after some were found to contain far more belladonna than the label said, with reports of seizures.' },
   ];
+  // The emergency number where the phone is, for the regions that share one; elsewhere it differs from country to country.
+  const SOS = { na: '911', uk: '999', eu: '112', anz: '000 (Australia) or 111 (New Zealand)' };
+  const sos = region => SOS[region] || 'your local emergency number';
+  /** Guide text for a region: {sos} becomes its emergency number. */
+  const local = (text, region) => text.replace(/\{sos\}/g, sos(region));
   /** Never give a baby these. */
   const NEVER = ['Aspirin, or anything containing it (it can cause Reye\'s syndrome)', 'Cough and cold medicines', 'Numbing teething gels (benzocaine, lidocaine)',
     'Honey before 12 months, even in a remedy (it can cause infant botulism)', 'Adult medicines, or more than the label or your doctor says',
@@ -147,5 +156,5 @@ const Guide = (() => {
   const cleanDetails = d => { d = d && typeof d === 'object' ? d : {}; return { relation: str(d.relation, 40), phone: str(d.phone, 30), work: str(d.work, 80), workPhone: str(d.workPhone, 30), notes: str(d.notes, 300) }; };
   /** A tel: link target, or '' when the text has no usable number. */
   const tel = p => { const n = String(p || '').replace(/[^\d+]/g, '').replace(/(?!^)\+/g, ''); return n.replace(/\D/g, '').length >= 3 ? 'tel:' + n : ''; };
-  return { COMMON, MILESTONES, MEDS_INTRO, MEDS, NEVER, monthsOld, cleanDoctor, cleanDetails, tel };
+  return { COMMON, MILESTONES, MEDS_INTRO, MEDS, NEVER, sos, local, monthsOld, cleanDoctor, cleanDetails, tel };
 })();

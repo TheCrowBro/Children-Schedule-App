@@ -309,3 +309,32 @@ details.tips ul{margin:0 0 6px;padding-left:20px;line-height:1.5;font-size:14px}
 .tour-tip .tt-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.tour-tip .tt-btns .btn{padding:10px 18px;min-width:96px}
 @media(prefers-reduced-motion:reduce){.tour-box,.tour-tip{transition:none}.tour-box.pulse::after{animation:none;opacity:.6}}
 .nw{white-space:nowrap}
+/* ---- the formula picker: usual and recent on top, a twirl-down for each region -------------------------------------------------------- */
+.fpick{margin-top:2px}
+.fcur{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:48px;padding:10px 12px;font:inherit;font-size:16px;text-align:left;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.fcur[aria-expanded=true] .chev{transform:rotate(90deg)}.fcur:disabled{opacity:.6}
+.flist{margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.flist .fh{margin:2px 2px 6px;font-size:13px;font-weight:600;color:var(--mute)}
+.fopts{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 8px}
+.fopt{padding:9px 12px;min-height:42px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:15px;text-align:left}
+.fopt[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:600}
+details.freg{border-top:1px solid var(--line)}
+details.freg>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:48px;padding:8px 2px;font-weight:600}
+details.freg>summary small{display:block;color:var(--mute);font-weight:400;font-size:13px}
+details.freg[open]>summary .chev{transform:rotate(90deg)}
+.fo-other{display:block;width:100%;margin-top:4px}
+.medi .age small{font-weight:400;color:var(--mute)}
+/* ---- leaving and coming home: a little journey across the screen while the page changes under it ---------------------------------------- */
+.voyage{position:fixed;inset:0;z-index:85;pointer-events:none;opacity:0;overflow:hidden}
+.voyage .vsky{position:absolute;inset:0;background:radial-gradient(90% 60% at 50% 16%,#d3ebee 0,transparent 72%),linear-gradient(180deg,#e6f2f1,#f7f1e7)}
+.voyage.home .vsky{background:radial-gradient(90% 60% at 50% 84%,#f5dcb6 0,transparent 72%),linear-gradient(180deg,#f7f1e7,#fae7d0)}
+:root[data-mode="dark"] .voyage .vsky{background:radial-gradient(90% 60% at 50% 16%,#19393d 0,transparent 72%),linear-gradient(180deg,#14292b,#1d1b19)}
+:root[data-mode="dark"] .voyage.home .vsky{background:radial-gradient(90% 60% at 50% 84%,#45311f 0,transparent 72%),linear-gradient(180deg,#1d1b19,#28201a)}
+.voyage .vpath{position:absolute;inset:0;width:100%;height:100%}
+.voyage .vpath path{fill:none;stroke:var(--trip);stroke-width:2.5;stroke-dasharray:8 9;stroke-linecap:round;vector-effect:non-scaling-stroke;opacity:.6}
+.voyage .vgo{position:absolute;left:0;top:0;width:64px;height:64px;margin:-32px 0 0 -32px;color:var(--trip);will-change:transform}
+.voyage .vhome{position:absolute;width:60px;height:60px;color:var(--trip)}
+.voyage .vgo .ic,.voyage .vhome .ic{width:100%;height:100%;color:inherit}
+.voyage .vmsg{position:absolute;left:16px;right:16px;top:18vh;margin:0;text-align:center;color:var(--ink)}
+.voyage .vmsg b{display:block;font:600 28px/1.2 var(--serif)}.voyage .vmsg small{display:block;margin-top:6px;font-size:16px;color:var(--mute)}
+

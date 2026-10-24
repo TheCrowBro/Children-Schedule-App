@@ -1,7 +1,8 @@
 'use strict';
-/* Common infant formulas by region, for the formula drop-down (the phone's own region is listed first), and learning a child's usual
-   formula from the feeds: when every formula feed on three days running used the same one, that becomes the default until another
-   one is used the same way. These are common brands, not every formula there is; anything else can be typed in. */
+/* Common infant formulas by region, for the formula list (the region where you are comes first: More → Where you are, or a guess from
+   the phone's time zone), and learning a child's usual formula from the feeds: when every formula feed on three days running used the
+   same one, that becomes the default until another one is used the same way. These are common brands, not every formula there is;
+   anything else can be typed in. */
 const Formulas = (() => {
   const REGIONS = [
     { id: 'na', name: 'North America (US & Canada)', items: ['Similac 360 Total Care', 'Similac 360 Total Care Sensitive', 'Similac Advance', 'Similac Pro-Advance', 'Similac Sensitive', 'Similac Total Comfort', 'Similac For Spit-Up', 'Similac Soy Isomil', 'Similac Alimentum', 'Similac NeoSure',
@@ -39,8 +40,9 @@ const Formulas = (() => {
     if (LATAM.test(tz)) return 'latam';
     return 'na';
   }
-  /** The regions in the order to show them: the phone's first. */
-  const ordered = (tz) => { const first = regionFor(tz); return [...REGIONS].sort((a, b) => (b.id === first) - (a.id === first)); };
+  /** The regions in the order to show them: `first` (a region id; by default the phone's, from its time zone) first. */
+  const ordered = (first = regionFor()) => [...REGIONS].sort((a, b) => (b.id === first) - (a.id === first));
+  const name = id => (REGIONS.find(r => r.id === id) || REGIONS[0]).name;
   const dayKey = t => { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
   /** From one child's formula feeds ([{ ts, formula }]): the formula that became the usual one, the latest to be given at every formula
       feed on `days` days running (days without formula feeds don't break the run; a day with two formulas does), or ''. It stays the
@@ -60,5 +62,5 @@ const Formulas = (() => {
     }
     return usual;
   }
-  return { REGIONS, regionFor, ordered, learned, known: name => ALL.has(name) };
+  return { REGIONS, regionFor, ordered, name, learned, known: f => ALL.has(f) };
 })();
