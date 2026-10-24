@@ -27,9 +27,9 @@ async function setup({ port = 8126 } = {}) {
   const H = { tmp, APP, su, shim, browser, pages, sleep, totp };
   H.q = async (sql, params) => (await su.query(sql, params)).rows;
   H.syncNow = p => p.evaluate(async () => { for (let i = 0; i < 400 && Sync.st.state === 'syncing'; i++) await new Promise(r => setTimeout(r, 50)); await Sync.run(true); });
-  /** A new phone. opts.skew shifts that phone's clock (ms). */
+  /** A new phone. opts.skew shifts that phone's clock (ms); opts.locale sets the phone's language (e.g. 'fr-FR'). */
   H.device = async (opts = {}) => {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 800 }, ...(opts.video ? { recordVideo: { dir: opts.video, size: { width: 390, height: 800 } } } : {}) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 800 }, ...(opts.locale ? { locale: opts.locale } : {}), ...(opts.video ? { recordVideo: { dir: opts.video, size: { width: 390, height: 800 } } } : {}) });
     await installFakeNative(ctx, opts);
     if (opts.skew) await ctx.addInitScript(off => { const real = Date.now.bind(Date); Date.now = () => real() + off; }, opts.skew);
     if (!opts.tour) await ctx.addInitScript(() => { try { if (!localStorage.getItem('ll.tours')) localStorage.setItem('ll.tours', '{"day":1}'); } catch (e) { /* no storage */ } });   // (the first-time tour has its own test)

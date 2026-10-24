@@ -132,7 +132,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       await sheet(() => { const k = kids()[1], d = new Date(); d.setMonth(d.getMonth() - 6); d.setDate(d.getDate() - 2); k.birth = dkey(d.getTime()); delete db.meta.solids; Tour.mark('day'); solidsCheck(); }, 'time for solid foods');
       // the PDF for the doctor: every line written on its pages
       const pdfText = await P.evaluate(async () => { window.qNotes = 'Is her sleep normal?'; const r = await doctorPdf(kids()[0].id, { days: 14, every: true, notes: window.qNotes }); return r.text.flat(); });
-      await P.evaluate(lines => { const d = document.createElement('div'); d.id = 'pdfText'; d.innerHTML = lines.map(l => `<p>${esc(l)}</p>`).join(''); $('#view').prepend(d); }, pdfText);
+      await P.evaluate(lines => { const d = document.createElement('div'); d.id = 'pdfText'; d.innerHTML = `<p>${esc(lines.join(' '))}</p>`; $('#view').prepend(d); }, pdfText);   // (joined up again: a long text is wrapped over several lines)
       await look('the PDF for the doctor'); await P.evaluate(() => $('#pdfText').remove());
       await sheet(() => { const k = kids()[0]; k.birth = new Date(Date.now() - 64 * 864e5).toLocaleDateString('en-CA'); db.meta.ms = {}; Tour.mark('day'); milestoneCheck(); }, 'milestone');
       // travel mode: the page, the quick sheets, the journey
@@ -201,11 +201,10 @@ const unmarked = (page, data) => page.evaluate(data => {
       assert.equal(await P.evaluate(() => [I18n.lang(), document.documentElement.lang].join()), 'es,es', 'still Spanish after a restart');
       await P.evaluate(async () => { await I18n.set(''); render(); });
       assert.equal(await P.evaluate(() => I18n.lang()), 'en', 'automatic: the phone (English here)');
-      const ctx = await H.browser.newContext({ locale: 'fr-FR', viewport: { width: 390, height: 800 } }); await H.shim.install(ctx);
-      const F = await ctx.newPage(); await F.goto(H.APP); await F.waitForSelector('#lEmail');
+      const F = await H.device({ locale: 'fr-FR' }); await F.waitForSelector('#lEmail');
       assert.equal(await F.evaluate(() => [I18n.lang(), document.documentElement.lang, I18n.chosen()].join()), 'fr,fr,', 'a French phone opens in French, without choosing');
       assert.notEqual(await F.textContent('#view .card b'), 'Sign in');
-      await ctx.close();
+      await F.context().close();
     });
 
     await step('Arabic, Hebrew, Persian and Urdu run right to left; the others left to right', async () => {
