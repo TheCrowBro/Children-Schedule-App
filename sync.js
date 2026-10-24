@@ -50,6 +50,7 @@ const Sync = (() => {
       const rec = { id: r.id, type: r.type, ts: r.ts, data: r.data || {}, note: r.note || '', updated: touch ? stamp() : r.updated };
       if (r.end != null) rec.end = r.end;
       if (r.by) rec.by = r.by;
+      if (r.child) rec.child = r.child;
       const mineRec = live.get(r.id);
       if (mineRec) { for (const k of Object.keys(mineRec)) delete mineRec[k]; Object.assign(mineRec, rec); }   // edit in place so open sheets stay valid
       else { db.events.push(rec); live.set(r.id, rec); }
@@ -112,7 +113,7 @@ const Sync = (() => {
     if (db.meta.role !== 'parent' && !db.meta.perms.view_health) db.events = db.events.filter(e => !isSens(e.type));   // access to health notes was taken away
     return true;
   }
-  function lostAccess() { const b = db.meta.babyId; if (b) E2EE.forget(b); reset(); db.meta.babyId = null; db.meta.role = null; db.meta.perms = null; db.baby = { name: '', birth: '' }; st.people = []; save(true); }
+  function lostAccess() { const b = db.meta.babyId; if (b) E2EE.forget(b); reset(); db.meta.babyId = null; db.meta.role = null; db.meta.perms = null; db.baby = { name: '', birth: '', kids: Kids.clean([]) }; st.people = []; save(true); }
 
   async function pull() {
     const b = db.meta.babyId;
@@ -253,7 +254,7 @@ const Sync = (() => {
     for (const r of rows) {
       const b = profiles.find(x => x.id === r.baby_id); let p = null;
       if (b && b.profile) { await E2EE.load(r.baby_id); p = await E2EE.decryptProfile(r.baby_id, b.profile, b.epoch); }
-      st.memberships.push({ id: r.baby_id, role: r.role, perms: r.perms || {}, name: p ? p.name : '', birth: p ? p.birth : '' });
+      st.memberships.push({ id: r.baby_id, role: r.role, perms: r.perms || {}, name: p ? p.name : '', birth: p ? p.birth : '', kids: p ? p.kids : null });
     }
     return st.memberships;
   }
@@ -263,19 +264,19 @@ const Sync = (() => {
     const m = st.memberships.find(x => x.id === id);
     if (!m) return;
     if (db.meta.babyId !== id) { reset(); db.meta.babyDirty = false; db.meta.stash = undefined; db.meta.unverified = false; st.people = []; st.devices = []; st.needsAccess = false; peopleAt = 0; }
-    db.meta.babyId = id; db.meta.role = m.role; db.meta.perms = m.perms; if (m.name) db.baby = { name: m.name, birth: m.birth };
+    db.meta.babyId = id; db.meta.role = m.role; db.meta.perms = m.perms; if (m.name || m.kids) db.baby = { name: m.name, birth: m.birth, kids: Kids.clean(m.kids, m.name, m.birth) };
     save(true); run();
   }
   /** Creates the log with fresh encryption keys. Returns the one-time recovery code (shown to the parent once, never stored). */
-  async function createBaby(name, birth, displayName) {
+  async function createBaby(name, birth, displayName, sex) {
     db.meta.recoveryAck = false; save(true);   // set first: if the app dies before the code is shown, the reminder is still there
     let created;
-    try { created = await E2EE.createLog({ name, birth: birth || '' }, displayName); } catch (e) { delete db.meta.recoveryAck; save(true); throw e; }
+    try { created = await E2EE.createLog({ kids: Kids.clean([{ id: 'c1', name, birth: birth || '', sex }]) }, displayName); } catch (e) { delete db.meta.recoveryAck; save(true); throw e; }
     const { babyId: id, code } = created;
     // Existing local entries (from before sign-in) are adopted by the new baby and uploaded.
     db.meta.babyId = id; db.meta.role = 'parent'; db.meta.perms = null; db.meta.pulledAt = ''; db.meta.pushedAt = 0; db.meta.babyDirty = false; db.meta.unverified = false;
     db.events.forEach(e => { e.by = Auth.id; });
-    db.baby = { name, birth: birth || '' };
+    { const kids = Kids.clean([{ id: 'c1', name, birth: birth || '', sex }]); db.baby = { name: kids[0].name, birth: kids[0].birth, kids }; }
     save(true); await loadMemberships(); run();
     return code;
   }

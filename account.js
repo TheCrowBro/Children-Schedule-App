@@ -5,14 +5,14 @@ const Acct = (() => {
   const L = { step: 'email', email: '', busy: false, err: '', captcha: '', fails: 0 };          // sign-in form
   const F = { loaded: false, loading: false, verified: false, enrollRequested: false, enrollForCreate: false, fp: '', recoveryCode: null, myPhones: [], secCode: '' };   // auth state after sign-in
   const M = { enroll: null, busy: false, err: '' };                                              // two-step verification
-  const O = { busy: false, err: '', name: '', birth: '', mine: '', create: null };               // onboarding
+  const O = { busy: false, err: '', name: '', birth: '', sex: '', mine: '', create: null };               // onboarding
   let invite = null, pendingJoin = null, waitTimer = null;
 
   // ---- roles & permissions (mirrors supabase/schema.sql; the server enforces them) -------------
   const PERM_KEYS = [
     ['add_entries', 'Add entries'], ['edit_own', 'Edit their own entries'], ['delete_own', 'Delete their own entries'],
     ['edit_others', 'Edit entries other people added'], ['delete_others', 'Delete entries other people added'],
-    ['view_health', 'See health notes and medications'], ['view_people', 'See who else has access'], ['edit_profile', "Change the baby's name and birthday"]];
+    ['view_health', 'See health notes and medications'], ['view_people', 'See who else has access'], ['edit_profile', "Change the children's names, birthdays and colours"]];
   const ROLES = [
     ['parent', 'Parent', 'Full control, including who has access and all settings'],
     ['family', 'Family member', 'Can add entries and change their own; cannot change settings or other people\'s entries'],
@@ -56,7 +56,7 @@ const Acct = (() => {
   const left = iso => { const m = (new Date(iso) - Date.now()) / MIN; return m <= 0 ? 'expired' : 'expires in ' + fmtDur(m); };
   const alertP = t => t ? `<p class="note" style="color:var(--health)" role="alert">${esc(t)}</p>` : '';
   function showSheet(html) {
-    const S = $('#sheet'), back = $('#sheetBack'); S.innerHTML = html; S.onchange = null; S.hidden = back.hidden = false;   // (onchange: drop the entry form's handler)
+    const S = $('#sheet'), back = $('#sheetBack'); S.innerHTML = html; Icons.paint(S); S.onchange = null; S.hidden = back.hidden = false;   // (onchange: drop the entry form's handler)
     const close = () => { S.hidden = back.hidden = true; }; back.onclick = close; return close;
   }
   function qrSvg(text) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); }
@@ -240,6 +240,8 @@ const Acct = (() => {
       <p class="note">You become a parent (admin). Parents use two-step verification.</p>
       <label class="f">Baby's name</label><input id="oName" type="text" value="${esc(O.name || db.baby.name)}" placeholder="Name">
       <label class="f">Birth date</label><input id="oBirth" type="date" value="${esc(O.birth || db.baby.birth)}">
+      <label class="f">Boy or girl <small>(sets their colour – you can change it later)</small></label><div class="chips">${chip('oSex', 'boy', 'Boy', O.sex === 'boy', '', true)}${chip('oSex', 'girl', 'Girl', O.sex === 'girl', '', true)}${chip('oSex', '', 'Not set', !O.sex, '', true)}</div>
+      <p class="note">Twins or triplets? You can add each child after the log is created (More → Children).</p>
       ${n ? `<p class="note">Your ${n} existing entries on this device will be added to the new log.</p>` : ''}
       <button class="btn p" id="oCreate" style="width:100%;margin-top:12px" ${O.busy ? 'disabled' : ''}>Create log</button></div>
     <div class="card"><b>🔗 Join a family log</b>
@@ -254,7 +256,7 @@ const Acct = (() => {
     const mine = () => { O.mine = $('#oMine').value.trim(); return O.mine; };
     $('#oCreate').onclick = async () => {
       const name = $('#oName').value.trim(); if (!name) return toast("Enter your baby's name");
-      const c = { name, birth: $('#oBirth').value, mine: mine() }; O.name = name; O.birth = c.birth; O.err = '';
+      const sx = document.querySelector('[name=oSex]:checked'), c = { name, birth: $('#oBirth').value, mine: mine(), sex: sx ? sx.value : '' }; O.name = name; O.birth = c.birth; O.sex = c.sex; O.err = '';
       if (!F.verified) { O.create = c; F.enrollForCreate = true; return render(); }   // two-step verification first
       createLog(c);
     };
@@ -264,7 +266,7 @@ const Acct = (() => {
   }
   async function createLog(c) {
     O.busy = true; O.err = ''; render();
-    try { F.recoveryCode = await Sync.createBaby(c.name, c.birth, c.mine); F.enrollForCreate = false; } catch (e) { O.err = err(e); }
+    try { F.recoveryCode = await Sync.createBaby(c.name, c.birth, c.mine, c.sex); F.enrollForCreate = false; } catch (e) { O.err = err(e); }
     O.busy = false; render();
   }
   /** Sends a join request; the person gets in only when a parent approves it. */
@@ -323,7 +325,7 @@ const Acct = (() => {
   }
 
   async function wipeLocal() {
-    db = { baby: { name: '', birth: '' }, events: [], deleted: [], meta: {} };
+    db = { baby: { name: '', birth: '', kids: Kids.clean([]) }, events: [], deleted: [], meta: {} };
     save(true); tab = 'day'; invite = null; F.loaded = false; F.verified = false; F.enrollRequested = F.enrollForCreate = false; M.enroll = null;
     Sync.st.people = []; Sync.st.requests = []; Sync.st.invites = []; Sync.st.memberships = []; Sync.st.myRequests = []; Lock.reset();
   }
@@ -501,7 +503,7 @@ const Acct = (() => {
     $('#pRemove').onclick = async () => { if (!confirm(`Remove ${p.display_name} from this log? They lose access immediately.`)) return; try { await Sync.removeMember(userId); close(); render(); } catch (e) { toast(err(e)); } };
   }
   const ACT = {
-    log_created: l => `${l.actor} created the log`, profile_changed: l => `${l.actor} changed the baby's name or birthday`,
+    log_created: l => `${l.actor} created the log`, profile_changed: l => `${l.actor} changed the children's details`,
     // The server can't see what an entry is (it is encrypted), only whether it is in the private health class.
     entry_added: l => `${l.actor} added ${l.entry_type === 'private' ? 'a private (health) entry' : 'an entry'}`,
     entry_edited: l => `${l.actor} edited ${l.entry_type === 'private' ? 'a private entry' : 'an entry'}${l.detail.author && l.detail.author !== l.actor ? ` added by ${l.detail.author}` : ''}`,
@@ -572,7 +574,7 @@ const Acct = (() => {
       .filter(e => Sync.can('health') || (e.type !== 'health' && e.type !== 'med'))
       .map(e => ({ ...e, ts: +e.ts, end: e.end == null ? null : +e.end, updated: +e.updated || 0, deleted: false, by: Auth.id || e.by }));
     const n = Sync.merge(rows, true);
-    if (d.baby && !db.baby.name) { db.baby = { name: String(d.baby.name || ''), birth: String(d.baby.birth || '') }; }
+    if (d.baby && !db.baby.name && !db.baby.kids.some(k => k.name)) { const kids = Kids.clean(d.baby.kids, String(d.baby.name || ''), String(d.baby.birth || '')); db.baby = { name: kids[0].name, birth: kids[0].birth, kids }; }
     save(); render(); toast(n ? `Restored ${n} entries` : 'Nothing new to restore');
   }
   function bindMoreAccount() {

@@ -20,7 +20,7 @@ const rng = seed => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = M
     const settle = async () => { for (const p of phones) { ctxOf(p).__down = false; ctxOf(p).__flaky = 0; ctxOf(p).__garbage = false; } for (let r = 0; r < 3; r++) for (const p of phones) await syncNow(p); };
     const serverTruth = async () => {   // every live row, decrypted by the parent's phone
       const rows = await q('select * from events where deleted=false order by id'), baby = await P.evaluate(() => db.meta.babyId);
-      return P.evaluate(async ([b, rs]) => { const out = []; for (const r of rs) { const d = await E2EE.decryptRow(b, r); out.push(d.entry ? { id: d.entry.id, type: d.entry.type, ts: d.entry.ts, data: d.entry.data, note: d.entry.note, end: d.entry.end == null ? null : d.entry.end } : { id: r.id, undecryptable: true }); } return out; }, [baby, rows]);
+      return P.evaluate(async ([b, rs]) => { const out = []; for (const r of rs) { const d = await E2EE.decryptRow(b, r); out.push(d.entry ? { id: d.entry.id, type: d.entry.type, ts: d.entry.ts, data: d.entry.data, note: d.entry.note, end: d.entry.end == null ? null : d.entry.end, child: d.entry.child || null } : { id: r.id, undecryptable: true }); } return out; }, [baby, rows]);
     };
     const converged = async label => {
       await settle(); const sets = []; for (const p of phones) sets.push(await H.entries(p));
@@ -39,7 +39,7 @@ const rng = seed => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = M
     await step('hostile text (names, notes, baby name) is shown as plain text everywhere and never runs', async () => {
       const XSS = `<img src=x onerror="window.__xss=1"><script>window.__xss=2</script>"'><svg onload=window.__xss=3>`;
       const Z = await H.addMember(P, 'z@x.com', 'family', {}, { name: XSS });
-      await P.evaluate(x => { db.events.push({ id: uid(), type: 'feed', ts: Date.now(), data: { kind: 'bottle', ml: 5 }, note: x, updated: stamp(), by: Auth.id }); db.baby.name = x; Sync.pushBaby(); Sync.setDisplayName(x); save(); }, XSS);
+      await P.evaluate(x => { db.events.push({ id: uid(), type: 'feed', ts: Date.now(), data: { kind: 'bottle', ml: 5 }, note: x, updated: stamp(), by: Auth.id }); db.baby.kids[0].name = x; db.baby.name = x; Sync.pushBaby(); Sync.setDisplayName(x); save(); }, XSS);
       for (const p of [P, X, Z]) await syncNow(p); await syncNow(P);
       for (const p of [P, X, Z]) {
         for (const t of ['day', 'month', 'stats', 'family', 'more']) { await p.click(`[data-tab=${t}]`); await sleep(120); }

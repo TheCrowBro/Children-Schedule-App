@@ -187,7 +187,7 @@ const E2EE = (() => {
     const cur = current(baby), sens = isSensitive(e.type), key = cur && (sens ? cur.health : cur.main);
     if (!key) throw new Error('no key');
     // `u` (edit time) and `a` (author) are sealed inside: the server's copies of them can't be trusted, so phones check them against these.
-    const plain = JSON.stringify({ type: e.type, ts: e.ts, end: e.end == null ? null : e.end, data: e.data || {}, note: e.note || '', u: e.updated, a: e.by || null });
+    const plain = JSON.stringify({ type: e.type, ts: e.ts, end: e.end == null ? null : e.end, data: e.data || {}, note: e.note || '', u: e.updated, a: e.by || null, c: e.child || null });
     return { blob: await seal(key, enc.encode(plain), entryAad(baby, e.id, cur.epoch, sens)), epoch: cur.epoch, sensitive: sens };
   }
   /** Decrypts one server row. Returns {entry}, {locked:true} (we don't hold that key yet) or {bad:true} (tampered / forged). */
@@ -201,15 +201,16 @@ const E2EE = (() => {
       // The row's edit time may only be *lower* than the sealed one (the server clamps wild clocks). A higher one means the server is passing an
       // old version off as newer, to roll a phone back.
       if (!Number.isFinite(p.u) || !(+r.updated <= p.u)) return { bad: true };
-      return { entry: { id: r.id, type: p.type, ts: p.ts, ...(Number.isFinite(p.end) ? { end: p.end } : {}), data: sanitize(p.type, p.data), note: str(p.note, 1000), updated: +r.updated, by: typeof p.a === 'string' ? p.a.slice(0, 64) : r.created_by } };
+      return { entry: { id: r.id, type: p.type, ts: p.ts, ...(Number.isFinite(p.end) ? { end: p.end } : {}), data: sanitize(p.type, p.data), note: str(p.note, 1000), updated: +r.updated, by: typeof p.a === 'string' ? p.a.slice(0, 64) : r.created_by, ...(typeof p.c === 'string' && /^[A-Za-z0-9_-]{1,24}$/.test(p.c) ? { child: p.c } : {}) } };
     } catch (e) { return { bad: true }; }
   }
   const decryptRow = (baby, r) => decryptWith((store[baby] && store[baby].keys) || {}, baby, r);
-  const sealProfile = (baby, epoch, main, p) => seal(main, enc.encode(JSON.stringify({ name: p.name || '', birth: p.birth || '' })), profileAad(baby, epoch));
+  // The profile holds the children (name, birth date, boy/girl, colour). `name`/`birth` mirror the first child, for older phones.
+  const sealProfile = (baby, epoch, main, p) => { const kids = Kids.clean(p.kids, p.name, p.birth); return seal(main, enc.encode(JSON.stringify({ name: kids[0].name, birth: kids[0].birth, kids })), profileAad(baby, epoch)); };
   const encryptProfile = (baby, p) => { const c = current(baby); return sealProfile(baby, c.epoch, c.main, p); };
   async function decryptProfile(baby, blob, epoch) {
     const k = raw(baby, epoch, 'main'); if (!k || !blob) return null;
-    try { const p = JSON.parse(dec.decode(await open(k, blob, profileAad(baby, epoch)))); return { name: p.name || '', birth: p.birth || '' }; } catch (e) { return null; }
+    try { const p = JSON.parse(dec.decode(await open(k, blob, profileAad(baby, epoch)))); const kids = Kids.clean(p.kids, p.name, p.birth); return { name: kids[0].name, birth: kids[0].birth, kids }; } catch (e) { return null; }
   }
 
   // ---- getting keys onto this phone ------------------------------------------------------------------

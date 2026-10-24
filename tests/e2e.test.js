@@ -225,7 +225,7 @@ const server = http.createServer((req, res) => {
     await B.click('[data-add=diaper]'); await B.click('input[name=poo]'); await B.click('#save');
     await B.waitForFunction(() => Sync.st.state === 'ok' && !db.events.some(e => e.updated > db.meta.pushedAt));
     await B.click('[data-edit]:has-text("Pee")'); await B.waitForSelector('#del'); await B.fill('#note', 'wet'); await B.click('#save'); await sleep(100);
-    await goTab(B, 'more'); assert(await B.$eval('#bName', e => e.disabled), 'baby profile is read-only for family');
+    await goTab(B, 'more'); assert(await B.$eval('[data-kn]', e => e.disabled), 'baby profile is read-only for family');
     assert(!(await B.$('#wipe')), 'no "delete all entries"');
     await goTab(B, 'family'); await B.waitForSelector('#syncNow');
     assert(!(await B.$('#invCard')) && !(await B.$('#actBtn')), 'no invites and no activity log for non-parents');

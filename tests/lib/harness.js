@@ -64,7 +64,7 @@ async function setup({ port = 8126 } = {}) {
     await p.evaluate(() => { tab = 'day'; render(); }); await p.waitForSelector('#tabs');
     await H.syncNow(p); return p;
   };
-  H.entries = p => p.evaluate(() => db.events.map(e => ({ id: e.id, type: e.type, ts: e.ts, data: e.data, note: e.note, end: e.end == null ? null : e.end })).sort((a, b) => (a.id < b.id ? -1 : 1)));
+  H.entries = p => p.evaluate(() => db.events.map(e => ({ id: e.id, type: e.type, ts: e.ts, data: e.data, note: e.note, end: e.end == null ? null : e.end, child: e.child || null })).sort((a, b) => (a.id < b.id ? -1 : 1)));
   H.close = async () => {
     try { await browser.close(); } catch (e) {} try { await su.end(); await shim.close(); } catch (e) {}
     server.close(); if (startCluster.stop) startCluster.stop(); fs.rmSync(tmp, { recursive: true, force: true });

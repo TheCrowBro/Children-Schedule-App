@@ -5,6 +5,8 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 
 ## Features
 - **Day view**: one-tap entry buttons, tick-box chips, time defaults to now with "5 min ago" shortcuts; tap an entry to edit/delete
+- **Twins, triplets and more**: up to 8 children in one shared log. Each has a page of their own with their own colour (blues for boys, reds for girls, a different shade for each; parents can change any colour), an "All" view, and entries can be logged for several children at once. Names, colours and which child an entry belongs to are end-to-end encrypted like everything else
+- **Watercolour look**: soft washes in the open child's colour and hand-painted style icons, with dark outlines and text kept at readable contrast (light and dark mode)
 - **Sleep timer**, **month calendar** with coloured dots, **stats** (7/14/30 days)
 - **Health checklist** (blue hands/feet, clicking hips, belly bulge, jaundice…) with "call your doctor" prompts
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters* and *Friends*; per-person check boxes for exactly what
