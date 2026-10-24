@@ -2,7 +2,7 @@
 // and sound, choosing a language changes the whole app (right to left for Arabic, Hebrew, Persian and Urdu), and language problems
 // can be reported without the app ever knowing where the reports go.   node tests/languages.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global Report, fmtDate, milestoneCheck, openEntryInfo, openAllergy, openDoctorReport, doctorPdf, solidsCheck, Foods, dkey, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg */
+/* global saveProfile, Report, fmtDate, milestoneCheck, openEntryInfo, openAllergy, openDoctorReport, doctorPdf, solidsCheck, Foods, dkey, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg */
 const { setup } = require('./lib/harness');
 const Cat = require('../scripts/i18n.js');
 
@@ -100,7 +100,7 @@ const unmarked = (page, data) => page.evaluate(data => {
         add('feed', t + 12 * h, { kind: 'solids', foods: ['Peanut', 'Banana', 'Kiwi'], amount: 'A taste' });
         for (let i = 1; i <= 7; i++) { add('feed', addDays(t, -i) + 8 * h, { kind: 'bottle', ml: 120 }); add('feed', addDays(t, -i) + 12 * h, { kind: 'solids', foods: ['Banana', 'Kiwi'] }); add('sleep', addDays(t, -i) + 13 * h, {}, { end: addDays(t, -i) + 14.5 * h }); add('play', addDays(t, -i) + 18.5 * h, { activity: 'Bath', min: 15 }); add('med', addDays(t, -i) + 9 * h, { name: 'Vitamin D', dose: '1 ml' }); }   // (a week with a routine)
         kids()[0].allergies = [{ food: 'Peanut', date: dkey(t), note: 'hives around the mouth' }, { food: 'Kiwi', date: dkey(addDays(t, -2)), note: '' }];
-        kids().push(Kids.make(kids())); kids()[1].name = 'Mia'; save(); tab = 'day'; viewDay = t; render();
+        kids().push(Kids.make(kids())); kids()[1].name = 'Mia'; save(); saveProfile(); tab = 'day'; viewDay = t; render();   // (sent like a parent's change, so a sync doesn't put back the server's copy)
       });
       await openAll(); await look('day');
       await P.evaluate(() => { quad = 1; render(); }); await look('day, a quarter of the clock');
@@ -192,7 +192,7 @@ const unmarked = (page, data) => page.evaluate(data => {
     await step('choosing a language in More changes the whole app at once, is kept on this phone after a restart, and "Automatic" follows the phone', async () => {
       await P.click('[data-tab=more]'); assert.equal(await P.inputValue('#langSel'), '', 'automatic at first');
       assert.equal(await P.textContent('#langSel option[value=""]'), 'Automatic: English');
-      await P.selectOption('#langSel', 'es');
+      await P.selectOption('#langSel', 'es'); await P.waitForFunction(() => document.documentElement.lang === 'es');   // (once its catalogue has loaded)
       const r = await P.evaluate(() => ({ lang: document.documentElement.lang, dir: document.documentElement.dir, tabs: [...document.querySelectorAll('#tabs .tl')].map(t => t.textContent), stored: localStorage.getItem('ll.lang'), card: document.querySelector('#langCard b').textContent }));
       assert.deepEqual([r.lang, r.dir, r.stored], ['es', 'ltr', 'es']);
       assert.notDeepEqual(r.tabs, ['Day', 'Month', 'Stats', 'Guide', 'Family', 'More'], 'the tabs are in Spanish: ' + r.tabs);
@@ -248,8 +248,9 @@ const unmarked = (page, data) => page.evaluate(data => {
         await I18n.set('ar'); out.ar_date = fmtDate(new Date(2026, 9, 29).getTime());
         return out;
       });
-      assert.equal(new Set(r.ru).size, 3, 'Russian has three forms for 1, 2, 5 (21 like 1): ' + r.ru); assert.equal(r.ru[0].replace('1', ''), r.ru[3].replace('21', ''));
-      assert.equal(new Set(r.pl).size, 3, 'Polish: ' + r.pl); assert.equal(new Set(r.ja.map(x => x.replace(/\d+/, ''))).size, 1, 'Japanese has one form: ' + r.ja);
+      const forms = xs => new Set(xs.map(x => x.replace(/\d+/, ''))).size;   // (the word, without its number)
+      assert.equal(forms(r.ru), 3, 'Russian has three forms for 1, 2, 5 (21 like 1): ' + r.ru); assert.equal(r.ru[0].replace('1', ''), r.ru[3].replace('21', ''));
+      assert.equal(forms(r.pl), 3, 'Polish: ' + r.pl); assert.equal(new Set(r.ja.map(x => x.replace(/\d+/, ''))).size, 1, 'Japanese has one form: ' + r.ja);
       assert(/jeudi 29 oct/.test(r.fr), r.fr); assert.equal(r.time, '15:05', 'a 24-hour clock in French');
       assert(/29/.test(r.ar_date) && !/[٠-٩]/.test(r.ar_date), 'Arabic dates with Western digits: ' + r.ar_date);
       await P.evaluate(async () => { await I18n.set(''); render(); });

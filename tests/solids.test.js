@@ -13,12 +13,12 @@ const monthsAgo = (m, d = 2) => { const t = new Date(); t.setMonth(t.getMonth() 
   const H = await setup({ port: 8134 }), { q, syncNow } = H;
   try {
     const { page: P } = await H.createLog('mum@x.com', 'Leo', 'Mum');
-    const sheetUp = () => P.evaluate(() => !$('#sheet').hidden && $('#sheet h3').textContent);
+    const sheetUp = () => P.evaluate(() => !$('#sheet').hidden && $('#sheet h3').textContent.trim());
     const closeSheet = () => P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; });
 
     await step('the month a child turns 6 months old, a sheet says it is time for solid foods: what readiness looks like, how to start, the allergens to give early, what not to give, and when to call', async () => {
       await P.evaluate(b => { kids()[0].birth = b; delete db.meta.solids; save(); tab = 'day'; render(); }, monthsAgo(6));
-      assert.equal(await sheetUp(), '🥄 Time for solid foods');
+      assert.equal(await sheetUp(), 'Time for solid foods'); assert(await P.$('#sheet h3 svg[data-n=spoon]'), 'with a spoon');
       const t = await P.textContent('#sheet');
       for (const x of ['Leo is 6 months old', 'Signs your baby is ready', 'How to start', 'Key allergens: early and often', 'Peanut, egg', 'Honey, until 1 year', 'Signs of a reaction', 'If your baby was born early']) assert(t.includes(x), x);
       assert(/Call \S+.* for trouble breathing/.test(t), 'when to call for help');
