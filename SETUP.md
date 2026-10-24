@@ -118,3 +118,46 @@ activity log therefore says "added an entry" or "added a private (health) entry"
 * Sign-in tokens, cloud tokens, the backup passphrase, the phone's private key and the log keys are in the iOS Keychain / Android Keystore.
   Signing out clears the log from the phone but leaves the keys there, so you can sign back in; deleting your account erases them.
 * Third-party code in `vendor/`: qrcode-generator (MIT) and jsQR (Apache-2.0).
+
+## 6. Language reports (optional)
+More → Language → **Report a language issue** lets anyone tell you about a wrong or clumsy translation. The report goes to a Supabase
+Edge Function, [`supabase/functions/language-report`](supabase/functions/language-report), which emails it to you.
+
+**Where reports go is kept secret.** The address is never in the app or in this repository. It is a secret of the function, which
+Supabase keeps encrypted, and nothing the function sends back mentions it.
+
+1. Run the latest [`supabase/schema.sql`](supabase/schema.sql). It adds `report_limits` and `language_report_allow`, which only the
+   function (the service role) can use.
+2. Create an account with [Resend](https://resend.com), the email service the function uses.
+   - Verify a domain to send from, and create an API key.
+   - To try it out first, use `onboarding@resend.dev` as the sender: Resend only delivers those emails to your own Resend address.
+3. Deploy the function and set its secrets with the [Supabase CLI](https://supabase.com/docs/guides/cli):
+   ```bash
+   supabase functions deploy language-report --project-ref <project-ref>
+   supabase secrets set --project-ref <project-ref> \
+     REPORT_TO='<the address reports go to>' \
+     REPORT_FROM='Little Log <reports@your-domain>' \
+     RESEND_API_KEY='<your Resend API key>' \
+     REPORT_SALT="$(openssl rand -hex 32)"
+   ```
+   You can also set the secrets in the dashboard, under Edge Functions → Secrets.
+
+   Type the address only into the terminal or the dashboard, never into a file in this repository.
+
+   `supabase secrets list` shows only a digest of each value.
+
+   Keep the function's JWT check on, which is the default. The app calls the function with the project's anon key, or with the
+   person's session when they are signed in.
+
+What a report contains:
+
+- the language;
+- the screen the person picked;
+- what the text says and what it should say, each up to 500 characters;
+- whether it was sent from Android, iOS or the web.
+
+**It never contains who sent it.** To limit each sender to 5 reports an hour, the function keeps a salted hash of the account (or of
+the network address, when the person is not signed in). All reports together are capped at 200 a day.
+
+The button only appears when `config.js` has a Supabase project. If the function isn't deployed yet, it says the report couldn't be
+sent.

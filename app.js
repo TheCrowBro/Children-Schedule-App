@@ -1130,9 +1130,9 @@ function bindMore() {
   $('#expJson').onclick = () => download('little-log-backup.json', JSON.stringify({ app: 'littlelog', v: 1, baby: db.baby, events: db.events }, null, 2), 'application/json');
   $('#expCsv').onclick = () => {
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const rows = [['child', 'date', 'time', 'type', 'summary', 'details', 'end', 'note'].join(',')].concat([...db.events].sort((a, b) => a.ts - b.ts).map(e => {
+    const rows = [[N_('Child'), N_('Date'), N_('Time'), N_('Type'), N_('Summary'), N_('Details'), N_('End'), N_('Note')].map(h => q(__(h))).join(',')].concat([...db.events].sort((a, b) => a.ts - b.ts).map(e => {
       const [a, b] = describe(e);
-      return [Travel.isTravel(e.type) ? '' : kidName(kidById(childOf(e))), dkey(e.ts), fmtTime(e.ts), e.type, a, b, e.end ? fmtTime(e.end) : '', e.note].map(q).join(',');   // (a trip is everyone's)
+      return [Travel.isTravel(e.type) ? '' : kidName(kidById(childOf(e))), dkey(e.ts), fmtTime(e.ts), TYPES[e.type] ? __(TYPES[e.type].label) : a, a, b, e.end ? fmtTime(e.end) : '', e.note].map(q).join(',');   // (a trip is everyone's)
     }));
     download('little-log.csv', rows.join('\n'), 'text/csv');
   };

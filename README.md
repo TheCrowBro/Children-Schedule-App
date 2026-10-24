@@ -51,6 +51,20 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
   protects against losing every phone; keys change automatically when someone leaves or loses a phone
 - **Encrypted cloud backup** to Google Drive, Dropbox, OneDrive, or iCloud Drive / Files
 - Works offline; changes sync when you're back online
+- **32 languages**: the app follows the phone's language, or one chosen in More → Language:
+  - English, Spanish, Portuguese, French, German, Italian, Dutch, Polish, Romanian, Russian, Ukrainian and Turkish;
+  - Arabic, Hebrew, Persian and Urdu, laid out right to left;
+  - Hindi, Bengali, Marathi, Telugu and Tamil;
+  - Chinese (simplified and traditional), Japanese, Korean, Vietnamese, Thai, Indonesian and Filipino;
+  - Swahili, Amharic and Hausa.
+
+  Each language has its own plural forms, date and time formats, and first day of the week, with the phone's regional variant (UK
+  English keeps UK dates). Entries are saved in one form and shown in each phone's language, so a family can use different languages
+  in one log. The translations were made with the help of AI, and the Guide says so.
+
+  **Report a language issue** (More → Language) emails a wrong or clumsy text to the maintainers without saying who sent it. Where it
+  goes is a secret on the server, never in the app (see [SETUP.md](SETUP.md) §6). To translate or add a language, see
+  [lang/README.md](lang/README.md).
 
 ## Build and test
 ```bash
@@ -60,5 +74,6 @@ npm test                        # database rules + end-to-end tests
 - **[SETUP.md](SETUP.md)**: Supabase, sign-in hardening, roles and permissions, cloud providers, privacy notes
 - **[TESTING.md](TESTING.md)**: what the automated tests prove, what they can't, and the physical-device release checklist
 - **[MOBILE.md](MOBILE.md)**: building and releasing the Android and iOS apps, store checklist
+- **[lang/README.md](lang/README.md)**: translating, checking the catalogues and adding a language
 
 *Not medical advice.*

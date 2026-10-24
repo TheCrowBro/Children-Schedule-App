@@ -59,9 +59,8 @@ const source = () => JSON.parse(fs.readFileSync(path.join(langDir, 'en.json'), '
 /** Plural categories a language uses (Intl), e.g. ['few', 'many', 'one', 'other'] for Polish. */
 const categories = code => new Intl.PluralRules(code).resolvedOptions().pluralCategories;
 
-/** Problems with one language's translations: [{ id, problem }], and how many strings are translated. */
-function check(code) {
-  const file = path.join(langDir, code + '.json');
+/** Problems with one language's translations: [{ id, problem }], and how many strings are translated. `file` is lang/<code>.json unless given. */
+function check(code, file = path.join(langDir, code + '.json')) {
   if (!fs.existsSync(file)) return { done: 0, total: source().length, issues: [{ id: '-', problem: 'no catalogue yet' }] };
   let t; try { t = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return { done: 0, total: source().length, issues: [{ id: '-', problem: 'not valid JSON: ' + e.message }] }; }
   const src = source(), ids = new Set(src.map(s => s.id)), issues = [], cats = categories(code);

@@ -73,4 +73,9 @@ sort out signing.
 * Invite links only open the installed app (custom scheme); people scan the QR code *inside* the app, or type the code. Universal Links /
   App Links would need a domain you control.
 * The local copy of the log is not encrypted with a Keystore key (it relies on the OS sandbox and the app lock).
+* **Languages:** the app's text follows the phone's language, in 32 languages (see [lang/README.md](lang/README.md)).
+  * An iPhone only hands an app the phone's language if the app says it has that language. `Info.plist` therefore lists them all in
+    `CFBundleLocalizations`. Keep that list in step with `LANGS` in `i18n.js`; the languages test checks it.
+  * The two permission texts that iOS shows itself, the camera and Face ID texts in `Info.plist`, are still English only. Translating
+    them needs `InfoPlist.strings` files added to the project in Xcode.
 * **Windows / Mac** (next phase): the same `www/` can be wrapped with Tauri or Electron (OS keychain for secrets, app-only like the phones).

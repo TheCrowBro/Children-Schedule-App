@@ -50,11 +50,15 @@ const unmarked = (page, data) => page.evaluate(data => {
       const { strings, problems } = Cat.extract();
       assert.deepEqual(problems, []);
       const file = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'lang', 'en.json'), 'utf8')).strings;
-      const key = s => s.map(x => x.id + '|' + (x.en || x.one + '|' + x.other)).sort().join('\n');
+      const key = s => s.map(x => x.id + '|' + (x.en || x.one + '|' + x.other) + '|' + (x.note || '')).sort().join('\n');
       assert.equal(key(file), key(strings), 'lang/en.json is out of date: run `node scripts/i18n.js extract`');
       assert(strings.length > 1000, strings.length);
       const P = await H.device(); const langs = await P.evaluate(() => I18n.LANGS.map(l => [l.id, l.name, l.rtl]));
       assert.equal(langs.length, 32); assert.deepEqual(langs.filter(l => l[2]).map(l => l[0]), ['ar', 'he', 'fa', 'ur']);
+      // an iPhone only tells the app (and its web view) the phone's language when the app says it has that language
+      const plist = fs.readFileSync(path.join(__dirname, '..', 'ios', 'App', 'App', 'Info.plist'), 'utf8');
+      const ios = [...((plist.split('<key>CFBundleLocalizations</key>')[1] || '').split('</array>')[0]).matchAll(/<string>([^<]+)<\/string>/g)].map(m => m[1]);
+      assert.deepEqual(ios, langs.map(l => l[0]), 'Info.plist CFBundleLocalizations lists every language');
       await P.context().close();
     });
 
@@ -158,6 +162,14 @@ const unmarked = (page, data) => page.evaluate(data => {
       assert.equal(leak.length - before, 2, 'both the English value and the plain English are found: ' + leak.join(' | '));
     });
 
+    await step('the spreadsheet export (CSV) has its column names and the kinds of entry in the language too', async () => {
+      const csv = await P.evaluate(() => new Promise(done => { const was = window.download; window.download = (name, text) => { window.download = was; done(text); }; tab = 'more'; render(); document.querySelector('#expCsv').click(); }));
+      const cells = line => (line.match(/"((?:[^"]|"")*)"/g) || []).map(c => c.slice(1, -1));
+      const [head, ...rows] = csv.split('\n').map(cells);
+      assert.equal(head.length, 8); assert(head.every(h => /^⟦.+⟧$/.test(h)), 'column names: ' + head);
+      assert(rows.length > 3 && rows.every(r => r[3].startsWith('⟦')), 'kinds of entry: ' + rows.map(r => r[3]).join(' | '));
+    });
+
     // ---------- real languages ----------
     await P.evaluate(async () => { await I18n.set(''); tab = 'day'; db.events = db.events.filter(e => e.type !== 'trip' && e.type !== 'leg'); save(); render(); });
     await step('choosing a language in More changes the whole app at once, is kept on this phone after a restart, and "Automatic" follows the phone', async () => {
@@ -188,6 +200,12 @@ const unmarked = (page, data) => page.evaluate(data => {
       assert.equal(x, false, '(Chinese) the Day tab is on the left');
       const r = await P.evaluate(async () => { await I18n.set('ar'); render(); const t = [...document.querySelectorAll('#tabs button')].map(b => b.getBoundingClientRect().left); return t[0] > t[5]; });
       assert.equal(r, true, 'in Arabic the Day tab is on the right');
+      // the rest of the layout mirrors too: "previous day" on the right with its arrow turned, the colour bar of a group on the right
+      const side = () => P.evaluate(() => { const [prev, next] = document.querySelectorAll('.datenav>button'), g = getComputedStyle(document.querySelector('details.grp>summary'));
+        return { prevRight: prev.getBoundingClientRect().left > next.getBoundingClientRect().left, turned: getComputedStyle(prev).transform !== 'none', bar: [g.borderLeftWidth, g.borderRightWidth] }; });
+      assert.deepEqual(await side(), { prevRight: true, turned: true, bar: ['0px', '6px'] }, 'Arabic');
+      await P.evaluate(async () => { await I18n.set('zh-Hans'); render(); });
+      assert.deepEqual(await side(), { prevRight: false, turned: false, bar: ['6px', '0px'] }, 'Chinese');
     });
 
     await step('counts use each language\'s plural forms, dates and times its own formats (with Western digits), and the week starts where the phone is', async () => {
@@ -231,7 +249,8 @@ const unmarked = (page, data) => page.evaluate(data => {
       for (const f of files) assert(!fs.readFileSync(f, 'utf8').includes(to), 'the address is not in ' + path.relative(www, f));
       // and no real address anywhere in what is published: only placeholders and the tests' made-up ones
       const OK = /@(example\.(com|test)|little-log\.example|your-domain|x\.com|resend\.dev)\b/;
-      for (const f of ['app.js', 'account.js', 'i18n.js', 'README.md', 'TESTING.md', 'supabase/functions/language-report/handler.mjs', 'supabase/functions/language-report/index.ts', 'supabase/schema.sql', 'lang/en.json']) {
+      const langs = fs.readdirSync(path.join(__dirname, '..', 'lang')).map(f => 'lang/' + f);
+      for (const f of ['app.js', 'account.js', 'i18n.js', 'README.md', 'TESTING.md', 'supabase/functions/language-report/handler.mjs', 'supabase/functions/language-report/index.ts', 'supabase/schema.sql', ...langs]) {
         const t = fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), emails = (t.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g) || []).filter(e => !OK.test(e));
         assert.deepEqual(emails, [], 'addresses in ' + f);
       }

@@ -504,7 +504,8 @@
   {
    "id": "5mau71",
    "en": "Note",
-   "where": "app.js:116"
+   "where": "app.js:116",
+   "note": "A health note with no symptoms ticked; also a column of the spreadsheet (CSV) export (the note written with an entry)."
   },
   {
    "id": "ydhb1b",
@@ -665,7 +666,8 @@
   {
    "id": "43f6md",
    "en": "Details",
-   "where": "app.js:228"
+   "where": "app.js:228",
+   "note": "Heading of the day's entries below the clock; also a column of the spreadsheet (CSV) export."
   },
   {
    "id": "3c0wvg",
@@ -2548,6 +2550,42 @@
    "note": "Message after a child is removed."
   },
   {
+   "id": "13crbi5",
+   "en": "Child",
+   "where": "app.js:1133",
+   "note": "Column of the spreadsheet (CSV) export: which child the entry is for."
+  },
+  {
+   "id": "ggjuyh",
+   "en": "Date",
+   "where": "app.js:1133",
+   "note": "Column of the spreadsheet (CSV) export."
+  },
+  {
+   "id": "1q4eyv8",
+   "en": "Time",
+   "where": "app.js:1133",
+   "note": "When it happened."
+  },
+  {
+   "id": "1m2zofh",
+   "en": "Type",
+   "where": "app.js:1133",
+   "note": "Kind of feed (breast or bottle) in the feed form; also a column of the spreadsheet (CSV) export: the kind of entry."
+  },
+  {
+   "id": "i4c62b",
+   "en": "Summary",
+   "where": "app.js:1133",
+   "note": "Column of the spreadsheet (CSV) export: the entry in short, such as 'Bottle 90 ml'."
+  },
+  {
+   "id": "1llf32i",
+   "en": "End",
+   "where": "app.js:1133",
+   "note": "Column of the spreadsheet (CSV) export: when the entry ended (the end of a sleep)."
+  },
+  {
    "id": "y2rbpc",
    "en": "That file is not a valid backup",
    "where": "app.js:1142"
@@ -2581,12 +2619,6 @@
    "id": "154aufy",
    "en": "You don't have access to health notes",
    "where": "app.js:1168"
-  },
-  {
-   "id": "1m2zofh",
-   "en": "Type",
-   "where": "app.js:1175",
-   "note": "Kind of feed: breast or bottle."
   },
   {
    "id": "1gwxv0",
@@ -2765,12 +2797,6 @@
    "id": "6lrz0j",
    "en": "Fell asleep at",
    "where": "app.js:1197"
-  },
-  {
-   "id": "1q4eyv8",
-   "en": "Time",
-   "where": "app.js:1197",
-   "note": "When it happened."
   },
   {
    "id": "88cuie",

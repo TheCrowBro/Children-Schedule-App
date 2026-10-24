@@ -9,7 +9,6 @@
   "More": "Bottom tab: settings and everything else. One short word.",
   "Children": "Spoken label (screen readers) of the row of buttons that switches between children.",
   "Show me around this screen": "Spoken label of the ❓ button that starts a short guided tour of the screen.",
-
   "Feeding": "Heading of the group of feeds (breast or bottle) in the day's log.",
   "Diapers": "Heading of the group of diaper (nappy) changes in the day's log, and of a stats card.",
   "Vomit": "Heading of the group of times the baby was sick (vomited); also the label of the button that logs one.",
@@ -32,7 +31,6 @@
   "Add {what}": "Title of the form for a new entry. {what} is one of: feed, diaper, sleep, night wake, vomit, play, health note, meds (translated).",
   "Edit {what}": "Title of the form for changing an entry. {what} is one of: feed, diaper, sleep, night wake, vomit, play, health note, meds (translated).",
   "Entry": "One item in the log (a feed, a diaper change …), used when its kind is unknown.",
-
   "Rash": "A symptom ticked in a health note.",
   "Fever": "A symptom ticked in a health note.",
   "rash": "Diaper rash, added after the diaper contents: 'Pee, rash'.",
@@ -81,7 +79,6 @@
   "{pee} pee, {poo} poo": "Counts of wet and dirty diapers in a day: '5 pee, 2 poo'.",
   "Poo colours": "Stats: how often each poo colour was seen.",
   "Poop colours": "Guide topic: what the colours of a baby's poo mean.",
-
   "{m}m": "Minutes, as in '45m' (durations). Use the usual short form for minutes.",
   "{h}h {m}m": "Hours and minutes, as in '1h 20m' (durations). Use the usual short forms.",
   "{h}h": "Hours, as in '2h' (durations), also chart values like '9.5h'.",
@@ -129,7 +126,6 @@
   "Per day": "Stats: average per day.",
   "none": "Stats: no health notes in the period.",
   "{what} per day, last {n} day": "Spoken label of a chart. {what} lists the series ('feeds and ml'); {n} the number of days.",
-
   "Pediatrician": "The child's own doctor (paediatrician or family doctor).",
   "Doctor": "Field: the doctor's name.",
   "Practice": "Field: the name of the doctor's practice (clinic, surgery).",
@@ -159,7 +155,6 @@
   "Arnica": "A homeopathic remedy.",
   "Acetaminophen (paracetamol)": "The pain and fever medicine (acetaminophen in the US, paracetamol elsewhere). Use the name people know locally; keeping both names is fine.",
   "Ibuprofen": "The pain and fever medicine.",
-
   "Change trip": "Button: change the dates or the travel mode of a trip.",
   "We're home": "Button: the trip is over, the family is back home.",
   "Travelling?": "Bold start of the button that starts travel mode.",
@@ -189,7 +184,6 @@
   "Road trip": "Name of a clock picture used when travelling by car.",
   "By train": "Name of a clock picture used when travelling by train.",
   "Gilt classic": "Name of a clock picture: a classic gold-framed clock.",
-
   "Other days": "Tour step title: the arrows that go to earlier days.",
   "Every detail": "Tour step title: the groups of entries below the clock.",
   "Everything else": "Tour step title: the tabs at the bottom.",
@@ -207,7 +201,6 @@
   "Fell asleep": "Title of the quick form that logs the start of a sleep.",
   "Woke up": "Button: the baby woke up (ends the sleep).",
   "tap to set wake time": "Under a sleep that has not ended: tap it to say when the baby woke.",
-
   "Signing in": "A screen name in the language report form: the sign-in screens.",
   "Somewhere else": "A screen name in the language report form: another place in the app.",
   "Automatic: {region}": "Setting that follows the phone: {region} is the country or region found (translated by the phone).",
@@ -218,7 +211,7 @@
   "Sunrise & sunset": "Appearance: light by day, dark at night, by the sun where you are.",
   "Backup (JSON)": "Button: save a backup file (JSON is a file type; keep it).",
   "Export CSV": "Button: save the log as a spreadsheet file (CSV is a file type; keep it).",
-  "Type": "Kind of feed: breast or bottle.",
+  "Type": "Kind of feed (breast or bottle) in the feed form; also a column of the spreadsheet (CSV) export: the kind of entry.",
   "Minutes": "How long the breastfeed lasted, in minutes.",
   "Amount": "How much the baby vomited.",
   "Amount (ml)": "How much milk was in the bottle, in millilitres.",
@@ -249,7 +242,6 @@
   "Colour": "The child's colour in the app (to tell children apart).",
   "Baby": "A child without a name (used as a name).",
   "someone else": "Used as a name: 'You can't change entries added by someone else'.",
-
   "Add entries": "A permission: may add entries to the log.",
   "Parent": "A role in the family log: full control.",
   "Family member": "A role in the family log.",
@@ -335,6 +327,12 @@
   "{what} failed ({status})": "Error: {what} is what failed (for example 'Dropbox upload'), {status} an error number.",
   "Network timeout": "Error: the internet connection took too long.",
   "Turned off": "Message: a setting was turned off.",
-  "Thanks": "Message: thanks for checking."
+  "Thanks": "Message: thanks for checking.",
+  "Child": "Column of the spreadsheet (CSV) export: which child the entry is for.",
+  "Date": "Column of the spreadsheet (CSV) export.",
+  "Summary": "Column of the spreadsheet (CSV) export: the entry in short, such as 'Bottle 90 ml'.",
+  "Details": "Heading of the day's entries below the clock; also a column of the spreadsheet (CSV) export.",
+  "End": "Column of the spreadsheet (CSV) export: when the entry ended (the end of a sleep).",
+  "Note": "A health note with no symptoms ticked; also a column of the spreadsheet (CSV) export (the note written with an entry)."
  }
 }
