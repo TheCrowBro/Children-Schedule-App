@@ -2,7 +2,7 @@
 // and sound, choosing a language changes the whole app (right to left for Arabic, Hebrew, Persian and Urdu), and language problems
 // can be reported without the app ever knowing where the reports go.   node tests/languages.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global Report, fmtDate, milestoneCheck, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg */
+/* global Report, fmtDate, milestoneCheck, openEntryInfo, openAllergy, openDoctorReport, doctorPdf, solidsCheck, Foods, dkey, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg */
 const { setup } = require('./lib/harness');
 const Cat = require('../scripts/i18n.js');
 
@@ -79,7 +79,8 @@ const unmarked = (page, data) => page.evaluate(data => {
       ...Guide.MEDS.flatMap(c => c.items.flatMap(i => (i.brands || '').split(' · '))), ...Object.values(Guide.PICS).flat().map(p => p.by), 'CC BY-SA 3.0', 'CC BY-SA 4.0', 'CC0 1.0',
       'Dropbox', 'OneDrive', 'Google Drive', 'Google', 'Apple', 'iPhone', 'Android', 'Face ID', 'Google Authenticator', 'Microsoft Authenticator', 'Authy', '1Password',
       ...I18n.LANGS.map(l => l.name), Theme.todaySun().zone || '',
-      ...db.events.flatMap(e => [e.note, e.data && e.data.name, e.data && e.data.dose, e.data && e.data.formula])]);   // (what people type in is shown as typed)
+      ...db.events.flatMap(e => [e.note, e.data && e.data.name, e.data && e.data.dose, e.data && e.data.formula, ...((e.data && e.data.foods) || []).filter(f => !Foods.known(f))]),
+      ...kids().flatMap(k => (k.allergies || []).flatMap(a => [a.note, Foods.known(a.food) ? '' : a.food])), window.qNotes || '']);   // (what people type in is shown as typed)
     const found = [];
     const look = async (what, page = P, extra = []) => { for (const [t, where] of await unmarked(page, [...(await data()), ...extra])) found.push(`${what}: ${t}\n      at ${where}`); };
     const openAll = (page = P) => page.evaluate(() => document.querySelectorAll('#view details, #sheet details').forEach(d => { d.open = true; }));
@@ -96,6 +97,9 @@ const unmarked = (page, data) => page.evaluate(data => {
         add('vomit', t + 5 * h, { amount: 'Medium', projectile: true }); add('play', t + 6 * h, { activity: 'Tummy time', min: 15 });
         add('health', t + 7 * h, { symptoms: ['Fever', 'Rash'], temp: 38.2 }); add('med', t + 8 * h, { name: 'Vitamin D', dose: '1 ml' });
         add('sleep', t + 9 * h, {}, { end: t + 10 * h }); add('sleep', Date.now() - 20 * 60e3, {}); add('feed', t + 11 * h, { kind: 'bottle', ml: 60, milk: 'Breast milk', approx: true });
+        add('feed', t + 12 * h, { kind: 'solids', foods: ['Peanut', 'Banana', 'Kiwi'], amount: 'A taste' });
+        for (let i = 1; i <= 7; i++) { add('feed', addDays(t, -i) + 8 * h, { kind: 'bottle', ml: 120 }); add('feed', addDays(t, -i) + 12 * h, { kind: 'solids', foods: ['Banana', 'Kiwi'] }); add('sleep', addDays(t, -i) + 13 * h, {}, { end: addDays(t, -i) + 14.5 * h }); add('play', addDays(t, -i) + 18.5 * h, { activity: 'Bath', min: 15 }); add('med', addDays(t, -i) + 9 * h, { name: 'Vitamin D', dose: '1 ml' }); }   // (a week with a routine)
+        kids()[0].allergies = [{ food: 'Peanut', date: dkey(t), note: 'hives around the mouth' }, { food: 'Kiwi', date: dkey(addDays(t, -2)), note: '' }];
         kids().push(Kids.make(kids())); kids()[1].name = 'Mia'; save(); tab = 'day'; viewDay = t; render();
       });
       await openAll(); await look('day');
@@ -103,7 +107,10 @@ const unmarked = (page, data) => page.evaluate(data => {
       await P.evaluate(() => { quad = null; db.meta.clock = '12'; render(); }); await look('day, 12-hour clock');
       await P.evaluate(() => { db.meta.clock = '24'; setKid('all'); render(); }); await look('day, everyone');
       await P.evaluate(() => { setKid(kids()[0].id); viewDay = addDays(viewDay, -1); render(); }); await look('day, an empty day');
+      await P.evaluate(() => { tab = 'routine'; render(); }); await look('routine');
+      await P.evaluate(() => { setKid(kids()[1].id); render(); }); await look('routine, too soon to tell'); await P.evaluate(() => { setKid(kids()[0].id); render(); });
       await P.evaluate(() => { viewDay = startOfDay(Date.now()); tab = 'month'; render(); }); await openAll(); await look('month');
+      await P.evaluate(() => { viewDay = addDays(startOfDay(Date.now()), -2); render(); }); await look('month, the first day of an allergy');
       await P.evaluate(() => { tab = 'stats'; statDays = 30; render(); }); await openAll(); await look('stats');
       await P.evaluate(() => { tab = 'guide'; render(); }); await openAll(); await look('guide');
       await P.evaluate(() => { tab = 'family'; render(); }); await syncNow(P); await P.evaluate(() => render()); await openAll(); await look('family');
@@ -117,13 +124,23 @@ const unmarked = (page, data) => page.evaluate(data => {
       await sheet(() => openDoctor(false), 'pediatrician'); await sheet(() => openDoctor(true), 'pediatrician form');
       await sheet(() => openArtPicker(kids()[0].id), 'clock art'); await sheet(() => openTrip(null), 'trip');
       await sheet(() => openLanguageReport(), 'language report'); await sheet(() => openMoreTypes(), 'more to log');
+      await sheet(() => openSheet('feed', null, { kind: 'solids' }), 'new feed, solids');
+      await sheet(() => openSheet(null, db.events.find(e => e.data && e.data.kind === 'solids')), 'edit feed, solids');
+      await sheet(() => openEntryInfo(db.events.find(e => e.data && e.data.kind === 'solids').id), 'an entry tapped on the clock');
+      await sheet(() => openAllergy(kids()[0].id, { foods: ['Peanut', 'Kiwi'], date: dkey(Date.now()) }), 'mark an allergy');
+      await sheet(() => openDoctorReport(), 'report for the doctor');
+      await sheet(() => { const k = kids()[1], d = new Date(); d.setMonth(d.getMonth() - 6); d.setDate(d.getDate() - 2); k.birth = dkey(d.getTime()); delete db.meta.solids; Tour.mark('day'); solidsCheck(); }, 'time for solid foods');
+      // the PDF for the doctor: every line written on its pages
+      const pdfText = await P.evaluate(async () => { window.qNotes = 'Is her sleep normal?'; const r = await doctorPdf(kids()[0].id, { days: 14, every: true, notes: window.qNotes }); return r.text.flat(); });
+      await P.evaluate(lines => { const d = document.createElement('div'); d.id = 'pdfText'; d.innerHTML = lines.map(l => `<p>${esc(l)}</p>`).join(''); $('#view').prepend(d); }, pdfText);
+      await look('the PDF for the doctor'); await P.evaluate(() => $('#pdfText').remove());
       await sheet(() => { const k = kids()[0]; k.birth = new Date(Date.now() - 64 * 864e5).toLocaleDateString('en-CA'); db.meta.ms = {}; Tour.mark('day'); milestoneCheck(); }, 'milestone');
       // travel mode: the page, the quick sheets, the journey
       await P.evaluate(() => { tab = 'day'; db.events.push({ id: 'qtrip', type: 'trip', ts: startOfDay(Date.now()), end: addDays(startOfDay(Date.now()), 3), data: { means: 'car' }, note: '', updated: stamp(), by: Auth.id }); render(); });
       await P.evaluate(() => toggleLeg()); await P.evaluate(() => { Travel.moving(db.events).ts = Date.now() - 125 * 60e3; render(); }); await openAll(); await look('travel page');
       for (const t of ['feed', 'diaper', 'sleep', 'vomit']) await sheet(x => openQuick(x), 'quick ' + t, t);
       // every screen's tour, step by step
-      for (const t of ['day', 'month', 'stats', 'guide', 'family', 'more']) {
+      for (const t of ['day', 'routine', 'month', 'stats', 'guide', 'family', 'more']) {
         await P.evaluate(x => { tab = x; render(); startTour(); }, t);
         for (let i = 0; i < 15 && (await P.$('.tour-tip')); i++) { await look('tour of ' + t); await P.click('.tt-next'); }
       }
@@ -206,6 +223,21 @@ const unmarked = (page, data) => page.evaluate(data => {
       assert.deepEqual(await side(), { prevRight: true, turned: true, bar: ['0px', '6px'] }, 'Arabic');
       await P.evaluate(async () => { await I18n.set('zh-Hans'); render(); });
       assert.deepEqual(await side(), { prevRight: false, turned: false, bar: ['6px', '0px'] }, 'Chinese');
+    });
+
+    await step('on a narrow phone (320 px) every tab name fits its tab in every language: a long one is drawn a little smaller, never cut off', async () => {
+      const was = await P.evaluate(() => { tab = 'day'; return I18n.lang(); });
+      await P.setViewportSize({ width: 320, height: 700 });
+      const cut = [], smaller = [];
+      for (const code of await P.evaluate(() => I18n.LANGS.map(l => l.id))) {
+        const r = await P.evaluate(async c => { await I18n.set(c); render(); return [...document.querySelectorAll('#tabs .tl')].map(e => [e.textContent, e.scrollWidth <= e.clientWidth, parseFloat(getComputedStyle(e).fontSize)]); }, code);
+        for (const [t, fits, px] of r) { if (!fits || px < 8.5) cut.push(`${code} ${t} ${px}px`); else if (px < 11) smaller.push(code); }
+      }
+      assert.deepEqual(cut, []);
+      assert(smaller.length > 0, 'some names had to be made smaller at this width');
+      await P.setViewportSize({ width: 390, height: 800 });
+      const back = await P.evaluate(async c => { await I18n.set(c); render(); return [...document.querySelectorAll('#tabs .tl')].map(e => getComputedStyle(e).fontSize); }, was);
+      assert.deepEqual([...new Set(back)], ['11px'], 'back to full size on a wider screen');
     });
 
     await step('counts use each language\'s plural forms, dates and times its own formats (with Western digits), and the week starts where the phone is', async () => {

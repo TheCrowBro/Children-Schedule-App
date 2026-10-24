@@ -53,6 +53,7 @@ const pickFormula = async (page, scope, name) => {
       const row = `.ev[data-edit="fvomit${at(19)}"]`;
       assert(await P.isVisible(row), 'its group is opened'); assert(await P.$eval(row, x => x.classList.contains('flash')), 'and the row lit up');
       await P.click(row); await P.waitForSelector('#save'); assert(/Edit vomit/.test(await P.textContent('#sheet h3'))); await P.click('#cancel');
+      assert.equal(await P.$eval('.clock .hands', g => getComputedStyle(g).pointerEvents), 'none', 'the hands never take a tap meant for an entry at the time now');
       await P.focus(`.ray[data-info="ffeed${at(1)}"]`); await P.keyboard.press('Enter'); await P.waitForSelector('#infoList');
       assert(/Feed/.test(await P.textContent('#sheet h3'))); assert.equal(await P.$$eval('#sheet #save', x => x.length), 0); await P.click('#sheet [data-close]');
     });
@@ -114,9 +115,9 @@ const pickFormula = async (page, scope, name) => {
       const h24 = await P.evaluate(() => writes24()), plain = await nums();
       assert.deepEqual(plain.map(x => x[0]), h24 ? ['2', '4', '6', '8', '10', '14', '16', '18', '20', '22'] : ['2', '4', '6', '8', '10', '2', '4', '6', '8', '10']);
       assert(plain.every(x => !x[1] && x[2]), 'upright, in the plain style');
-      await P.evaluate(() => { I18n.locale = () => 'en-GB'; render(); });   // where times are written 13:00, the afternoon has its own numbers
+      await P.evaluate(() => { window.realLocale = I18n.locale; I18n.locale = () => 'en-GB'; render(); });   // where times are written 13:00, the afternoon has its own numbers
       assert.deepEqual((await nums()).map(x => x[0]), ['2', '4', '6', '8', '10', '14', '16', '18', '20', '22']);
-      await P.evaluate(async () => { delete I18n.locale; await I18n.set(''); render(); });
+      await P.evaluate(() => { I18n.locale = window.realLocale; render(); });
       await P.click('[data-face="12"]'); assert.deepEqual((await nums()).map(x => x[0]), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'], 'the 12-hour face too');
       await P.click('[data-face="24"]');
       assert.equal(await P.evaluate(async () => { await Store.whenSaved(); return (await Store.peek()).meta.nums; }), 'plain', 'kept on the phone');

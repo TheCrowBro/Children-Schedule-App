@@ -9,10 +9,32 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 - **Watercolour look**: soft washes in the open child's colour and hand-painted style icons, with dark outlines and text kept at readable contrast (light and dark mode)
 - **Day clock**: a French carriage clock (a frame of thin soft-gold lines, a painted panel, a white face
   with a black rim, Roman numerals, a moon at midnight and a sun at noon, a blued spade hand at the current time). A **24 h / 12 h** switch: the 12-hour face shows the morning or the afternoon half (AM / PM) with all
-  twelve numerals and an hour and a minute hand. Every entry is a ray from the centre to the hour it happened, coloured by group, with a tappable dot; tap a quarter of
+  twelve numerals and an hour and a minute hand. A **XII / 123** switch beside it swaps the Roman numerals for plain, easy-to-read
+  numbers (kept on the phone). Every entry is a ray from the centre to the hour it happened, coloured by group, with a dot: tapping a dot
+  shows that entry's details (editing stays in the list below, where "Show in the list" takes you); tap a quarter of
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); **stats** with a chart for every section
+- **Routine** tab: the times of day that keep coming back, laid out like a day in a calendar (night, morning, afternoon, evening) with a
+  line at the time now. A feed, a meal of solid food, a nap, a kind of play or a medicine that happened within 45 minutes of the same time
+  on most of the last 7 days (and on at least 3) is part of the routine, with what it usually is (how long, how much, which medicine and
+  dose). Nothing is set by hand and nothing is stored: it's worked out from the log every time, so it moves when the baby's day does.
+  Today's times are ticked off as they're logged, and the next one is shown on top. Diapers, night wakings, vomiting and health notes are
+  left out: they don't keep to a clock
+- **Report for the doctor** (Stats → PDF): a clean PDF to hand over or email: the child's age, allergies, pediatrician and usual
+  formula, the parents' questions for the doctor, then the last 7, 14, 30 or 90 days at a glance (feeds, diapers, sleep, night wakings,
+  vomiting, the highest temperature, symptoms, medicines, foods tried), day by day, health notes and medicines, and optionally every
+  entry. It's made on the phone (nothing is uploaded), in the app's language (right to left for Arabic, Hebrew, Persian and Urdu), on A4
+  or US Letter by where you are
+- **Solid foods**: in the month a child turns 6 months old, a sheet says it's time, with the signs a baby is ready, how to start, the key
+  allergens to give early and often, what not to give yet, and when to call for help (it shows once, and not if solids are already in
+  the log; the Guide keeps it under Food). Feed → **Solids** has a twirl-down of common first foods by group (key allergens first and
+  open, then grains, vegetables, fruit, and meat, fish and beans), each food that is or contains a common allergen marked "key
+  allergen", or type in any other food, plus how much was eaten. Meals have a routine time of their own
+- **Allergies**: a parent marks a food the child reacted to, with the date of the first reaction and what happened (More → Children, or
+  "Mark an allergy" on a meal tapped on the clock, which fills in its foods and date). It's kept in the child's profile, end-to-end
+  encrypted, and seen by everyone sharing the log: the first date is marked on the calendar like a trip, the Day tab shows the child's
+  allergies at the top, the foods list flags them, logging one warns straight away, and the doctor's report lists them
 - **Guide tab**: common newborn worries (blue hands, belly bulge, clicking hips, jaundice, cord, spit-up, poop colours, fever…) with when to call,
   **over-the-counter medicines** (a drop-down by kind: what's considered safe from what age, with US and UK ages where they differ; the
   homeopathic and herbal remedies parents mention, with what the evidence says; what never to give; no doses, which go by weight and come
@@ -51,6 +73,8 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
   protects against losing every phone; keys change automatically when someone leaves or loses a phone
 - **Encrypted cloud backup** to Google Drive, Dropbox, OneDrive, or iCloud Drive / Files
 - Works offline; changes sync when you're back online
+- **Update app** (More): opens Little Log's page in the App Store or Google Play, where an update is one tap, and shows the version
+  that's installed
 - **32 languages**: the app follows the phone's language, or one chosen in More → Language:
   - English, Spanish, Portuguese, French, German, Italian, Dutch, Polish, Romanian, Russian, Ukrainian and Turkish;
   - Arabic, Hebrew, Persian and Urdu, laid out right to left;

@@ -107,9 +107,11 @@ const Sync = (() => {
     st.needsAccess = false;
     if (db.meta.babyDirty) {
       db.meta.babyDirty = false;
-      try { await Auth.rpc('update_baby', { p_baby: b, p_profile: await E2EE.encryptProfile(b, db.baby), p_epoch: E2EE.epoch(b) }); baby[0] = { ...baby[0], profile: null }; } catch (e) { st.denied++; }
+      try { await Auth.rpc('update_baby', { p_baby: b, p_profile: await E2EE.encryptProfile(b, db.baby), p_epoch: E2EE.epoch(b) }); baby[0] = { ...baby[0], profile: null }; }
+      catch (e) { if (!e.status || e.status === 401 || e.status === 429 || e.status >= 500) { db.meta.babyDirty = true; throw e; } st.denied++; }   // offline, signed out or a server fault: kept for the next sync; refused: the server's copy stands
     }
-    if (baby[0].profile) { const p = await E2EE.decryptProfile(b, baby[0].profile, baby[0].epoch); if (p) db.baby = p; }
+    // the server's profile, unless this phone changed its own since this sync began (that change goes up next time, not lost under the older copy)
+    if (baby[0].profile && !db.meta.babyDirty) { const p = await E2EE.decryptProfile(b, baby[0].profile, baby[0].epoch); if (p && !db.meta.babyDirty) db.baby = p; }
     if (db.meta.role !== 'parent' && !db.meta.perms.view_health) db.events = db.events.filter(e => !isSens(e.type));   // access to health notes was taken away
     return true;
   }

@@ -12,7 +12,7 @@ const Acct = (() => {
   const PERM_KEYS = [
     ['add_entries', N_('Add entries')], ['edit_own', N_('Edit their own entries')], ['delete_own', N_('Delete their own entries')],
     ['edit_others', N_('Edit entries other people added')], ['delete_others', N_('Delete entries other people added')],
-    ['view_health', N_('See health notes and medications')], ['view_people', N_('See who else has access')], ['edit_profile', N_("Change the children's names, birthdays and colours")]];
+    ['view_health', N_('See health notes and medications')], ['view_people', N_('See who else has access')], ['edit_profile', N_("Change the children's names, birthdays, colours and allergies")]];
   const ROLES = [
     ['parent', N_('Parent'), N_('Full control, including who has access and all settings')],
     ['family', N_('Family member'), N_('Can add entries and change their own; cannot change settings or other people\'s entries')],

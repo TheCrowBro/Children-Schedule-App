@@ -2,7 +2,7 @@
 /* Stand-ins for the parts of the app that need a phone (sign-in, encryption, sync, Keychain), so the real screens run in a plain page.
    Everything lives in memory: a reload starts again from the sample family. Used only by scripts/build-demo.js. */
 const Store = { st: { ok: true, err: '', quarantined: false, recovered: false, onChange: null }, init: async () => {}, load: async () => demoDb(), save() {}, whenSaved: async () => {}, peek: async () => null, backup() {}, quarantine: () => [], usingIndexedDB: false };
-const Native = { is: false, onBack() {}, onUrl() {}, launchUrl() {}, saveFile: () => Promise.reject(new Error('cancelled')) };
+const Native = { is: false, onBack() {}, onUrl() {}, launchUrl() {}, saveFile: () => Promise.reject(new Error('cancelled')), storeUrl: () => null, openExternal() {}, version: async () => '' };
 const Auth = { id: 'demo', signedIn: false, configured: false, init: async () => {} };
 const Sync = { setMyDetails: async () => {}, can: () => true, linked: () => false, isParent: () => true, nameOf: () => '', schedule() {}, pushBaby() {}, onChange: null, onSessionLost: null };
 const Cloud = { init: async () => {}, autoBackup() {}, handleOAuthUrl() {} };

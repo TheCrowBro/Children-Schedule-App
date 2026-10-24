@@ -13,10 +13,12 @@ const Routine = (() => {
   const median = xs => { const s = [...xs].sort((a, b) => a - b), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
   const most = xs => { const c = new Map(); let best = '', bn = 0; for (const x of xs) { const n = (c.get(x) || 0) + 1; c.set(x, n); if (n > bn) { bn = n; best = x; } } return best; };
 
-  /** Which routine an entry belongs to: all feeds together, all sleeps together, and each kind of play and each medicine on its own. */
+  /** Which routine an entry belongs to: all milk feeds together, all meals of solid food together, all sleeps together, and each kind of
+      play and each medicine on its own. */
   function keyOf(e) {
     const d = e.data || {};
-    if (e.type === 'feed' || e.type === 'sleep') return e.type;
+    if (e.type === 'feed') return d.kind === 'solids' ? 'solids' : 'feed';   // (meals of solid food keep their own times)
+    if (e.type === 'sleep') return 'sleep';
     if (e.type === 'play') return 'play:' + (d.activity || 'Play');
     if (e.type === 'med') { const n = String(d.name || '').trim().toLowerCase().replace(/\s+/g, ' '); return n ? 'med:' + n : null; }
     return null;
@@ -44,7 +46,8 @@ const Routine = (() => {
     if (type === 'sleep') { const long = es.filter(e => e.end > e.ts).map(e => (e.end - e.ts) / MIN); if (long.length) slot.minutes = Math.round(median(long)); }
     if (type === 'play') { slot.activity = key.slice(5); const m = es.map(e => +d(e).min).filter(x => x > 0); if (m.length) slot.minutes = Math.round(median(m)); }
     if (type === 'med') { slot.name = most(es.map(e => String(d(e).name || '').trim())); slot.dose = most(es.map(e => String(d(e).dose || '').trim()).filter(Boolean)); }
-    if (type === 'feed') {
+    if (key === 'solids') { const c = new Map(); for (const f of es.flatMap(e => d(e).foods || [])) c.set(f, (c.get(f) || 0) + 1); slot.kind = 'solids'; slot.foods = [...c].sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]); }
+    else if (type === 'feed') {
       const bottles = es.filter(e => d(e).kind === 'bottle');
       slot.kind = bottles.length * 2 > es.length ? 'bottle' : 'breast';   // what it usually is
       const ml = bottles.map(e => +d(e).ml).filter(x => x > 0), m = es.filter(e => d(e).kind !== 'bottle').map(e => +d(e).min).filter(x => x > 0);
