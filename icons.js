@@ -30,12 +30,15 @@ const Icons = (() => {
     check:   ['<circle cx="16" cy="16" r="11.500"/>', '<circle cx="16" cy="16" r="11.500"/><path d="M10.500 16.500l4 4 7-8"/>'],
     clock:   ['<circle cx="16" cy="16" r="11.500"/>', '<circle cx="16" cy="16" r="11.500"/><path d="M16 9v7.500l4.500 3"/>'],
     offline: ['<circle cx="16" cy="16" r="11.500"/>', '<circle cx="16" cy="16" r="11.500"/><path d="M8 8l16 16M11 13.500a8 8 0 0 1 3-1.700M20 13.500a8 8 0 0 0-1.800-1.500M13 18a4.500 4.500 0 0 1 2-1.200M16 22h.01"/>'],
+    phone:   ['<path d="M9 5h4l2 6-3 2a14 14 0 0 0 7 7l2-3 6 2v4a3 3 0 0 1-3 3A20 20 0 0 1 6 8a3 3 0 0 1 3-3z"/>', '<path d="M9 5h4l2 6-3 2a14 14 0 0 0 7 7l2-3 6 2v4a3 3 0 0 1-3 3A20 20 0 0 1 6 8a3 3 0 0 1 3-3z"/>'],
+    guide:   ['<path d="M4 8c4-2 8-2 12 1 4-3 8-3 12-1v17c-4-2-8-2-12 1-4-3-8-3-12-1z"/>', '<path d="M4 8c4-2 8-2 12 1 4-3 8-3 12-1v17c-4-2-8-2-12 1-4-3-8-3-12-1zM16 9v17M8 13c1.700-.5 3.300-.5 5 .3M8 17.500c1.700-.5 3.300-.5 5 .3M19 13.300c1.700-.8 3.300-.8 5-.3"/>'],
+    star:    ['<path d="M16 4.500l3.400 7 7.600 1.100-5.500 5.300 1.300 7.600L16 21.900l-6.800 3.600 1.300-7.600L5 12.600l7.600-1.100z"/>', '<path d="M16 4.500l3.400 7 7.600 1.100-5.500 5.300 1.300 7.600L16 21.900l-6.800 3.600 1.300-7.600L5 12.600l7.600-1.100z"/>'],
     cloud:   ['<path d="M9 25a5.500 5.500 0 0 1-.5-11A7.500 7.500 0 0 1 23 12.500 6.300 6.300 0 0 1 23 25z"/>', '<path d="M9 25a5.500 5.500 0 0 1-.5-11A7.500 7.500 0 0 1 23 12.500 6.300 6.300 0 0 1 23 25z"/>'],
   };
   // emoji (without the optional variation selector) → icon name
   const MAP = { '🍼': 'feed', '💧': 'diaper', '😴': 'sleep', '🌙': 'wake', '🤮': 'vomit', '🧸': 'play', '🩺': 'health', '💊': 'med', '💩': 'poo',
     '📅': 'day', '🗓': 'month', '📊': 'stats', '👨‍👩‍👧': 'family', '⚙': 'more', '🔒': 'lock', '🔐': 'lock', '🔑': 'key', '📷': 'camera', '🔗': 'link',
-    '👶': 'baby', '📨': 'mail', '⚠': 'warn', '✅': 'check', '⏳': 'clock', '📴': 'offline', '☁': 'cloud' };
+    '👶': 'baby', '📨': 'mail', '⚠': 'warn', '✅': 'check', '⏳': 'clock', '📴': 'offline', '☁': 'cloud', '📞': 'phone', '📖': 'guide', '🌟': 'star' };
   const RE = new RegExp(Object.keys(MAP).sort((a, b) => b.length - a.length).join('|') + '(?:\\uFE0F)?', 'gu');
   const bare = s => s.replace(/️/g, '');
   /** The icon as an SVG string. `size` is in px (default: 1.15em, so it sits in text). */

@@ -1,5 +1,5 @@
 'use strict';
-/* The children in a log (twins, triplets…). Every child has a name, birth date, boy/girl and a colour; the colour themes that child's
+/* The children in a log. Every child has a name, birth date, boy/girl, a colour and (optionally) the formula they drink; the colour themes that child's
    pages. Boys get blues and girls get reds; the shades are all dark enough for white text (contrast 4.5:1 or better) and far enough
    apart to tell at a glance. A log's children are kept inside its encrypted profile. */
 const Kids = (() => {
@@ -26,9 +26,9 @@ const Kids = (() => {
       seen.add(k.id);
       const sex = k.sex === 'boy' || k.sex === 'girl' ? k.sex : '';
       out.push({ id: k.id, name: typeof k.name === 'string' ? k.name.slice(0, 60) : '', birth: typeof k.birth === 'string' && DATE.test(k.birth) ? k.birth : '', sex,
-        color: typeof k.color === 'string' && HEX.test(k.color) ? k.color.toLowerCase() : '' });
+        color: typeof k.color === 'string' && HEX.test(k.color) ? k.color.toLowerCase() : '', formula: typeof k.formula === 'string' ? k.formula.trim().slice(0, 60) : '' });
     }
-    if (!out.length) out.push({ id: 'c1', name: typeof name === 'string' ? name.slice(0, 60) : '', birth: typeof birth === 'string' && DATE.test(birth) ? birth : '', sex: '', color: '' });
+    if (!out.length) out.push({ id: 'c1', name: typeof name === 'string' ? name.slice(0, 60) : '', birth: typeof birth === 'string' && DATE.test(birth) ? birth : '', sex: '', color: '', formula: '' });
     out.forEach((k, i) => { if (!k.color) k.color = auto(out.slice(0, i), k.sex, k.id); });
     return out;
   }
@@ -36,6 +36,6 @@ const Kids = (() => {
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const mix = (a, b, t) => { const x = rgb(a), y = rgb(b); return '#' + x.map((v, i) => Math.round(v * (1 - t) + y[i] * t).toString(16).padStart(2, '0')).join(''); };
   const rgba = (h, a) => `rgba(${rgb(h).join(',')},${a})`;
-  const make = (kids, name = '', sex = '', birth = '') => ({ id: rid(), name, birth, sex, color: auto(kids, sex) });
+  const make = (kids, name = '', sex = '', birth = '') => ({ id: rid(), name, birth, sex, color: auto(kids, sex), formula: '' });
   return { PALETTE, MAX, auto, swatches, clean, make, group, mix, rgba };
 })();

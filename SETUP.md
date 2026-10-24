@@ -11,6 +11,8 @@ once, then fill in `config.js` (all values are public client IDs, not secrets) a
 1. Create a project at <https://supabase.com>.
 2. **SQL Editor** → paste and run [`supabase/schema.sql`](supabase/schema.sql). This is version 3 (end-to-end encryption, roles,
    permissions, approvals, audit log). If you ran an earlier version, drop its tables first; there is no data migration.
+   It also holds people's encrypted contact details (`members.details`, written only through `set_my_details`) and room for the larger
+   encrypted profile (children, formula, pediatrician).
 3. **Project Settings → API**: copy the *Project URL* and *anon public* key into `supabaseUrl` / `supabaseKey`.
 
 ### Lock down sign-in (dashboard settings)

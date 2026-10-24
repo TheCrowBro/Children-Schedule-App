@@ -193,7 +193,20 @@ const Sync = (() => {
   function schedule(ms = 2000) { if (!linked()) return; clearTimeout(timer); timer = setTimeout(() => run(true), ms); }
 
   // ---- people, requests, invites, activity -------------------------------------------------
-  async function loadPeople() { st.people = await Auth.rpc('list_people', { p_baby: db.meta.babyId }); peopleAt = Date.now(); return st.people; }
+  async function loadPeople() {
+    const b = db.meta.babyId, people = list(await Auth.rpc('list_people', { p_baby: b }));
+    for (const p of people) p.info = p.details ? await E2EE.openDetails(b, p.user_id, p.details, p.details_epoch) : null;   // contact details: decrypted here, never readable on the server
+    st.people = people; peopleAt = Date.now();
+    // my own details were sealed with older keys (someone left since): seal them again with the current ones
+    const me = people.find(p => p.is_you);
+    if (me && me.info && me.details_epoch < (E2EE.epoch(b) || 0)) setMyDetails(me.info).catch(() => {});
+    return st.people;
+  }
+  async function setMyDetails(d) {
+    const b = db.meta.babyId, { blob, epoch } = await E2EE.sealDetails(b, Auth.id, d);
+    await Auth.rpc('set_my_details', { p_baby: b, p_blob: blob, p_epoch: epoch });
+    const me = st.people.find(p => p.is_you); if (me) { me.info = Guide.cleanDetails(d); me.details_epoch = epoch; }
+  }
   async function loadAdmin() {   // parents only
     const [reqs, inv] = await Promise.all([Auth.rpc('list_requests', { p_baby: db.meta.babyId }), Auth.rpc('list_invites', { p_baby: db.meta.babyId })]);
     for (const r of reqs) { r.qrVerified = await E2EE.verifyRequest(r); r.fingerprint = r.device_pub ? await E2EE.fingerprint(r.device_pub) : ''; }
@@ -313,5 +326,5 @@ const Sync = (() => {
 
   return { st, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
     createInvite, rescind, decide, setMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
-    pendingRequest, inviteUrl, pushBaby, onChange: null, onSessionLost: null };
+    pendingRequest, inviteUrl, pushBaby, setMyDetails, onChange: null, onSessionLost: null };
 })();

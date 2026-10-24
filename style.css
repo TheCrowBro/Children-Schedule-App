@@ -141,3 +141,72 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .sw:disabled{opacity:.6}
 @media(prefers-color-scheme:dark){.kidbar button:not(.on){border-color:var(--kl,var(--k))}.ic .wash{opacity:.4}body::before{opacity:.9}}
 .kidrow .chip input:checked+span{background:var(--k);border-color:var(--k);color:#fff}
+/* ---- Day clock ------------------------------------------------------------------------------------------------------------------------ */
+.clockcard{padding:10px 10px 12px}
+.clock{display:block;width:100%;max-width:400px;height:auto;margin:0 auto;touch-action:manipulation}
+.clock .qw{fill:transparent;cursor:pointer}
+.clock .qw.on{fill:var(--wash1)}
+.clock .qw:focus-visible,.clock .ray:focus-visible{outline:none;stroke:var(--ink);stroke-width:2}
+.clock .ring{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}
+.clock .face{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+.clock .tick{stroke:var(--mute);stroke-width:1;stroke-linecap:round}.clock .tick.big{stroke:var(--ink);stroke-width:1.6}
+.clock .hl{font:600 11px system-ui,sans-serif;fill:var(--mute)}
+.clock .ctr{font:700 22px var(--serif);fill:var(--ink)}.clock .ctr2{font:500 11px system-ui,sans-serif;fill:var(--mute)}
+.clock .sarc{fill:none;stroke:var(--g-sleep);stroke-width:8;stroke-linecap:round;opacity:.35}
+.clock .ray{cursor:pointer}
+.clock .ray path{stroke:var(--c);stroke-width:2;stroke-linecap:round}
+.clock .ray .dot{fill:var(--c);stroke:var(--card);stroke-width:2}
+.clock .ray .hit{fill:transparent}
+.clock .ray:hover .dot,.clock .ray:focus-visible .dot{r:8}
+.clock .now{stroke:var(--ink);stroke-width:2;stroke-linecap:round}.clock .nowdot{fill:var(--ink)}
+.clegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink);margin:6px 2px 0}
+.clegend span{display:inline-flex;align-items:center;gap:6px}.clegend span.zero{color:var(--mute)}
+.clegend i{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
+.clegend b{font-variant-numeric:tabular-nums}
+.hint{margin:8px 2px 0;font-size:12px}
+.quadlist .qhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.quadlist .qhead small{color:var(--mute)}
+.quadlist .ev{box-shadow:none}
+/* ---- twirl-down groups ------------------------------------------------------------------------------------------------------------------ */
+details.grp,details.gd,details.more{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:10px;overflow:hidden}
+details.grp>summary,details.gd>summary,details.more>summary,details.tbl>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:52px}
+details>summary::-webkit-details-marker{display:none}
+details.grp>summary{border-left:6px solid var(--c)}
+details .gi{font-size:22px;line-height:0}details .gi .ic{width:28px;height:28px}
+details .gt{flex:1;min-width:0}details .gt small{display:block;color:var(--mute);font-size:13px;margin-top:2px}
+.chev{color:var(--mute);font-size:20px;transition:transform .15s}
+details[open]>summary .chev{transform:rotate(90deg)}
+details.grp .grows{padding:2px 10px 6px}
+details.grp .ev{box-shadow:none;background:var(--bg)}
+details.grp.alert{border-color:var(--health-ink)}
+details.gd>p,details.gd>ul{margin:0 16px 12px;line-height:1.5}details.gd>ul{padding-left:20px}
+details.gd .mh{font-weight:700;margin-bottom:4px;font-size:14px}
+.call{background:rgba(192,57,43,.08);border-left:4px solid var(--health-ink);padding:8px 10px;border-radius:8px}
+details.more{margin-top:10px}details.more>summary{font-weight:600}details.more>.grp{margin:0 10px 10px}
+@media(prefers-reduced-motion:reduce){.chev{transition:none}}
+/* ---- day counts --------------------------------------------------------------------------------------------------------------------------- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:8px}
+.tile{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:14px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile .tv{font-size:18px;white-space:nowrap;font-variant-numeric:tabular-nums}.tile .tv .ic{width:20px;height:20px}
+.tile .tl{font-size:13px;color:var(--mute)}.tile .tl small{display:block}
+/* ---- stats charts -------------------------------------------------------------------------------------------------------------------------- */
+.chart{display:block;width:100%;height:auto;margin-top:10px;overflow:visible}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .ax{font:500 9.5px system-ui,sans-serif;fill:var(--mute);font-variant-numeric:tabular-nums}
+.chart .bar{cursor:pointer}.chart .bar .hit{fill:transparent}.chart .bar:hover .hit{fill:var(--wash3)}
+.ch{margin:14px 0 0;font-size:13px;font-weight:600;color:var(--mute)}
+details.tbl{margin-top:4px}details.tbl>summary{min-height:36px;padding:6px 0;font-size:13px;color:var(--mute);gap:6px}
+.tw{overflow-x:auto}.tw table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.tw th,.tw td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}.tw th{color:var(--mute);font-weight:600}
+/* ---- guide, pediatrician, people ----------------------------------------------------------------------------------------------------------- */
+.docbtn,.pbtn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);color:var(--ink);font:inherit}
+.docbtn{border-radius:18px;padding:14px;margin-bottom:10px;border-left:6px solid var(--g-health);box-shadow:0 6px 16px -12px rgba(70,50,30,.45)}
+.docbtn>span:nth-child(2){flex:1;min-width:0}.docbtn small{display:block;color:var(--mute);margin-top:2px}.docbtn .di .ic{width:32px;height:32px}
+.pbtn{border:0;background:none;padding:0;flex:1;min-height:44px}.pbtn>span:first-child{flex:1}
+.emer{margin:0 2px 10px}
+.nowcard ul,.gd ul{margin:6px 0 0}
+.callbtn{text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;flex:none}
+.sel{user-select:text;-webkit-user-select:text;font-weight:600}
+.tabs button{font-size:11px}
+.clock .ray .hitl{stroke:transparent;stroke-width:14;pointer-events:stroke}
+.mh{font-weight:700;margin:12px 0 4px}.sheet ul{margin:0;padding-left:22px;line-height:1.5}

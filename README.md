@@ -5,8 +5,15 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 
 ## Features
 - **Day view**: one-tap entry buttons, tick-box chips, time defaults to now with "5 min ago" shortcuts; tap an entry to edit/delete
-- **Twins, triplets and more**: up to 8 children in one shared log. Each has a page of their own with their own colour (blues for boys, reds for girls, a different shade for each; parents can change any colour), an "All" view, and entries can be logged for several children at once. Names, colours and which child an entry belongs to are end-to-end encrypted like everything else
+- **More than one child**: up to 8 children in one shared log. Each has a page of their own with their own colour (blues for boys, reds for girls, a different shade for each; parents can change any colour), an "All" view, and entries can be logged for several children at once. Names, colours and which child an entry belongs to are end-to-end encrypted like everything else
 - **Watercolour look**: soft washes in the open child's colour and hand-painted style icons, with dark outlines and text kept at readable contrast (light and dark mode)
+- **Day clock**: a 24-hour dial where every entry is a ray out of the time it happened, coloured by group, with a tappable dot; tap a quarter of the
+  dial to list just those hours. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
+- **Month view** with a day's counts at a glance (and the entries in a twirl-down); **stats** with a chart for every section
+- **Guide tab**: common newborn worries (blue hands, belly bulge, clicking hips, jaundice, cord, spit-up, poop colours, fever…) with when to call,
+  month-by-month milestones (a reminder pops up on each month birthday), and the **pediatrician's details** with a Call button
+- **Formula**: each child's usual formula, filled in on bottle feeds
+- **People's contact details** (phone, work, notes) that each person adds for themselves, visible to those allowed to see the family list
 - **Sleep timer**, **month calendar** with coloured dots, **stats** (7/14/30 days)
 - **Health checklist** (blue hands/feet, clicking hips, belly bulge, jaundice…) with "call your doctor" prompts
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters* and *Friends*; per-person check boxes for exactly what

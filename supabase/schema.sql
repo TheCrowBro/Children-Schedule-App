@@ -20,7 +20,7 @@
 -- ── tables ────────────────────────────────────────────────────────────────────────────────────
 create table babies (
   id uuid primary key default gen_random_uuid(),
-  profile text not null default '' check (length(profile) <= 4096),   -- encrypted {name, birth}
+  profile text not null default '' check (length(profile) <= 8192),   -- encrypted {children, pediatrician}
   epoch int not null default 1,                                        -- current key generation
   rotate_needed boolean not null default false,                        -- a parent's phone should rotate the keys
   recovery_pub jsonb,                                                  -- public key of the recovery code
@@ -64,6 +64,8 @@ create table members (
   role text not null check (role in ('parent','family','caregiver','babysitter','friend')),
   perms jsonb not null default '{}',
   joined_at timestamptz not null default now(),
+  details text not null default '' check (length(details) <= 4096),   -- encrypted {relation, phone, work…}, written by the person themselves
+  details_epoch int not null default 0,
   primary key (baby_id, user_id)
 );
 
@@ -330,7 +332,7 @@ begin
   select epoch into cur from babies where id = p_baby for update;
   if p_epoch <> cur + 1 then raise exception 'stale epoch'; end if;
   if jsonb_typeof(p_grants) <> 'array' or jsonb_array_length(p_grants) > 200 then raise exception 'bad grants'; end if;
-  if length(coalesce(p_profile, '')) > 4096 then raise exception 'profile too large'; end if;
+  if length(coalesce(p_profile, '')) > 8192 then raise exception 'profile too large'; end if;
   if p_health_check is null then raise exception 'the health check is required'; end if;
   delete from key_grants where baby_id = p_baby;
   for g in select value from jsonb_array_elements(p_grants) loop
@@ -369,7 +371,7 @@ begin
      or (p_recovery_grant ->> 'wrap_main') is null or (p_recovery_grant ->> 'wrap_health') is null then raise exception 'both keys are required'; end if;
   -- The phone picks the log's id itself: it is part of the context the keys are wrapped under.
   insert into babies (id, profile, created_by, recovery_pub, recovery_priv_wrapped, health_check)
-    values (coalesce(p_id, gen_random_uuid()), left(coalesce(p_profile, ''), 4096), me, p_recovery_pub, p_recovery_priv_wrapped, left(p_health_check, 256)) returning id into b;
+    values (coalesce(p_id, gen_random_uuid()), left(coalesce(p_profile, ''), 8192), me, p_recovery_pub, p_recovery_priv_wrapped, left(p_health_check, 256)) returning id into b;
   insert into members (baby_id, user_id, email, display_name, role, perms)
     values (b, me, coalesce(auth.jwt() ->> 'email', ''), left(coalesce(p_display_name, ''), 60), 'parent', role_preset('parent'));
   insert into key_grants (baby_id, grantee, epoch, wrap_main, wrap_health, auth, tag, granted_by) values
@@ -384,13 +386,13 @@ language plpgsql security definer set search_path = public as $$
 begin
   if not has_perm(p_baby, 'edit_profile') then raise exception 'You do not have permission to change the profile'; end if;
   if p_epoch <> (select epoch from babies where id = p_baby) then raise exception 'stale epoch'; end if;
-  if length(coalesce(p_profile, '')) > 4096 then raise exception 'profile too large'; end if;
+  if length(coalesce(p_profile, '')) > 8192 then raise exception 'profile too large'; end if;
   update babies set profile = p_profile where id = p_baby;
   perform log_activity(p_baby, 'profile_changed');
 end $$;
 
 create function list_people(p_baby uuid)
-returns table (user_id uuid, display_name text, role text, email text, perms jsonb, joined_at timestamptz, is_you boolean)
+returns table (user_id uuid, display_name text, role text, email text, perms jsonb, joined_at timestamptz, is_you boolean, details text, details_epoch int)
 language plpgsql security definer stable set search_path = public as $$
 declare full_view boolean;
 begin
@@ -402,8 +404,20 @@ begin
            case when full_view then m.role end,
            case when full_view then m.email end,
            case when is_parent(p_baby) then m.perms end,
-           m.joined_at, m.user_id = auth.uid()
+           m.joined_at, m.user_id = auth.uid(),
+           case when full_view or m.user_id = auth.uid() then m.details else '' end,
+           case when full_view or m.user_id = auth.uid() then m.details_epoch else 0 end
     from members m where m.baby_id = p_baby order by m.joined_at;
+end $$;
+
+-- A person's own contact details for one log (ciphertext made on their phone; only people who may see the member list get it back).
+create function set_my_details(p_baby uuid, p_blob text, p_epoch int) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_member(p_baby) then raise exception 'no access'; end if;
+  if length(coalesce(p_blob, '')) > 4096 then raise exception 'details too large'; end if;
+  if p_epoch is null or p_epoch < 1 or p_epoch > (select epoch from babies where id = p_baby) then raise exception 'bad epoch'; end if;
+  update members set details = coalesce(p_blob, ''), details_epoch = p_epoch where baby_id = p_baby and user_id = auth.uid();
 end $$;
 
 create function set_display_name(p_name text) returns void language sql security definer set search_path = public as $$
@@ -697,7 +711,7 @@ grant execute on function
   register_device(text, jsonb), my_devices(), remove_device(uuid), my_grant(uuid, uuid), get_recovery(uuid), get_keyring(uuid),
   list_devices(uuid), list_recovery(uuid), grant_device(uuid, uuid, text, text, text, text), set_recovery(uuid, jsonb, text, text, text, text),
   rotate_keys(uuid, int, jsonb, text, text, text, text),
-  create_baby(text, text, uuid, jsonb, jsonb, text, jsonb, uuid, text), update_baby(uuid, text, int), list_people(uuid), set_display_name(text),
+  create_baby(text, text, uuid, jsonb, jsonb, text, jsonb, uuid, text), update_baby(uuid, text, int), list_people(uuid), set_display_name(text), set_my_details(uuid, text, int),
   set_member(uuid, uuid, text, jsonb, jsonb), remove_member(uuid, uuid), reset_member_mfa(uuid, uuid),
   create_invite(uuid, text, jsonb), list_invites(uuid), rescind_invite(text), redeem_invite(text, text, uuid, text),
   my_requests(), cancel_my_request(uuid), list_requests(uuid), decide_request(uuid, boolean, text, jsonb, jsonb),

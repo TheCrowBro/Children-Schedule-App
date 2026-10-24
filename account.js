@@ -241,7 +241,7 @@ const Acct = (() => {
       <label class="f">Baby's name</label><input id="oName" type="text" value="${esc(O.name || db.baby.name)}" placeholder="Name">
       <label class="f">Birth date</label><input id="oBirth" type="date" value="${esc(O.birth || db.baby.birth)}">
       <label class="f">Boy or girl <small>(sets their colour – you can change it later)</small></label><div class="chips">${chip('oSex', 'boy', 'Boy', O.sex === 'boy', '', true)}${chip('oSex', 'girl', 'Girl', O.sex === 'girl', '', true)}${chip('oSex', '', 'Not set', !O.sex, '', true)}</div>
-      <p class="note">Twins or triplets? You can add each child after the log is created (More → Children).</p>
+      <p class="note">More than one child? Add the others after the log is created (More → Children).</p>
       ${n ? `<p class="note">Your ${n} existing entries on this device will be added to the new log.</p>` : ''}
       <button class="btn p" id="oCreate" style="width:100%;margin-top:12px" ${O.busy ? 'disabled' : ''}>Create log</button></div>
     <div class="card"><b>🔗 Join a family log</b>
@@ -389,7 +389,7 @@ const Acct = (() => {
     if (!Auth.configured || !db.meta.babyId) return `<div class="card"><b>Family sharing is off</b><p class="note">${Auth.configured ? 'Create a baby log to share it.' : "Account service isn't configured (see SETUP.md), so this device keeps its own private log."}</p></div>`;
     const s = Sync.st, parent = Sync.isParent();
     if (membersLoadedFor !== db.meta.babyId) { membersLoadedFor = db.meta.babyId; Promise.all([Sync.loadPeople(), parent ? Sync.loadAdmin() : null, Sync.loadDevices(), Sync.myDevices().then(r => { F.myPhones = r; }), Sync.securityCode().then(c => { F.secCode = c; })]).then(() => { if (tab === 'family') render(); }).catch(() => {}); }
-    const people = s.people.map(m => `<div class="stat"><span>${esc(m.display_name || 'Member')}${m.is_you ? ' <small>(you)</small>' : ''}<br><small>${m.role ? esc(roleName(m.role)) : ''}${m.email && m.role ? ' · ' : ''}${esc(m.email || '')}</small></span>
+    const people = s.people.map(m => `<div class="stat"><button class="pbtn" data-pview="${esc(m.user_id)}"><span>${esc(m.display_name || 'Member')}${m.is_you ? ' <small>(you)</small>' : ''}<br><small>${m.role ? esc(roleName(m.role)) : ''}${m.info && m.info.relation ? ' · ' + esc(m.info.relation) : ''}${m.email && m.role ? ' · ' + esc(m.email) : ''}</small></span><span class="chev" aria-hidden="true">›</span></button>
       ${parent && !m.is_you ? `<button class="btn" data-person="${esc(m.user_id)}" style="padding:6px 12px">Edit</button>` : ''}</div>`).join('') || '<div class="note">Loading…</div>';
     const reqs = parent && s.requests.length ? `<h2>Waiting for your approval</h2>${s.requests.map(r => `<div class="card"><b>${esc(r.display_name || r.email)}</b><br><small class="note">${esc(r.email)} · asked to join as <b>${esc(roleName(r.role))}</b></small>
       ${r.qrVerified ? '<div class="note" style="margin-top:6px">✅ Verified: they scanned your QR code, so this is really their phone.</div>'
@@ -443,6 +443,7 @@ const Acct = (() => {
   function bindFamily() {
     const el = id => document.getElementById(id);
     if (!el('syncNow')) return;
+    document.querySelectorAll('[data-pview]').forEach(b => b.onclick = () => viewPerson(b.dataset.pview));   // anyone can open a person's card
     $('#famBadge').hidden = true;
     el('syncNow').onclick = () => Sync.run(true);
     if (el('unvOk')) el('unvOk').onclick = () => { db.meta.unverified = false; save(true); render(); toast('Thanks'); };
@@ -488,6 +489,29 @@ const Acct = (() => {
     };
     document.querySelectorAll('[data-person]').forEach(b => b.onclick = () => editPerson(b.dataset.person));
     el('actBtn').onclick = showActivity;
+  }
+  /** A person's card: their contact details (they fill these in themselves), with call buttons. */
+  function viewPerson(userId) {
+    const p = Sync.st.people.find(x => x.user_id === userId); if (!p) return;
+    const i = p.info || {}, parent = Sync.isParent();
+    const line = (label, v, call) => (v ? `<div class="stat"><span>${label}<br><b class="sel">${esc(v)}</b></span>${call && Guide.tel(v) ? `<a class="btn callbtn" href="${esc(Guide.tel(v))}">📞 Call</a>` : ''}</div>` : '');
+    const info = [line('Relationship', i.relation), line('Phone', i.phone, true), line('Email', p.email), line('Place of work', i.work), line('Work phone', i.workPhone, true), line('Notes', i.notes)].join('');
+    const f = (id, label, v, type = 'text', max = 60, ph = '') => `<label class="f">${label}</label><input id="${id}" type="${type}" maxlength="${max}" value="${esc(v || '')}" placeholder="${ph}"${type === 'tel' ? ' inputmode="tel" autocomplete="tel"' : ''}>`;
+    const form = `<p class="note">Everyone who can see the family list sees these. They are end-to-end encrypted like the rest of the log.</p>
+      ${f('dRel', 'Relationship to the baby', i.relation, 'text', 40, 'e.g. Mum, Grandma, Nanny')}${f('dPhone', 'Phone', i.phone, 'tel', 30)}
+      ${f('dWork', 'Place of work', i.work, 'text', 80)}${f('dWorkPhone', 'Work phone', i.workPhone, 'tel', 30)}
+      <label class="f">Notes</label><textarea id="dNotes" rows="2" maxlength="300" placeholder="e.g. best times to call, allergies, car seat in my car">${esc(i.notes || '')}</textarea>`;
+    const close = showSheet(`<h3>${esc(p.display_name || 'Member')}${p.is_you ? ' <small class="note">(you)</small>' : ''}</h3>
+      <p class="note" style="margin-top:0">${p.role ? esc(roleName(p.role)) : ''}</p>
+      ${p.is_you ? form : (info || '<p class="note">No details yet. People add their own phone number and work details from their phone: Family → tap their name.</p>')}
+      <div class="row" style="margin-top:16px"><button class="btn" id="pvClose">${p.is_you ? 'Cancel' : 'Close'}</button>${p.is_you ? '<button class="btn p" id="pvSave">Save</button>' : ''}</div>
+      ${parent && !p.is_you ? '<div class="row"><button class="btn" id="pvAccess">Change access</button></div>' : ''}`);
+    $('#pvClose').onclick = close;
+    if ($('#pvAccess')) $('#pvAccess').onclick = () => editPerson(userId);
+    if ($('#pvSave')) $('#pvSave').onclick = async () => {
+      const d = { relation: $('#dRel').value, phone: $('#dPhone').value, work: $('#dWork').value, workPhone: $('#dWorkPhone').value, notes: $('#dNotes').value };
+      try { await Sync.setMyDetails(d); close(); render(); toast('Saved'); } catch (e) { toast(err(e)); }
+    };
   }
   function editPerson(userId) {
     const p = Sync.st.people.find(x => x.user_id === userId); if (!p) return;

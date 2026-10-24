@@ -4,24 +4,27 @@
 const Store = { st: { ok: true, err: '', quarantined: false, recovered: false, onChange: null }, init: async () => {}, load: async () => demoDb(), save() {}, whenSaved: async () => {}, peek: async () => null, backup() {}, quarantine: () => [], usingIndexedDB: false };
 const Native = { is: false, onBack() {}, onUrl() {}, launchUrl() {}, saveFile: () => Promise.reject(new Error('cancelled')) };
 const Auth = { id: 'demo', signedIn: false, configured: false, init: async () => {} };
-const Sync = { can: () => true, linked: () => false, isParent: () => true, nameOf: () => '', schedule() {}, pushBaby() {}, onChange: null, onSessionLost: null };
+const Sync = { setMyDetails: async () => {}, can: () => true, linked: () => false, isParent: () => true, nameOf: () => '', schedule() {}, pushBaby() {}, onChange: null, onSessionLost: null };
 const Cloud = { init: async () => {}, autoBackup() {}, handleOAuthUrl() {} };
 const Lock = { init: async () => {}, onChange: null };
 const Acct = {
   gate: () => null, init: async () => {}, syncLine: () => 'Demo: tap around, nothing here is saved', accountHtml: () => '', cloudHtml: () => '', bindMoreAccount() {}, bindFamily() {},
   updateBadge() {}, applyBackup() {}, receiveJoin() {}, refreshAuth() {}, sessionLost() {},
-  familyHtml: () => `<div class="card"><b>👨‍👩‍👧 Your family log</b><p class="note">In the real app this is where parents invite people with a QR code (valid for two hours, one use) and approve each request. Parents also get a private activity log of who did what.</p>
-    <div class="stat"><span>Mum<br><small>Parent</small></span><b>you</b></div>
-    <div class="stat"><span>Dad<br><small>Parent</small></span></div>
-    <div class="stat"><span>Gran<br><small>Family member: can add entries and change her own</small></span></div>
-    <div class="stat"><span>Jess<br><small>Babysitter: can add entries, no health notes</small></span></div></div>
-    <div class="card"><b>🔒 Locked and encrypted</b><p class="note">Everything in the log is end-to-end encrypted. The server only stores scrambled data, and phones hold the keys.</p></div>`,
+  familyHtml: () => {
+    const person = (name, role, d) => `<details class="gd"><summary><span class="gt"><b>${name}</b><small>${role}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+      ${d.map(([l, v]) => `<div class="stat" style="margin:0 14px"><span>${l}<br><b class="sel">${v}</b></span></div>`).join('')}<p></p></details>`;
+    return `<div class="card"><b>👨‍👩‍👧 Your family log</b><p class="note">In the real app parents invite people with a QR code (valid for two hours, one use) and approve each request. Tap a person to see the details they added. Everything is end-to-end encrypted.</p></div>
+    ${person('Mum (you)', 'Parent', [['Relationship', 'Mum'], ['Phone', '(555) 010-1234'], ['Place of work', 'Lakeside Library']])}
+    ${person('Dad', 'Parent', [['Relationship', 'Dad'], ['Phone', '(555) 010-4444'], ['Place of work', 'Riverside Fire Station'], ['Work phone', '(555) 010-5555']])}
+    ${person('Gran', 'Family member: adds entries, changes her own', [['Relationship', 'Grandma'], ['Phone', '(555) 010-7777'], ['Notes', 'Has a car seat in her car']])}
+    ${person('Jess', 'Babysitter: adds entries, no health notes', [['Relationship', 'Babysitter'], ['Phone', '(555) 010-8888']])}`;
+  },
 };
 window.confirm = () => true; window.alert = () => {};
 function demoDb() {
   const h = 3600e3, DAYMS = 864e5, t0 = new Date().setHours(0, 0, 0, 0);
-  const kids = [{ id: 'c1', name: 'Leo', birth: '', sex: 'boy', color: '' }, { id: 'k2', name: 'Mia', birth: '', sex: 'girl', color: '' }, { id: 'k3', name: 'Sam', birth: '', sex: 'boy', color: '' }];
-  const ks = Kids.clean(kids), born = new Date(t0 - 12 * DAYMS), iso = `${born.getFullYear()}-${String(born.getMonth() + 1).padStart(2, '0')}-${String(born.getDate()).padStart(2, '0')}`;
+  const kids = [{ id: 'c1', name: 'Leo', birth: '', sex: 'boy', color: '', formula: 'Similac 360 Total Care' }, { id: 'k2', name: 'Mia', birth: '', sex: 'girl', color: '' }, { id: 'k3', name: 'Sam', birth: '', sex: 'boy', color: '' }];
+  const ks = Kids.clean(kids), born = new Date(t0); born.setMonth(born.getMonth() - 2); const iso = `${born.getFullYear()}-${String(born.getMonth() + 1).padStart(2, '0')}-${String(born.getDate()).padStart(2, '0')}`;
   ks.forEach(k => { k.birth = iso; });
   const events = []; let n = 0;
   const add = (type, ts, data, kid, extra = {}) => { if (ts > Date.now()) return; events.push({ id: 'd' + (n++), type, ts, data, note: '', updated: Date.now(), child: kid.id, ...extra }); };

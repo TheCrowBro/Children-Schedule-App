@@ -173,7 +173,7 @@ const E2EE = (() => {
     d = d && typeof d === 'object' && !Array.isArray(d) ? d : {};
     const o = {}, n = k => { const v = num(d[k]); if (v !== undefined) o[k] = v; }, s = (k, len) => { if (typeof d[k] === 'string') o[k] = str(d[k], len); }, b = k => { if (typeof d[k] === 'boolean') o[k] = d[k]; };
     switch (type) {
-      case 'feed': if (d.kind === 'bottle' || d.kind === 'breast') o.kind = d.kind; s('side', 10); s('milk', 20); n('min'); n('ml'); break;
+      case 'feed': if (d.kind === 'bottle' || d.kind === 'breast') o.kind = d.kind; s('side', 10); s('milk', 20); s('formula', 60); n('min'); n('ml'); break;
       case 'diaper': b('pee'); b('poo'); b('rash'); s('color', 20); break;
       case 'wake': n('min'); s('why', 30); break;
       case 'vomit': s('amount', 20); b('projectile'); break;
@@ -206,11 +206,19 @@ const E2EE = (() => {
   }
   const decryptRow = (baby, r) => decryptWith((store[baby] && store[baby].keys) || {}, baby, r);
   // The profile holds the children (name, birth date, boy/girl, colour). `name`/`birth` mirror the first child, for older phones.
-  const sealProfile = (baby, epoch, main, p) => { const kids = Kids.clean(p.kids, p.name, p.birth); return seal(main, enc.encode(JSON.stringify({ name: kids[0].name, birth: kids[0].birth, kids })), profileAad(baby, epoch)); };
+  const sealProfile = (baby, epoch, main, p) => { const kids = Kids.clean(p.kids, p.name, p.birth); return seal(main, enc.encode(JSON.stringify({ name: kids[0].name, birth: kids[0].birth, kids, doctor: Guide.cleanDoctor(p.doctor) })), profileAad(baby, epoch)); };
   const encryptProfile = (baby, p) => { const c = current(baby); return sealProfile(baby, c.epoch, c.main, p); };
   async function decryptProfile(baby, blob, epoch) {
     const k = raw(baby, epoch, 'main'); if (!k || !blob) return null;
-    try { const p = JSON.parse(dec.decode(await open(k, blob, profileAad(baby, epoch)))); const kids = Kids.clean(p.kids, p.name, p.birth); return { name: kids[0].name, birth: kids[0].birth, kids }; } catch (e) { return null; }
+    try { const p = JSON.parse(dec.decode(await open(k, blob, profileAad(baby, epoch)))); const kids = Kids.clean(p.kids, p.name, p.birth); return { name: kids[0].name, birth: kids[0].birth, kids, doctor: Guide.cleanDoctor(p.doctor) }; } catch (e) { return null; }
+  }
+
+  // A person's contact details (phone, work…), sealed with the log's key and bound to that person, so the server can't read them or swap them.
+  const detailsAad = (baby, user, epoch) => `ll1|details|${baby}|${user}|${epoch}`;
+  async function sealDetails(baby, user, d) { const c = current(baby); return { blob: await seal(c.main, enc.encode(JSON.stringify(Guide.cleanDetails(d))), detailsAad(baby, user, c.epoch)), epoch: c.epoch }; }
+  async function openDetails(baby, user, blob, epoch) {
+    const k = raw(baby, epoch, 'main'); if (!k || !blob) return null;
+    try { return Guide.cleanDetails(JSON.parse(dec.decode(await open(k, blob, detailsAad(baby, user, epoch))))); } catch (e) { return null; }
   }
 
   // ---- getting keys onto this phone ------------------------------------------------------------------
@@ -361,7 +369,7 @@ const E2EE = (() => {
 
   return {
     load, ensureDevice, refresh, createLog, makeGrant, unlockWithRecovery, grantForRequest, approveDevice, healthGrants, rotate, replaceRecovery,
-    encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile,
+    encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile, sealDetails, openDetails,
     uuid, newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,
     fingerprint, securityCode, forget, wipeUser,
     get device() { return dev; },

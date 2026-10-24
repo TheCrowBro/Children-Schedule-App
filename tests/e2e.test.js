@@ -58,6 +58,8 @@ const server = http.createServer((req, res) => {
   const secretOf = p => p.evaluate(() => document.querySelector('.card .code').textContent.trim());
   const enterTotp = async (p, secret, sel = '#eCode', btn = '#eGo') => { await p.fill(sel, totp(secret)); await p.click(btn); };
   const q = async (sql, params) => (await su.query(sql, params)).rows;
+  // entries sit in twirl-down groups under the day clock: open them all, then tap the entry
+  const openEntry = async (p, sel) => { await p.evaluate(() => document.querySelectorAll('details.grp').forEach(d => { d.open = true; })); await p.click('.grows [data-edit]' + sel); };
   const syncNow = async p => { await p.evaluate(() => Sync.run(true)); await p.waitForFunction(() => Sync.st.state !== 'syncing'); };
   const toastText = p => p.evaluate(() => document.querySelector('#toast').textContent);
   const secrets = [];   // everything that must never reach the server in readable form
@@ -220,11 +222,11 @@ const server = http.createServer((req, res) => {
   });
   await step('family member: sees the log with names; can change only their own entries; no settings', async () => {
     await goTab(B, 'day'); await syncNow(B); assert(/added by Mum/.test(await B.textContent('#view')), 'shows who added it: ' + (await B.textContent('#view')).slice(0, 300));
-    await B.click('[data-edit]'); assert(/can't change entries added by Mum/.test(await toastText(B)));
+    await openEntry(B, ''); assert(/can't change entries added by Mum/.test(await toastText(B)));
     assert(!(await B.isVisible('#sheet')), 'no editor opens for someone else\'s entry');
     await B.click('[data-add=diaper]'); await B.click('input[name=poo]'); await B.click('#save');
     await B.waitForFunction(() => Sync.st.state === 'ok' && !db.events.some(e => e.updated > db.meta.pushedAt));
-    await B.click('[data-edit]:has-text("Pee")'); await B.waitForSelector('#del'); await B.fill('#note', 'wet'); await B.click('#save'); await sleep(100);
+    await openEntry(B, ':has-text("Pee")'); await B.waitForSelector('#del'); await B.fill('#note', 'wet'); await B.click('#save'); await sleep(100);
     await goTab(B, 'more'); assert(await B.$eval('[data-kn]', e => e.disabled), 'baby profile is read-only for family');
     assert(!(await B.$('#wipe')), 'no "delete all entries"');
     await goTab(B, 'family'); await B.waitForSelector('#syncNow');
@@ -281,7 +283,7 @@ const server = http.createServer((req, res) => {
     const [m] = await q(`select perms from members where email='nan@x.com'`); assert.equal(m.perms.edit_others, true); assert.equal(m.perms.delete_own, false);
   });
   await step('the check boxes really take effect: this caregiver can edit others\' entries but not delete their own', async () => {
-    await syncNow(C); await C.click('[data-edit]:has-text("Bottle")'); await C.waitForSelector('#save'); assert(!(await C.$('#del')), 'no delete button: delete_own is off'); await C.fill('#note', 'nan was here'); await C.click('#save');
+    await syncNow(C); await openEntry(C, ':has-text("Bottle")'); await C.waitForSelector('#save'); assert(!(await C.$('#del')), 'no delete button: delete_own is off'); await C.fill('#note', 'nan was here'); await C.click('#save');
     await C.waitForFunction(() => Sync.st.state === 'ok' && !db.events.some(e => e.updated > db.meta.pushedAt));
     assert.equal((await plainOf(A, feedId)).entry.note, 'nan was here');
     await C.click('[data-add=wake]'); await C.click('#save'); await C.waitForFunction(() => !db.events.some(e => e.updated > db.meta.pushedAt));
