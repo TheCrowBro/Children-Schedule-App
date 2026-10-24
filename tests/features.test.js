@@ -263,6 +263,14 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       await P.evaluate(() => Theme.set('dark')); assert.equal(await P.evaluate(() => `${!!document.querySelector('.sky')}|${document.documentElement.dataset.mode}`), 'false|dark', 'reduced motion: straight to dark');
       await P.evaluate(() => Theme.set('light')); await P.emulateMedia({ reducedMotion: 'no-preference' });
       assert.equal(await P.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(246, 242, 236)');
+      // changing your mind while the sky still covers the screen: the last choice wins, and the sky that was cut short can't switch it back
+      const settled = () => P.waitForTimeout(3000).then(() => P.evaluate(() => `${!!document.querySelector('.sky')}|${document.documentElement.dataset.mode}`));
+      await P.evaluate(() => { Theme.set('dark'); Theme.set('light'); }); assert.equal(await settled(), 'false|light', 'Dark then straight back to Light stays light');
+      await P.evaluate(() => Theme.set('dark')); await P.waitForTimeout(1500); await P.evaluate(() => Theme.set('light')); assert.equal(await settled(), 'false|light', 'and back to Light just after it turned dark');
+      await P.evaluate(() => Theme.set('system')); await P.emulateMedia({ colorScheme: 'dark' }); await P.waitForSelector('.sky.sunset');   // the phone turns dark: a sunset starts
+      await P.emulateMedia({ colorScheme: 'light' }); await P.evaluate(() => Theme.apply(false));   // and is light again by the time the app is looked at
+      assert.equal(await settled(), 'false|light', 'a jump straight back ends the sunset, which then can\'t turn the screen dark');
+      await P.evaluate(() => Theme.set('light'));
     });
 
     await step('sunrise and sunset are worked out from the time zone (no location), including the polar winter and summer', async () => {

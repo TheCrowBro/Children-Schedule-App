@@ -62,17 +62,19 @@ const Theme = (() => {
   let onChange = null, playing = null;
   const current = () => root.dataset.mode || 'light';
   function show(m) { root.dataset.mode = m; root.style.colorScheme = m; if (onChange) onChange(m); }
+  function stop() { if (playing) { clearTimeout(playing.swap); clearTimeout(playing.done); playing.el.remove(); playing = null; } }
   /** Bring the screen in line with the chosen mode; `animate` plays the sky when the change happens while someone is looking. */
   function apply(animate) {
-    const want = resolve();
+    const want = resolve(), instant = !animate || document.hidden || (calmMq && calmMq.matches) || !document.body;
+    if (playing && playing.to === want && !instant) return;   // a sky is already taking the screen there
+    stop();   // one heading the other way (changed again mid-sky) must not switch the theme back when it ends; a jump goes straight there
     if (want === current()) return;
-    if (!animate || document.hidden || (calmMq && calmMq.matches) || !document.body) return show(want);
-    if (playing) { clearTimeout(playing.swap); clearTimeout(playing.done); playing.el.remove(); }
+    if (instant) return show(want);
     const el = document.createElement('div');
     el.className = `sky ${want === 'dark' ? 'sunset' : 'sunrise'}`; el.setAttribute('aria-hidden', 'true');
     el.innerHTML = '<i class="glow"></i><i class="stars"></i><i class="sun"></i><i class="hills"></i>';
     document.body.appendChild(el);
-    playing = { el, swap: setTimeout(() => show(want), 1150), done: setTimeout(() => { el.remove(); playing = null; }, 2700) };   // the theme changes while the sky covers the screen
+    playing = { to: want, el, swap: setTimeout(() => show(want), 1150), done: setTimeout(() => { el.remove(); playing = null; }, 2700) };   // the theme changes while the sky covers the screen
   }
   function set(m) { if (!MODES.includes(m)) return; mode = m; try { localStorage.setItem(KEY, m); } catch (e) { /* kept for this visit only */ } apply(true); }
   // the first paint: no animation
