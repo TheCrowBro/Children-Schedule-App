@@ -49,11 +49,13 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       await P.click('[data-quadclear]'); assert.equal(await P.$$eval('.quadlist', x => x.length), 0);
     });
 
-    await step('the clock: a light watercolour frame, a painted panel, a white face with a black rim, Roman numerals with a moon at midnight and a sun at noon, and a hand only on today', async () => {
+    await step('the clock: a frame of thin soft-gold lines, a painted panel, a white face with a black rim, Roman numerals with a moon at midnight and a sun at noon, and a hand only on today', async () => {
       const r = await P.evaluate(() => ({ nums: [...document.querySelectorAll('.clock text.num')].map(t => t.textContent), moonSun: document.querySelectorAll('.clock g[aria-hidden] path[d^="M2.5 -6.2"], .clock g[aria-hidden] circle[r="3.6"]').length, hand: !!document.querySelector('.clock .hand'), face: document.querySelector('.clock .face').getAttribute('fill'), rim: document.querySelector('.clock .rim').getAttribute('stroke') }));
       assert.deepEqual(r.nums, ['II', 'IV', 'VI', 'VIII', 'X', 'II', 'IV', 'VI', 'VIII', 'X']);
       assert.equal(r.moonSun, 2); assert.equal(r.face, '#fffdf8', 'a white face'); assert.equal(r.rim, '#1f1b16', 'with a black rim');
-      await P.waitForFunction(() => /^(blob|data):/.test(document.querySelector('.clock image.frame').getAttribute('href') || ''), null, { timeout: 10000 });
+      const fr = await P.evaluate(() => { const g = document.querySelector('.clock .frame'); return { stroke: g.getAttribute('stroke'), fill: g.getAttribute('fill'), shapes: g.querySelectorAll('path, rect, circle').length, extras: g.querySelectorAll('image, [filter]').length }; });
+      assert.deepEqual([fr.stroke, fr.fill, fr.extras], ['#c8aa6e', 'none', 0], 'the frame is plain soft-gold lines: ' + JSON.stringify(fr));
+      assert(fr.shapes >= 10, 'handle, finials, cornice, columns, base and feet');
       assert.equal(r.hand, true, "today's clock has the hand");
       await P.click('[data-nav="-1"]'); assert.equal(await P.$$eval('.clock .hand', h => h.length), 0, 'yesterday has none'); await P.click('[data-nav="1"]');
       await P.waitForFunction(() => /^(blob|data):/.test(document.querySelector('.clock image.art').getAttribute('href') || ''), null, { timeout: 10000 });
@@ -92,8 +94,6 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       const r = await P.evaluate(async () => { const out = []; for (const t of Art.THEMES) { const t0 = performance.now(); const u = await Art.url(t.id, 1); const ok = await new Promise(res => { const i = new Image(); i.onload = () => res(i.naturalWidth > 0); i.onerror = () => res(false); i.src = u; }); out.push([t.id, ok, Math.round(performance.now() - t0)]); } return out; });
       assert.deepEqual(r.map(x => x[0]), ['blossom', 'maple', 'ocean', 'forest', 'mountains', 'garden', 'night', 'classic']);
       assert(r.every(x => x[1]), JSON.stringify(r)); assert(r.every(x => x[2] < 3000), 'each under 3 s: ' + JSON.stringify(r));
-      const fr = await P.evaluate(async () => { const out = []; for (const d of [false, true]) { const u = await Art.frameUrl(d); out.push(await new Promise(res => { const i = new Image(); i.onload = () => res([i.naturalWidth, i.naturalHeight]); i.onerror = () => res(null); i.src = u; })); } return out; });
-      assert(fr.every(x => x && x[0] >= 340 && x[1] >= 436), 'the frame draws for light and dark mode: ' + JSON.stringify(fr));
     });
 
     await step('the clock art can be changed for a page, and it sticks', async () => {

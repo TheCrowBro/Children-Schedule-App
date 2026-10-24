@@ -267,34 +267,8 @@ const Art = (() => {
     const grain = t.id === 'classic' ? '' : `<rect width="${W}" height="${H}" filter="url(#mottle)"/><rect width="${W}" height="${H}" filter="url(#grain)"/>`;
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="0 0 ${W} ${H}">${DEFS}<rect width="${W}" height="${H}" fill="${paper}"/>${SCENES[t.id](R)}${grain}</svg>`;
   }
-  // ---- the clock's frame: a slim carriage-clock outline in the app's style (pale gold washes, thin ink lines, partly see-through) ----
-  // FRAME is the whole clock (340 × 436); the painting sits in its panel at (x, y), scaled by k.
+  // The clock is 340 × 436; the painting sits in its panel at (x, y), scaled by k.
   const FRAME = { W: 340, H: 436, x: 30, y: 48, k: 280 / W };
-  function frameSvg(dark, scale = 2.5) {
-    const R = rng(97), gold = dark ? '#c9a45c' : '#d8b468', deep = dark ? '#9c7a3a' : '#b98f48', ink = dark ? '#ead3a0' : '#6e5226', io = dark ? 0.5 : 0.55;
-    const rr = (x, y, w, h, r) => `M${P(x + r, y)}H${f(x + w - r)}Q${P(x + w, y)} ${P(x + w, y + r)}V${f(y + h - r)}Q${P(x + w, y + h)} ${P(x + w - r, y + h)}H${f(x + r)}Q${P(x, y + h)} ${P(x, y + h - r)}V${f(y + r)}Q${P(x, y)} ${P(x + r, y)}Z`;
-    const line = (d, w = 1, op = io) => `<path d="${d}" fill="none" stroke="${ink}" stroke-width="${w}" stroke-opacity="${op}" stroke-linecap="round" stroke-linejoin="round" filter="url(#wcs)"/>`;
-    const part = (d, op = 0.42) => wash(d, gold, op, 0.35) + line(d);
-    const loops = y => { let d = ''; for (let x = 20; x < 322; x += 9) d += `M${P(x, y)}a2.4 2.4 0 1 0 4.8 0a2.4 2.4 0 1 0 -4.8 0`; return line(d, 0.7, io * 0.6); };
-    let s = '';
-    // handle: a slim bar with end knobs on two turned posts
-    for (const x of [101, 239]) s += part(`M${f(x - 1.8)} 19V36H${f(x + 1.8)}V19Z`, 0.5) + part(blob(R, x, 27, 3.6, 4.8, 0.06, 8), 0.45);
-    s += part(rr(104, 10, 132, 6.5, 3.2), 0.45) + part(rr(94, 7, 13, 12, 3), 0.45) + part(rr(233, 7, 13, 12, 3), 0.45);
-    // finials over the columns
-    for (const x of [21, 319]) s += part(blob(R, x, 29, 3.8, 3.8, 0.05, 8), 0.45) + part(`M${f(x - 5)} 36L${f(x - 2.5)} 32.5H${f(x + 2.5)}L${f(x + 5)} 36Z`, 0.4) + line(`M${f(x)} 25.2V21.5`, 0.9);
-    // cornice and base bands, each with a light run of fretwork loops
-    s += part(rr(9, 36, 322, 12, 3), 0.38) + loops(42) + part(rr(9, 406, 322, 12, 3), 0.38) + loops(412);
-    // fluted columns with a shadowed side, capitals and bases
-    for (const x of [14, 312]) {
-      s += wash(rr(x, 48, 14, 358, 3), gold, 0.4, 0.35) + wash(rr(x + 8, 50, 5, 354, 2.5), deep, 0.22, 0.2) + line(rr(x, 48, 14, 358, 3));
-      s += line(`M${f(x + 4.6)} 54V400M${f(x + 9.4)} 54V400`, 0.7, io * 0.55);
-      s += part(rr(x - 3, 45.5, 20, 6, 2), 0.45) + part(rr(x - 3, 402.5, 20, 6, 2), 0.45);
-    }
-    // bun feet and a soft shadow
-    for (const x of [21, 319]) s += part(blob(R, x, 423.5, 10, 4.8, 0.05, 9), 0.45);
-    s = `<g filter="url(#wet)"><ellipse cx="170" cy="431" rx="150" ry="3.5" fill="${ink}" opacity=".18"/></g>` + s;
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(FRAME.W * scale)}" height="${Math.round(FRAME.H * scale)}" viewBox="0 0 ${FRAME.W} ${FRAME.H}">${DEFS}${s}</svg>`;
-  }
 
   // Pictures are drawn once (into a blob URL), then reused. Anything that fails falls back to the SVG itself.
   const cache = {}, pending = {};
@@ -317,7 +291,5 @@ const Art = (() => {
   const key = (id, scale) => `${byId(id).id}@${scale}`;
   const peek = (id, scale = 2.5) => cache[key(id, scale)] || null;
   const url = (id, scale = 2.5) => raster(key(id, scale), () => svg(id, scale));
-  const peekFrame = dark => cache[`frame-${dark ? 'dark' : 'light'}`] || null;
-  const frameUrl = dark => raster(`frame-${dark ? 'dark' : 'light'}`, () => frameSvg(dark));
-  return { THEMES, byId, DIAL, W, H, FRAME, svg, url, peek, frameSvg, frameUrl, peekFrame };
+  return { THEMES, byId, DIAL, W, H, FRAME, svg, url, peek };
 })();

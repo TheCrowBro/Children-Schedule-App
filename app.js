@@ -234,24 +234,28 @@ function artOf(id = dayKid()) {
 function setArt(id, theme) { (db.meta.art || (db.meta.art = {}))[id] = theme; Store.save(db); }
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
 function clockSvg(evs, day) {
-  // The frame (a light watercolour carriage-clock outline) and the painting are pictures drawn once and reused; the dial is a plain white
-  // face with a black rim, the same in light and dark mode, so the entries on it always read the same way.
+  // The frame is a carriage-clock outline in thin soft-gold lines, like the lines of the dial, so the dial stays the focus. The painting
+  // is a picture drawn once and reused. The dial is a plain white face with a black rim, the same in light and dark mode, so the entries
+  // on it always read the same way.
   const th = Art.byId(artOf()), dk = dark(), F = Art.FRAME, K = F.k, PW = Art.W * K, PH = Art.H * K;
   const C = { x: F.x + Art.DIAL.x * K, y: F.y + Art.DIAL.y * K }, RD = Art.DIAL.r * K, rr = r => r * K;
   const RR = { sleep: rr(90), feed: rr(78), diaper: rr(66), vomit: rr(54), play: rr(42), health: rr(30) };
   const sp = clockSpan(day), twelve = face12(), frac = t => (t - sp.start) / sp.len, ang = fr => fr * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C.x + r * Math.cos(a), C.y + r * Math.sin(a)];
   const f1 = n => n.toFixed(1), xy = (a, r) => P(a, r).map(f1).join(' ');
   const arc = (a0, a1, r) => `M${xy(a0, r)}A${f1(r)} ${f1(r)} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${xy(a1, r)}`;
-  const ink = '#1f1b16', gilt = '#b8862b', line = dk ? '#ead3a0' : '#6e5226';
+  const ink = '#1f1b16', gilt = '#b8862b', gold = dk ? '#8f7c55' : '#c8aa6e';
   const pic = (cls, attr, u) => `<image class="${cls}" ${attr} preserveAspectRatio="none"${u ? ` href="${u}" xlink:href="${u}"` : ''}/>`;
   const fill = (sel, p) => p.then(u => document.querySelectorAll(sel).forEach(im => { im.setAttribute('href', u); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', u); }));
-  const frameUrl = Art.peekFrame(dk), artUrl = Art.peek(th.id);
-  if (!frameUrl) fill(`.clock image.frame[data-mode="${dk ? 'dark' : 'light'}"]`, Art.frameUrl(dk));
+  const artUrl = Art.peek(th.id);
   if (!artUrl) fill(`.clock image.art[data-theme="${th.id}"]`, Art.url(th.id));
-  const frame = pic('frame', `data-mode="${dk ? 'dark' : 'light'}" x="0" y="0" width="${F.W}" height="${F.H}"`, frameUrl);
+  const box = (x, y, w, h, r = 2) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}"/>`;
+  const frame = `<g class="frame" fill="none" stroke="${gold}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M101 36V17Q101 12 106 12H234Q239 12 239 17V36"/><path d="M21 34V36M319 34V36"/><circle cx="21" cy="31" r="3"/><circle cx="319" cy="31" r="3"/>
+    ${box(9, 36, 322, 12)}${box(9, 406, 322, 12)}${box(14, 48, 14, 358, 1.5)}${box(312, 48, 14, 358, 1.5)}<path d="M14 418Q21 427 28 418M312 418Q319 427 326 418"/>
+    <path d="M14 42H326M14 412H326M21 52V402M319 52V402" stroke-width=".6" stroke-opacity=".75"/></g>`;
   const panel = `<clipPath id="cc-panel"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5"/></clipPath>
     <g clip-path="url(#cc-panel)"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="${th.base}"/>${pic('art', `data-theme="${th.id}" x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}"`, artUrl)}${dk ? `<rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="#120f0b" opacity=".3"/>` : ''}</g>
-    <rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5" fill="none" stroke="${line}" stroke-opacity=".5" stroke-width=".9"/>`;
+    <rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5" fill="none" stroke="${gold}" stroke-width=".8"/>`;
   let dial = `<circle class="face" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="${dk ? '#f1ece3' : '#fffdf8'}"/><circle class="rim" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="none" stroke="${ink}" stroke-width="1.6"/>`;
   // railway minute track and the hours. 24-hour face: Roman numerals on the even hours, a moon at midnight and a sun at noon.
   // 12-hour face: all twelve numerals, with a.m. or p.m. under the centre.
@@ -294,7 +298,7 @@ function clockSvg(evs, day) {
     const h = handAngles(now, sp);
     hand = twelve ? needle(h.m, rr(106)) + spade('h', h.h, rr(70)) : spade('d', h.d, rr(99));
   }
-  const boss = `<circle cx="${C.x}" cy="${f1(C.y)}" r="5.6" fill="#dcb86c" stroke="#6e5226" stroke-width=".9"/><circle cx="${C.x}" cy="${f1(C.y)}" r="1.5" fill="#6e5226"/>`;
+  const boss = `<circle cx="${C.x}" cy="${f1(C.y)}" r="5.2" fill="#fffdf8" stroke="${ink}" stroke-width="1.2"/><circle cx="${C.x}" cy="${f1(C.y)}" r="1.6" fill="${ink}"/>`;
   const summary = GROUPS.map(gr => [gr.label, evs.filter(e => gr.types.includes(e.type)).length]).filter(x => x[1]).map(x => `${x[1]} ${x[0].toLowerCase()}`).join(', ');
   const what = twelve ? `12-hour clock, ${half ? 'noon to midnight' : 'midnight to noon'}` : '24-hour clock of the day, midnight at the top and noon at the bottom';
   return `<svg class="clock" viewBox="0 0 ${F.W} ${F.H}" data-cx="${C.x}" data-cy="${f1(C.y)}" data-painting="${th.id}" data-dial="${twelve ? 12 : 24}" role="group" aria-label="${what}${summary ? ': ' + esc(summary) : ', no entries'}">
