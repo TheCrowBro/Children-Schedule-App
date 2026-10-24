@@ -17,6 +17,8 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
   month-by-month milestones (a reminder pops up on each month birthday), and the **pediatrician's details** with a Call button
 - **Formula**: each child's usual formula, filled in on bottle feeds
 - **People's contact details** (phone, work, notes) that each person adds for themselves, visible to those allowed to see the family list
+- **Appearance**: match the phone, light, dark, or automatic by **sunrise and sunset** (worked out from the phone's time zone, no location
+  needed); switching plays a short sunset into dark or sunrise into light
 - **Sleep timer**, **month calendar** with coloured dots, **stats** (7/14/30 days)
 - **Health checklist** (blue hands/feet, clicking hips, belly bulge, jaundice…) with "call your doctor" prompts
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters* and *Friends*; per-person check boxes for exactly what

@@ -44,4 +44,4 @@ function demoDb() {
 // the page's own scroll box stands in for the window on wide screens
 { const sc = () => document.getElementById('scroll'), real = window.scrollTo.bind(window);
   window.scrollTo = (x, y) => { const s = sc(), top = typeof x === 'object' ? x.top : y; if (s && getComputedStyle(s).overflowY === 'auto') s.scrollTop = top || 0; else real(x, y); }; }
-new MutationObserver(() => { if (typeof render === 'function') render(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+new MutationObserver(() => Theme.apply(true)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });   // the viewer's light / dark switch

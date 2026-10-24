@@ -1,7 +1,7 @@
 :root{--bg:#f6f2ec;--card:#fffdf9;--ink:#4a4337;--mute:#6b6354;--on-brand:#fff;--wash1:rgba(100,117,159,.2);--wash2:rgba(100,117,159,.1);--wash3:rgba(100,117,159,.05);--line:#e8e1d5;--brand:#64759f;--sky:#dfe3ec;--serif:Georgia,'Iowan Old Style','Palatino Linotype',serif;
 --feed:#d9a066;--diaper:#7fb0a6;--sleep:#8a94c0;--wake:#a89bc4;--vomit:#a3b17a;--play:#d49aa6;--health:#c9756e;--med:#7fa6c4;
 --feed-ink:#8f6b43;--diaper-ink:#5b7a70;--sleep-ink:#646a85;--wake-ink:#76697f;--vomit-ink:#6f7653;--play-ink:#8e6a6e;--health-ink:#8d5249;--med-ink:#5a7183;--poo-ink:#7d5a2c}
-@media(prefers-color-scheme:dark){:root{--bg:#1d1b19;--card:#27241f;--ink:#efe9de;--mute:#b3aa99;--line:#38342d;--sky:#2c3039;--brand:#9aa8cc;--on-brand:#1d1b19}}
+:root[data-mode="dark"]{--bg:#1d1b19;--card:#27241f;--ink:#efe9de;--mute:#b3aa99;--line:#38342d;--sky:#2c3039;--brand:#9aa8cc;--on-brand:#1d1b19;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:80px}
 .top{padding:max(14px,env(safe-area-inset-top)) 16px 10px;max-width:none;margin:0;background:radial-gradient(120% 140% at 15% 0%,var(--sky),transparent 70%)}
@@ -139,7 +139,7 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .sw{width:44px;height:44px;border-radius:50%;border:3px solid var(--card);background:var(--k);color:#fff;font:800 18px/1 system-ui;box-shadow:0 0 0 1px var(--line)}
 .sw.on{box-shadow:0 0 0 3px var(--ink)}
 .sw:disabled{opacity:.6}
-@media(prefers-color-scheme:dark){.kidbar button:not(.on){border-color:var(--kl,var(--k))}.ic .wash{opacity:.4}body::before{opacity:.9}}
+:root[data-mode="dark"] .kidbar button:not(.on){border-color:var(--kl,var(--k))}:root[data-mode="dark"] .ic .wash{opacity:.4}:root[data-mode="dark"] body::before{opacity:.9}
 .kidrow .chip input:checked+span{background:var(--k);border-color:var(--k);color:#fff}
 /* ---- Day clock ------------------------------------------------------------------------------------------------------------------------ */
 .clockwrap{margin:2px 0 14px}
@@ -223,4 +223,24 @@ details.tbl{margin-top:4px}details.tbl>summary{min-height:36px;padding:6px 0;fon
 .artopt img:not([src]){visibility:hidden}
 .artopt .thumb i{position:absolute;left:4%;top:3%;width:92%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,253,248,.85) 0 66%,rgba(255,253,248,.6) 86%,rgba(255,253,248,.4) 100%)}
 .artopt .an{padding:0 2px 2px}
-@media(prefers-color-scheme:dark){.artopt .thumb i{background:radial-gradient(circle,rgba(39,36,31,.85) 0 66%,rgba(39,36,31,.65) 86%,rgba(39,36,31,.5) 100%)}}
+:root[data-mode="dark"] .artopt .thumb i{background:radial-gradient(circle,rgba(39,36,31,.85) 0 66%,rgba(39,36,31,.65) 86%,rgba(39,36,31,.5) 100%)}
+/* ---- sunset into dark, sunrise into light (theme.js changes the theme while the sky covers the screen) --------------------------------- */
+.sky{position:fixed;inset:0;z-index:90;pointer-events:none;overflow:hidden;opacity:0;animation:sky-fade 2.7s ease-in-out forwards}
+@keyframes sky-fade{0%{opacity:0}30%{opacity:.97}58%{opacity:.97}100%{opacity:0}}
+.sky i{position:absolute;display:block}
+.sky .glow{left:0;right:0;top:0;height:400%;will-change:transform;animation:sky-pan 2.7s ease-in-out forwards}
+.sky.sunset .glow{background:linear-gradient(180deg,#a9d0ec 0%,#d3e5ef 9%,#f8dca0 25%,#f4a56e 39%,#e47b86 53%,#9a6aa8 67%,#3a3d74 83%,#161a36 100%)}
+.sky.sunrise .glow{background:linear-gradient(180deg,#161a36 0%,#3a3d74 17%,#9a6aa8 33%,#e47b86 47%,#f4a56e 61%,#f8dca0 75%,#d3e5ef 91%,#a9d0ec 100%)}
+@keyframes sky-pan{from{transform:translateY(0)}to{transform:translateY(-75%)}}
+.sky .sun{left:50%;top:0;width:128px;height:128px;margin-left:-64px;border-radius:50%;will-change:transform;background:radial-gradient(circle,#fff8df 0 28%,#ffdc8c 46%,rgba(255,178,92,.5) 62%,rgba(255,150,80,0) 71%)}
+.sky.sunset .sun{animation:sun-down 2.7s ease-in forwards}
+.sky.sunrise .sun{animation:sun-up 2.7s ease-out forwards}
+@keyframes sun-down{from{transform:translateY(20vh)}to{transform:translateY(94vh)}}
+@keyframes sun-up{from{transform:translateY(94vh)}to{transform:translateY(20vh)}}
+.sky .hills{left:-12%;right:-12%;bottom:-9vh;height:27vh;border-radius:50% 50% 0 0;background:#2b2548;opacity:.55;filter:blur(5px)}
+.sky .stars{inset:0;opacity:0;background-image:radial-gradient(1.6px 1.6px at 11% 14%,#fff 60%,transparent 64%),radial-gradient(1.2px 1.2px at 27% 31%,#fff 60%,transparent 64%),radial-gradient(1.4px 1.4px at 44% 9%,#fff 60%,transparent 64%),radial-gradient(1.1px 1.1px at 63% 24%,#fff 60%,transparent 64%),radial-gradient(1.7px 1.7px at 81% 12%,#fff 60%,transparent 64%),radial-gradient(1.2px 1.2px at 90% 36%,#fff 60%,transparent 64%),radial-gradient(1.3px 1.3px at 18% 46%,#fff 60%,transparent 64%),radial-gradient(1.2px 1.2px at 72% 50%,#fff 60%,transparent 64%),radial-gradient(1.5px 1.5px at 52% 40%,#fff 60%,transparent 64%)}
+.sky.sunset .stars{animation:stars-in 2.7s ease-in forwards}
+.sky.sunrise .stars{animation:stars-out 2.7s ease-out forwards}
+@keyframes stars-in{0%,45%{opacity:0}80%,100%{opacity:.9}}
+@keyframes stars-out{0%{opacity:.9}35%,100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.sky{display:none}}

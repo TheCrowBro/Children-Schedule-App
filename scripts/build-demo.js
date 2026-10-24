@@ -5,15 +5,13 @@ const root = path.join(__dirname, '..'), rd = f => fs.readFileSync(path.join(roo
 const out = process.argv[2] || path.join(root, 'demo', 'little-log-demo.html');
 let css = rd('style.css');
 // colour tokens follow the viewer's light / dark choice as well as the system setting
-css = css.replace(/@media\(prefers-color-scheme:dark\)\{:root\{([^}]*)\}\}/, (m, v) => `@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){${v};color-scheme:dark}}\n:root[data-theme="dark"]{${v};color-scheme:dark}`);
 css = css.replace('body::before{', '#phone::before{');
-let app = rd('app.js').replace(/^const dark = .*$/m, "const dark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches); };");
+const app = rd('app.js');
 const html = rd('index.html'), body = html.slice(html.indexOf('<body>') + 6, html.indexOf('<script src="native-plugins.js">')).trim();
 const [head, rest] = (() => { const i = body.indexOf('<nav class="tabs"'); return [body.slice(0, i), body.slice(i)]; })();
 const frame = `
 :root{--stage:#e9e4dc}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--stage:#0f0e0d}}
-:root[data-theme="dark"]{--stage:#0f0e0d}
+:root[data-mode="dark"]{--stage:#0f0e0d}
 html,body{height:auto}
 #phone{position:relative;isolation:isolate}
 .card:has(#expJson),.card:has(#wipe){display:none}
@@ -26,6 +24,7 @@ html,body{height:auto}
 }`;
 const page = `<title>Little Log Demo</title>
 <style>${css}\n${frame}</style>
+<script>\n${rd('theme.js')}\n</script>
 <div id="phone"><div id="scroll">${head}</div>${rest}</div>
 ${['kids.js', 'icons.js', 'guide.js', 'art.js', 'demo/stubs.js'].map(f => `<script>\n${rd(f).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}
 <script>\n${app.replace(/<\/script/gi, '<\\/script')}\n</script>

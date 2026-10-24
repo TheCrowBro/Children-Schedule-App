@@ -138,22 +138,22 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
     });
 
     await step('in dark mode the clock keeps its white face, and the entries on it keep the colours checked against white', async () => {
-      await P.emulateMedia({ colorScheme: 'dark' }); await P.click('[data-tab=day]');
+      await P.emulateMedia({ colorScheme: 'dark' }); await P.evaluate(() => Theme.apply(false)); await P.click('[data-tab=day]');
       const r = await P.evaluate(() => ({ face: document.querySelector('.clock .face').getAttribute('fill'), dot: getComputedStyle(document.querySelector('.clock .ray .dot')).fill, legend: getComputedStyle(document.querySelector('.clockwrap .clegend i')).backgroundColor }));
       assert.equal(r.face, '#f1ece3', 'a warm white face at night');
       const rgb = h => `rgb(${[1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(', ')})`;
       assert.equal(r.legend, rgb('#c9761f'), 'the legend matches the dots: ' + r.legend);
       assert([rgb('#c9761f'), rgb('#2a9db8'), rgb('#5b5fc7'), rgb('#5f8a1f'), rgb('#a845a8'), rgb('#c0392b')].includes(r.dot), 'a light-palette colour: ' + r.dot);
-      await P.emulateMedia({ colorScheme: 'light' }); await P.evaluate(() => render());
+      await P.emulateMedia({ colorScheme: 'light' }); await P.evaluate(() => Theme.apply(false));
     });
 
     await step('group colours stay readable on the paper in light and dark mode (3:1 for marks)', async () => {
       for (const mode of ['light', 'dark']) {
-        await P.emulateMedia({ colorScheme: mode }); await P.evaluate(() => render());
+        await P.emulateMedia({ colorScheme: mode }); await P.evaluate(() => Theme.apply(false));   // (switch straight away: no sky in a test)
         const c = await P.evaluate(() => { const s = getComputedStyle(document.documentElement); return { card: mode => (mode === 'dark' ? '#27241f' : '#fffdf9'), g: ['feed', 'diaper', 'sleep', 'vomit', 'play', 'health'].map(g => s.getPropertyValue('--g-' + g).trim()) }; });
         for (const g of c.g) assert(contrast(g, mode === 'dark' ? '#27241f' : '#fffdf9') >= 3, `${mode} ${g}`);
       }
-      await P.emulateMedia({ colorScheme: 'light' }); await P.evaluate(() => render());
+      await P.emulateMedia({ colorScheme: 'light' }); await P.evaluate(() => Theme.apply(false));
     });
 
     await step('a child\'s usual formula fills in on bottle feeds and is saved with the entry', async () => {
@@ -232,6 +232,57 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       await P.click('#msGuide'); assert.equal(await P.evaluate(() => tab), 'guide');
       await P.evaluate(() => render()); assert.equal(await P.isVisible('#msGuide'), false, 'not shown again');
       assert(/Leo is 2 months old/.test(await P.textContent('.nowcard')), 'the Guide shows this month for the open child');
+    });
+
+    await step('Appearance: match phone, light, dark, or sunrise & sunset; the choice applies at once and is kept from the first paint', async () => {
+      await P.emulateMedia({ colorScheme: 'light', reducedMotion: 'no-preference' }); await P.click('[data-tab=more]');
+      assert.deepEqual(await P.$$eval('[name=themeMode]', r => r.map(x => x.value)), ['system', 'light', 'dark', 'sun']);
+      assert.equal(await P.evaluate(() => Theme.mode), 'system');
+      const mode = () => P.evaluate(() => document.documentElement.dataset.mode), until = m => P.waitForFunction(x => document.documentElement.dataset.mode === x, m, { timeout: 6000 });
+      await P.emulateMedia({ colorScheme: 'dark' }); await until('dark');
+      await P.emulateMedia({ colorScheme: 'light' }); await until('light');
+      await P.click('[name=themeMode][value=dark]'); await until('dark');
+      assert.equal(await P.evaluate(() => localStorage.getItem('ll.theme')), 'dark');
+      assert.equal(await P.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(29, 27, 25)', 'the page really turns dark');
+      await P.emulateMedia({ colorScheme: 'light' }); assert.equal(await mode(), 'dark', 'a fixed choice ignores the phone');
+      await P.reload(); assert.equal(await mode(), 'dark', 'dark from the very first paint after a restart'); await P.waitForSelector('#tabs');
+      await P.click('[data-tab=more]'); await P.click('[name=themeMode][value=sun]'); await P.waitForTimeout(3000);
+      assert(/light from .* dark from/.test(await P.textContent('.card:has([name=themeMode]) .note')), 'shows today\'s times');
+      await P.click('[name=themeMode][value=light]'); await until('light');
+    });
+
+    await step('switching plays a sunset into dark and a sunrise into light, changing the theme while the sky covers the screen; none when motion is reduced', async () => {
+      await P.evaluate(() => Theme.set('dark'));
+      assert.equal(await P.evaluate(() => `${document.querySelector('.sky').className}|${document.documentElement.dataset.mode}`), 'sky sunset|light', 'a sunset begins, still light underneath');
+      await P.waitForFunction(() => document.documentElement.dataset.mode === 'dark', null, { timeout: 3000 });
+      assert(await P.$('.sky'), 'the sky still covers the screen as the theme changes');
+      await P.waitForFunction(() => !document.querySelector('.sky'), null, { timeout: 4000 });
+      await P.evaluate(() => Theme.set('light')); assert.equal(await P.evaluate(() => document.querySelector('.sky').className), 'sky sunrise');
+      await P.waitForFunction(() => !document.querySelector('.sky') && document.documentElement.dataset.mode === 'light', null, { timeout: 5000 });
+      await P.emulateMedia({ reducedMotion: 'reduce' });
+      await P.evaluate(() => Theme.set('dark')); assert.equal(await P.evaluate(() => `${!!document.querySelector('.sky')}|${document.documentElement.dataset.mode}`), 'false|dark', 'reduced motion: straight to dark');
+      await P.evaluate(() => Theme.set('light')); await P.emulateMedia({ reducedMotion: 'no-preference' });
+      assert.equal(await P.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(246, 242, 236)');
+    });
+
+    await step('sunrise and sunset are worked out from the time zone (no location), including the polar winter and summer', async () => {
+      const r = await P.evaluate(() => {
+        const iso = t => new Date(t).toISOString(), at = s => new Date(s).getTime();
+        const ny = Theme.sunTimes(at('2026-06-21T16:00:00Z'), 40.71, -74.01), ld = Theme.sunTimes(at('2026-12-21T12:00:00Z'), 51.51, -0.13), sy = Theme.sunTimes(at('2026-12-21T02:00:00Z'), -33.87, 151.21);
+        const here = Theme.place(), s = Theme.sunTimes(Date.now(), here.lat, here.lon);
+        return { ny: [iso(ny.rise), iso(ny.set)], ld: [iso(ld.rise), iso(ld.set)], sy: [iso(sy.rise), iso(sy.set)],
+          tromso: [Theme.sunTimes(at('2026-12-21T12:00:00Z'), 69.65, 18.96).polar, Theme.sunTimes(at('2026-06-21T12:00:00Z'), 69.65, 18.96).polar],
+          london: Theme.place('Europe/London'), unknown: Theme.place('Mars/Olympus_Mons'), south: Theme.place('Australia/Lord_Howe'),
+          auto: s.polar ? 'polar' : [Theme.resolve('sun', s.rise - 6e4), Theme.resolve('sun', s.rise + 6e4), Theme.resolve('sun', s.set - 6e4), Theme.resolve('sun', s.set + 6e4)].join() };
+      });
+      const near = (got, want, label) => assert(Math.abs(new Date(got) - new Date(want)) <= 6 * 6e4, `${label}: ${got} vs about ${want}`);
+      near(r.ny[0], '2026-06-21T09:25:00Z', 'New York sunrise, 21 June (5:25 AM EDT)'); near(r.ny[1], '2026-06-22T00:31:00Z', 'New York sunset (8:31 PM EDT)');
+      near(r.ld[0], '2026-12-21T08:04:00Z', 'London sunrise, 21 December'); near(r.ld[1], '2026-12-21T15:53:00Z', 'London sunset');
+      near(r.sy[0], '2026-12-20T18:41:00Z', 'Sydney sunrise, 21 December (5:41 AM AEDT)'); near(r.sy[1], '2026-12-21T09:05:00Z', 'Sydney sunset (8:05 PM AEDT)');
+      assert.deepEqual(r.tromso, ['night', 'day'], 'Tromsø: polar night in December, midnight sun in June');
+      assert.deepEqual(r.london, { lat: 51.51, lon: -0.13, zone: 'London' });
+      assert.equal(r.unknown.lat, 40); assert.equal(r.south.lat, -33, 'an unknown southern zone guesses the southern hemisphere');
+      assert.equal(r.auto, 'dark,light,light,dark', 'dark until sunrise, light until sunset, then dark');
     });
 
     const pageErrs = H.pages.flatMap(p => p.errs.concat(p.csp));

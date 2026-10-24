@@ -34,12 +34,13 @@ const Icons = (() => {
     guide:   ['<path d="M4 8c4-2 8-2 12 1 4-3 8-3 12-1v17c-4-2-8-2-12 1-4-3-8-3-12-1z"/>', '<path d="M4 8c4-2 8-2 12 1 4-3 8-3 12-1v17c-4-2-8-2-12 1-4-3-8-3-12-1zM16 9v17M8 13c1.700-.5 3.300-.5 5 .3M8 17.500c1.700-.5 3.300-.5 5 .3M19 13.300c1.700-.8 3.300-.8 5-.3"/>'],
     star:    ['<path d="M16 4.500l3.400 7 7.600 1.100-5.500 5.300 1.300 7.600L16 21.900l-6.800 3.600 1.300-7.600L5 12.600l7.600-1.100z"/>', '<path d="M16 4.500l3.400 7 7.600 1.100-5.500 5.300 1.300 7.600L16 21.900l-6.800 3.600 1.300-7.600L5 12.600l7.600-1.100z"/>'],
     palette: ['<path d="M16 5C9 5 4 10 4 16c0 6 5 11 11 11 2 0 3-1 3-2.500 0-1.500-1-2-1-3.500 0-1.500 1-2.500 2.500-2.500H23c3 0 5-2 5-5C28 8.500 22.500 5 16 5z"/>', '<path d="M16 5C9 5 4 10 4 16c0 6 5 11 11 11 2 0 3-1 3-2.500 0-1.500-1-2-1-3.500 0-1.500 1-2.500 2.500-2.500H23c3 0 5-2 5-5C28 8.500 22.500 5 16 5z"/><circle cx="10.500" cy="15" r="1.600"/><circle cx="13" cy="10" r="1.600"/><circle cx="19" cy="9.500" r="1.600"/><circle cx="23.500" cy="13" r="1.600"/>'],
+    theme:   ['<circle cx="16" cy="16" r="11"/>', '<circle cx="16" cy="16" r="11"/><path d="M16 5a11 11 0 0 1 0 22z" fill="currentColor" stroke="none" fill-opacity=".55"/>'],
     cloud:   ['<path d="M9 25a5.500 5.500 0 0 1-.5-11A7.500 7.500 0 0 1 23 12.500 6.300 6.300 0 0 1 23 25z"/>', '<path d="M9 25a5.500 5.500 0 0 1-.5-11A7.500 7.500 0 0 1 23 12.500 6.300 6.300 0 0 1 23 25z"/>'],
   };
   // emoji (without the optional variation selector) → icon name
   const MAP = { '🍼': 'feed', '💧': 'diaper', '😴': 'sleep', '🌙': 'wake', '🤮': 'vomit', '🧸': 'play', '🩺': 'health', '💊': 'med', '💩': 'poo',
     '📅': 'day', '🗓': 'month', '📊': 'stats', '👨‍👩‍👧': 'family', '⚙': 'more', '🔒': 'lock', '🔐': 'lock', '🔑': 'key', '📷': 'camera', '🔗': 'link',
-    '👶': 'baby', '📨': 'mail', '⚠': 'warn', '✅': 'check', '⏳': 'clock', '📴': 'offline', '☁': 'cloud', '📞': 'phone', '📖': 'guide', '🌟': 'star', '🎨': 'palette' };
+    '👶': 'baby', '📨': 'mail', '⚠': 'warn', '✅': 'check', '⏳': 'clock', '📴': 'offline', '☁': 'cloud', '📞': 'phone', '📖': 'guide', '🌟': 'star', '🎨': 'palette', '🌗': 'theme' };
   const RE = new RegExp(Object.keys(MAP).sort((a, b) => b.length - a.length).join('|') + '(?:\\uFE0F)?', 'gu');
   const bare = s => s.replace(/️/g, '');
   /** The icon as an SVG string. `size` is in px (default: 1.15em, so it sits in text). */

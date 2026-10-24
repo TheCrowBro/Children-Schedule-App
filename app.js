@@ -139,7 +139,7 @@ const eventsOnDay = day => scoped().filter(e => e.ts >= day && e.ts < day + DAY)
 const activeSleep = id => db.events.find(e => e.type === 'sleep' && !e.end && (!id || childOf(e) === id));
 const initial = k => esc([...kidName(k)][0] || '?').toUpperCase();
 const avatar = (k, cls = '') => `<span class="av ${cls}" style="--k:${k.color}">${initial(k)}</span>`;
-const dark = () => !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+const dark = () => Theme.isDark();   // light or dark, as chosen in More → Appearance (theme.js)
 /** Colours the whole app in the open child's colour (set as plain hex, so no modern CSS colour functions are needed). */
 function theme() {
   const k = kidById(dayKid()), strong = k ? k.color : '#64759f', dk = dark(), R = document.documentElement.style, set = (n, v) => R.setProperty(n, v);
@@ -581,10 +581,20 @@ function artHtml() {
   return `<div class="card"><b>🎨 Clock art</b><p class="note">The watercolour painting around the day clock. Kept on this phone.</p>
     ${pages.map(([id, name]) => `<div class="stat"><span>${esc(name)}<br><small>${esc(Art.byId(artOf(id)).name)}</small></span><button class="btn" data-art="${id}" style="padding:6px 12px">Change</button></div>`).join('')}</div>`;
 }
+/** Light, dark, matching the phone, or following sunrise and sunset (kept on this phone). */
+function appearanceHtml() {
+  const m = Theme.mode, s = Theme.todaySun(), where = s.zone ? ` for the ${esc(s.zone)} time zone` : ' from your time zone';
+  const opts = [['system', 'Match phone'], ['light', 'Light'], ['dark', 'Dark'], ['sun', 'Sunrise & sunset']];
+  return `<div class="card"><b>🌗 Appearance</b>
+    <div class="chips" style="margin-top:10px">${opts.map(([v, l]) => chip('themeMode', v, l, m === v, '', true)).join('')}</div>
+    <p class="note">${m === 'sun' ? (s.polar ? `The sun ${s.polar === 'day' ? "doesn't set" : "doesn't rise"} here today, so it stays ${s.polar === 'day' ? 'light' : 'dark'}.` : `Today: light from ${fmtTime(s.rise)}, dark from ${fmtTime(s.set)}.`) + ` Estimated${where}; your location isn't used.`
+      : m === 'system' ? "Follows your phone's light or dark setting." : 'Switching plays a little sunrise or sunset.'}</p></div>`;
+}
 function moreView() {
   return Acct.accountHtml() + `
   ${kidsHtml()}
   ${artHtml()}
+  ${appearanceHtml()}
   ${Acct.cloudHtml()}
   <div class="card"><b>Your data</b><p class="note">${Sync.linked() ? 'Entries are saved on this device and synced to your family log.' : 'Everything is stored only on this device.'} Export a plain-text copy to share with your pediatrician.</p>
     <div class="row"><button class="btn" id="expJson">Backup (JSON)</button><button class="btn" id="expCsv">Export CSV</button></div>
@@ -617,6 +627,7 @@ $('#kidBar').onclick = e => { const b = e.target.closest('[data-kid]'); if (b) {
 $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.tab; if (tab === 'month') calMonth = new Date(viewDay); render(); window.scrollTo(0, 0); } };
 
 function bindMore() {
+  document.querySelectorAll('[name=themeMode]').forEach(r => r.onchange = () => { if (r.checked) { Theme.set(r.value); render(); } });
   /** Keep `name`/`birth` mirroring the first child, then save and (when shared) send the new profile. */
   const commit = (msg) => { db.baby.name = kids()[0].name; db.baby.birth = kids()[0].birth; Sync.linked() ? Sync.pushBaby() : save(); render(); if (msg) toast(msg); };
   const K = id => kidById(id);
@@ -780,7 +791,7 @@ Sync.onSessionLost = () => Acct.sessionLost();
 (async () => {
   await Store.init(); db = normalize(await Store.load());   // before anything reads the log
   Icons.init(); Icons.paint(document.querySelector('#tabs')); Icons.paint(document.querySelector('#cover'));
-  if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => render());
+  Theme.onChange = () => render();
   Store.st.onChange = () => { render(); if (!Store.st.ok) toast('Cannot save on this phone – free up space'); };
   if (Store.st.quarantined || Store.st.recovered) setTimeout(() => toast(Store.st.recovered ? 'Your saved log was damaged and has been restored from a recent backup' : 'A damaged copy of the log was set aside; it will be re-downloaded from your family log'), 600);
   if (Native.is) {
