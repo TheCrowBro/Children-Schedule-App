@@ -7,6 +7,12 @@ let css = rd('style.css');
 // colour tokens follow the viewer's light / dark choice as well as the system setting
 css = css.replace('body::before{', '#phone::before{');
 const app = rd('app.js');
+/** The Guide's pictures, embedded in the page (it is a single file). */
+const pictures = () => {
+  const dir = path.join(root, 'img', 'guide'), type = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' };
+  const map = Object.fromEntries(fs.readdirSync(dir).filter(f => type[path.extname(f)]).map(f => [f, `data:${type[path.extname(f)]};base64,${fs.readFileSync(path.join(dir, f)).toString('base64')}`]));
+  return `const GUIDE_PICS = ${JSON.stringify(map)};\nGuide.picSrc = f => GUIDE_PICS[f] || '';`;
+};
 const html = rd('index.html'), body = html.slice(html.indexOf('<body>') + 6, html.indexOf('<script src="native-plugins.js">')).trim();
 const [head, rest] = (() => { const i = body.indexOf('<nav class="tabs"'); return [body.slice(0, i), body.slice(i)]; })();
 const frame = `
@@ -27,6 +33,7 @@ const page = `<title>Little Log Demo</title>
 <script>\n${rd('theme.js')}\n</script>
 <div id="phone"><div id="scroll">${head}</div>${rest}</div>
 ${['kids.js', 'icons.js', 'guide.js', 'formulas.js', 'travel.js', 'tour.js', 'art.js', 'demo/stubs.js'].map(f => `<script>\n${rd(f).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}
+<script>\n${pictures()}\n</script>
 <script>\n${app.replace(/<\/script/gi, '<\\/script')}\n</script>
 `;
 fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, page); console.log('wrote', out, (page.length / 1024).toFixed(0) + ' KB');

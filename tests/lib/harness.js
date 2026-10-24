@@ -14,7 +14,7 @@ async function setup({ port = 8126 } = {}) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'll-rb-')), www = path.join(tmp, 'www'), APP = `http://localhost:${port}/`;
   fs.writeFileSync(path.join(tmp, 'config.js'), `window.LL_CONFIG={supabaseUrl:'${SB}',supabaseKey:'anon',dropboxKey:'dbx',appScheme:'app.littlelog.newborn'}`);
   execSync('node scripts/build-web.js', { cwd: root, env: { ...process.env, LL_CONFIG: path.join(tmp, 'config.js'), LL_OUT: www }, stdio: 'pipe' });
-  const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+  const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png' };
   const server = http.createServer((req, res) => {
     const f = path.join(www, req.url.split('?')[0] === '/' ? 'index.html' : req.url.split('?')[0]);
     if (!f.startsWith(www) || !fs.existsSync(f)) { res.writeHead(404); return res.end(); }

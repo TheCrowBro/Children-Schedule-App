@@ -338,3 +338,14 @@ details.freg[open]>summary .chev{transform:rotate(90deg)}
 .voyage .vmsg{position:absolute;left:16px;right:16px;top:18vh;margin:0;text-align:center;color:var(--ink)}
 .voyage .vmsg b{display:block;font:600 28px/1.2 var(--serif)}.voyage .vmsg small{display:block;margin-top:6px;font-size:16px;color:var(--mute)}
 
+/* ---- the Guide's pictures: a twirl-down inside a card, shut until someone opens it ----------------------------------------------------- */
+details.pix{margin:0 12px 12px;background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+details.pix>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;min-height:48px}
+details.pix[open] .pshut{display:none}
+details.pix figure{margin:0 10px 14px}
+details.pix img{display:block;width:100%;height:auto;margin:0 auto;border-radius:10px;background:var(--line)}
+details.pix figcaption{margin-top:8px;font-size:14px;line-height:1.45}
+details.pix figcaption small{display:block;margin-top:4px;color:var(--mute);font-size:12px}
+ul.credits{margin:0 16px 10px;padding-left:18px;font-size:13px;line-height:1.5}ul.credits li{margin-bottom:6px}
+.credits .url{overflow-wrap:anywhere;color:var(--mute)}
+details.gd[data-grp=credits]>.note{margin:0 16px 12px}

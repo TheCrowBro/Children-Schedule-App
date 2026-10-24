@@ -1,6 +1,6 @@
 // The day clock, twirl-down groups, month day counts, stats charts, formula, the Guide (pediatrician, milestones) and people's contact
 // details – including that the new private data stays end-to-end encrypted.   node tests/features.test.js
-const assert = require('assert');
+const assert = require('assert'), fs = require('fs'), path = require('path');
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
@@ -250,6 +250,47 @@ const pickFormula = async (page, scope, name) => {
       assert(/100\.4°F \(38°C\)/.test(await P.textContent('details[data-grp=gfever]')));
       assert.deepEqual(await P.$$eval('details.gd[data-grp^=m] b', b => b.map(x => x.textContent)), ['1 month', '2 months', '3 months', '4 months', '5 months', '6 months', '7 months', '8 months', '9 months', '10 months', '11 months', '12 months', '15 months', '18 months', '2 years']);
       assert(/911/.test(await P.textContent('.emer')), 'the emergency line is always on the page');
+    });
+
+    await step('the Guide\'s pictures: a twirl-down of their own inside the card, shut until tapped; loaded from the app itself, each with a caption and credit; closing the card or leaving the Guide hides them again', async () => {
+      const cards = await P.$$eval('details.gd[data-grp^=g]', d => d.filter(x => x.querySelector(':scope > details.pix')).map(x => x.dataset.grp));
+      assert.deepEqual(cards, ['gbelly', 'gjaundice', 'gcord', 'gpoop', 'gskin', 'gfontanelle'], 'the cards with something to show');
+      await P.click('details[data-grp=gskin] > summary');
+      assert.equal(await P.innerText('details[data-grp=pixskin] > summary small'), '3 photos · tap to show');
+      assert.equal(await P.isVisible('details[data-grp=pixskin] img'), false, 'opening the card doesn\'t show them');
+      const loaded = async sel => {   // (the page loads pictures as they scroll near; here every one is wanted now)
+        await P.$$eval(sel, i => i.forEach(x => { x.loading = 'eager'; }));
+        await P.waitForFunction(s => [...document.querySelectorAll(s)].every(i => i.complete && i.naturalWidth > 0), sel, { timeout: 5000 });
+      };
+      await P.click('details[data-grp=pixskin] > summary'); await loaded('details[data-grp=pixskin] img');
+      assert.equal(await P.innerText('details[data-grp=pixskin] > summary small'), '3 photos', 'the hint goes once they show');
+      const figs = await P.$$eval('details[data-grp=pixskin] figure', f => f.map(x => { const i = x.querySelector('img'); return { visible: i.checkVisibility(), own: i.src.startsWith(location.origin + '/img/guide/'), alt: i.alt, cap: x.querySelector('figcaption').textContent }; }));
+      assert.equal(figs.length, 3);
+      for (const f of figs) {
+        assert(f.visible && f.own, 'shown, from the app itself (nothing fetched from elsewhere)'); assert(f.alt.length > 30, 'described for screen readers: ' + f.alt);
+        assert(/Photo: [^,]+, (CC0 1\.0|Public domain|CC BY-SA [34]\.0)$/.test(f.cap), 'credited: ' + f.cap);
+      }
+      await P.evaluate(() => render()); assert(await P.isVisible('details[data-grp=pixskin] img'), 'they stay open while you look (a sync redraws the page)');
+      await P.click('details[data-grp=gskin] > summary'); await P.waitForFunction(() => !document.querySelector('details[data-grp=pixskin]').open, null, { timeout: 2000 });
+      await P.click('details[data-grp=gskin] > summary');
+      assert.equal(await P.isVisible('details[data-grp=pixskin] img'), false, 'closing the card hides them again');
+      await P.click('details[data-grp=pixskin] > summary'); await P.click('[data-tab=day]'); await P.click('[data-tab=guide]');
+      assert.deepEqual(await P.evaluate(() => ['gskin', 'pixskin'].map(g => document.querySelector(`details[data-grp=${g}]`).open)), [true, false], 'after leaving the Guide the card stays open, its pictures don\'t');
+      // every picture: the right size, a caption, a description and a full credit (licence and source addresses, and what was changed)
+      await P.evaluate(() => document.querySelectorAll('details.gd[data-grp^=g]:has(details.pix), details.pix').forEach(d => { d.open = true; }));
+      await loaded('details.pix img');
+      const all = await P.$$eval('details.pix img', i => i.map(x => [x.naturalWidth === +x.getAttribute('width') && x.naturalHeight === +x.getAttribute('height'), x.alt.length > 30, x.src.split('/').pop()]));
+      assert.equal(all.length, 12); assert.deepEqual(all.filter(x => !x[0] || !x[1]), [], 'sizes and descriptions match the files');
+      for (const f of all.map(x => x[2])) assert(fs.statSync(path.join(__dirname, '..', 'img', 'guide', f)).size < 100 * 1024, f + ' is small enough to ship');
+      await P.click('details[data-grp=credits] > summary');
+      const cr = await P.$$eval('ul.credits li', l => l.map(x => x.textContent));
+      assert.equal(cr.length, 12);
+      for (const c of cr) {
+        assert(/ From https:\/\/commons\.wikimedia\.org\/wiki\/File:\S+/.test(c), 'source: ' + c);
+        assert(/Public domain/.test(c) || /\(https:\/\/creativecommons\.org\/(licenses\/by-sa\/[34]\.0|publicdomain\/zero\/1\.0)\/\)/.test(c), 'licence: ' + c);
+        assert(/Public domain/.test(c) || /, (cropped|cropped and resized|saved with fewer colours)\.$/.test(c), 'what was changed: ' + c);
+      }
+      await P.evaluate(() => { [...openGroups].filter(g => /^(gbelly|gjaundice|gcord|gpoop|gskin|gfontanelle|pix|credits)/.test(g)).forEach(g => openGroups.delete(g)); render(); });
     });
 
     await step('the Guide\'s medicines drop-down: what is safe from what age (US and UK), remedies parents mention with what the evidence says, what never to give, and no doses', async () => {

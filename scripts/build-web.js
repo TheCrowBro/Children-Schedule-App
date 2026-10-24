@@ -11,6 +11,9 @@ fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'vendor'), { recursive: true });
 for (const f of files) fs.copyFileSync(f === 'config.js' ? configFile : path.join(root, f), path.join(out, f));
 for (const f of fs.readdirSync(path.join(root, 'vendor'))) fs.copyFileSync(path.join(root, 'vendor', f), path.join(out, 'vendor', f));
+// the Guide's pictures
+fs.mkdirSync(path.join(out, 'img', 'guide'), { recursive: true });
+for (const f of fs.readdirSync(path.join(root, 'img', 'guide'))) if (/\.(jpe?g|png)$/.test(f)) fs.copyFileSync(path.join(root, 'img', 'guide', f), path.join(out, 'img', 'guide', f));
 
 const origin = u => { try { return new URL(u).origin; } catch (e) { return ''; } };
 const connect = ["'self'", origin(cfg.supabaseUrl),

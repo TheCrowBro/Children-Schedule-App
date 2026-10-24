@@ -12,7 +12,7 @@ const Guide = (() => {
     { id: 'hips', icon: '🧸', title: 'Clicking joints and hips', body: 'Soft clicks from knees, shoulders and hips are common as ligaments stretch. Doctors check the hips at every early checkup.',
       call: 'Mention it at the next visit if you feel a "clunk" in a hip, the skin folds on the thighs look uneven, the legs look different lengths, or one leg moves less.' },
     { id: 'jaundice', icon: '🩺', title: 'Yellow skin (jaundice)', body: 'Mild yellowing of the skin and eyes is common between days 2 and 5 and usually fades within two weeks. Frequent feeds help.',
-      call: 'Call if yellow appears in the first 24 hours, spreads to the belly or legs, lasts more than two weeks, or your baby is very sleepy or feeding poorly. Pale or chalky poop or dark urine also needs a call.' },
+      call: 'Call if yellow appears in the first 24 hours, spreads to the belly, arms or legs, lasts more than two weeks, or your baby is very sleepy or feeding poorly. Pale or chalky poop or dark urine also needs a call.' },
     { id: 'cord', icon: '🩺', title: 'Umbilical cord stump', body: 'Keep it clean and dry and let it fall off by itself, usually in 1 to 3 weeks. A little crust or a spot of blood when it comes off is normal.',
       call: 'Call if the skin around it turns red, there is pus or a bad smell, bleeding doesn\'t stop with gentle pressure, or your baby has a fever.' },
     { id: 'spit', icon: '🤮', title: 'Spit-up', body: 'Most babies spit up, often after feeds or with burps. If your baby is growing and content, it is usually just "laundry".',
@@ -44,6 +44,66 @@ const Guide = (() => {
   ];
 
   // Month-by-month. CDC milestone checklists exist for 2, 4, 6, 9, 12, 15, 18 and 24 months; other months describe what is common.
+  // Pictures for some of them. Each card keeps them in a twirl-down of their own, shut until someone chooses to look. All come from
+  // Wikimedia Commons under free licences: `by`, `lic` and `src` (the Commons file) are credited under each picture and in full under
+  // "Picture credits". `edit` says how our copy differs; those under CC BY-SA are shared on the same terms. `drawing` marks a drawing,
+  // and `max` its widest size on screen (px).
+  const PICS = {
+    skin: [
+      { file: 'milia.jpg', w: 634, h: 558, name: 'Milia', by: 'Serephine', lic: 'CC0 1.0', src: 'Newborn_Milia_(Milk_Spots).jpg',
+        alt: 'Close-up of a sleeping newborn\'s nose dotted with tiny white spots.',
+        text: 'Milia: tiny white dots, here on the nose of a 1-week-old. Harmless; they go by themselves within a few weeks. Don\'t squeeze them.' },
+      { file: 'acne.jpg', w: 711, h: 554, name: 'Baby acne', by: 'Fragegeist', lic: 'Public domain', src: 'Babyakne.jpg',
+        alt: 'A sleeping baby\'s cheek with a patch of small red bumps.',
+        text: 'Baby acne at 3 weeks: small red bumps on the cheeks and forehead. It clears without treatment; wash with plain water. On brown or black skin the bumps can look darker rather than red.' },
+      { file: 'cradle-cap.jpg', w: 409, h: 418, name: 'Cradle cap', by: 'Starfoxy', lic: 'CC BY-SA 3.0', src: 'Baby_With_Cradle_Cap.jpg', edit: 'cropped',
+        alt: 'The back of a baby\'s head with a patch of crusty, yellowish scales.',
+        text: 'Cradle cap: greasy, yellowish scales on the scalp. Harmless and not itchy. Washing the hair and gently loosening the scales with a soft brush helps; don\'t pick them off.' },
+    ],
+    jaundice: [
+      { file: 'jaundice.jpg', w: 700, h: 975, name: 'Jaundice', by: 'Dr. Hudson, CDC', lic: 'Public domain', src: 'Jaundice_in_newborn.jpg', edit: 'cropped',
+        alt: 'A baby whose face, chest and belly look yellow.',
+        text: 'Jaundice: the skin and the whites of the eyes look yellow. This baby was 6 weeks old. Jaundice lasting more than two weeks needs a check; here it came from an underactive thyroid, which treatment put right. On brown or black skin, look for yellow in the whites of the eyes, the gums, palms and soles.' },
+      { file: 'jaundice-zones.png', w: 400, h: 829, max: 200, drawing: true, name: 'How jaundice spreads', by: 'Manco Capac', lic: 'CC BY-SA 3.0', src: 'Neonatal_jaundice.png', edit: 'saved with fewer colours',
+        alt: 'Drawing of a child\'s body in five zones: I the head and neck, II the chest and upper belly, III the lower belly and thighs, IV the arms and lower legs, V the hands and feet.',
+        text: 'Jaundice shows first on the face and moves down the body as it gets stronger (zones I to V). Call if it spreads to the belly, arms or legs. To check, press gently on the forehead or nose in daylight: skin that looks yellow where you pressed means jaundice.' },
+    ],
+    belly: [
+      { file: 'hernia-6-weeks.jpg', w: 720, h: 521, name: 'Umbilical hernia at 6 weeks', by: 'Jpogi', lic: 'Public domain', src: 'Umbilical_Hernia.JPG',
+        alt: 'A baby\'s belly with the belly button poking out as a small, soft bump.',
+        text: 'An umbilical hernia at 6 weeks: the belly button pokes out, and more so when the baby cries or strains.' },
+      { file: 'hernia.jpg', w: 720, h: 485, name: 'A bigger umbilical hernia', by: 'Ibrahim Husain Meraj', lic: 'CC BY-SA 4.0', src: 'Umbilical_hernia_20250118_094342.jpg',
+        alt: 'A baby\'s belly above the diaper, with a rounded bulge at the belly button.',
+        text: 'A bigger one. Soft hernias that go back in when the baby is calm are common and usually close by themselves; call straight away if one turns hard, tender or discoloured.' },
+    ],
+    cord: [
+      { file: 'cord-7-days.jpg', w: 720, h: 579, name: 'Cord stump at 7 days', by: 'Stagiryta', lic: 'CC BY-SA 4.0', src: 'Pępek.jpg',
+        alt: 'Close-up of a baby\'s belly button with a dark, dried cord stump, the diaper just below it.',
+        text: 'A cord stump at 7 days: dark, dry and shrivelled, nearly ready to fall off. Keeping the diaper below it helps it stay dry.' },
+      { file: 'cord-newborn.jpg', w: 720, h: 539, name: 'Cord stump in the first days', by: 'Evan-Amos', lic: 'Public domain', src: 'Human-Male-Newborn-Infant-Baby.jpg',
+        alt: 'A newborn\'s belly with a small dark cord stump just above the diaper.',
+        text: 'A few days old. Around a healthy stump the skin looks like the rest of the belly; redness spreading onto the belly, pus or a bad smell need a call.' },
+    ],
+    poop: [
+      { file: 'meconium.jpg', w: 710, h: 577, name: 'Meconium', by: 'Tonicthebrown', lic: 'CC BY-SA 3.0', src: 'Meconium_vs_poo.jpg',
+        alt: 'An open diaper with a black-green, tar-like poop.',
+        text: 'Meconium: the first poops, in the first 2 or 3 days. Black-green and sticky like tar.' },
+      { file: 'breastfed-poo.jpg', w: 720, h: 624, name: 'A breastfed baby\'s poop', by: 'Tonicthebrown', lic: 'CC BY-SA 3.0', src: 'Meconium_vs_poo.jpg',
+        alt: 'An open diaper with a runny, yellow-green poop with small curds.',
+        text: 'A few days on, a breastfed baby\'s poop: mustard yellow to green, runny and seedy. Formula poop is usually tan to brown and firmer. White, pale grey or chalky poop needs a call.' },
+    ],
+    fontanelle: [
+      { file: 'soft-spots.png', w: 350, h: 476, max: 260, drawing: true, name: 'The soft spots', by: 'Henry Vandyke Carter, Gray\'s Anatomy (1918)', lic: 'Public domain', src: 'Gray197.png', edit: '',
+        alt: 'Old anatomy drawing of a newborn\'s skull from above, with a large diamond-shaped soft spot at the front and a small one at the back.',
+        text: 'The soft spots seen from above, with the front of the head at the top: the large one usually closes by 12 to 18 months, the small one at the back by about 2 months.' },
+    ],
+  };
+  const LICENCES = { 'CC0 1.0': 'https://creativecommons.org/publicdomain/zero/1.0/', 'CC BY-SA 3.0': 'https://creativecommons.org/licenses/by-sa/3.0/', 'CC BY-SA 4.0': 'https://creativecommons.org/licenses/by-sa/4.0/' };
+  /** Where a picture's file is (the single-page demo swaps this for copies embedded in the page). */
+  const picSrc = f => 'img/guide/' + f;
+  /** Every picture with its full credit: licence and source addresses, and what was changed. */
+  const credits = () => Object.values(PICS).flat().map(p => ({ ...p, licUrl: LICENCES[p.lic] || '', page: 'https://commons.wikimedia.org/wiki/File:' + p.src,
+    edit: p.edit !== undefined ? p.edit : 'cropped and resized' }));
   const MILESTONES = {
     1: { title: '1 month', does: ['Lifts head briefly during tummy time', 'Focuses on faces about 8 to 12 inches away', 'Startles at loud sounds'],
       notice: ['Growth spurts around 2 to 3 weeks and 6 weeks: more frequent "cluster" feeds', 'Fussiness often builds towards a peak around 6 weeks'], visit: '1-month checkup' },
@@ -156,5 +216,5 @@ const Guide = (() => {
   const cleanDetails = d => { d = d && typeof d === 'object' ? d : {}; return { relation: str(d.relation, 40), phone: str(d.phone, 30), work: str(d.work, 80), workPhone: str(d.workPhone, 30), notes: str(d.notes, 300) }; };
   /** A tel: link target, or '' when the text has no usable number. */
   const tel = p => { const n = String(p || '').replace(/[^\d+]/g, '').replace(/(?!^)\+/g, ''); return n.replace(/\D/g, '').length >= 3 ? 'tel:' + n : ''; };
-  return { COMMON, MILESTONES, MEDS_INTRO, MEDS, NEVER, sos, local, monthsOld, cleanDoctor, cleanDetails, tel };
+  return { COMMON, PICS, picSrc, credits, MILESTONES, MEDS_INTRO, MEDS, NEVER, sos, local, monthsOld, cleanDoctor, cleanDetails, tel };
 })();

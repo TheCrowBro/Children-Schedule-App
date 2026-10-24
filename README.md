@@ -16,7 +16,11 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 - **Guide tab**: common newborn worries (blue hands, belly bulge, clicking hips, jaundice, cord, spit-up, poop colours, fever…) with when to call,
   **over-the-counter medicines** (a drop-down by kind: what's considered safe from what age, with US and UK ages where they differ; the
   homeopathic and herbal remedies parents mention, with what the evidence says; what never to give; no doses, which go by weight and come
-  from the pediatrician), month-by-month milestones (a reminder pops up on each month birthday), and the **pediatrician's details** with a Call button
+  from the pediatrician), month-by-month milestones (a reminder pops up on each month birthday), and the **pediatrician's details** with a Call button.
+  Six of the common worries (skin, jaundice, the belly button, the cord stump, poop and the soft spots) have **pictures**: 10 photos and 2
+  drawings with what they show, kept in a twirl-down of their own inside the card that stays shut until tapped, and shuts again when the card
+  closes or you leave the Guide, so nobody sees them by surprise. They're from Wikimedia Commons under free licences, credited in the app and in
+  [img/guide/CREDITS.md](img/guide/CREDITS.md)
 - **Travel mode**: plan a trip ahead from the Month page (always there: it leaves on the day picked) or with the "Travelling?" button at
   the bottom of today; it asks how (car, plane, train, ship) and the dates, and refuses overlapping trips. For those days the Day tab
   becomes a travel page on every phone in the log: a clock painted to match the journey, its own set of colours (checked for colour-blind

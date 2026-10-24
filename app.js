@@ -171,6 +171,7 @@ function syncLine() { const e = $('#syncLine'); e.textContent = Acct.syncLine();
 function render() {
   if (voyageFirst()) return;   // travel mode is switching: the page changes under the journey in a moment
   document.querySelectorAll('#view details[data-grp]').forEach(d => { d.open ? openGroups.add(d.dataset.grp) : openGroups.delete(d.dataset.grp); });   // keep twirl-downs as the user left them
+  if (tab !== 'guide') openGroups.forEach(g => { if (g.startsWith('pix')) openGroups.delete(g); });   // except the Guide's pictures: hidden again next time
   const multi = kids().length > 1, vk = kidById(dayKid()), single = kids()[0];
   theme();
   $('#title').textContent = dayKid() === 'all' ? 'Everyone' : (vk && vk.name ? `${vk.name}'s Log` : (multi ? `${kidName(vk)}'s Log` : 'Little Log'));
@@ -530,12 +531,27 @@ function guideView() {
       <p class="note">${m < 1 ? 'The first month is mostly feeding, sleeping and getting to know each other. Here is what is common around one month:' : `Around ${M.title}:`}</p><ul>${M.does.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`; }).join('')}` : ''}
   <h2>Common with newborns</h2>
   ${Guide.COMMON.map(c => `<details class="gd" data-grp="g${c.id}" ${openGroups.has('g' + c.id) ? 'open' : ''}><summary><span class="gi">${c.icon}</span><span class="gt"><b>${esc(c.title)}</b></span><span class="chev" aria-hidden="true">›</span></summary>
-    <p>${esc(c.body)}</p>${c.call ? `<p class="call">${esc(Guide.local(c.call, myRegion()))}</p>` : ''}</details>`).join('')}
+    <p>${esc(c.body)}</p>${c.call ? `<p class="call">${esc(Guide.local(c.call, myRegion()))}</p>` : ''}${picsHtml(c.id)}</details>`).join('')}
   <h2>Medicines</h2>
   ${medsHtml()}
   <h2>Month by month</h2>
   ${ms.map(([n, M]) => milestoneDetails(+n, M)).join('')}
-  <p class="note">General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.</p>`;
+  <p class="note">General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.</p>
+  ${picCreditsHtml()}`;
+}
+/** A common worry's pictures, in a twirl-down of their own inside its card. It stays shut until someone chooses to look, and shuts again
+    when the card closes or the Guide is left, so nobody comes across them by surprise. */
+function picsHtml(id) {
+  const list = Guide.PICS[id]; if (!list) return '';
+  const n = (k, w) => (k ? `${k} ${w}${k > 1 ? 's' : ''}` : ''), photos = list.filter(p => !p.drawing).length;
+  return `<details class="pix" data-grp="pix${id}" ${openGroups.has('pix' + id) ? 'open' : ''}><summary><span class="gi">📷</span><span class="gt"><b>Pictures</b><small>${[n(photos, 'photo'), n(list.length - photos, 'drawing')].filter(Boolean).join(' and ')}<span class="pshut"> · tap to show</span></small></span><span class="chev" aria-hidden="true">›</span></summary>
+    ${list.map(p => `<figure><img src="${esc(Guide.picSrc(p.file))}" width="${p.w}" height="${p.h}" alt="${esc(p.alt)}" loading="lazy" decoding="async"${p.max ? ` style="max-width:${p.max}px"` : ''}><figcaption>${esc(p.text)}<small>${p.drawing ? 'Drawing' : 'Photo'}: ${esc(p.by)}, ${esc(p.lic)}</small></figcaption></figure>`).join('')}</details>`;
+}
+/** Who made each picture, under which licence, where it comes from and what we changed. */
+function picCreditsHtml() {
+  return `<details class="gd" data-grp="credits" ${openGroups.has('credits') ? 'open' : ''}><summary><span class="gi">📷</span><span class="gt"><b>Picture credits</b><small>From Wikimedia Commons, under free licences</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    <ul class="credits">${Guide.credits().map(c => `<li><b>${esc(c.name)}</b>: ${c.drawing ? 'drawing' : 'photo'} by ${esc(c.by)}, ${esc(c.lic)}${c.licUrl ? ` <span class="url">(${esc(c.licUrl)})</span>` : ''}. From <span class="url">${esc(c.page)}</span>${c.edit ? `, ${esc(c.edit)}` : ''}.</li>`).join('')}</ul>
+    <p class="note">Our versions of the CC BY-SA pictures are shared under the same licence.</p></details>`;
 }
 /** A medicine's brand names, those sold where you are first. */
 const medBrands = (i, here) => { const at = b => (!i.where || !i.where[b] || i.where[b].split(' ').includes(here) ? 0 : 1), list = i.brands.split(' · '); return list.map((b, n) => [at(b), n, b]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]).join(' · '); };
@@ -888,7 +904,7 @@ const TOURS = {
     { sel: '#docBtn', title: 'Your pediatrician', why: 'Save their details once, and everyone sharing the log gets a Call button.' },
     { sel: '.emer', title: 'Emergencies', why: 'The signs that need emergency help straight away.' },
     { sel: '.nowcard', title: 'Right now', why: 'What is common at your baby\'s age.' },
-    { sel: '#view details.gd[data-grp^=g]', title: 'Common worries', why: 'What is normal with a newborn, and when to call.' },
+    { sel: '#view details.gd[data-grp^=g]', title: 'Common worries', why: 'What is normal with a newborn, and when to call. Some have pictures, kept out of sight until you tap them.' },
     { sel: 'details[data-grp=omenu]', title: 'Medicines', why: 'Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.' },
     { sel: '#view details.gd[data-grp^=m]', title: 'Month by month', why: 'Milestones for every month. A reminder pops up on each month birthday.' },
   ],
@@ -988,7 +1004,10 @@ function bind() {
   document.querySelectorAll('[data-quadclear]').forEach(b => b.onclick = () => { quad = null; render(); });
   document.querySelectorAll('[data-face]').forEach(b => b.onclick = () => { db.meta.clock = b.dataset.face; Store.save(db); quad = null; render(); });
   document.querySelectorAll('[data-half]').forEach(b => b.onclick = () => { half = +b.dataset.half; quad = null; render(); });
-  document.querySelectorAll('details[data-grp]').forEach(d => d.ontoggle = () => { d.open ? openGroups.add(d.dataset.grp) : openGroups.delete(d.dataset.grp); });
+  document.querySelectorAll('details[data-grp]').forEach(d => d.ontoggle = () => {
+    d.open ? openGroups.add(d.dataset.grp) : openGroups.delete(d.dataset.grp);
+    if (!d.open) d.querySelectorAll('details.pix[open]').forEach(p => { p.open = false; });   // closing a card hides its pictures again
+  });
   document.querySelectorAll('.bar[data-tip]').forEach(b => b.onclick = () => toast(b.dataset.tip));
   document.querySelectorAll('svg [role=button]').forEach(b => b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
   if ($('#docBtn')) $('#docBtn').onclick = () => openDoctor(false);
