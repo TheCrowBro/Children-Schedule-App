@@ -389,7 +389,10 @@ const openGroups = new Set();
 function groupSummary(g, list) {
   const n = list.length;
   switch (g.id) {
-    case 'feed': { const ml = list.reduce((a, e) => a + (+e.data.ml || 0), 0); return __n('{n} feed', '{n} feeds', n) + (ml ? ' · ' + __('{n} ml', { n: ml }) : ''); }
+    case 'feed': {   // (milk feeds, and meals of solid food counted apart)
+      const milk = list.filter(e => e.data.kind !== 'solids'), ml = milk.reduce((a, e) => a + (+e.data.ml || 0), 0), meals = n - milk.length;
+      return [milk.length && __n('{n} feed', '{n} feeds', milk.length) + (ml ? ' · ' + __('{n} ml', { n: ml }) : ''), meals && `${__('Solids')} ×${meals}`].filter(Boolean).join(' · ');
+    }
     case 'diaper': return `${__n('{n} diaper', '{n} diapers', n)} · ${__('{pee} pee, {poo} poo', { pee: list.filter(e => e.data.pee).length, poo: list.filter(e => e.data.poo).length })}`;
     case 'sleep': { const sl = list.filter(e => e.type === 'sleep'), w = list.length - sl.length, m = sl.reduce((a, e) => a + ((e.end || Date.now()) - e.ts) / MIN, 0); return [sl.length && `${__n('{n} sleep', '{n} sleeps', sl.length)} · ${fmtDur(m)}`, w && __n('{n} night waking', '{n} night wakings', w)].filter(Boolean).join(' · '); }
     case 'play': { const m = list.reduce((a, e) => a + (+e.data.min || 0), 0); return __n('{n} time', '{n} times', n) + (m ? ` · ${fmtDur(m)}` : ''); }
