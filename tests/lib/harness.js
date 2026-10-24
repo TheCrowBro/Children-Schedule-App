@@ -29,7 +29,7 @@ async function setup({ port = 8126 } = {}) {
   H.syncNow = p => p.evaluate(async () => { for (let i = 0; i < 400 && Sync.st.state === 'syncing'; i++) await new Promise(r => setTimeout(r, 50)); await Sync.run(true); });
   /** A new phone. opts.skew shifts that phone's clock (ms). */
   H.device = async (opts = {}) => {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 800 } });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 800 }, ...(opts.video ? { recordVideo: { dir: opts.video, size: { width: 390, height: 800 } } } : {}) });
     await installFakeNative(ctx, opts);
     if (opts.skew) await ctx.addInitScript(off => { const real = Date.now.bind(Date); Date.now = () => real() + off; }, opts.skew);
     await shim.install(ctx);
