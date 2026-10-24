@@ -193,54 +193,99 @@ function dayView() {
     <div class="d">${isToday ? 'Today' : fmtDate(viewDay)}<small>${isToday ? fmtDate(viewDay) : ''}${ageText(viewDay)}</small></div>
     <button data-nav="1" aria-label="Next day" ${isToday ? 'disabled' : ''}>›</button></div>
   ${quickButtons()}
-  <div class="card clockcard">${clockSvg(evs, viewDay)}${clockLegend(evs)}
-    <p class="note hint">Tap a dot to open that entry, or a quarter of the clock to list just those hours.</p></div>
+  <div class="clockwrap">${clockSvg(evs, viewDay)}${clockLegend(evs)}
+    <div class="clockfoot"><p class="note hint">Midnight is at the top, noon at the bottom. Tap a dot to open an entry, or a quarter of the dial for just those hours.</p><button class="artbtn" data-art>🎨 ${esc(Art.byId(artOf()).name)}</button></div></div>
   ${q ? `<div class="card quadlist"><div class="qhead"><span><b>${q.label}</b> <small>${q.range} · ${inQ.length} ${inQ.length === 1 ? 'entry' : 'entries'}</small></span><button class="btn" data-quadclear style="padding:6px 12px">Whole day</button></div>
       ${inQ.length ? inQ.map(evRow).join('') : '<div class="empty">Nothing in these hours.</div>'}</div>`
     : (evs.length ? `<h2>Details</h2>${groupedList(evs)}` : `<div class="empty">Nothing logged yet.${Sync.can('add') ? '<br>Tap a button above to add an entry.' : ''}</div>`)}`;
 }
 
 // ---------- Day clock ----------
-// A 24-hour dial: midnight at the top, noon at the bottom. Every entry is a ray out of the dial at the time it happened, ending in a dot
-// on its group's ring. Sleep also shows as an arc for how long it lasted.
+// A French carriage clock: a gilt case with fluted columns, and a painted porcelain panel with a 24-hour dial on it (midnight at the
+// top under the moon, noon at the bottom under the sun). Every entry is a ray from the centre to the hour it happened, ending in a dot
+// on its group's ring; sleep also shows as an arc for how long it lasted. The painting is chosen per child (Clock art).
 const QUADS = [{ label: 'Night', range: '12 AM – 6 AM' }, { label: 'Morning', range: '6 AM – 12 PM' }, { label: 'Afternoon', range: '12 PM – 6 PM' }, { label: 'Evening', range: '6 PM – 12 AM' }];
 let quad = null;
 const quadOf = (t, day) => Math.min(3, Math.max(0, Math.floor((t - day) / (6 * 3600e3))));
+const ART_ORDER = ['blossom', 'ocean', 'forest', 'maple', 'mountains', 'garden', 'night', 'classic'];
+/** The painting on a page: chosen on this phone, or a different default for each child. */
+function artOf(id = dayKid()) {
+  const m = db.meta.art || {};
+  if (m[id] && Art.byId(m[id]).id === m[id]) return m[id];
+  if (id === 'all') return 'garden';
+  const i = kids().findIndex(k => k.id === id);
+  return ART_ORDER[Math.max(0, i) % ART_ORDER.length];
+}
+function setArt(id, theme) { (db.meta.art || (db.meta.art = {}))[id] = theme; Store.save(db); }
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
 function clockSvg(evs, day) {
-  const C = 170, R0 = 62, RR = { sleep: 82, feed: 98, diaper: 114, vomit: 130, play: 145, health: 160 };
-  const frac = t => (t - day) / DAY, ang = f => f * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C + r * Math.cos(a), C + r * Math.sin(a)];
+  const th = Art.byId(artOf()), dk = dark(), X0 = 38, Y0 = 84, C = { x: X0 + Art.DIAL.x, y: Y0 + Art.DIAL.y }, RD = Art.DIAL.r;
+  const RR = { sleep: 90, feed: 78, diaper: 66, vomit: 54, play: 42, health: 30 };
+  const frac = t => (t - day) / DAY, ang = fr => fr * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C.x + r * Math.cos(a), C.y + r * Math.sin(a)];
   const f1 = n => n.toFixed(1), xy = (a, r) => P(a, r).map(f1).join(' ');
   const arc = (a0, a1, r) => `M${xy(a0, r)}A${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${xy(a1, r)}`;
-  let out = '';
-  // quarters (tap targets), the selected one washed in the page colour
-  for (let i = 0; i < 4; i++) {
-    const a0 = ang(i / 4), a1 = ang((i + 1) / 4);
-    out += `<path class="qw ${quad === i ? 'on' : ''}" data-quad="${i}" role="button" tabindex="0" aria-pressed="${quad === i}" aria-label="${QUADS[i].label}, ${QUADS[i].range}" d="M${C} ${C}L${xy(a0, 168)}A168 168 0 0 1 ${xy(a1, 168)}Z"/>`;
+  const ink = dk ? '#efe6d3' : '#1f1b16', dialC = dk ? '39,36,31' : '255,253,248', edge = Math.max(th.edge || 0.62, dk ? 0.78 : 0);
+  // ---- case: handle, finials, cornice, columns, base and feet (gilt brass)
+  const defs = `<defs>
+    <linearGradient id="cc-bh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0bd"/><stop offset=".3" stop-color="#e3b955"/><stop offset=".62" stop-color="#b3832a"/><stop offset=".85" stop-color="#dcae4a"/><stop offset="1" stop-color="#7f5a1c"/></linearGradient>
+    <linearGradient id="cc-bv" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6f4e17"/><stop offset=".18" stop-color="#c99a3b"/><stop offset=".42" stop-color="#fff0bd"/><stop offset=".58" stop-color="#e8c060"/><stop offset=".84" stop-color="#a87b26"/><stop offset="1" stop-color="#5f4313"/></linearGradient>
+    <radialGradient id="cc-ball" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#fff6d6"/><stop offset=".35" stop-color="#e9c262"/><stop offset=".8" stop-color="#9a6e22"/><stop offset="1" stop-color="#6a4a14"/></radialGradient>
+    <pattern id="cc-fret" width="14" height="14" patternUnits="userSpaceOnUse" y="2"><rect width="14" height="14" fill="#3e2c0b"/><path d="M0 7C3.5 0 10.5 0 14 7C10.5 14 3.5 14 0 7Z" fill="none" stroke="#e2b955" stroke-width="2"/><path d="M7 0V14M0 7H14" stroke="#c99a3b" stroke-width="1.2"/><circle cx="7" cy="7" r="1.7" fill="#f6dc8e"/></pattern>
+    <radialGradient id="cc-dial" gradientUnits="userSpaceOnUse" cx="${C.x}" cy="${C.y}" r="${RD}"><stop offset="0" stop-color="rgb(${dialC})" stop-opacity=".95"/><stop offset=".7" stop-color="rgb(${dialC})" stop-opacity=".93"/><stop offset=".86" stop-color="rgb(${dialC})" stop-opacity="${Math.max(0.82, edge)}"/><stop offset="1" stop-color="rgb(${dialC})" stop-opacity="${edge}"/></radialGradient>
+    <clipPath id="cc-panel"><rect x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" rx="2"/></clipPath></defs>`;
+  const flutes = x => [0.22, 0.42, 0.62, 0.8].map(t => `<path d="M${f1(x + 24 * t)} 96V408" stroke="#5f4313" stroke-opacity=".45"/><path d="M${f1(x + 24 * t + 1.3)} 96V408" stroke="#fff3c4" stroke-opacity=".55"/>`).join('');
+  const column = x => `<rect x="${x}" y="86" width="24" height="332" fill="url(#cc-bv)"/>${flutes(x)}<rect x="${x - 3}" y="86" width="30" height="8" rx="2" fill="url(#cc-bv)"/><rect x="${x - 2}" y="94" width="28" height="3" fill="url(#cc-bv)"/><rect x="${x - 2}" y="407" width="28" height="3" fill="url(#cc-bv)"/><rect x="${x - 3}" y="410" width="30" height="8" rx="2" fill="url(#cc-bv)"/>`;
+  const finial = x => `<ellipse cx="${x}" cy="55" rx="11" ry="3" fill="url(#cc-bh)"/><path d="M${x - 5} 53L${x - 3} 47L${x + 3} 47L${x + 5} 53Z" fill="url(#cc-bv)"/><ellipse cx="${x}" cy="41" rx="7" ry="7.5" fill="url(#cc-ball)"/><rect x="${x - 2}" y="31" width="4" height="4" fill="url(#cc-bv)"/><circle cx="${x}" cy="28" r="4.2" fill="url(#cc-ball)"/><path d="M${x} 18L${x + 1.6} 24L${x - 1.6} 24Z" fill="url(#cc-bv)"/>`;
+  const post = x => `<rect x="${x - 3.5}" y="26" width="7" height="30" fill="url(#cc-bv)"/><ellipse cx="${x}" cy="41" rx="6.5" ry="8" fill="url(#cc-bv)"/><rect x="${x - 5}" y="50" width="10" height="4" fill="url(#cc-bv)"/>`;
+  const block = x => `<rect x="${x - 9}" y="10" width="18" height="18" rx="1.5" fill="url(#cc-bh)"/><rect x="${x - 6}" y="13" width="12" height="12" fill="none" stroke="#7f5a1c" stroke-opacity=".5"/>`;
+  const handle = `${post(92)}${post(248)}<rect x="99" y="14" width="142" height="10" rx="4" fill="url(#cc-bh)"/>${[16.5, 19, 21.5].map(y => `<path d="M104 ${y}H236" stroke="#7f5a1c" stroke-opacity=".45" stroke-width=".8"/>`).join('')}<rect x="160" y="11" width="20" height="16" rx="5" fill="url(#cc-bh)"/><path d="M165 11V27M175 11V27" stroke="#7f5a1c" stroke-opacity=".5"/>${block(92)}${block(248)}`;
+  const frieze = (y, h) => `<rect x="8" y="${y}" width="324" height="${h}" fill="url(#cc-fret)"/><rect x="8" y="${y}" width="324" height="${h}" fill="url(#cc-bh)" opacity=".35"/>`;
+  const caseTop = `<rect x="4" y="54" width="332" height="7" rx="2" fill="url(#cc-bh)"/>${frieze(61, 19)}<rect x="4" y="80" width="332" height="6" rx="1.5" fill="url(#cc-bh)"/><rect x="6" y="54" width="36" height="32" rx="2" fill="url(#cc-bv)"/><rect x="298" y="54" width="36" height="32" rx="2" fill="url(#cc-bv)"/><ellipse cx="200" cy="53" rx="4" ry="2.4" fill="url(#cc-ball)"/>`;
+  const caseBase = `<rect x="4" y="418" width="332" height="6" rx="1.5" fill="url(#cc-bh)"/>${frieze(424, 18)}<rect x="4" y="442" width="332" height="7" rx="2" fill="url(#cc-bh)"/><rect x="6" y="418" width="36" height="31" rx="2" fill="url(#cc-bv)"/><rect x="298" y="418" width="36" height="31" rx="2" fill="url(#cc-bv)"/>
+    <rect x="128" y="423" width="84" height="20" rx="10" fill="url(#cc-bh)" stroke="#7f5a1c" stroke-opacity=".6"/><text class="plaque" x="170" y="437" text-anchor="middle">${esc(dayKid() === 'all' ? 'Everyone' : kidName(kidById(dayKid())))}</text>`;
+  const foot = x => `<ellipse cx="${x}" cy="456" rx="15" ry="8" fill="url(#cc-ball)"/><ellipse cx="${x}" cy="465" rx="10" ry="4" fill="url(#cc-bv)"/><ellipse cx="${x}" cy="470" rx="13" ry="3" fill="url(#cc-bh)"/>`;
+  // ---- the painted panel (drawn once per painting, then reused) and the dial painted over it
+  const url = Art.peek(th.id);
+  if (!url) Art.url(th.id).then(u => document.querySelectorAll(`.clock image.art[data-theme="${th.id}"]`).forEach(im => { im.setAttribute('href', u); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', u); }));
+  const panel = `<g clip-path="url(#cc-panel)"><rect x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" fill="${th.base}"/><image class="art" data-theme="${th.id}" x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" preserveAspectRatio="none"${url ? ` href="${url}" xlink:href="${url}"` : ''}/>${dk ? `<rect x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" fill="#120f0b" opacity=".36"/>` : ''}</g><rect x="${X0 - 1.5}" y="${Y0 - 1.5}" width="${Art.W + 3}" height="${Art.H + 3}" rx="3" fill="none" stroke="url(#cc-bh)" stroke-width="3"/>`;
+  let dial = `<circle cx="${C.x}" cy="${C.y}" r="${RD}" fill="url(#cc-dial)"/>`;
+  // railway minute track and the hours: Roman numerals on the even hours, a moon at midnight and a sun at noon
+  dial += `<circle cx="${C.x}" cy="${C.y}" r="112" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/><circle cx="${C.x}" cy="${C.y}" r="118" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/>`;
+  let ticks = '';
+  for (let q = 0; q < 96; q++) { const a = ang(q / 96), hr = q % 4 === 0; ticks += `M${xy(a, hr ? 110 : 112)}L${xy(a, hr ? 120 : 118)}`; }
+  dial += `<path d="${ticks}" stroke="${ink}" stroke-opacity=".75" stroke-width=".7"/>`;
+  for (let h = 0; h < 24; h += 2) {
+    const a = ang(h / 24), [x, y] = P(a, 101);
+    if (h === 0) dial += `<path transform="translate(${f1(x)} ${f1(y)})" d="M2.5 -6.2A6.4 6.4 0 1 0 2.5 6.2A5 5 0 1 1 2.5 -6.2Z" fill="${dk ? '#e9cf7d' : '#a77a27'}"/>`;
+    else if (h === 12) dial += `<g transform="translate(${f1(x)} ${f1(y)})" fill="${dk ? '#e9cf7d' : '#b8862b'}" stroke="${dk ? '#e9cf7d' : '#b8862b'}"><circle r="3.6"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(k => `<path d="M0 -5.4V-7.6" transform="rotate(${k * 45})" stroke-width="1.2" stroke-linecap="round"/>`).join('')}</g>`;
+    else dial += `<text class="num" transform="translate(${f1(x)} ${f1(y)}) rotate(${h * 15})" text-anchor="middle" dy=".36em" fill="${ink}">${ROMAN[h % 12]}</text>`;
   }
-  // rings for each group (faint guides) and the dial face
-  out += RING.map(g => `<circle class="ring" cx="${C}" cy="${C}" r="${RR[g]}"/>`).join('');
-  out += `<circle class="face" cx="${C}" cy="${C}" r="${R0}"/>`;
-  for (let h = 0; h < 24; h++) { const a = ang(h / 24), big = h % 6 === 0; out += `<path class="tick${big ? ' big' : ''}" d="M${xy(a, R0 - (big ? 9 : 5))}L${xy(a, R0 - 1)}"/>`; }
-  [['12 AM', 0], ['6 AM', 6], ['12 PM', 12], ['6 PM', 18]].forEach(([l, h]) => { const [x, y] = P(ang(h / 24), R0 - 20); out += `<text class="hl" x="${f1(x)}" y="${f1(y + 4)}" text-anchor="middle">${l}</text>`; });
-  // sleep arcs
+  // quarters (tap targets), washed in the page colour when chosen
+  let quads = '';
+  for (let i = 0; i < 4; i++) { const a0 = ang(i / 4), a1 = ang((i + 1) / 4); quads += `<path class="qw ${quad === i ? 'on' : ''}" data-quad="${i}" role="button" tabindex="0" aria-pressed="${quad === i}" aria-label="${QUADS[i].label}, ${QUADS[i].range}" d="M${C.x} ${C.y}L${xy(a0, RD)}A${RD} ${RD} 0 0 1 ${xy(a1, RD)}Z"/>`; }
+  let data = RING.map(g => `<circle class="ring" cx="${C.x}" cy="${C.y}" r="${RR[g]}"/>`).join('');
   for (const e of evs) if (e.type === 'sleep') {
     const s0 = Math.max(0, frac(e.ts)), s1 = Math.min(1, frac(e.end || Math.min(Date.now(), day + DAY)));
-    if (s1 > s0) out += `<path class="sarc" d="${arc(ang(s0), ang(Math.max(s1, s0 + 0.004)), RR.sleep)}"/>`;
+    if (s1 > s0) data += `<path class="sarc" d="${arc(ang(s0), ang(Math.max(s1, s0 + 0.004)), RR.sleep)}"/>`;
   }
-  // rays + dots
   const all = dayKid() === 'all';
   for (const e of evs) {
     const g = groupOf(e.type).id, a = ang(frac(e.ts)), r = RR[g], [x, y] = P(a, r), [d] = describe(e), k = all ? kidById(childOf(e)) : null;
-    out += `<g class="ray" data-edit="${e.id}" role="button" tabindex="0" aria-label="${esc(fmtTime(e.ts) + ' ' + TYPES[e.type].label + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
+    data += `<g class="ray" data-edit="${e.id}" role="button" tabindex="0" aria-label="${esc(fmtTime(e.ts) + ' ' + TYPES[e.type].label + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
       <title>${esc(fmtTime(e.ts) + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
-      <path d="M${xy(a, R0 + 1)}L${xy(a, r - 6)}"/><path class="hitl" d="M${xy(a, R0 + 4)}L${xy(a, r)}"/><circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="12"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="6"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
+      <path d="M${xy(a, 17)}L${xy(a, r - 5)}"/><path class="hitl" d="M${xy(a, 20)}L${xy(a, r)}"/><circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="10"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="4.6"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
   }
-  // now
-  if (day === startOfDay(Date.now())) { const a = ang(frac(Date.now())); out += `<path class="now" d="M${xy(a, 30)}L${xy(a, R0 - 4)}"/><circle class="nowdot" cx="${f1(P(a, R0 - 4)[0])}" cy="${f1(P(a, R0 - 4)[1])}" r="3"/>`; }
-  const q = quad == null ? null : QUADS[quad];
-  out += `<text class="ctr" x="${C}" y="${C - 2}" text-anchor="middle">${q ? q.label : evs.length}</text><text class="ctr2" x="${C}" y="${C + 14}" text-anchor="middle">${q ? 'selected' : (evs.length === 1 ? 'entry' : 'entries')}</text>`;
+  // a blued-steel spade hand at the current time (today only), and the centre boss
+  let hand = '';
+  if (day === startOfDay(Date.now())) {
+    const deg = frac(Date.now()) * 360;
+    hand = `<path class="hand" transform="rotate(${deg.toFixed(2)} ${C.x} ${C.y})" d="M${C.x - 1.2} ${C.y + 14}L${C.x - 1.2} ${C.y - 72}C${C.x - 6.5} ${C.y - 74} ${C.x - 7.5} ${C.y - 80} ${C.x - 4.8} ${C.y - 84}C${C.x - 2.6} ${C.y - 87} ${C.x - 0.8} ${C.y - 90} ${C.x} ${C.y - 99}C${C.x + 0.8} ${C.y - 90} ${C.x + 2.6} ${C.y - 87} ${C.x + 4.8} ${C.y - 84}C${C.x + 7.5} ${C.y - 80} ${C.x + 6.5} ${C.y - 74} ${C.x + 1.2} ${C.y - 72}L${C.x + 1.2} ${C.y + 14}Z" fill="${dk ? '#e9cf7d' : '#24356b'}"/>`;
+  }
+  const boss = `<circle cx="${C.x}" cy="${C.y}" r="6" fill="url(#cc-ball)"/><circle cx="${C.x}" cy="${C.y}" r="1.6" fill="#5f4313"/>`;
+  const shadow = `<ellipse cx="170" cy="474" rx="160" ry="4" fill="#3b2a12" opacity=".16"/>`;
   const summary = GROUPS.map(gr => [gr.label, evs.filter(e => gr.types.includes(e.type)).length]).filter(x => x[1]).map(x => `${x[1]} ${x[0].toLowerCase()}`).join(', ');
-  return `<svg class="clock" viewBox="0 0 340 340" role="group" aria-label="24-hour clock of the day${summary ? ': ' + esc(summary) : ', no entries'}">${out}</svg>`;
+  return `<svg class="clock" viewBox="0 0 340 478" data-cx="${C.x}" data-cy="${C.y}" data-painting="${th.id}" role="group" aria-label="24-hour clock of the day, midnight at the top and noon at the bottom${summary ? ': ' + esc(summary) : ', no entries'}">${defs}
+    <g aria-hidden="true">${shadow}${handle}${finial(24)}${finial(316)}${caseTop}${column(12)}${column(304)}${caseBase}${foot(24)}${foot(316)}${panel}${dial}</g>${quads}<g class="data">${data}</g><g aria-hidden="true">${hand}${boss}</g></svg>`;
 }
 function clockLegend(evs) {
   return `<div class="clegend">${GROUPS.map(g => { const n = evs.filter(e => g.types.includes(e.type)).length; return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})"></i>${g.label} <b>${n}</b></span>`; }).join('')}</div>`;
@@ -433,6 +478,20 @@ const milestoneBody = M => `${M.does.length ? `<p class="mh">What many babies do
   ${M.notice.length ? `<p class="mh">What parents often notice</p><ul>${M.notice.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
   ${M.visit ? `<p class="mh">Checkup</p><p>${esc(M.visit)}</p>` : ''}${M.ask ? `<p class="call">${esc(M.ask)}</p>` : ''}`;
 const milestoneDetails = (n, M) => `<details class="gd" data-grp="m${n}" ${openGroups.has('m' + n) ? 'open' : ''}><summary><span class="gi">🌟</span><span class="gt"><b>${esc(M.title)}</b></span><span class="chev" aria-hidden="true">›</span></summary>${milestoneBody(M)}</details>`;
+/** Choose the painting around a page's clock (kept on this phone). */
+function openArtPicker(forId = dayKid()) {
+  const cur = artOf(forId), multi = kids().length > 1, who = forId === 'all' ? 'the All page' : `${kidName(kidById(forId))}'s page`;
+  const close = popup(`<h3>🎨 Clock art</h3><p class="note">${multi ? `For ${esc(who)} on this phone.` : 'For this phone.'}</p>
+    <div class="artgrid">${Art.THEMES.map(t => { const u = Art.peek(t.id, 0.7); return `<button class="artopt ${t.id === cur ? 'on' : ''}" data-pick="${t.id}" aria-pressed="${t.id === cur}"><span class="thumb" style="background:${t.base}"><img alt="" data-th="${t.id}"${u ? ` src="${u}"` : ''}><i></i></span><span class="an">${t.name}</span></button>`; }).join('')}</div>
+    ${multi && forId !== 'all' ? `<div class="chips" style="margin-top:12px">${chip('artAll', 1, 'Use it for every child', false)}</div>` : ''}
+    <div class="row" style="margin-top:14px"><button class="btn" data-close>Done</button></div>`);
+  $('#sheet').querySelectorAll('img[data-th]').forEach(img => { if (!img.getAttribute('src')) Art.url(img.dataset.th, 0.7).then(u => { img.src = u; }); });
+  $('#sheet').querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
+    const every = $('#sheet').querySelector('[name=artAll]:checked');
+    (every ? kids().map(k => k.id).concat('all') : [forId]).forEach(id => setArt(id, b.dataset.pick));
+    close(); render(); toast(Art.byId(b.dataset.pick).name);
+  });
+}
 /** A small sheet for things that aren't entries (pediatrician, milestones). */
 function popup(html) {
   const S = $('#sheet'), back = $('#sheetBack'); S.innerHTML = html; S.onchange = null; Icons.paint(S); S.hidden = back.hidden = false;
@@ -487,9 +546,15 @@ function kidsHtml() {
       ${can && ks.length > 1 ? `<button class="btn d" data-krm="${k.id}" style="margin-top:12px">Remove ${esc(kidName(k))}</button>` : ''}</div>`).join('')}
     ${can && ks.length < Kids.MAX ? '<button class="btn" id="kAdd" style="width:100%;margin-top:6px">+ Add a child</button>' : ''}</div>`;
 }
+function artHtml() {
+  const pages = (kids().length > 1 ? [...kids().map(k => [k.id, kidName(k)]), ['all', 'All']] : [[kids()[0].id, kidName(kids()[0])]]);
+  return `<div class="card"><b>🎨 Clock art</b><p class="note">The watercolour painting around the day clock. Kept on this phone.</p>
+    ${pages.map(([id, name]) => `<div class="stat"><span>${esc(name)}<br><small>${esc(Art.byId(artOf(id)).name)}</small></span><button class="btn" data-art="${id}" style="padding:6px 12px">Change</button></div>`).join('')}</div>`;
+}
 function moreView() {
   return Acct.accountHtml() + `
   ${kidsHtml()}
+  ${artHtml()}
   ${Acct.cloudHtml()}
   <div class="card"><b>Your data</b><p class="note">${Sync.linked() ? 'Entries are saved on this device and synced to your family log.' : 'Everything is stored only on this device.'} Export a plain-text copy to share with your pediatrician.</p>
     <div class="row"><button class="btn" id="expJson">Backup (JSON)</button><button class="btn" id="expCsv">Export CSV</button></div>
@@ -512,6 +577,7 @@ function bind() {
   document.querySelectorAll('.bar[data-tip]').forEach(b => b.onclick = () => toast(b.dataset.tip));
   document.querySelectorAll('svg [role=button]').forEach(b => b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
   if ($('#docBtn')) $('#docBtn').onclick = () => openDoctor(false);
+  document.querySelectorAll('[data-art]').forEach(b => b.onclick = () => openArtPicker(b.dataset.art || dayKid()));
   if (tab === 'more') { bindMore(); Acct.bindMoreAccount(); }
   if (tab === 'family') Acct.bindFamily();
 }

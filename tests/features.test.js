@@ -23,10 +23,11 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
 
     await step('the day clock draws one ray per entry, at the right time, in its group\'s colour', async () => {
       assert.equal(await P.$$eval('.clock .ray', r => r.length), 5);
+      const [cx, cy] = await P.evaluate(() => { const c = document.querySelector('svg.clock'); return [+c.dataset.cx, +c.dataset.cy]; });
       const pos = await P.evaluate(id => { const c = document.querySelector(`.ray[data-edit="${id}"] .dot`); return [+c.getAttribute('cx'), +c.getAttribute('cy')]; }, 'fdiaper' + at(13));
-      assert(Math.abs(pos[0] - 170) < 30 && pos[1] > 270, '1 PM is just past the bottom of a 24-hour dial (noon at the bottom): ' + pos);
+      assert(pos[0] < cx && Math.abs(pos[0] - cx) < 25 && pos[1] > cy + 50, '1 PM is just past the bottom of a 24-hour dial (noon at the bottom): ' + pos);
       const top = await P.evaluate(id => +document.querySelector(`.ray[data-edit="${id}"] .dot`).getAttribute('cy'), 'ffeed' + at(1));
-      assert(top < 100, '1 AM is near the top');
+      assert(top < cy - 50, '1 AM is near the top');
       const colours = await P.evaluate(() => [...document.querySelectorAll('.clock .ray .dot')].map(d => getComputedStyle(d).fill));
       assert.equal(new Set(colours).size, 4, 'feed, diaper, vomit and sleep each in their own colour: ' + colours);
       assert.equal(await P.$$eval('.clock .sarc', a => a.length), 1, 'the sleep shows as an arc for how long it lasted');
@@ -46,6 +47,33 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       assert.deepEqual(rows, ['fdiaper' + at(13)], 'afternoon has just the 1 PM diaper');
       assert(/Afternoon/.test(await P.textContent('.quadlist')));
       await P.click('[data-quadclear]'); assert.equal(await P.$$eval('.quadlist', x => x.length), 0);
+    });
+
+    await step('the clock is a carriage clock: a painted panel, Roman numerals with a moon at midnight and a sun at noon, and a hand only on today', async () => {
+      const r = await P.evaluate(() => ({ nums: [...document.querySelectorAll('.clock text.num')].map(t => t.textContent), moonSun: document.querySelectorAll('.clock g[aria-hidden] path[d^="M2.5 -6.2"], .clock g[aria-hidden] circle[r="3.6"]').length, hand: !!document.querySelector('.clock .hand'), plaque: document.querySelector('.clock .plaque').textContent }));
+      assert.deepEqual(r.nums, ['II', 'IV', 'VI', 'VIII', 'X', 'II', 'IV', 'VI', 'VIII', 'X']);
+      assert.equal(r.moonSun, 2); assert.equal(r.plaque, 'Leo');
+      assert.equal(r.hand, true, "today's clock has the hand");
+      await P.click('[data-nav="-1"]'); assert.equal(await P.$$eval('.clock .hand', h => h.length), 0, 'yesterday has none'); await P.click('[data-nav="1"]');
+      await P.waitForFunction(() => /^(blob|data):/.test(document.querySelector('.clock image.art').getAttribute('href') || ''), null, { timeout: 10000 });
+      const loaded = await P.evaluate(() => new Promise(res => { const i = new Image(); i.onload = () => res([i.naturalWidth, i.naturalHeight]); i.onerror = () => res(null); i.src = document.querySelector('.clock image.art').getAttribute('href'); }));
+      assert(loaded && loaded[0] >= 264 && loaded[1] >= 336, 'the painting is a real picture: ' + loaded);
+    });
+
+    await step('every painting draws, quickly, without errors', async () => {
+      const r = await P.evaluate(async () => { const out = []; for (const t of Art.THEMES) { const t0 = performance.now(); const u = await Art.url(t.id, 1); const ok = await new Promise(res => { const i = new Image(); i.onload = () => res(i.naturalWidth > 0); i.onerror = () => res(false); i.src = u; }); out.push([t.id, ok, Math.round(performance.now() - t0)]); } return out; });
+      assert.deepEqual(r.map(x => x[0]), ['blossom', 'maple', 'ocean', 'forest', 'mountains', 'garden', 'night', 'classic']);
+      assert(r.every(x => x[1]), JSON.stringify(r)); assert(r.every(x => x[2] < 3000), 'each under 3 s: ' + JSON.stringify(r));
+    });
+
+    await step('the clock art can be changed for a page, and it sticks', async () => {
+      assert.equal(await P.evaluate(() => artOf()), 'blossom', 'the first child starts on cherry blossoms');
+      await P.click('.artbtn'); await P.waitForSelector('.artgrid');
+      assert.equal(await P.$$eval('.artopt', b => b.length), 8);
+      await P.click('[data-pick=forest]');
+      assert.equal(await P.evaluate(() => [artOf(), db.meta.art[db.baby.kids[0].id], document.querySelector('svg.clock').dataset.painting]).then(x => x.join()), 'forest,forest,forest');
+      assert(/Forest/.test(await P.textContent('.artbtn')));
+      await P.click('[data-tab=more]'); assert(/Forest/.test(await P.textContent('.card:has([data-art])')), 'More shows the choice too'); await P.click('[data-tab=day]');
     });
 
     await step('the list below is one twirl-down per group, pee and poo together, closed until tapped, and stays open across updates', async () => {

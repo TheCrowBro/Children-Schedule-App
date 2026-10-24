@@ -192,6 +192,15 @@ const EMOJI = /[\u{1F300}-\u{1FAFF}⚠✅⚙☁⏳]/u;
       assert(contrast(m, '#fffdf9') >= 4.5 && contrast(m, '#f6f2ec') >= 4.5, 'secondary text ' + m);
     });
 
+    await step('each child can have their own clock painting, or one painting for everyone', async () => {
+      const ks = await P.evaluate(() => db.baby.kids);
+      await P.click('[data-tab=day]'); await P.click(`[data-kid="${ks[0].id}"]`); const a0 = await P.evaluate(() => artOf());
+      await P.click(`[data-kid="${ks[1].id}"]`); const a1 = await P.evaluate(() => artOf());
+      assert.notEqual(a0, a1, 'siblings start with different paintings');
+      await P.click('.artbtn'); await P.waitForSelector('.artgrid'); await P.click('[name=artAll]'); await P.click('[data-pick=night]');
+      assert.deepEqual(await P.evaluate(() => [...db.baby.kids.map(k => artOf(k.id)), artOf('all')]), Array(ks.length + 1).fill('night'));
+    });
+
     const pageErrs = H.pages.flatMap(p => p.errs.concat(p.csp));
     if (pageErrs.length) { failed++; console.log('✗ page errors:', pageErrs); } else { ok++; console.log('✓ no page errors or content-security-policy violations on any phone'); }
   } finally { await H.close(); }
