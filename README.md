@@ -8,7 +8,8 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 - **More than one child**: up to 8 children in one shared log. Each has a page of their own with their own colour (blues for boys, reds for girls, a different shade for each; parents can change any colour), an "All" view, and entries can be logged for several children at once. Names, colours and which child an entry belongs to are end-to-end encrypted like everything else
 - **Watercolour look**: soft washes in the open child's colour and hand-painted style icons, with dark outlines and text kept at readable contrast (light and dark mode)
 - **Day clock**: a French carriage clock (gilt case, painted porcelain panel, Roman numerals, a moon at midnight and a sun at noon, a blued spade
-  hand at the current time). Every entry is a ray from the centre to the hour it happened, coloured by group, with a tappable dot; tap a quarter of
+  hand at the current time). A **24 h / 12 h** switch: the 12-hour face shows the morning or the afternoon half (AM / PM) with all
+  twelve numerals and an hour and a minute hand. Every entry is a ray from the centre to the hour it happened, coloured by group, with a tappable dot; tap a quarter of
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); **stats** with a chart for every section

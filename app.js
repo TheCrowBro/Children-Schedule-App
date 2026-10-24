@@ -186,15 +186,19 @@ function render() {
 }
 
 function dayView() {
-  const evs = eventsOnDay(viewDay), isToday = viewDay === startOfDay(Date.now());
-  const q = quad == null ? null : QUADS[quad], inQ = q ? evs.filter(e => quadOf(e.ts, viewDay) === quad) : null;
+  const evs = eventsOnDay(viewDay), isToday = viewDay === startOfDay(Date.now()), twelve = face12();
+  const sp = clockSpan(viewDay), shown = evs.filter(e => e.ts >= sp.start && e.ts < sp.start + sp.len);
+  const q = quad == null ? null : quadInfo(quad, viewDay), inQ = q ? evs.filter(e => e.ts >= q.start && e.ts < q.end) : null;
+  const seg = (attr, opts, cur, label) => `<div class="seg mini" role="group" aria-label="${label}">${opts.map(([v, l]) => `<button data-${attr}="${v}" class="${v === cur ? 'on' : ''}" aria-pressed="${v === cur}">${l}</button>`).join('')}</div>`;
   return `
   <div class="datenav"><button data-nav="-1" aria-label="Previous day">‹</button>
     <div class="d">${isToday ? 'Today' : fmtDate(viewDay)}<small>${isToday ? fmtDate(viewDay) : ''}${ageText(viewDay)}</small></div>
     <button data-nav="1" aria-label="Next day" ${isToday ? 'disabled' : ''}>›</button></div>
   ${quickButtons()}
-  <div class="clockwrap">${clockSvg(evs, viewDay)}${clockLegend(evs)}
-    <div class="clockfoot"><p class="note hint">Midnight is at the top, noon at the bottom. Tap a dot to open an entry, or a quarter of the dial for just those hours.</p><button class="artbtn" data-art>🎨 ${esc(Art.byId(artOf()).name)}</button></div></div>
+  <div class="clockwrap">${clockSvg(shown, viewDay)}
+    <div class="clockctl">${seg('face', [['24', '24 h'], ['12', '12 h']], twelve ? '12' : '24', 'Clock face')}${twelve ? seg('half', [['0', 'AM'], ['1', 'PM']], String(half), 'Half of the day') : ''}<button class="artbtn" data-art>🎨 ${esc(Art.byId(artOf()).name)}</button></div>
+    ${clockLegend(shown)}
+    <p class="note hint">${twelve ? `Showing ${half ? 'noon to midnight' : 'midnight to noon'}; switch AM and PM for the other half of the day.` : 'Midnight is at the top, noon at the bottom.'} Tap a dot to open an entry, or a quarter of the dial for just those hours.</p></div>
   ${q ? `<div class="card quadlist"><div class="qhead"><span><b>${q.label}</b> <small>${q.range} · ${inQ.length} ${inQ.length === 1 ? 'entry' : 'entries'}</small></span><button class="btn" data-quadclear style="padding:6px 12px">Whole day</button></div>
       ${inQ.length ? inQ.map(evRow).join('') : '<div class="empty">Nothing in these hours.</div>'}</div>`
     : (evs.length ? `<h2>Details</h2>${groupedList(evs)}` : `<div class="empty">Nothing logged yet.${Sync.can('add') ? '<br>Tap a button above to add an entry.' : ''}</div>`)}`;
@@ -204,9 +208,20 @@ function dayView() {
 // A French carriage clock: a gilt case with fluted columns, and a painted porcelain panel with a 24-hour dial on it (midnight at the
 // top under the moon, noon at the bottom under the sun). Every entry is a ray from the centre to the hour it happened, ending in a dot
 // on its group's ring; sleep also shows as an arc for how long it lasted. The painting is chosen per child (Clock art).
-const QUADS = [{ label: 'Night', range: '12 AM – 6 AM' }, { label: 'Morning', range: '6 AM – 12 PM' }, { label: 'Afternoon', range: '12 PM – 6 PM' }, { label: 'Evening', range: '6 PM – 12 AM' }];
-let quad = null;
-const quadOf = (t, day) => Math.min(3, Math.max(0, Math.floor((t - day) / (6 * 3600e3))));
+// The face can also be a classic 12-hour one (Clock face: 24 h / 12 h, kept on this phone). A 12-hour face shows half the day at a time,
+// AM or PM, so morning and evening entries never sit on top of each other; on today it has an hour and a minute hand.
+let quad = null, half = new Date().getHours() >= 12 ? 1 : 0;   // the chosen quarter of the dial; which half a 12-hour face shows
+const HOUR = 3600e3;
+const face12 = () => db.meta.clock === '12';
+/** The time the dial covers: the whole day (24-hour face) or its AM or PM half (12-hour face). */
+const clockSpan = day => (face12() ? { start: day + half * 12 * HOUR, len: 12 * HOUR } : { start: day, len: DAY });
+const QUAD_NAMES = { day: ['Night', 'Morning', 'Afternoon', 'Evening'], am: ['Late night', 'Early morning', 'Morning', 'Late morning'], pm: ['Early afternoon', 'Late afternoon', 'Evening', 'Night'] };
+const fmtHour = t => new Date(t).toLocaleTimeString([], { hour: 'numeric' });
+/** A quarter of the dial: 6 hours on the 24-hour face, 3 hours on the 12-hour one. */
+function quadInfo(i, day) {
+  const sp = clockSpan(day), q = sp.len / 4, start = sp.start + i * q;
+  return { label: QUAD_NAMES[face12() ? (half ? 'pm' : 'am') : 'day'][i], range: `${fmtHour(start)} – ${fmtHour(start + q)}`, start, end: start + q };
+}
 const ART_ORDER = ['blossom', 'ocean', 'forest', 'maple', 'mountains', 'garden', 'night', 'classic'];
 /** The painting on a page: chosen on this phone, or a different default for each child. */
 function artOf(id = dayKid()) {
@@ -221,7 +236,7 @@ const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 
 function clockSvg(evs, day) {
   const th = Art.byId(artOf()), dk = dark(), X0 = 38, Y0 = 84, C = { x: X0 + Art.DIAL.x, y: Y0 + Art.DIAL.y }, RD = Art.DIAL.r;
   const RR = { sleep: 90, feed: 78, diaper: 66, vomit: 54, play: 42, health: 30 };
-  const frac = t => (t - day) / DAY, ang = fr => fr * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C.x + r * Math.cos(a), C.y + r * Math.sin(a)];
+  const sp = clockSpan(day), twelve = face12(), frac = t => (t - sp.start) / sp.len, ang = fr => fr * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C.x + r * Math.cos(a), C.y + r * Math.sin(a)];
   const f1 = n => n.toFixed(1), xy = (a, r) => P(a, r).map(f1).join(' ');
   const arc = (a0, a1, r) => `M${xy(a0, r)}A${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${xy(a1, r)}`;
   const ink = dk ? '#efe6d3' : '#1f1b16', dialC = dk ? '39,36,31' : '255,253,248', edge = Math.max(th.edge || 0.62, dk ? 0.78 : 0);
@@ -249,12 +264,17 @@ function clockSvg(evs, day) {
   if (!url) Art.url(th.id).then(u => document.querySelectorAll(`.clock image.art[data-theme="${th.id}"]`).forEach(im => { im.setAttribute('href', u); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', u); }));
   const panel = `<g clip-path="url(#cc-panel)"><rect x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" fill="${th.base}"/><image class="art" data-theme="${th.id}" x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" preserveAspectRatio="none"${url ? ` href="${url}" xlink:href="${url}"` : ''}/>${dk ? `<rect x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" fill="#120f0b" opacity=".36"/>` : ''}</g><rect x="${X0 - 1.5}" y="${Y0 - 1.5}" width="${Art.W + 3}" height="${Art.H + 3}" rx="3" fill="none" stroke="url(#cc-bh)" stroke-width="3"/>`;
   let dial = `<circle cx="${C.x}" cy="${C.y}" r="${RD}" fill="url(#cc-dial)"/>`;
-  // railway minute track and the hours: Roman numerals on the even hours, a moon at midnight and a sun at noon
+  // railway minute track and the hours. 24-hour face: Roman numerals on the even hours, a moon at midnight and a sun at noon.
+  // 12-hour face: all twelve numerals, with a.m. or p.m. under the centre.
   dial += `<circle cx="${C.x}" cy="${C.y}" r="112" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/><circle cx="${C.x}" cy="${C.y}" r="118" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/>`;
   let ticks = '';
-  for (let q = 0; q < 96; q++) { const a = ang(q / 96), hr = q % 4 === 0; ticks += `M${xy(a, hr ? 110 : 112)}L${xy(a, hr ? 120 : 118)}`; }
+  const marks = twelve ? 60 : 96, every = twelve ? 5 : 4;
+  for (let q = 0; q < marks; q++) { const a = ang(q / marks), hr = q % every === 0; ticks += `M${xy(a, hr ? 110 : 112)}L${xy(a, hr ? 120 : 118)}`; }
   dial += `<path d="${ticks}" stroke="${ink}" stroke-opacity=".75" stroke-width=".7"/>`;
-  for (let h = 0; h < 24; h += 2) {
+  if (twelve) {
+    for (let h = 1; h <= 12; h++) { const [x, y] = P(ang(h / 12), 101); dial += `<text class="num" transform="translate(${f1(x)} ${f1(y)}) rotate(${h * 30})" text-anchor="middle" dy=".36em" fill="${ink}">${h === 12 ? 'XII' : ROMAN[h]}</text>`; }
+    dial += `<text class="ampm" x="${C.x}" y="${C.y + 15}" text-anchor="middle" fill="${ink}">${half ? 'p.m.' : 'a.m.'}</text>`;
+  } else for (let h = 0; h < 24; h += 2) {
     const a = ang(h / 24), [x, y] = P(a, 101);
     if (h === 0) dial += `<path transform="translate(${f1(x)} ${f1(y)})" d="M2.5 -6.2A6.4 6.4 0 1 0 2.5 6.2A5 5 0 1 1 2.5 -6.2Z" fill="${dk ? '#e9cf7d' : '#a77a27'}"/>`;
     else if (h === 12) dial += `<g transform="translate(${f1(x)} ${f1(y)})" fill="${dk ? '#e9cf7d' : '#b8862b'}" stroke="${dk ? '#e9cf7d' : '#b8862b'}"><circle r="3.6"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(k => `<path d="M0 -5.4V-7.6" transform="rotate(${k * 45})" stroke-width="1.2" stroke-linecap="round"/>`).join('')}</g>`;
@@ -262,10 +282,10 @@ function clockSvg(evs, day) {
   }
   // quarters (tap targets), washed in the page colour when chosen
   let quads = '';
-  for (let i = 0; i < 4; i++) { const a0 = ang(i / 4), a1 = ang((i + 1) / 4); quads += `<path class="qw ${quad === i ? 'on' : ''}" data-quad="${i}" role="button" tabindex="0" aria-pressed="${quad === i}" aria-label="${QUADS[i].label}, ${QUADS[i].range}" d="M${C.x} ${C.y}L${xy(a0, RD)}A${RD} ${RD} 0 0 1 ${xy(a1, RD)}Z"/>`; }
+  for (let i = 0; i < 4; i++) { const a0 = ang(i / 4), a1 = ang((i + 1) / 4); quads += `<path class="qw ${quad === i ? 'on' : ''}" data-quad="${i}" role="button" tabindex="0" aria-pressed="${quad === i}" aria-label="${quadInfo(i, day).label}, ${quadInfo(i, day).range}" d="M${C.x} ${C.y}L${xy(a0, RD)}A${RD} ${RD} 0 0 1 ${xy(a1, RD)}Z"/>`; }
   let data = RING.map(g => `<circle class="ring" cx="${C.x}" cy="${C.y}" r="${RR[g]}"/>`).join('');
-  for (const e of evs) if (e.type === 'sleep') {
-    const s0 = Math.max(0, frac(e.ts)), s1 = Math.min(1, frac(e.end || Math.min(Date.now(), day + DAY)));
+  for (const e of scoped()) if (e.type === 'sleep') {   // every sleep that overlaps what the dial shows, even one that began before it
+    const s0 = Math.max(0, frac(e.ts)), s1 = Math.min(1, frac(e.end || Date.now()));
     if (s1 > s0) data += `<path class="sarc" d="${arc(ang(s0), ang(Math.max(s1, s0 + 0.004)), RR.sleep)}"/>`;
   }
   const all = dayKid() === 'all';
@@ -275,18 +295,36 @@ function clockSvg(evs, day) {
       <title>${esc(fmtTime(e.ts) + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
       <path d="M${xy(a, 17)}L${xy(a, r - 5)}"/><path class="hitl" d="M${xy(a, 20)}L${xy(a, r)}"/><circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="10"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="4.6"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
   }
-  // a blued-steel spade hand at the current time (today only), and the centre boss
+  // blued-steel hands at the current time, when it is on the dial: one 24-hour hand, or an hour and a minute hand; then the centre boss
   let hand = '';
-  if (day === startOfDay(Date.now())) {
-    const deg = frac(Date.now()) * 360;
-    hand = `<path class="hand" transform="rotate(${deg.toFixed(2)} ${C.x} ${C.y})" d="M${C.x - 1.2} ${C.y + 14}L${C.x - 1.2} ${C.y - 72}C${C.x - 6.5} ${C.y - 74} ${C.x - 7.5} ${C.y - 80} ${C.x - 4.8} ${C.y - 84}C${C.x - 2.6} ${C.y - 87} ${C.x - 0.8} ${C.y - 90} ${C.x} ${C.y - 99}C${C.x + 0.8} ${C.y - 90} ${C.x + 2.6} ${C.y - 87} ${C.x + 4.8} ${C.y - 84}C${C.x + 7.5} ${C.y - 80} ${C.x + 6.5} ${C.y - 74} ${C.x + 1.2} ${C.y - 72}L${C.x + 1.2} ${C.y + 14}Z" fill="${dk ? '#e9cf7d' : '#24356b'}"/>`;
+  const steel = dk ? '#e9cf7d' : '#24356b', hy = (L, k) => f1(C.y - L * k);
+  const spade = (kind, deg, L) => `<path class="hand" data-hand="${kind}" transform="rotate(${deg.toFixed(2)} ${C.x} ${C.y})" fill="${steel}" d="M${C.x - 1.2} ${C.y + 14}L${C.x - 1.2} ${hy(L, 0.727)}C${C.x - 6.5} ${hy(L, 0.747)} ${C.x - 7.5} ${hy(L, 0.808)} ${C.x - 4.8} ${hy(L, 0.848)}C${C.x - 2.6} ${hy(L, 0.879)} ${C.x - 0.8} ${hy(L, 0.909)} ${C.x} ${hy(L, 1)}C${C.x + 0.8} ${hy(L, 0.909)} ${C.x + 2.6} ${hy(L, 0.879)} ${C.x + 4.8} ${hy(L, 0.848)}C${C.x + 7.5} ${hy(L, 0.808)} ${C.x + 6.5} ${hy(L, 0.747)} ${C.x + 1.2} ${hy(L, 0.727)}L${C.x + 1.2} ${C.y + 14}Z"/>`;
+  const needle = (deg, L) => `<path class="hand" data-hand="m" transform="rotate(${deg.toFixed(2)} ${C.x} ${C.y})" fill="${steel}" d="M${C.x - 0.9} ${C.y + 16}L${C.x - 0.9} ${hy(L, 0.86)}L${C.x - 3.2} ${hy(L, 0.92)}L${C.x} ${hy(L, 1)}L${C.x + 3.2} ${hy(L, 0.92)}L${C.x + 0.9} ${hy(L, 0.86)}L${C.x + 0.9} ${C.y + 16}Z"/>`;
+  const now = Date.now();
+  if (now >= sp.start && now < sp.start + sp.len) {
+    const h = handAngles(now, sp);
+    hand = twelve ? needle(h.m, 106) + spade('h', h.h, 70) : spade('d', h.d, 99);
   }
   const boss = `<circle cx="${C.x}" cy="${C.y}" r="6" fill="url(#cc-ball)"/><circle cx="${C.x}" cy="${C.y}" r="1.6" fill="#5f4313"/>`;
   const shadow = `<ellipse cx="170" cy="474" rx="160" ry="4" fill="#3b2a12" opacity=".16"/>`;
   const summary = GROUPS.map(gr => [gr.label, evs.filter(e => gr.types.includes(e.type)).length]).filter(x => x[1]).map(x => `${x[1]} ${x[0].toLowerCase()}`).join(', ');
-  return `<svg class="clock" viewBox="0 0 340 478" data-cx="${C.x}" data-cy="${C.y}" data-painting="${th.id}" role="group" aria-label="24-hour clock of the day, midnight at the top and noon at the bottom${summary ? ': ' + esc(summary) : ', no entries'}">${defs}
+  const what = twelve ? `12-hour clock, ${half ? 'noon to midnight' : 'midnight to noon'}` : '24-hour clock of the day, midnight at the top and noon at the bottom';
+  return `<svg class="clock" viewBox="0 0 340 478" data-cx="${C.x}" data-cy="${C.y}" data-painting="${th.id}" data-dial="${twelve ? 12 : 24}" role="group" aria-label="${what}${summary ? ': ' + esc(summary) : ', no entries'}">${defs}
     <g aria-hidden="true">${shadow}${handle}${finial(24)}${finial(316)}${caseTop}${column(12)}${column(304)}${caseBase}${foot(24)}${foot(316)}${panel}${dial}</g>${quads}<g class="data">${data}</g><g aria-hidden="true">${hand}${boss}</g></svg>`;
 }
+/** Where the hands point (degrees): the 24-hour hand, and the hour and minute hands of a 12-hour face. */
+function handAngles(now, sp) {
+  const d = new Date(now), min = d.getMinutes() + d.getSeconds() / 60;
+  return { d: ((now - sp.start) / sp.len) * 360, h: ((d.getHours() % 12) * 60 + min) / 2, m: min * 6 };
+}
+/** Keep the hands moving without redrawing the screen. */
+function tickHands() {
+  const svg = document.querySelector('svg.clock'); if (!svg || tab !== 'day') return;
+  const now = Date.now(), sp = clockSpan(viewDay); if (now < sp.start || now >= sp.start + sp.len) return;
+  const h = handAngles(now, sp);
+  svg.querySelectorAll('.hand').forEach(el => el.setAttribute('transform', `rotate(${h[el.dataset.hand].toFixed(2)} ${svg.dataset.cx} ${svg.dataset.cy})`));
+}
+setInterval(tickHands, 20000);
 function clockLegend(evs) {
   return `<div class="clegend">${GROUPS.map(g => { const n = evs.filter(e => g.types.includes(e.type)).length; return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})"></i>${g.label} <b>${n}</b></span>`; }).join('')}</div>`;
 }
@@ -573,6 +611,8 @@ function bind() {
   document.querySelectorAll('[data-range]').forEach(b => b.onclick = () => { statDays = +b.dataset.range; render(); });
   document.querySelectorAll('[data-quad]').forEach(b => b.onclick = () => { quad = quad === +b.dataset.quad ? null : +b.dataset.quad; render(); });
   document.querySelectorAll('[data-quadclear]').forEach(b => b.onclick = () => { quad = null; render(); });
+  document.querySelectorAll('[data-face]').forEach(b => b.onclick = () => { db.meta.clock = b.dataset.face; Store.save(db); quad = null; render(); });
+  document.querySelectorAll('[data-half]').forEach(b => b.onclick = () => { half = +b.dataset.half; quad = null; render(); });
   document.querySelectorAll('details[data-grp]').forEach(d => d.ontoggle = () => { d.open ? openGroups.add(d.dataset.grp) : openGroups.delete(d.dataset.grp); });
   document.querySelectorAll('.bar[data-tip]').forEach(b => b.onclick = () => toast(b.dataset.tip));
   document.querySelectorAll('svg [role=button]').forEach(b => b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });

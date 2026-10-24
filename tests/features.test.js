@@ -42,7 +42,7 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
     });
 
     await step('tapping a quarter of the clock lists only those hours; "Whole day" goes back', async () => {
-      await P.click('[data-quad="2"]', { position: { x: 30, y: 80 } }).catch(() => P.evaluate(() => document.querySelector('[data-quad="2"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))));
+      await P.click('[data-quad="2"]', { position: { x: 50, y: 50 } });
       const rows = await P.$$eval('.quadlist .ev', r => r.map(x => x.dataset.edit));
       assert.deepEqual(rows, ['fdiaper' + at(13)], 'afternoon has just the 1 PM diaper');
       assert(/Afternoon/.test(await P.textContent('.quadlist')));
@@ -58,6 +58,33 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       await P.waitForFunction(() => /^(blob|data):/.test(document.querySelector('.clock image.art').getAttribute('href') || ''), null, { timeout: 10000 });
       const loaded = await P.evaluate(() => new Promise(res => { const i = new Image(); i.onload = () => res([i.naturalWidth, i.naturalHeight]); i.onerror = () => res(null); i.src = document.querySelector('.clock image.art').getAttribute('href'); }));
       assert(loaded && loaded[0] >= 264 && loaded[1] >= 336, 'the painting is a real picture: ' + loaded);
+    });
+
+    await step('a 12-hour face shows half the day at a time with all twelve numerals; AM and PM switch halves; the choice sticks', async () => {
+      await P.click('[data-face="12"]');
+      assert.equal(await P.$eval('svg.clock', c => c.dataset.dial), '12');
+      assert.deepEqual(await P.$$eval('.clock text.num', t => t.map(x => x.textContent)), ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']);
+      await P.click('[data-half="0"]');
+      assert.deepEqual(await P.$$eval('.clock .ray', r => r.map(x => x.dataset.edit).sort()), ['fdiaper' + at(7.5), 'ffeed' + at(1), 'fsleep' + at(2)].sort(), 'AM: midnight to noon');
+      assert.equal(await P.textContent('.clock .ampm'), 'a.m.');
+      await P.click('[data-half="1"]');
+      assert.deepEqual(await P.$$eval('.clock .ray', r => r.map(x => x.dataset.edit).sort()), ['fdiaper' + at(13), 'fvomit' + at(19)].sort(), 'PM: noon to midnight');
+      const [cx, cy] = await P.evaluate(() => { const c = document.querySelector('svg.clock'); return [+c.dataset.cx, +c.dataset.cy]; });
+      const pos = await P.evaluate(id => { const c = document.querySelector(`.ray[data-edit="${id}"] .dot`); return [+c.getAttribute('cx'), +c.getAttribute('cy')]; }, 'fdiaper' + at(13));
+      assert(pos[0] > cx && pos[1] < cy, '1 PM sits at one o\'clock: ' + pos);
+      assert(/Diapers\s*1/.test(await P.textContent('.clegend')), 'the legend counts what the dial shows');
+      await P.evaluate(() => document.querySelector('[data-quad="0"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+      assert.deepEqual(await P.$$eval('.quadlist .ev', r => r.map(x => x.dataset.edit)), ['fdiaper' + at(13)]);
+      assert(/Early afternoon/.test(await P.textContent('.quadlist')) && /12 PM – 3 PM/.test(await P.textContent('.quadlist')), await P.textContent('.quadlist .qhead'));
+      await P.click('[data-quadclear]');
+      // today: an hour and a minute hand on the half that holds the current time, none on the other half
+      const cur = await P.evaluate(() => String(new Date().getHours() >= 12 ? 1 : 0));
+      await P.click(`[data-half="${cur}"]`); assert.deepEqual(await P.$$eval('.clock .hand', h => h.map(x => x.dataset.hand).sort()), ['h', 'm']);
+      await P.click(`[data-half="${1 - cur}"]`); assert.equal(await P.$$eval('.clock .hand', h => h.length), 0);
+      await P.evaluate(() => render()); assert.equal(await P.$eval('svg.clock', c => c.dataset.dial), '12', 'still 12-hour after a refresh');
+      assert.equal(await P.evaluate(async () => { await Store.whenSaved(); return (await Store.peek()).meta.clock; }), '12', 'and saved on the phone');
+      await P.click('[data-face="24"]'); assert.equal(await P.$$eval('.clock text.num', t => t.length), 10, 'back to the 24-hour face');
+      assert.deepEqual(await P.$$eval('.clock .hand', h => h.map(x => x.dataset.hand)), ['d'], 'with its single 24-hour hand');
     });
 
     await step('every painting draws, quickly, without errors', async () => {
