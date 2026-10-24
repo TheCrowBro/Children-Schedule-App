@@ -3,14 +3,14 @@
 
 // ---------- Config ----------
 const TYPES = {
-  feed:   { label: 'Feed',     icon: '🍼', color: '#f59e0b' },
-  diaper: { label: 'Diaper',   icon: '💧', color: '#14b8a6' },
-  sleep:  { label: 'Sleep',    icon: '😴', color: '#6366f1' },
-  wake:   { label: 'Night wake', icon: '🌙', color: '#8b5cf6' },
-  vomit:  { label: 'Vomit',    icon: '🤮', color: '#84cc16' },
-  play:   { label: 'Play',     icon: '🧸', color: '#ec4899' },
-  health: { label: 'Health',   icon: '🩺', color: '#ef4444' },
-  med:    { label: 'Meds',     icon: '💊', color: '#0ea5e9' },
+  feed:   { label: 'Feed',     icon: '🍼', color: '#d9a066' },
+  diaper: { label: 'Diaper',   icon: '💧', color: '#7fb0a6' },
+  sleep:  { label: 'Sleep',    icon: '😴', color: '#8a94c0' },
+  wake:   { label: 'Night wake', icon: '🌙', color: '#a89bc4' },
+  vomit:  { label: 'Vomit',    icon: '🤮', color: '#a3b17a' },
+  play:   { label: 'Play',     icon: '🧸', color: '#d49aa6' },
+  health: { label: 'Health',   icon: '🩺', color: '#c9756e' },
+  med:    { label: 'Meds',     icon: '💊', color: '#7fa6c4' },
 };
 const SYMPTOMS = [
   'Blue/purple hands or feet', 'Blue lips or face', 'Clicking joints (hips)', 'Belly bulge / hernia',
