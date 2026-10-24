@@ -8,6 +8,12 @@
    "note": "Bottom tab: the log of one day. Also the 'Day' column of the stats table and a screen name in the report form. One short word."
   },
   {
+   "id": "1kmzs9v",
+   "en": "Routine",
+   "where": "index.html",
+   "note": "Bottom tab: the baby's daily routine (the times of day that repeat). One short word."
+  },
+  {
    "id": "1aqporp",
    "en": "Month",
    "where": "index.html",
@@ -642,8 +648,8 @@
    "where": "app.js:225"
   },
   {
-   "id": "18myfjv",
-   "en": "Tap a dot to open an entry, or a quarter of the dial for just those hours.",
+   "id": "ni9kjr",
+   "en": "Tap a dot to see an entry (change it in the list below), or a quarter of the dial for just those hours.",
    "where": "app.js:225"
   },
   {
@@ -729,2170 +735,2520 @@
    "where": "app.js:243"
   },
   {
+   "id": "1rdxz2f",
+   "en": "Numbers on the clock",
+   "where": "app.js:267",
+   "note": "Spoken label of the switch between Roman numerals (XII) and ordinary numbers (12) on the clock face."
+  },
+  {
+   "id": "1fviqbh",
+   "en": "Roman numerals",
+   "where": "app.js:267",
+   "note": "One kind of numbers on the clock face (spoken label of its button, which shows XII)."
+  },
+  {
+   "id": "v4aa3o",
+   "en": "Easy-to-read numbers",
+   "where": "app.js:267",
+   "note": "The other kind: ordinary numbers 1 to 12 (spoken label of its button, which shows 123)."
+  },
+  {
    "id": "1wkul7g",
    "en": "p.m.",
-   "where": "app.js:294",
+   "where": "app.js:307",
    "note": "Written small in the middle of the clock face when it shows the afternoon/evening half."
   },
   {
    "id": "mb0izx",
    "en": "a.m.",
-   "where": "app.js:294",
+   "where": "app.js:307",
    "note": "Written small in the middle of the clock face when it shows the morning half."
   },
   {
    "id": "1c90239",
    "en": "about {time}",
-   "where": "app.js:317",
+   "where": "app.js:330",
    "note": "An approximate time, as in 'about 14:30'."
   },
   {
    "id": "ox2kvi",
    "en": "{group}: {n}",
-   "where": "app.js:333",
+   "where": "app.js:346",
    "note": "Spoken summary of the clock: '{group}' is a group such as Feeding, {n} a count."
   },
   {
    "id": "1ve5npk",
    "en": "12-hour clock, noon to midnight",
-   "where": "app.js:334"
+   "where": "app.js:347"
   },
   {
    "id": "v3ormg",
    "en": "12-hour clock, midnight to noon",
-   "where": "app.js:334"
+   "where": "app.js:347"
   },
   {
    "id": "va72u5",
    "en": "24-hour clock of the day, midnight at the top and noon at the bottom",
-   "where": "app.js:334"
+   "where": "app.js:347"
   },
   {
    "id": "ltw8o1",
    "en": "{clock}: {entries}",
-   "where": "app.js:335",
+   "where": "app.js:348",
    "note": "Spoken summary of the clock: '{clock}' names the clock, '{entries}' lists the counts."
   },
   {
    "id": "1lxtxw",
    "en": "{clock}, no entries",
-   "where": "app.js:335"
+   "where": "app.js:348"
   },
   {
    "id": "1m0pkjg",
    "one": "{n} feed",
    "other": "{n} feeds",
-   "where": "app.js:359"
+   "where": "app.js:372"
   },
   {
    "id": "14b0m8",
    "en": "{n} ml",
-   "where": "app.js:359",
+   "where": "app.js:372",
    "note": "Millilitres of milk, as in '90 ml'."
   },
   {
    "id": "akg4hu",
    "one": "{n} diaper",
    "other": "{n} diapers",
-   "where": "app.js:360"
+   "where": "app.js:373"
   },
   {
    "id": "12b3btx",
    "en": "{pee} pee, {poo} poo",
-   "where": "app.js:360",
+   "where": "app.js:373",
    "note": "Counts of wet and dirty diapers in a day: '5 pee, 2 poo'."
   },
   {
    "id": "32l1mg",
    "one": "{n} sleep",
    "other": "{n} sleeps",
-   "where": "app.js:361"
+   "where": "app.js:374"
   },
   {
    "id": "1w960j2",
    "one": "{n} night waking",
    "other": "{n} night wakings",
-   "where": "app.js:361"
+   "where": "app.js:374"
   },
   {
    "id": "dnusbu",
    "one": "{n} time",
    "other": "{n} times",
-   "where": "app.js:362"
+   "where": "app.js:375"
   },
   {
    "id": "1j2ki1s",
    "one": "{n} note",
    "other": "{n} notes",
-   "where": "app.js:363"
+   "where": "app.js:376"
   },
   {
    "id": "3s8ap4",
    "one": "{n} medicine",
    "other": "{n} medicines",
-   "where": "app.js:363"
+   "where": "app.js:376"
   },
   {
    "id": "zqhxqa",
    "en": "Feeds",
-   "where": "app.js:379"
+   "where": "app.js:392"
   },
   {
    "id": "1jb414l",
    "en": "Night wakings",
-   "where": "app.js:380"
+   "where": "app.js:393"
   },
   {
    "id": "gytadu",
    "en": "Health notes",
-   "where": "app.js:381"
+   "where": "app.js:394"
   },
   {
    "id": "bfvmq2",
    "en": "Medicines",
-   "where": "app.js:381"
+   "where": "app.js:394"
   },
   {
    "id": "809war",
    "en": "added by {name}",
-   "where": "app.js:389"
+   "where": "app.js:402"
   },
   {
    "id": "1aj2i8n",
    "en": "About this time",
-   "where": "app.js:394"
+   "where": "app.js:407"
   },
   {
    "id": "18nxi15",
    "en": "day {n}",
-   "where": "app.js:402",
+   "where": "app.js:415",
    "note": "Day number of a trip, as in 'Trip by car · day 3'."
   },
   {
    "id": "13za0vc",
    "one": "{n} week",
    "other": "{n} weeks",
-   "where": "app.js:402"
+   "where": "app.js:415"
   },
   {
    "id": "wxl7e1",
    "en": "travelling",
-   "where": "app.js:414",
+   "where": "app.js:427",
    "note": "Spoken label of a calendar day when the family was away travelling."
   },
   {
    "id": "3prhrq",
    "en": "Previous month",
-   "where": "app.js:417"
+   "where": "app.js:430"
   },
   {
    "id": "vde0ae",
    "en": "Next month",
-   "where": "app.js:419"
+   "where": "app.js:432"
   },
   {
    "id": "1sbni9f",
    "en": "Travelling (its own colours)",
-   "where": "app.js:421"
+   "where": "app.js:434"
   },
   {
    "id": "g4ugek",
    "en": "{from} – {to}. Tap to change it.",
-   "where": "app.js:429"
+   "where": "app.js:442"
   },
   {
    "id": "18rstm8",
    "en": "Plan a trip",
-   "where": "app.js:431"
+   "where": "app.js:444"
   },
   {
    "id": "6yiezx",
    "en": "Leaving today: travel mode switches on by itself that day",
-   "where": "app.js:431"
+   "where": "app.js:444"
   },
   {
    "id": "1t1py1w",
    "en": "Leaving {day}: travel mode switches on by itself that day",
-   "where": "app.js:431"
+   "where": "app.js:444"
   },
   {
    "id": "1iq5jts",
    "en": "Travelling {by}",
-   "where": "app.js:437",
+   "where": "app.js:450",
    "note": "{by} is how: 'by car', 'by plane', 'by train' or 'by ship' (translated)."
   },
   {
    "id": "18ig077",
    "en": "All entries for this day",
-   "where": "app.js:438"
+   "where": "app.js:451"
   },
   {
    "id": "wcgtfq",
    "en": "No entries this day.",
-   "where": "app.js:438"
+   "where": "app.js:451"
   },
   {
    "id": "1nfy1mx",
    "en": "Numbers",
-   "where": "app.js:493",
+   "where": "app.js:506",
    "note": "Opens a table of the numbers behind a chart."
   },
   {
    "id": "f30mrm",
    "one": "{what} per day, last {n} day",
    "other": "{what} per day, last {n} days",
-   "where": "app.js:494",
+   "where": "app.js:507",
    "note": "Spoken label of a chart. {what} lists the series ('feeds and ml'); {n} the number of days."
   },
   {
    "id": "1mrdflw",
    "one": "{n} day",
    "other": "{n} days",
-   "where": "app.js:512"
+   "where": "app.js:525"
+  },
+  {
+   "id": "1ufmcaj",
+   "en": "Report for the doctor (PDF)",
+   "where": "app.js:526",
+   "note": "Button that opens the form for the PDF report for the doctor."
   },
   {
    "id": "1wg79gj",
    "en": "Log a few entries and your stats will show up here.",
-   "where": "app.js:514"
+   "where": "app.js:528"
   },
   {
    "id": "1fo98pv",
    "en": "Fewer than 6 wet diapers/day on average. After the first week this can signal low intake – worth mentioning to your pediatrician.",
-   "where": "app.js:515"
+   "where": "app.js:529"
   },
   {
    "id": "h2bs2z",
    "en": "Feeds per day",
-   "where": "app.js:516"
+   "where": "app.js:530"
   },
   {
    "id": "1utzned",
    "en": "Avg time between feeds",
-   "where": "app.js:516"
+   "where": "app.js:530"
   },
   {
    "id": "1w05a2b",
    "en": "Bottle ml per day",
-   "where": "app.js:516"
+   "where": "app.js:530"
   },
   {
    "id": "1os5owy",
    "en": "feeds",
-   "where": "app.js:517",
+   "where": "app.js:531",
    "note": "Series name in a chart: feeds per day."
   },
   {
    "id": "qeq73w",
    "en": "ml",
-   "where": "app.js:517",
+   "where": "app.js:531",
    "note": "Millilitres, the unit of bottle feeds (chart series name)."
   },
   {
    "id": "1ykxv8k",
    "en": "Pee per day",
-   "where": "app.js:518"
+   "where": "app.js:532"
   },
   {
    "id": "gl4sww",
    "en": "Poo per day",
-   "where": "app.js:518"
+   "where": "app.js:532"
   },
   {
    "id": "h43d7g",
    "en": "Poo colours",
-   "where": "app.js:518",
+   "where": "app.js:532",
    "note": "Stats: how often each poo colour was seen."
   },
   {
    "id": "xxkpxd",
    "en": "pee",
-   "where": "app.js:519",
+   "where": "app.js:533",
    "note": "Series name in a chart of diapers per day: wet diapers."
   },
   {
    "id": "m93o71",
    "en": "poo",
-   "where": "app.js:519",
+   "where": "app.js:533",
    "note": "Series name in a chart of diapers per day: dirty diapers."
   },
   {
    "id": "1gqr82d",
    "en": "Sleep per day",
-   "where": "app.js:520"
+   "where": "app.js:534"
   },
   {
    "id": "1swrjjr",
    "en": "Longest stretch (avg)",
-   "where": "app.js:520"
+   "where": "app.js:534"
   },
   {
    "id": "ey75jv",
    "en": "Naps/sleeps per day",
-   "where": "app.js:520"
+   "where": "app.js:534"
   },
   {
    "id": "164yao8",
    "en": "Night wakings per day",
-   "where": "app.js:520"
+   "where": "app.js:534"
   },
   {
    "id": "kluju",
    "en": "hours asleep",
-   "where": "app.js:521",
+   "where": "app.js:535",
    "note": "Series name in a chart: hours of sleep per day."
   },
   {
    "id": "1ckj6hh",
    "en": "night wakings",
-   "where": "app.js:521",
+   "where": "app.js:535",
    "note": "Series name in a chart: night wakings per day."
   },
   {
    "id": "1c0as9p",
    "en": "Total",
-   "where": "app.js:522",
+   "where": "app.js:536",
    "note": "Stats: total over the period."
   },
   {
    "id": "1gju2ee",
    "en": "Per day",
-   "where": "app.js:522",
+   "where": "app.js:536",
    "note": "Stats: average per day."
   },
   {
    "id": "11qunlt",
    "en": "vomits",
-   "where": "app.js:522",
+   "where": "app.js:536",
    "note": "Series name in a chart: times sick per day."
   },
   {
    "id": "13rj4pu",
    "en": "Play per day",
-   "where": "app.js:523"
+   "where": "app.js:537"
   },
   {
    "id": "7ks5qv",
    "en": "minutes of play",
-   "where": "app.js:523"
+   "where": "app.js:537"
   },
   {
    "id": "1c6lasb",
    "en": "none",
-   "where": "app.js:524",
+   "where": "app.js:538",
    "note": "Stats: no health notes in the period."
   },
   {
    "id": "apjbg2",
    "en": "health notes",
-   "where": "app.js:525"
+   "where": "app.js:539"
   },
   {
    "id": "krslka",
    "en": "medicines",
-   "where": "app.js:525"
+   "where": "app.js:539"
   },
   {
    "id": "s3kk8c",
    "en": "Stats are for your own tracking and are not medical advice. If something worries you, call your pediatrician. Call emergency services for blue lips/face, trouble breathing, or a baby who is hard to wake.",
-   "where": "app.js:526"
-  },
-  {
-   "id": "5vgx7u",
-   "en": "Pediatrician",
-   "where": "app.js:533",
-   "note": "The child's own doctor (paediatrician or family doctor)."
-  },
-  {
-   "id": "21f177",
-   "en": "Add their name and number",
-   "where": "app.js:533"
-  },
-  {
-   "id": "15kyb53",
-   "en": "Emergency?",
-   "where": "app.js:540",
-   "note": "Bold start of the line saying when to call the emergency number."
-  },
-  {
-   "id": "179kzvy",
-   "en": "Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.",
    "where": "app.js:540"
   },
   {
-   "id": "10qpouh",
-   "en": "Right now",
-   "where": "app.js:541",
-   "note": "Guide: what is common at the child's age right now."
+   "id": "sawc46",
+   "en": "Night sleep",
+   "where": "app.js:552",
+   "note": "The night's sleep in the routine (it starts in the evening or at night)."
+  },
+  {
+   "id": "w7qwps",
+   "en": "Nap",
+   "where": "app.js:552",
+   "note": "A daytime sleep in the routine."
+  },
+  {
+   "id": "1432eem",
+   "en": "until about {time} ({long})",
+   "where": "app.js:555",
+   "note": "A sleep in the routine: {time} is the clock time it usually ends, {long} how long it lasts, as in 'until about 11:15 (1h 45m)'."
+  },
+  {
+   "id": "18y19ri",
+   "en": "Worked out from the last {days} days: feeds, sleep, play and medicines that happen within {minutes} minutes of the same time on more than half of the days logged. It updates by itself as the routine changes. Diapers are left out.",
+   "where": "app.js:560",
+   "note": "How the routine is found. {days} and {minutes} are numbers (7 and 45)."
+  },
+  {
+   "id": "1qds5t6",
+   "en": "Your routine will show up here after a few days of logging.",
+   "where": "app.js:561"
+  },
+  {
+   "id": "1nfchp2",
+   "one": "{n} day logged in the last week so far.",
+   "other": "{n} days logged in the last week so far.",
+   "where": "app.js:561",
+   "note": "How many of the last 7 days have anything logged."
+  },
+  {
+   "id": "1wtv90o",
+   "en": "No regular times yet.",
+   "where": "app.js:562"
+  },
+  {
+   "id": "1wk1ams",
+   "en": "Anything that happens at about the same time on most days will show up here.",
+   "where": "app.js:562"
+  },
+  {
+   "id": "19r3p3o",
+   "en": "Next in the routine",
+   "where": "app.js:564"
+  },
+  {
+   "id": "r7u2c5",
+   "en": "tomorrow at about {time}",
+   "where": "app.js:564",
+   "note": "When the next thing in the routine is: {time} is a clock time."
+  },
+  {
+   "id": "1wqutl8",
+   "en": "about now ({time})",
+   "where": "app.js:565",
+   "note": "The next thing in the routine is due about now; {time} is its usual clock time."
+  },
+  {
+   "id": "1g3a01m",
+   "en": "at about {time}, in {wait}",
+   "where": "app.js:565",
+   "note": "When the next thing in the routine is: {time} is a clock time, {wait} how long until then, as in '40m'."
+  },
+  {
+   "id": "194vsni",
+   "en": "usually {from} – {to}",
+   "where": "app.js:572",
+   "note": "The clock times something in the routine happened on different days, as in 'usually 7:45 – 8:20'."
+  },
+  {
+   "id": "133xmiw",
+   "one": "{days} of {n} day",
+   "other": "{days} of {n} days",
+   "where": "app.js:573",
+   "note": "How often something in the routine happened: on {days} of the {n} days that were logged, as in '6 of 7 days'. The plural form goes with {n}."
+  },
+  {
+   "id": "1j3qv0k",
+   "en": "Done today at {time}",
+   "where": "app.js:574",
+   "note": "Spoken label of the tick next to a routine time: when it was logged today."
+  },
+  {
+   "id": "1a109x5",
+   "en": "Due now",
+   "where": "app.js:575",
+   "note": "Badge on the routine time that is happening about now."
+  },
+  {
+   "id": "1ke11rl",
+   "en": "Up next",
+   "where": "app.js:575",
+   "note": "Badge on the next routine time today (not the 'Next' button of the tour)."
+  },
+  {
+   "id": "k6ycip",
+   "en": "Not logged today",
+   "where": "app.js:576",
+   "note": "Spoken label: this routine time has passed today with nothing logged."
   },
   {
    "id": "vbri7g",
    "one": "{n} month",
    "other": "{n} months",
-   "where": "app.js:542"
+   "where": "app.js:611"
   },
   {
-   "id": "ergjfe",
-   "en": "{name} is {age} old",
-   "where": "app.js:543"
+   "id": "h18oni",
+   "en": "Born {date}",
+   "where": "app.js:617",
+   "note": "PDF report: the child's date of birth, as in 'Born 24 August 2026'."
   },
   {
-   "id": "8em11r",
-   "en": "The first month is mostly feeding, sleeping and getting to know each other. Here is what is common around one month:",
-   "where": "app.js:544"
-  },
-  {
-   "id": "19och37",
-   "en": "Around {age}:",
-   "where": "app.js:544",
-   "note": "{age} is an age such as '2 months' (translated)."
-  },
-  {
-   "id": "14qnipi",
-   "en": "Common with newborns",
-   "where": "app.js:545"
-  },
-  {
-   "id": "my6wmg",
-   "en": "Month by month",
-   "where": "app.js:550"
-  },
-  {
-   "id": "uj5nu9",
-   "en": "General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.",
-   "where": "app.js:552"
-  },
-  {
-   "id": "1yz3rcd",
-   "en": "This translation was made with the help of AI and may have mistakes. In an emergency, call {sos}. If something reads wrong, tell us: More → Language → Report a language issue.",
-   "where": "app.js:553"
-  },
-  {
-   "id": "1m9w1wo",
-   "one": "{n} photo",
-   "other": "{n} photos",
-   "where": "app.js:561"
-  },
-  {
-   "id": "dyya04",
-   "one": "{n} drawing",
-   "other": "{n} drawings",
-   "where": "app.js:561"
-  },
-  {
-   "id": "3q9fvy",
-   "en": "Pictures",
-   "where": "app.js:562",
-   "note": "Guide: opens the pictures (photos or drawings) of a condition. They are hidden until opened."
-  },
-  {
-   "id": "13h3uy0",
-   "en": "tap to show",
-   "where": "app.js:562"
-  },
-  {
-   "id": "17egbr",
-   "en": "Drawing: {by}, {licence}",
-   "where": "app.js:563"
-  },
-  {
-   "id": "m2sxkl",
-   "en": "Photo: {by}, {licence}",
-   "where": "app.js:563"
-  },
-  {
-   "id": "1dvs5er",
-   "en": "Picture credits",
-   "where": "app.js:567",
-   "note": "Who made each picture and its licence."
-  },
-  {
-   "id": "hv9dvt",
-   "en": "From Wikimedia Commons, under free licences",
-   "where": "app.js:567"
-  },
-  {
-   "id": "1r956is",
-   "en": "drawing by {by}, {licence}",
-   "where": "app.js:568",
-   "note": "Picture credits: {by} is a person's name, {licence} a licence such as 'CC BY-SA 4.0'."
-  },
-  {
-   "id": "1dbmnxm",
-   "en": "photo by {by}, {licence}",
-   "where": "app.js:568",
-   "note": "Picture credits: {by} is a person's name, {licence} a licence such as 'CC BY-SA 4.0'."
-  },
-  {
-   "id": "6s9hn9",
-   "en": "From",
-   "where": "app.js:568",
-   "note": "Picture credits: 'From <web address>' (where the picture came from)."
-  },
-  {
-   "id": "imvq30",
-   "en": "Our versions of the CC BY-SA pictures are shared under the same licence.",
-   "where": "app.js:569"
-  },
-  {
-   "id": "17cn9ru",
-   "en": "UK: {age}",
-   "where": "app.js:577",
-   "note": "When the same check-up happens in the UK; {age} as in '6–8 weeks'."
-  },
-  {
-   "id": "fqmiz6",
-   "en": "US: {age}",
-   "where": "app.js:578",
-   "note": "When the same check-up happens in the US; {age} as in '2 months'."
-  },
-  {
-   "id": "il96zb",
-   "en": "US: {us}. UK: {uk}.",
-   "where": "app.js:579"
-  },
-  {
-   "id": "h8jwvn",
-   "en": "Ages on labels differ by country: check the one where you live.",
-   "where": "app.js:579"
-  },
-  {
-   "id": "lwer2j",
-   "en": "Never give a baby",
-   "where": "app.js:588"
-  },
-  {
-   "id": "1y402z9",
-   "en": "Over-the-counter medicines",
-   "where": "app.js:589"
-  },
-  {
-   "id": "p78495",
-   "en": "What is safe from what age, remedies parents mention, and what never to give",
-   "where": "app.js:589"
-  },
-  {
-   "id": "8dw9yb",
-   "en": "What many babies do",
-   "where": "app.js:592"
-  },
-  {
-   "id": "hgyzq2",
-   "en": "What parents often notice",
-   "where": "app.js:593"
-  },
-  {
-   "id": "s9nj2q",
-   "en": "Checkup",
-   "where": "app.js:594",
-   "note": "A routine check-up with the doctor at a given age."
-  },
-  {
-   "id": "1qxx98y",
-   "en": "For this phone.",
-   "where": "app.js:599"
-  },
-  {
-   "id": "5ec0jy",
-   "en": "For the All page on this phone.",
-   "where": "app.js:599"
-  },
-  {
-   "id": "kfnwfl",
-   "en": "For {name}'s page on this phone.",
-   "where": "app.js:599"
-  },
-  {
-   "id": "1ocseu4",
-   "en": "Clock art",
-   "where": "app.js:600",
-   "note": "The picture behind the clock (a painting or pattern), chosen by the parent."
-  },
-  {
-   "id": "171whcb",
-   "en": "Use it for every child",
-   "where": "app.js:602"
-  },
-  {
-   "id": "13cn9g1",
-   "en": "Done",
-   "where": "app.js:603",
-   "note": "Button: finish (the tour, or close a window)."
-  },
-  {
-   "id": "egkrm1",
-   "en": "Call",
-   "where": "app.js:618",
-   "note": "Button: phone the number."
-  },
-  {
-   "id": "14g2yia",
-   "en": "Doctor",
-   "where": "app.js:620",
-   "note": "Field: the doctor's name."
-  },
-  {
-   "id": "1tlbcsw",
-   "en": "Practice",
-   "where": "app.js:620",
-   "note": "Field: the name of the doctor's practice (clinic, surgery)."
-  },
-  {
-   "id": "kb2lhr",
-   "en": "Phone",
-   "where": "app.js:620",
-   "note": "Field: a telephone number."
-  },
-  {
-   "id": "7ym3s0",
-   "en": "After hours / nurse line",
-   "where": "app.js:620",
-   "note": "Field: the phone number to call out of hours, or a nurse advice line."
-  },
-  {
-   "id": "v2y2ur",
-   "en": "Address",
-   "where": "app.js:620",
-   "note": "Field: a postal address."
-  },
-  {
-   "id": "4f76ga",
-   "en": "Notes",
-   "where": "app.js:620"
-  },
-  {
-   "id": "1ughc1a",
-   "en": "No pediatrician saved yet.",
-   "where": "app.js:621"
-  },
-  {
-   "id": "9vqqc5",
-   "en": "Add their details so everyone looking after the baby has the number.",
-   "where": "app.js:621"
-  },
-  {
-   "id": "l5gjh1",
-   "en": "A parent can add them.",
-   "where": "app.js:621"
-  },
-  {
-   "id": "1l0xxoj",
-   "en": "Close",
-   "where": "app.js:622"
-  },
-  {
-   "id": "1i1lcq9",
-   "en": "Edit",
-   "where": "app.js:622"
-  },
-  {
-   "id": "ihhswq",
-   "en": "Add details",
-   "where": "app.js:622"
-  },
-  {
-   "id": "bjwyo2",
-   "en": "Shared with everyone in the log, end-to-end encrypted.",
-   "where": "app.js:627"
-  },
-  {
-   "id": "1q7uroj",
-   "en": "Practice or clinic",
-   "where": "app.js:628"
-  },
-  {
-   "id": "ew9em3",
-   "en": "Cancel",
-   "where": "app.js:630"
-  },
-  {
-   "id": "lewgh4",
-   "en": "Save",
-   "where": "app.js:630"
-  },
-  {
-   "id": "12ek4is",
-   "en": "Saved",
-   "where": "app.js:633",
-   "note": "Message after something is saved."
-  },
-  {
-   "id": "1m53g4x",
-   "en": "{names} are {age} old",
-   "where": "app.js:646"
-  },
-  {
-   "id": "e8ocea",
-   "en": "Every baby is different; this is what's common around now.",
-   "where": "app.js:646"
-  },
-  {
-   "id": "1yjy3e4",
-   "en": "More in the Guide",
-   "where": "app.js:647"
-  },
-  {
-   "id": "1dz09gl",
-   "en": "Choose a formula…",
-   "where": "app.js:673",
-   "note": "Button that opens the list of infant formula brands."
-  },
-  {
-   "id": "x1880v",
-   "en": "Usual and recent",
-   "where": "app.js:674"
-  },
-  {
-   "id": "1ovew0h",
-   "en": "Where you are",
-   "where": "app.js:675"
-  },
-  {
-   "id": "1iy1f3u",
-   "en": "Other (type it in)…",
-   "where": "app.js:676"
-  },
-  {
-   "id": "1cddvi5",
-   "en": "Type the formula's name",
-   "where": "app.js:677"
-  },
-  {
-   "id": "ukzedx",
-   "en": "Other",
-   "where": "app.js:681",
-   "note": "Another formula, not in the list."
-  },
-  {
-   "id": "19dqhh4",
-   "en": "**{what}** since {time}",
-   "where": "app.js:713"
-  },
-  {
-   "id": "16wjgq5",
-   "en": "Time for a break: many car seat makers advise taking young babies out of the seat at least every 2 hours.",
-   "where": "app.js:714"
-  },
-  {
-   "id": "11vlj5v",
-   "en": "Coming in to land? Offer a feed, a bottle or a pacifier: swallowing helps their ears.",
-   "where": "app.js:715"
-  },
-  {
-   "id": "1beyp9b",
-   "en": "Day {n} of {days} · back {date}",
-   "where": "app.js:716"
-  },
-  {
-   "id": "1t1q48m",
-   "en": "Day {n} of {days} · until {date}",
-   "where": "app.js:716"
-  },
-  {
-   "id": "h5o6gr",
-   "en": "Tips for travelling {by}",
-   "where": "app.js:718"
-  },
-  {
-   "id": "1ksbut4",
-   "en": "Change trip",
-   "where": "app.js:719",
-   "note": "Button: change the dates or the travel mode of a trip."
-  },
-  {
-   "id": "1w5i8ri",
-   "en": "We're home",
-   "where": "app.js:719",
-   "note": "Button: the trip is over, the family is back home."
-  },
-  {
-   "id": "1eaqwq1",
-   "en": "Trip coming up {by}",
-   "where": "app.js:725"
-  },
-  {
-   "id": "16p0g8y",
-   "en": "Travelling?",
-   "where": "app.js:726",
-   "note": "Bold start of the button that starts travel mode."
-  },
-  {
-   "id": "11s0axa",
-   "en": "Switch to travel mode for the trip: quicker logging and a clock to match the journey",
-   "where": "app.js:726"
-  },
-  {
-   "id": "bhzo0f",
-   "en": "Asleep",
-   "where": "app.js:731",
-   "note": "Quick button in travel mode: the baby fell asleep."
-  },
-  {
-   "id": "1rln4iu",
-   "en": "More: play, night waking, health and medicine",
-   "where": "app.js:733"
-  },
-  {
-   "id": "1eix13h",
-   "en": "More: play, night waking",
-   "where": "app.js:733"
-  },
-  {
-   "id": "17gw4l7",
-   "en": "More to log",
-   "where": "app.js:737"
-  },
-  {
-   "id": "igo76u",
-   "en": "You don't have permission to do that",
-   "where": "app.js:743"
-  },
-  {
-   "id": "1lcpnl1",
-   "en": "Your trip",
-   "where": "app.js:745"
-  },
-  {
-   "id": "1r7qfk1",
-   "en": "How are you travelling?",
-   "where": "app.js:746"
-  },
-  {
-   "id": "ds8fp7",
-   "en": "Leaving",
-   "where": "app.js:748",
-   "note": "Date field: the day the trip starts."
-  },
-  {
-   "id": "1jw65l",
-   "en": "Back home",
-   "where": "app.js:748",
-   "note": "Date field: the day the family comes home."
-  },
-  {
-   "id": "1bea9rq",
-   "en": "Just today",
-   "where": "app.js:749",
-   "note": "Length of a trip: just today."
-  },
-  {
-   "id": "cn19id",
-   "en": "3 days",
-   "where": "app.js:749"
-  },
-  {
-   "id": "lbn8nc",
-   "en": "A week",
-   "where": "app.js:749"
-  },
-  {
-   "id": "1jjqixk",
-   "en": "Two weeks",
-   "where": "app.js:749"
-  },
-  {
-   "id": "1uzagrw",
-   "en": "Plan it as far ahead as you like: travel mode switches on by itself on the day you leave, and off after the day you're back, on every phone sharing this log.",
-   "where": "app.js:750"
-  },
-  {
-   "id": "oay2cq",
-   "en": "Delete",
-   "where": "app.js:751"
-  },
-  {
-   "id": "vc1f6j",
-   "en": "Plan it",
-   "where": "app.js:753",
-   "note": "Button: save a trip that starts on a later day."
-  },
-  {
-   "id": "30xvgf",
-   "en": "Start",
-   "where": "app.js:753",
-   "note": "Button: start a trip now."
-  },
-  {
-   "id": "9sdshq",
-   "en": "Pick both dates",
-   "where": "app.js:758"
-  },
-  {
-   "id": "1hhgnqb",
-   "en": "The day back is before the day you leave",
-   "where": "app.js:759"
-  },
-  {
-   "id": "138d163",
-   "en": "A trip can be up to three months",
-   "where": "app.js:760"
-  },
-  {
-   "id": "y0ajt7",
-   "en": "That overlaps the trip {by} ({from} – {to}). Change that one instead.",
-   "where": "app.js:763"
-  },
-  {
-   "id": "6vyli9",
-   "en": "Saved: travel mode switches on by itself on {day}",
-   "where": "app.js:769"
-  },
-  {
-   "id": "13ys979",
-   "en": "Travel mode is on",
-   "where": "app.js:769"
-  },
-  {
-   "id": "orgelr",
-   "en": "Delete this trip? What you logged during it stays.",
-   "where": "app.js:771"
-  },
-  {
-   "id": "6n3qon",
-   "en": "Trip deleted",
-   "where": "app.js:771"
-  },
-  {
-   "id": "j345pc",
-   "en": "You can't change this trip",
-   "where": "app.js:777"
-  },
-  {
-   "id": "6whtm",
-   "en": "Welcome home",
-   "where": "app.js:780"
-  },
-  {
-   "id": "1lsdwlv",
-   "en": "Have a good trip!",
-   "where": "app.js:807"
-  },
-  {
-   "id": "ucnhox",
-   "en": "Back to the usual page",
-   "where": "app.js:807"
-  },
-  {
-   "id": "1s2bet",
-   "en": "You can't change this",
-   "where": "app.js:830"
-  },
-  {
-   "id": "nhytz6",
-   "en": "Break time: a stretch out of the car seat, a feed and a fresh diaper",
-   "where": "app.js:832"
-  },
-  {
-   "id": "1jcludp",
-   "en": "Offer a feed, bottle or pacifier for takeoff: swallowing helps their ears",
-   "where": "app.js:837"
-  },
-  {
-   "id": "1gq5oso",
-   "en": "{what}. Safe travels!",
-   "where": "app.js:837"
-  },
-  {
-   "id": "19umq3p",
-   "en": "(if you like)",
-   "where": "app.js:849"
-  },
-  {
-   "id": "l7z99o",
-   "en": "Bottle or breast?",
-   "where": "app.js:850"
-  },
-  {
-   "id": "znhu96",
-   "en": "About how much?",
-   "where": "app.js:851"
-  },
-  {
-   "id": "16u1tvi",
-   "en": "Side",
-   "where": "app.js:852",
-   "note": "Which breast the baby fed from (Left, Right, Both)."
-  },
-  {
-   "id": "1b2cv3j",
-   "en": "About how long?",
-   "where": "app.js:853"
-  },
-  {
-   "id": "15aabk",
-   "en": "Tap one to save",
-   "where": "app.js:854",
-   "note": "Above the quick buttons: tapping one saves the entry straight away."
-  },
-  {
-   "id": "1nyr7g8",
-   "en": "A little",
-   "where": "app.js:855",
-   "note": "Quick button: the baby brought up a little milk."
-  },
-  {
-   "id": "1j40d8l",
-   "en": "More than usual",
-   "where": "app.js:855",
-   "note": "Quick button: the baby was sick more than usual."
-  },
-  {
-   "id": "zuwlqa",
-   "en": "Fell asleep",
-   "where": "app.js:856",
-   "note": "Title of the quick form that logs the start of a sleep."
-  },
-  {
-   "id": "pestpu",
-   "en": "When?",
-   "where": "app.js:857",
-   "note": "When it happened (Just now, about 15 min ago …)."
-  },
-  {
-   "id": "10p1jqn",
-   "en": "Just now",
-   "where": "app.js:857",
-   "note": "When it happened: just now."
-  },
-  {
-   "id": "1vmxaay",
-   "en": "~{n} min ago",
-   "where": "app.js:857",
-   "note": "When it happened: about {n} minutes ago."
-  },
-  {
-   "id": "cw4ijb",
-   "en": "~1 hr ago",
-   "where": "app.js:857",
-   "note": "When it happened: about an hour ago."
-  },
-  {
-   "id": "rtbkwb",
-   "en": "Choose who this is for",
-   "where": "app.js:864"
-  },
-  {
-   "id": "yjhepa",
-   "en": "{name} is already asleep",
-   "where": "app.js:870"
-  },
-  {
-   "id": "bs6lqw",
-   "one": "Saved for {n} child",
-   "other": "Saved for {n} children",
-   "where": "app.js:877"
-  },
-  {
-   "id": "16r1z4b",
-   "en": "A page for each child",
-   "where": "app.js:888"
-  },
-  {
-   "id": "gwuvam",
-   "en": "Each child has their own page in their own colour. \"All\" shows everyone together.",
-   "where": "app.js:888"
-  },
-  {
-   "id": "npn754",
-   "en": "Log it in one tap",
-   "where": "app.js:889"
-  },
-  {
-   "id": "19xj3nx",
-   "en": "Tap what just happened. The time is filled in for you, with shortcuts for a few minutes ago.",
-   "where": "app.js:889"
-  },
-  {
-   "id": "og3f9t",
-   "en": "Asleep right now",
-   "where": "app.js:890"
-  },
-  {
-   "id": "1fayeu3",
-   "en": "While your baby sleeps the timer runs here. Tap \"Woke up\" when they wake.",
-   "where": "app.js:890"
-  },
-  {
-   "id": "14m3p74",
-   "en": "The day at a glance",
-   "where": "app.js:891"
-  },
-  {
-   "id": "zixv37",
-   "en": "Each entry is a ray out to the time it happened, in its own colour. Tap a dot to open it, or a quarter of the dial for just those hours.",
-   "where": "app.js:891"
-  },
-  {
-   "id": "14xos5s",
-   "en": "24 or 12 hours",
-   "where": "app.js:892"
-  },
-  {
-   "id": "1o9omqr",
-   "en": "The whole day on one dial, or a classic 12-hour face with AM and PM.",
-   "where": "app.js:892"
-  },
-  {
-   "id": "h1wtip",
-   "en": "Choose the painting",
-   "where": "app.js:893"
-  },
-  {
-   "id": "pa8jpk",
-   "en": "Pick the watercolour around the clock, for each child.",
-   "where": "app.js:893"
-  },
-  {
-   "id": "1jk884o",
-   "en": "Other days",
-   "where": "app.js:894",
-   "note": "Tour step title: the arrows that go to earlier days."
-  },
-  {
-   "id": "1iklhis",
-   "en": "Use the arrows to look back at earlier days.",
-   "where": "app.js:894"
-  },
-  {
-   "id": "1h1ccil",
-   "en": "Every detail",
-   "where": "app.js:895",
-   "note": "Tour step title: the groups of entries below the clock."
-  },
-  {
-   "id": "tv5f1a",
-   "en": "Everything from the day, grouped: feeds, diapers, sleep and more. Tap a group to open it.",
-   "where": "app.js:895"
-  },
-  {
-   "id": "rr5725",
-   "en": "Going on a trip?",
-   "where": "app.js:896"
-  },
-  {
-   "id": "1nm5bsx",
-   "en": "Travel mode gives you bigger buttons, rough times that are quick to log, and a clock to match the journey.",
-   "where": "app.js:896"
-  },
-  {
-   "id": "fdah9t",
-   "en": "Everything else",
-   "where": "app.js:897",
-   "note": "Tour step title: the tabs at the bottom."
-  },
-  {
-   "id": "1tsm62l",
-   "en": "The month, stats, the Guide with medicines and milestones, family sharing, and settings.",
-   "where": "app.js:897"
-  },
-  {
-   "id": "16iq8aw",
-   "en": "Help on every screen",
-   "where": "app.js:898"
-  },
-  {
-   "id": "134nwtw",
-   "en": "Tap ? on any screen for a tour of it.",
-   "where": "app.js:898"
-  },
-  {
-   "id": "gzp293",
-   "en": "How you are travelling and until when. Change it any time, or tap \"We're home\" to end it.",
-   "where": "app.js:901"
-  },
-  {
-   "id": "1qhjgyg",
-   "en": "The journey",
-   "where": "app.js:902",
-   "note": "Tour step title: the buttons for the parts of a journey."
-  },
-  {
-   "id": "1ui1io1",
-   "en": "Tap when you set off and when you stop. Time on the move lights up the clock's outer ring, and long drives get a reminder to take a break.",
-   "where": "app.js:902"
-  },
-  {
-   "id": "1myyewl",
-   "en": "Big buttons for busy moments",
-   "where": "app.js:903"
-  },
-  {
-   "id": "1dkxm11",
-   "en": "Each opens a short sheet: tap a rough time and an answer. \"About 15 minutes ago\" is fine; estimated times show with a ~.",
-   "where": "app.js:903"
-  },
-  {
-   "id": "1h6m72q",
-   "en": "The rest",
-   "where": "app.js:904",
-   "note": "Tour step title: the less common kinds of entry, one more tap away."
-  },
-  {
-   "id": "1h9c932",
-   "en": "Play, night wakings, health notes and medicines are one more tap away.",
-   "where": "app.js:904"
-  },
-  {
-   "id": "9g5ony",
-   "en": "A travel clock",
-   "where": "app.js:905"
-  },
-  {
-   "id": "zevclo",
-   "en": "The painting matches how you travel, and travel days have their own colours, so they stand out later in the month view.",
-   "where": "app.js:905"
-  },
-  {
-   "id": "a0fpd6",
-   "en": "The month",
-   "where": "app.js:909"
-  },
-  {
-   "id": "1fkdehp",
-   "en": "Dots show what was logged each day. Days away travelling are outlined.",
-   "where": "app.js:909"
-  },
-  {
-   "id": "1fhg3ex",
-   "en": "Pick a day",
-   "where": "app.js:910"
-  },
-  {
-   "id": "mp30f0",
-   "en": "Tap a day to see its numbers below.",
-   "where": "app.js:910"
-  },
-  {
-   "id": "1iwecq6",
-   "en": "Plan trips ahead: pick the day you leave, then tap here. Travel mode switches on by itself that day.",
-   "where": "app.js:911"
-  },
-  {
-   "id": "11ycv53",
-   "en": "The day in numbers",
-   "where": "app.js:912"
-  },
-  {
-   "id": "1euap9o",
-   "en": "Feeds, diapers, sleep and more for the day you picked.",
-   "where": "app.js:912"
-  },
-  {
-   "id": "1unpsps",
-   "en": "Every entry",
-   "where": "app.js:913"
-  },
-  {
-   "id": "l8qba2",
-   "en": "Open this to see each entry of that day, and tap one to change it.",
-   "where": "app.js:913"
-  },
-  {
-   "id": "1cohmw8",
-   "en": "Add to that day",
-   "where": "app.js:914"
-  },
-  {
-   "id": "hn5nts",
-   "en": "Log something you forgot, on the day you picked.",
-   "where": "app.js:914"
-  },
-  {
-   "id": "d7ifz3",
-   "en": "How far back",
-   "where": "app.js:917"
-  },
-  {
-   "id": "14iltsb",
-   "en": "Look at the last 7, 14 or 30 days.",
-   "where": "app.js:917"
-  },
-  {
-   "id": "wizpv",
-   "en": "A chart for each section",
-   "where": "app.js:918"
-  },
-  {
-   "id": "1gbzb76",
-   "en": "Drawn to scale, one bar per day. Tap a bar for its numbers.",
-   "where": "app.js:918"
-  },
-  {
-   "id": "rxnwm1",
-   "en": "The exact numbers",
-   "where": "app.js:919"
-  },
-  {
-   "id": "e1h931",
-   "en": "Each chart has a table with every day's numbers, handy for a checkup.",
-   "where": "app.js:919"
-  },
-  {
-   "id": "1rmubfh",
-   "en": "Your pediatrician",
-   "where": "app.js:922"
-  },
-  {
-   "id": "138qkr0",
-   "en": "Save their details once, and everyone sharing the log gets a Call button.",
-   "where": "app.js:922"
-  },
-  {
-   "id": "1d7412q",
-   "en": "Emergencies",
-   "where": "app.js:923"
-  },
-  {
-   "id": "122enob",
-   "en": "The signs that need emergency help straight away.",
-   "where": "app.js:923"
-  },
-  {
-   "id": "7atdg3",
-   "en": "What is common at your baby's age.",
-   "where": "app.js:924"
-  },
-  {
-   "id": "1eygec9",
-   "en": "Common worries",
-   "where": "app.js:925"
-  },
-  {
-   "id": "1diown9",
-   "en": "What is normal with a newborn, and when to call. Some have pictures, kept out of sight until you tap them.",
-   "where": "app.js:925"
-  },
-  {
-   "id": "1possbg",
-   "en": "Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.",
-   "where": "app.js:926"
-  },
-  {
-   "id": "1koedhl",
-   "en": "Milestones for every month. A reminder pops up on each month birthday.",
-   "where": "app.js:927"
-  },
-  {
-   "id": "t2rhat",
-   "en": "Your shared log",
-   "where": "app.js:930"
-  },
-  {
-   "id": "8igb66",
-   "en": "When this phone last synced. Tap to sync now.",
-   "where": "app.js:930"
-  },
-  {
-   "id": "10i543y",
-   "en": "People",
-   "where": "app.js:931"
-  },
-  {
-   "id": "109mji1",
-   "en": "Everyone with access and their role. Tap a person for their contact details.",
-   "where": "app.js:931"
-  },
-  {
-   "id": "1x66rwc",
-   "en": "Invite someone",
-   "where": "app.js:932"
-  },
-  {
-   "id": "1zrjm8",
-   "en": "Make a one-time QR code. You approve them before they see anything.",
-   "where": "app.js:932"
-  },
-  {
-   "id": "17yt05o",
-   "en": "Activity",
-   "where": "app.js:933",
-   "note": "Heading: the log of who added, changed or deleted what."
-  },
-  {
-   "id": "niv7mh",
-   "en": "Who added, changed or deleted what. Only parents see this.",
-   "where": "app.js:933"
-  },
-  {
-   "id": "z8e2zs",
-   "en": "Security code",
-   "where": "app.js:934",
-   "note": "A code two phones compare to check they are talking to each other securely."
-  },
-  {
-   "id": "1shr5ja",
-   "en": "Everyone sharing the log sees the same code: a quick check that only your family has the keys.",
-   "where": "app.js:934"
-  },
-  {
-   "id": "12s64m4",
-   "en": "Join another log",
-   "where": "app.js:935"
-  },
-  {
-   "id": "1of7rk4",
-   "en": "Scan the QR code from someone else's log to ask to join it.",
-   "where": "app.js:935"
-  },
-  {
-   "id": "p6m81x",
-   "en": "Family sharing",
-   "where": "app.js:936"
-  },
-  {
-   "id": "jat4hn",
-   "en": "Sign in to share the log with family and caregivers, end-to-end encrypted.",
-   "where": "app.js:936"
-  },
-  {
-   "id": "a9s755",
-   "en": "Your children",
-   "where": "app.js:939"
-  },
-  {
-   "id": "zcsj7h",
-   "en": "Names, birth dates and colours. \"Add a child\" for twins or triplets.",
-   "where": "app.js:939"
-  },
-  {
-   "id": "1a1japn",
-   "en": "Usual formula",
-   "where": "app.js:940",
-   "note": "The brand of infant formula a child usually has (settings)."
-  },
-  {
-   "id": "ru4phq",
-   "en": "Pick it from the list; each region folds open. After three days of the same formula it is picked for you.",
-   "where": "app.js:940"
-  },
-  {
-   "id": "1hd412a",
-   "en": "Formulas sold here come first, and the Guide gives your emergency number and medicine names first.",
-   "where": "app.js:941"
-  },
-  {
-   "id": "1k8lxk6",
-   "en": "The painting around each child's clock.",
-   "where": "app.js:942"
-  },
-  {
-   "id": "l5c7hk",
-   "en": "Light or dark",
-   "where": "app.js:943"
-  },
-  {
-   "id": "3jxqzg",
-   "en": "Match your phone, pick one, or follow sunrise and sunset.",
-   "where": "app.js:943"
-  },
-  {
-   "id": "28x7ge",
-   "en": "Your data",
-   "where": "app.js:944"
-  },
-  {
-   "id": "1t128a2",
-   "en": "Back up the log, or export a copy for your pediatrician.",
-   "where": "app.js:944"
-  },
-  {
-   "id": "ekqut7",
-   "en": "Nothing to show on this screen yet",
-   "where": "app.js:955"
-  },
-  {
-   "id": "1bvsj2h",
-   "en": "Baby",
-   "where": "app.js:967",
-   "note": "A child without a name (used as a name)."
-  },
-  {
-   "id": "fbkr4f",
-   "en": "Only parents can change these.",
-   "where": "app.js:967"
-  },
-  {
-   "id": "4el6o6",
-   "en": "Name",
-   "where": "app.js:969",
-   "note": "The child's name."
-  },
-  {
-   "id": "mgpsf2",
-   "en": "Birth date",
-   "where": "app.js:970",
-   "note": "The child's date of birth."
-  },
-  {
-   "id": "127kn7o",
-   "en": "Boy or girl",
-   "where": "app.js:971"
+   "id": "5p5gzh",
+   "en": "{age} old",
+   "where": "app.js:617",
+   "note": "PDF report: the child's age; {age} is like '2 months' or '6 weeks' (translated)."
   },
   {
    "id": "1nliyjp",
    "en": "Boy",
-   "where": "app.js:971",
+   "where": "app.js:617",
    "note": "The child's sex."
   },
   {
    "id": "9ko3wj",
    "en": "Girl",
-   "where": "app.js:971",
+   "where": "app.js:617",
    "note": "The child's sex."
+  },
+  {
+   "id": "w1xgi9",
+   "en": "{from} to {to}",
+   "where": "app.js:618",
+   "note": "PDF report: the dates it covers; {from} and {to} are dates."
+  },
+  {
+   "id": "5vgx7u",
+   "en": "Pediatrician",
+   "where": "app.js:620",
+   "note": "The child's own doctor (paediatrician or family doctor)."
+  },
+  {
+   "id": "1a1japn",
+   "en": "Usual formula",
+   "where": "app.js:620",
+   "note": "The brand of infant formula a child usually has (settings)."
+  },
+  {
+   "id": "1en1ujt",
+   "en": "Questions and notes for the doctor",
+   "where": "app.js:622"
+  },
+  {
+   "id": "c24d0t",
+   "en": "At a glance",
+   "where": "app.js:623",
+   "note": "Heading in the PDF report: the averages."
+  },
+  {
+   "id": "8urqtz",
+   "en": "Nothing was logged in this period.",
+   "where": "app.js:624"
+  },
+  {
+   "id": "1vb2dmo",
+   "one": "Averages over the {n} day with entries.",
+   "other": "Averages over the {n} days with entries.",
+   "where": "app.js:626"
+  },
+  {
+   "id": "7xfodp",
+   "en": "Highest temperature",
+   "where": "app.js:632",
+   "note": "PDF report: the highest temperature logged in the period."
+  },
+  {
+   "id": "1l0621h",
+   "en": "Symptoms noted",
+   "where": "app.js:633",
+   "note": "PDF report: the symptoms ticked in health notes, with how often."
+  },
+  {
+   "id": "lbaq5f",
+   "en": "Medicines given",
+   "where": "app.js:634",
+   "note": "PDF report: the medicines given, with how often."
+  },
+  {
+   "id": "1qwbzqc",
+   "en": "Day by day",
+   "where": "app.js:637",
+   "note": "Heading in the PDF report: a table with one row per day."
+  },
+  {
+   "id": "ggjuyh",
+   "en": "Date",
+   "where": "app.js:639",
+   "note": "Column heading: the date (in the spreadsheet export and the PDF report)."
+  },
+  {
+   "id": "edsejk",
+   "en": "Nothing logged",
+   "where": "app.js:642",
+   "note": "A day with no entries, in the PDF report's table."
+  },
+  {
+   "id": "1pyt3s2",
+   "en": "Health notes and medicines",
+   "where": "app.js:644",
+   "note": "Heading in the PDF report."
+  },
+  {
+   "id": "1q4eyv8",
+   "en": "Time",
+   "where": "app.js:646",
+   "note": "When it happened."
+  },
+  {
+   "id": "14qy24j",
+   "en": "No health notes or medicines in this period.",
+   "where": "app.js:650"
+  },
+  {
+   "id": "1unpsps",
+   "en": "Every entry",
+   "where": "app.js:652"
+  },
+  {
+   "id": "sxn63v",
+   "en": "Made with Little Log on {date}. Entries are as the family logged them; this is not a medical record.",
+   "where": "app.js:660",
+   "note": "Last line of the PDF report; {date} is today's date."
+  },
+  {
+   "id": "pupz83",
+   "en": "{name}: report for the doctor",
+   "where": "app.js:668",
+   "note": "The title of the PDF; {name} is the child's name."
+  },
+  {
+   "id": "7isy6n",
+   "en": "Page {n} of {total}",
+   "where": "app.js:668",
+   "note": "At the bottom of each page of the PDF."
+  },
+  {
+   "id": "1s2zxbe",
+   "en": "Report for the doctor",
+   "where": "app.js:673",
+   "note": "Title of the form that makes a PDF of the log for the doctor (pediatrician)."
+  },
+  {
+   "id": "1fcxah2",
+   "en": "A PDF of what was logged for one child: the averages, a table of each day, health notes and medicines, and every entry. Share it, print it, or show it at a checkup.",
+   "where": "app.js:674"
+  },
+  {
+   "id": "13crbi5",
+   "en": "Child",
+   "where": "app.js:675",
+   "note": "Which child: a column of the spreadsheet export, and a choice in the PDF report form."
+  },
+  {
+   "id": "d7ifz3",
+   "en": "How far back",
+   "where": "app.js:676"
+  },
+  {
+   "id": "10rn9y8",
+   "en": "Include every entry",
+   "where": "app.js:677",
+   "note": "Checkbox: put every single entry in the PDF, not only the summaries."
+  },
+  {
+   "id": "vjjgs8",
+   "en": "Questions or notes for the doctor (optional)",
+   "where": "app.js:678"
+  },
+  {
+   "id": "ew9em3",
+   "en": "Cancel",
+   "where": "app.js:679"
+  },
+  {
+   "id": "1wk1seq",
+   "en": "Make the PDF",
+   "where": "app.js:679",
+   "note": "Button: create the PDF report."
+  },
+  {
+   "id": "mbrk5",
+   "en": "Making the PDF…",
+   "where": "app.js:682",
+   "note": "Shown on the button while the PDF is being made."
+  },
+  {
+   "id": "1oj1kgr",
+   "en": "Could not make the PDF. Please try again.",
+   "where": "app.js:686"
+  },
+  {
+   "id": "21f177",
+   "en": "Add their name and number",
+   "where": "app.js:693"
+  },
+  {
+   "id": "15kyb53",
+   "en": "Emergency?",
+   "where": "app.js:700",
+   "note": "Bold start of the line saying when to call the emergency number."
+  },
+  {
+   "id": "179kzvy",
+   "en": "Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.",
+   "where": "app.js:700"
+  },
+  {
+   "id": "10qpouh",
+   "en": "Right now",
+   "where": "app.js:701",
+   "note": "Guide: what is common at the child's age right now."
+  },
+  {
+   "id": "ergjfe",
+   "en": "{name} is {age} old",
+   "where": "app.js:703"
+  },
+  {
+   "id": "8em11r",
+   "en": "The first month is mostly feeding, sleeping and getting to know each other. Here is what is common around one month:",
+   "where": "app.js:704"
+  },
+  {
+   "id": "19och37",
+   "en": "Around {age}:",
+   "where": "app.js:704",
+   "note": "{age} is an age such as '2 months' (translated)."
+  },
+  {
+   "id": "14qnipi",
+   "en": "Common with newborns",
+   "where": "app.js:705"
+  },
+  {
+   "id": "my6wmg",
+   "en": "Month by month",
+   "where": "app.js:710"
+  },
+  {
+   "id": "uj5nu9",
+   "en": "General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.",
+   "where": "app.js:712"
+  },
+  {
+   "id": "1yz3rcd",
+   "en": "This translation was made with the help of AI and may have mistakes. In an emergency, call {sos}. If something reads wrong, tell us: More → Language → Report a language issue.",
+   "where": "app.js:713"
+  },
+  {
+   "id": "1m9w1wo",
+   "one": "{n} photo",
+   "other": "{n} photos",
+   "where": "app.js:721"
+  },
+  {
+   "id": "dyya04",
+   "one": "{n} drawing",
+   "other": "{n} drawings",
+   "where": "app.js:721"
+  },
+  {
+   "id": "3q9fvy",
+   "en": "Pictures",
+   "where": "app.js:722",
+   "note": "Guide: opens the pictures (photos or drawings) of a condition. They are hidden until opened."
+  },
+  {
+   "id": "13h3uy0",
+   "en": "tap to show",
+   "where": "app.js:722"
+  },
+  {
+   "id": "17egbr",
+   "en": "Drawing: {by}, {licence}",
+   "where": "app.js:723"
+  },
+  {
+   "id": "m2sxkl",
+   "en": "Photo: {by}, {licence}",
+   "where": "app.js:723"
+  },
+  {
+   "id": "1dvs5er",
+   "en": "Picture credits",
+   "where": "app.js:727",
+   "note": "Who made each picture and its licence."
+  },
+  {
+   "id": "hv9dvt",
+   "en": "From Wikimedia Commons, under free licences",
+   "where": "app.js:727"
+  },
+  {
+   "id": "1r956is",
+   "en": "drawing by {by}, {licence}",
+   "where": "app.js:728",
+   "note": "Picture credits: {by} is a person's name, {licence} a licence such as 'CC BY-SA 4.0'."
+  },
+  {
+   "id": "1dbmnxm",
+   "en": "photo by {by}, {licence}",
+   "where": "app.js:728",
+   "note": "Picture credits: {by} is a person's name, {licence} a licence such as 'CC BY-SA 4.0'."
+  },
+  {
+   "id": "6s9hn9",
+   "en": "From",
+   "where": "app.js:728",
+   "note": "Picture credits: 'From <web address>' (where the picture came from)."
+  },
+  {
+   "id": "imvq30",
+   "en": "Our versions of the CC BY-SA pictures are shared under the same licence.",
+   "where": "app.js:729"
+  },
+  {
+   "id": "17cn9ru",
+   "en": "UK: {age}",
+   "where": "app.js:737",
+   "note": "When the same check-up happens in the UK; {age} as in '6–8 weeks'."
+  },
+  {
+   "id": "fqmiz6",
+   "en": "US: {age}",
+   "where": "app.js:738",
+   "note": "When the same check-up happens in the US; {age} as in '2 months'."
+  },
+  {
+   "id": "il96zb",
+   "en": "US: {us}. UK: {uk}.",
+   "where": "app.js:739"
+  },
+  {
+   "id": "h8jwvn",
+   "en": "Ages on labels differ by country: check the one where you live.",
+   "where": "app.js:739"
+  },
+  {
+   "id": "lwer2j",
+   "en": "Never give a baby",
+   "where": "app.js:748"
+  },
+  {
+   "id": "1y402z9",
+   "en": "Over-the-counter medicines",
+   "where": "app.js:749"
+  },
+  {
+   "id": "p78495",
+   "en": "What is safe from what age, remedies parents mention, and what never to give",
+   "where": "app.js:749"
+  },
+  {
+   "id": "8dw9yb",
+   "en": "What many babies do",
+   "where": "app.js:752"
+  },
+  {
+   "id": "hgyzq2",
+   "en": "What parents often notice",
+   "where": "app.js:753"
+  },
+  {
+   "id": "s9nj2q",
+   "en": "Checkup",
+   "where": "app.js:754",
+   "note": "A routine check-up with the doctor at a given age."
+  },
+  {
+   "id": "1qxx98y",
+   "en": "For this phone.",
+   "where": "app.js:759"
+  },
+  {
+   "id": "5ec0jy",
+   "en": "For the All page on this phone.",
+   "where": "app.js:759"
+  },
+  {
+   "id": "kfnwfl",
+   "en": "For {name}'s page on this phone.",
+   "where": "app.js:759"
+  },
+  {
+   "id": "1ocseu4",
+   "en": "Clock art",
+   "where": "app.js:760",
+   "note": "The picture behind the clock (a painting or pattern), chosen by the parent."
+  },
+  {
+   "id": "171whcb",
+   "en": "Use it for every child",
+   "where": "app.js:762"
+  },
+  {
+   "id": "13cn9g1",
+   "en": "Done",
+   "where": "app.js:763",
+   "note": "Button: finish (the tour, or close a window)."
+  },
+  {
+   "id": "639vlv",
+   "en": "To change or delete it, tap it in the list below the clock.",
+   "where": "app.js:779",
+   "note": "In the sheet that shows an entry tapped on the clock."
+  },
+  {
+   "id": "1l0xxoj",
+   "en": "Close",
+   "where": "app.js:780"
+  },
+  {
+   "id": "1h1gyew",
+   "en": "Show in the list",
+   "where": "app.js:780",
+   "note": "Button: scroll down to this entry in the list below the clock, where it can be changed."
+  },
+  {
+   "id": "egkrm1",
+   "en": "Call",
+   "where": "app.js:799",
+   "note": "Button: phone the number."
+  },
+  {
+   "id": "14g2yia",
+   "en": "Doctor",
+   "where": "app.js:801",
+   "note": "Field: the doctor's name."
+  },
+  {
+   "id": "1tlbcsw",
+   "en": "Practice",
+   "where": "app.js:801",
+   "note": "Field: the name of the doctor's practice (clinic, surgery)."
+  },
+  {
+   "id": "kb2lhr",
+   "en": "Phone",
+   "where": "app.js:801",
+   "note": "Field: a telephone number."
+  },
+  {
+   "id": "7ym3s0",
+   "en": "After hours / nurse line",
+   "where": "app.js:801",
+   "note": "Field: the phone number to call out of hours, or a nurse advice line."
+  },
+  {
+   "id": "v2y2ur",
+   "en": "Address",
+   "where": "app.js:801",
+   "note": "Field: a postal address."
+  },
+  {
+   "id": "4f76ga",
+   "en": "Notes",
+   "where": "app.js:801"
+  },
+  {
+   "id": "1ughc1a",
+   "en": "No pediatrician saved yet.",
+   "where": "app.js:802"
+  },
+  {
+   "id": "9vqqc5",
+   "en": "Add their details so everyone looking after the baby has the number.",
+   "where": "app.js:802"
+  },
+  {
+   "id": "l5gjh1",
+   "en": "A parent can add them.",
+   "where": "app.js:802"
+  },
+  {
+   "id": "1i1lcq9",
+   "en": "Edit",
+   "where": "app.js:803"
+  },
+  {
+   "id": "ihhswq",
+   "en": "Add details",
+   "where": "app.js:803"
+  },
+  {
+   "id": "bjwyo2",
+   "en": "Shared with everyone in the log, end-to-end encrypted.",
+   "where": "app.js:808"
+  },
+  {
+   "id": "1q7uroj",
+   "en": "Practice or clinic",
+   "where": "app.js:809"
+  },
+  {
+   "id": "lewgh4",
+   "en": "Save",
+   "where": "app.js:811"
+  },
+  {
+   "id": "12ek4is",
+   "en": "Saved",
+   "where": "app.js:814",
+   "note": "Message after something is saved."
+  },
+  {
+   "id": "1m53g4x",
+   "en": "{names} are {age} old",
+   "where": "app.js:827"
+  },
+  {
+   "id": "e8ocea",
+   "en": "Every baby is different; this is what's common around now.",
+   "where": "app.js:827"
+  },
+  {
+   "id": "1yjy3e4",
+   "en": "More in the Guide",
+   "where": "app.js:828"
+  },
+  {
+   "id": "1dz09gl",
+   "en": "Choose a formula…",
+   "where": "app.js:854",
+   "note": "Button that opens the list of infant formula brands."
+  },
+  {
+   "id": "x1880v",
+   "en": "Usual and recent",
+   "where": "app.js:855"
+  },
+  {
+   "id": "1ovew0h",
+   "en": "Where you are",
+   "where": "app.js:856"
+  },
+  {
+   "id": "1iy1f3u",
+   "en": "Other (type it in)…",
+   "where": "app.js:857"
+  },
+  {
+   "id": "1cddvi5",
+   "en": "Type the formula's name",
+   "where": "app.js:858"
+  },
+  {
+   "id": "ukzedx",
+   "en": "Other",
+   "where": "app.js:862",
+   "note": "Another formula, not in the list."
+  },
+  {
+   "id": "19dqhh4",
+   "en": "**{what}** since {time}",
+   "where": "app.js:894"
+  },
+  {
+   "id": "16wjgq5",
+   "en": "Time for a break: many car seat makers advise taking young babies out of the seat at least every 2 hours.",
+   "where": "app.js:895"
+  },
+  {
+   "id": "11vlj5v",
+   "en": "Coming in to land? Offer a feed, a bottle or a pacifier: swallowing helps their ears.",
+   "where": "app.js:896"
+  },
+  {
+   "id": "1beyp9b",
+   "en": "Day {n} of {days} · back {date}",
+   "where": "app.js:897"
+  },
+  {
+   "id": "1t1q48m",
+   "en": "Day {n} of {days} · until {date}",
+   "where": "app.js:897"
+  },
+  {
+   "id": "h5o6gr",
+   "en": "Tips for travelling {by}",
+   "where": "app.js:899"
+  },
+  {
+   "id": "1ksbut4",
+   "en": "Change trip",
+   "where": "app.js:900",
+   "note": "Button: change the dates or the travel mode of a trip."
+  },
+  {
+   "id": "1w5i8ri",
+   "en": "We're home",
+   "where": "app.js:900",
+   "note": "Button: the trip is over, the family is back home."
+  },
+  {
+   "id": "1eaqwq1",
+   "en": "Trip coming up {by}",
+   "where": "app.js:906"
+  },
+  {
+   "id": "16p0g8y",
+   "en": "Travelling?",
+   "where": "app.js:907",
+   "note": "Bold start of the button that starts travel mode."
+  },
+  {
+   "id": "11s0axa",
+   "en": "Switch to travel mode for the trip: quicker logging and a clock to match the journey",
+   "where": "app.js:907"
+  },
+  {
+   "id": "bhzo0f",
+   "en": "Asleep",
+   "where": "app.js:912",
+   "note": "Quick button in travel mode: the baby fell asleep."
+  },
+  {
+   "id": "1rln4iu",
+   "en": "More: play, night waking, health and medicine",
+   "where": "app.js:914"
+  },
+  {
+   "id": "1eix13h",
+   "en": "More: play, night waking",
+   "where": "app.js:914"
+  },
+  {
+   "id": "17gw4l7",
+   "en": "More to log",
+   "where": "app.js:918"
+  },
+  {
+   "id": "igo76u",
+   "en": "You don't have permission to do that",
+   "where": "app.js:924"
+  },
+  {
+   "id": "1lcpnl1",
+   "en": "Your trip",
+   "where": "app.js:926"
+  },
+  {
+   "id": "1r7qfk1",
+   "en": "How are you travelling?",
+   "where": "app.js:927"
+  },
+  {
+   "id": "ds8fp7",
+   "en": "Leaving",
+   "where": "app.js:929",
+   "note": "Date field: the day the trip starts."
+  },
+  {
+   "id": "1jw65l",
+   "en": "Back home",
+   "where": "app.js:929",
+   "note": "Date field: the day the family comes home."
+  },
+  {
+   "id": "1bea9rq",
+   "en": "Just today",
+   "where": "app.js:930",
+   "note": "Length of a trip: just today."
+  },
+  {
+   "id": "cn19id",
+   "en": "3 days",
+   "where": "app.js:930"
+  },
+  {
+   "id": "lbn8nc",
+   "en": "A week",
+   "where": "app.js:930"
+  },
+  {
+   "id": "1jjqixk",
+   "en": "Two weeks",
+   "where": "app.js:930"
+  },
+  {
+   "id": "1uzagrw",
+   "en": "Plan it as far ahead as you like: travel mode switches on by itself on the day you leave, and off after the day you're back, on every phone sharing this log.",
+   "where": "app.js:931"
+  },
+  {
+   "id": "oay2cq",
+   "en": "Delete",
+   "where": "app.js:932"
+  },
+  {
+   "id": "vc1f6j",
+   "en": "Plan it",
+   "where": "app.js:934",
+   "note": "Button: save a trip that starts on a later day."
+  },
+  {
+   "id": "30xvgf",
+   "en": "Start",
+   "where": "app.js:934",
+   "note": "Button: start a trip now."
+  },
+  {
+   "id": "9sdshq",
+   "en": "Pick both dates",
+   "where": "app.js:939"
+  },
+  {
+   "id": "1hhgnqb",
+   "en": "The day back is before the day you leave",
+   "where": "app.js:940"
+  },
+  {
+   "id": "138d163",
+   "en": "A trip can be up to three months",
+   "where": "app.js:941"
+  },
+  {
+   "id": "y0ajt7",
+   "en": "That overlaps the trip {by} ({from} – {to}). Change that one instead.",
+   "where": "app.js:944"
+  },
+  {
+   "id": "6vyli9",
+   "en": "Saved: travel mode switches on by itself on {day}",
+   "where": "app.js:950"
+  },
+  {
+   "id": "13ys979",
+   "en": "Travel mode is on",
+   "where": "app.js:950"
+  },
+  {
+   "id": "orgelr",
+   "en": "Delete this trip? What you logged during it stays.",
+   "where": "app.js:952"
+  },
+  {
+   "id": "6n3qon",
+   "en": "Trip deleted",
+   "where": "app.js:952"
+  },
+  {
+   "id": "j345pc",
+   "en": "You can't change this trip",
+   "where": "app.js:958"
+  },
+  {
+   "id": "6whtm",
+   "en": "Welcome home",
+   "where": "app.js:961"
+  },
+  {
+   "id": "1lsdwlv",
+   "en": "Have a good trip!",
+   "where": "app.js:988"
+  },
+  {
+   "id": "ucnhox",
+   "en": "Back to the usual page",
+   "where": "app.js:988"
+  },
+  {
+   "id": "1s2bet",
+   "en": "You can't change this",
+   "where": "app.js:1011"
+  },
+  {
+   "id": "nhytz6",
+   "en": "Break time: a stretch out of the car seat, a feed and a fresh diaper",
+   "where": "app.js:1013"
+  },
+  {
+   "id": "1jcludp",
+   "en": "Offer a feed, bottle or pacifier for takeoff: swallowing helps their ears",
+   "where": "app.js:1018"
+  },
+  {
+   "id": "1gq5oso",
+   "en": "{what}. Safe travels!",
+   "where": "app.js:1018"
+  },
+  {
+   "id": "19umq3p",
+   "en": "(if you like)",
+   "where": "app.js:1030"
+  },
+  {
+   "id": "l7z99o",
+   "en": "Bottle or breast?",
+   "where": "app.js:1031"
+  },
+  {
+   "id": "znhu96",
+   "en": "About how much?",
+   "where": "app.js:1032"
+  },
+  {
+   "id": "16u1tvi",
+   "en": "Side",
+   "where": "app.js:1033",
+   "note": "Which breast the baby fed from (Left, Right, Both)."
+  },
+  {
+   "id": "1b2cv3j",
+   "en": "About how long?",
+   "where": "app.js:1034"
+  },
+  {
+   "id": "15aabk",
+   "en": "Tap one to save",
+   "where": "app.js:1035",
+   "note": "Above the quick buttons: tapping one saves the entry straight away."
+  },
+  {
+   "id": "1nyr7g8",
+   "en": "A little",
+   "where": "app.js:1036",
+   "note": "Quick button: the baby brought up a little milk."
+  },
+  {
+   "id": "1j40d8l",
+   "en": "More than usual",
+   "where": "app.js:1036",
+   "note": "Quick button: the baby was sick more than usual."
+  },
+  {
+   "id": "zuwlqa",
+   "en": "Fell asleep",
+   "where": "app.js:1037",
+   "note": "Title of the quick form that logs the start of a sleep."
+  },
+  {
+   "id": "pestpu",
+   "en": "When?",
+   "where": "app.js:1038",
+   "note": "When it happened (Just now, about 15 min ago …)."
+  },
+  {
+   "id": "10p1jqn",
+   "en": "Just now",
+   "where": "app.js:1038",
+   "note": "When it happened: just now."
+  },
+  {
+   "id": "1vmxaay",
+   "en": "~{n} min ago",
+   "where": "app.js:1038",
+   "note": "When it happened: about {n} minutes ago."
+  },
+  {
+   "id": "cw4ijb",
+   "en": "~1 hr ago",
+   "where": "app.js:1038",
+   "note": "When it happened: about an hour ago."
+  },
+  {
+   "id": "rtbkwb",
+   "en": "Choose who this is for",
+   "where": "app.js:1045"
+  },
+  {
+   "id": "yjhepa",
+   "en": "{name} is already asleep",
+   "where": "app.js:1051"
+  },
+  {
+   "id": "bs6lqw",
+   "one": "Saved for {n} child",
+   "other": "Saved for {n} children",
+   "where": "app.js:1058"
+  },
+  {
+   "id": "16r1z4b",
+   "en": "A page for each child",
+   "where": "app.js:1069"
+  },
+  {
+   "id": "gwuvam",
+   "en": "Each child has their own page in their own colour. \"All\" shows everyone together.",
+   "where": "app.js:1069"
+  },
+  {
+   "id": "npn754",
+   "en": "Log it in one tap",
+   "where": "app.js:1070"
+  },
+  {
+   "id": "19xj3nx",
+   "en": "Tap what just happened. The time is filled in for you, with shortcuts for a few minutes ago.",
+   "where": "app.js:1070"
+  },
+  {
+   "id": "og3f9t",
+   "en": "Asleep right now",
+   "where": "app.js:1071"
+  },
+  {
+   "id": "1fayeu3",
+   "en": "While your baby sleeps the timer runs here. Tap \"Woke up\" when they wake.",
+   "where": "app.js:1071"
+  },
+  {
+   "id": "14m3p74",
+   "en": "The day at a glance",
+   "where": "app.js:1072"
+  },
+  {
+   "id": "pz6csb",
+   "en": "Each entry is a ray out to the time it happened, in its own colour. Tap a dot to see what it was, or a quarter of the dial for just those hours.",
+   "where": "app.js:1072"
+  },
+  {
+   "id": "14xos5s",
+   "en": "24 or 12 hours",
+   "where": "app.js:1073"
+  },
+  {
+   "id": "1o9omqr",
+   "en": "The whole day on one dial, or a classic 12-hour face with AM and PM.",
+   "where": "app.js:1073"
+  },
+  {
+   "id": "h1wtip",
+   "en": "Choose the painting",
+   "where": "app.js:1074"
+  },
+  {
+   "id": "pa8jpk",
+   "en": "Pick the watercolour around the clock, for each child.",
+   "where": "app.js:1074"
+  },
+  {
+   "id": "1jk884o",
+   "en": "Other days",
+   "where": "app.js:1075",
+   "note": "Tour step title: the arrows that go to earlier days."
+  },
+  {
+   "id": "1iklhis",
+   "en": "Use the arrows to look back at earlier days.",
+   "where": "app.js:1075"
+  },
+  {
+   "id": "1h1ccil",
+   "en": "Every detail",
+   "where": "app.js:1076",
+   "note": "Tour step title: the groups of entries below the clock."
+  },
+  {
+   "id": "tv5f1a",
+   "en": "Everything from the day, grouped: feeds, diapers, sleep and more. Tap a group to open it.",
+   "where": "app.js:1076"
+  },
+  {
+   "id": "rr5725",
+   "en": "Going on a trip?",
+   "where": "app.js:1077"
+  },
+  {
+   "id": "1nm5bsx",
+   "en": "Travel mode gives you bigger buttons, rough times that are quick to log, and a clock to match the journey.",
+   "where": "app.js:1077"
+  },
+  {
+   "id": "fdah9t",
+   "en": "Everything else",
+   "where": "app.js:1078",
+   "note": "Tour step title: the tabs at the bottom."
+  },
+  {
+   "id": "1tsm62l",
+   "en": "The month, stats, the Guide with medicines and milestones, family sharing, and settings.",
+   "where": "app.js:1078"
+  },
+  {
+   "id": "16iq8aw",
+   "en": "Help on every screen",
+   "where": "app.js:1079"
+  },
+  {
+   "id": "134nwtw",
+   "en": "Tap ? on any screen for a tour of it.",
+   "where": "app.js:1079"
+  },
+  {
+   "id": "gzp293",
+   "en": "How you are travelling and until when. Change it any time, or tap \"We're home\" to end it.",
+   "where": "app.js:1082"
+  },
+  {
+   "id": "1qhjgyg",
+   "en": "The journey",
+   "where": "app.js:1083",
+   "note": "Tour step title: the buttons for the parts of a journey."
+  },
+  {
+   "id": "1ui1io1",
+   "en": "Tap when you set off and when you stop. Time on the move lights up the clock's outer ring, and long drives get a reminder to take a break.",
+   "where": "app.js:1083"
+  },
+  {
+   "id": "1myyewl",
+   "en": "Big buttons for busy moments",
+   "where": "app.js:1084"
+  },
+  {
+   "id": "1dkxm11",
+   "en": "Each opens a short sheet: tap a rough time and an answer. \"About 15 minutes ago\" is fine; estimated times show with a ~.",
+   "where": "app.js:1084"
+  },
+  {
+   "id": "1h6m72q",
+   "en": "The rest",
+   "where": "app.js:1085",
+   "note": "Tour step title: the less common kinds of entry, one more tap away."
+  },
+  {
+   "id": "1h9c932",
+   "en": "Play, night wakings, health notes and medicines are one more tap away.",
+   "where": "app.js:1085"
+  },
+  {
+   "id": "9g5ony",
+   "en": "A travel clock",
+   "where": "app.js:1086"
+  },
+  {
+   "id": "zevclo",
+   "en": "The painting matches how you travel, and travel days have their own colours, so they stand out later in the month view.",
+   "where": "app.js:1086"
+  },
+  {
+   "id": "a0fpd6",
+   "en": "The month",
+   "where": "app.js:1090"
+  },
+  {
+   "id": "1fkdehp",
+   "en": "Dots show what was logged each day. Days away travelling are outlined.",
+   "where": "app.js:1090"
+  },
+  {
+   "id": "1fhg3ex",
+   "en": "Pick a day",
+   "where": "app.js:1091"
+  },
+  {
+   "id": "mp30f0",
+   "en": "Tap a day to see its numbers below.",
+   "where": "app.js:1091"
+  },
+  {
+   "id": "1iwecq6",
+   "en": "Plan trips ahead: pick the day you leave, then tap here. Travel mode switches on by itself that day.",
+   "where": "app.js:1092"
+  },
+  {
+   "id": "11ycv53",
+   "en": "The day in numbers",
+   "where": "app.js:1093"
+  },
+  {
+   "id": "1euap9o",
+   "en": "Feeds, diapers, sleep and more for the day you picked.",
+   "where": "app.js:1093"
+  },
+  {
+   "id": "l8qba2",
+   "en": "Open this to see each entry of that day, and tap one to change it.",
+   "where": "app.js:1094"
+  },
+  {
+   "id": "1cohmw8",
+   "en": "Add to that day",
+   "where": "app.js:1095"
+  },
+  {
+   "id": "hn5nts",
+   "en": "Log something you forgot, on the day you picked.",
+   "where": "app.js:1095"
+  },
+  {
+   "id": "jrnp7c",
+   "en": "What usually comes next, and how long until then.",
+   "where": "app.js:1098"
+  },
+  {
+   "id": "1w42mbq",
+   "en": "Your routine",
+   "where": "app.js:1099"
+  },
+  {
+   "id": "5sipas",
+   "en": "Feeds, sleep, play and medicines that happen at about the same time on most days. A tick shows what is done today.",
+   "where": "app.js:1099"
+  },
+  {
+   "id": "1nhrdr7",
+   "en": "It keeps up by itself",
+   "where": "app.js:1100",
+   "note": "Tour step title: the routine updates by itself."
+  },
+  {
+   "id": "179mgb1",
+   "en": "It is worked out again from the last week every time, so it changes when your baby's routine does.",
+   "where": "app.js:1100"
+  },
+  {
+   "id": "14iltsb",
+   "en": "Look at the last 7, 14 or 30 days.",
+   "where": "app.js:1103"
+  },
+  {
+   "id": "lfdvam",
+   "en": "For the doctor",
+   "where": "app.js:1104",
+   "note": "Tour step title: the button that makes a PDF for the doctor."
+  },
+  {
+   "id": "rfanuj",
+   "en": "A PDF of everything logged, to share or print for a checkup.",
+   "where": "app.js:1104"
+  },
+  {
+   "id": "wizpv",
+   "en": "A chart for each section",
+   "where": "app.js:1105"
+  },
+  {
+   "id": "1gbzb76",
+   "en": "Drawn to scale, one bar per day. Tap a bar for its numbers.",
+   "where": "app.js:1105"
+  },
+  {
+   "id": "rxnwm1",
+   "en": "The exact numbers",
+   "where": "app.js:1106"
+  },
+  {
+   "id": "e1h931",
+   "en": "Each chart has a table with every day's numbers, handy for a checkup.",
+   "where": "app.js:1106"
+  },
+  {
+   "id": "1rmubfh",
+   "en": "Your pediatrician",
+   "where": "app.js:1109"
+  },
+  {
+   "id": "138qkr0",
+   "en": "Save their details once, and everyone sharing the log gets a Call button.",
+   "where": "app.js:1109"
+  },
+  {
+   "id": "1d7412q",
+   "en": "Emergencies",
+   "where": "app.js:1110"
+  },
+  {
+   "id": "122enob",
+   "en": "The signs that need emergency help straight away.",
+   "where": "app.js:1110"
+  },
+  {
+   "id": "7atdg3",
+   "en": "What is common at your baby's age.",
+   "where": "app.js:1111"
+  },
+  {
+   "id": "1eygec9",
+   "en": "Common worries",
+   "where": "app.js:1112"
+  },
+  {
+   "id": "1diown9",
+   "en": "What is normal with a newborn, and when to call. Some have pictures, kept out of sight until you tap them.",
+   "where": "app.js:1112"
+  },
+  {
+   "id": "1possbg",
+   "en": "Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.",
+   "where": "app.js:1113"
+  },
+  {
+   "id": "1koedhl",
+   "en": "Milestones for every month. A reminder pops up on each month birthday.",
+   "where": "app.js:1114"
+  },
+  {
+   "id": "t2rhat",
+   "en": "Your shared log",
+   "where": "app.js:1117"
+  },
+  {
+   "id": "8igb66",
+   "en": "When this phone last synced. Tap to sync now.",
+   "where": "app.js:1117"
+  },
+  {
+   "id": "10i543y",
+   "en": "People",
+   "where": "app.js:1118"
+  },
+  {
+   "id": "109mji1",
+   "en": "Everyone with access and their role. Tap a person for their contact details.",
+   "where": "app.js:1118"
+  },
+  {
+   "id": "1x66rwc",
+   "en": "Invite someone",
+   "where": "app.js:1119"
+  },
+  {
+   "id": "1zrjm8",
+   "en": "Make a one-time QR code. You approve them before they see anything.",
+   "where": "app.js:1119"
+  },
+  {
+   "id": "17yt05o",
+   "en": "Activity",
+   "where": "app.js:1120",
+   "note": "Heading: the log of who added, changed or deleted what."
+  },
+  {
+   "id": "niv7mh",
+   "en": "Who added, changed or deleted what. Only parents see this.",
+   "where": "app.js:1120"
+  },
+  {
+   "id": "z8e2zs",
+   "en": "Security code",
+   "where": "app.js:1121",
+   "note": "A code two phones compare to check they are talking to each other securely."
+  },
+  {
+   "id": "1shr5ja",
+   "en": "Everyone sharing the log sees the same code: a quick check that only your family has the keys.",
+   "where": "app.js:1121"
+  },
+  {
+   "id": "12s64m4",
+   "en": "Join another log",
+   "where": "app.js:1122"
+  },
+  {
+   "id": "1of7rk4",
+   "en": "Scan the QR code from someone else's log to ask to join it.",
+   "where": "app.js:1122"
+  },
+  {
+   "id": "p6m81x",
+   "en": "Family sharing",
+   "where": "app.js:1123"
+  },
+  {
+   "id": "jat4hn",
+   "en": "Sign in to share the log with family and caregivers, end-to-end encrypted.",
+   "where": "app.js:1123"
+  },
+  {
+   "id": "a9s755",
+   "en": "Your children",
+   "where": "app.js:1126"
+  },
+  {
+   "id": "zcsj7h",
+   "en": "Names, birth dates and colours. \"Add a child\" for twins or triplets.",
+   "where": "app.js:1126"
+  },
+  {
+   "id": "ru4phq",
+   "en": "Pick it from the list; each region folds open. After three days of the same formula it is picked for you.",
+   "where": "app.js:1127"
+  },
+  {
+   "id": "1hd412a",
+   "en": "Formulas sold here come first, and the Guide gives your emergency number and medicine names first.",
+   "where": "app.js:1128"
+  },
+  {
+   "id": "1k8lxk6",
+   "en": "The painting around each child's clock.",
+   "where": "app.js:1129"
+  },
+  {
+   "id": "l5c7hk",
+   "en": "Light or dark",
+   "where": "app.js:1130"
+  },
+  {
+   "id": "3jxqzg",
+   "en": "Match your phone, pick one, or follow sunrise and sunset.",
+   "where": "app.js:1130"
+  },
+  {
+   "id": "28x7ge",
+   "en": "Your data",
+   "where": "app.js:1131"
+  },
+  {
+   "id": "1t128a2",
+   "en": "Back up the log, or export a copy for your pediatrician.",
+   "where": "app.js:1131"
+  },
+  {
+   "id": "ekqut7",
+   "en": "Nothing to show on this screen yet",
+   "where": "app.js:1142"
+  },
+  {
+   "id": "1bvsj2h",
+   "en": "Baby",
+   "where": "app.js:1154",
+   "note": "A child without a name (used as a name)."
+  },
+  {
+   "id": "fbkr4f",
+   "en": "Only parents can change these.",
+   "where": "app.js:1154"
+  },
+  {
+   "id": "4el6o6",
+   "en": "Name",
+   "where": "app.js:1156",
+   "note": "The child's name."
+  },
+  {
+   "id": "mgpsf2",
+   "en": "Birth date",
+   "where": "app.js:1157",
+   "note": "The child's date of birth."
+  },
+  {
+   "id": "127kn7o",
+   "en": "Boy or girl",
+   "where": "app.js:1158"
   },
   {
    "id": "1ntesau",
    "en": "Not set",
-   "where": "app.js:971",
+   "where": "app.js:1158",
    "note": "The child's sex has not been given."
   },
   {
    "id": "1ji7co4",
    "en": "Formula name",
-   "where": "app.js:972",
+   "where": "app.js:1159",
    "note": "Spoken label of the field for the brand of infant formula."
   },
   {
    "id": "xxs9jh",
    "en": "Picked up from the feeds: it was given at every formula feed three days running.",
-   "where": "app.js:973"
+   "where": "app.js:1160"
   },
   {
    "id": "1ona1vw",
    "en": "When one formula is given at every formula feed three days running, it becomes the usual one.",
-   "where": "app.js:973"
+   "where": "app.js:1160"
   },
   {
    "id": "czgs9p",
    "en": "Colour",
-   "where": "app.js:974",
+   "where": "app.js:1161",
    "note": "The child's colour in the app (to tell children apart)."
   },
   {
    "id": "1yntp1y",
    "en": "Remove {name}",
-   "where": "app.js:975"
+   "where": "app.js:1162"
   },
   {
    "id": "d50zct",
    "en": "Add a child",
-   "where": "app.js:976"
+   "where": "app.js:1163"
   },
   {
    "id": "1fqerji",
    "en": "Automatic: {region}",
-   "where": "app.js:982",
+   "where": "app.js:1169",
    "note": "Setting that follows the phone: {region} is the country or region found (translated by the phone)."
   },
   {
    "id": "6cca7b",
    "en": "Formulas sold here come first in the formula list, and the Guide gives this region's emergency number, medicine names and ages first.",
-   "where": "app.js:984"
+   "where": "app.js:1171"
   },
   {
    "id": "3sipll",
    "en": "Worked out from your phone's time zone.",
-   "where": "app.js:984"
+   "where": "app.js:1171"
   },
   {
    "id": "1vgwp5k",
    "en": "Kept on this phone.",
-   "where": "app.js:984"
+   "where": "app.js:1171"
   },
   {
    "id": "leg9pg",
    "en": "Automatic: {language}",
-   "where": "app.js:987",
+   "where": "app.js:1174",
    "note": "Language setting that follows the phone: {language} is the language found."
   },
   {
    "id": "16us7mj",
    "en": "Language",
-   "where": "app.js:991"
+   "where": "app.js:1178"
   },
   {
    "id": "13zbant",
    "en": "The app follows your phone's language unless you choose one here. Kept on this phone.",
-   "where": "app.js:993"
+   "where": "app.js:1180"
   },
   {
    "id": "reccqn",
    "en": "Translations were made with the help of AI and may have mistakes.",
-   "where": "app.js:993"
+   "where": "app.js:1180"
   },
   {
    "id": "sydvp",
    "en": "Report a language issue",
-   "where": "app.js:994"
+   "where": "app.js:1181"
   },
   {
    "id": "eh8dlf",
    "en": "Signing in",
-   "where": "app.js:1013",
+   "where": "app.js:1200",
    "note": "A screen name in the language report form: the sign-in screens."
   },
   {
    "id": "1cikvp1",
    "en": "Somewhere else",
-   "where": "app.js:1013",
+   "where": "app.js:1200",
    "note": "A screen name in the language report form: another place in the app."
   },
   {
    "id": "1t008yz",
    "en": "Words that are wrong, hard to understand, or not translated: tell the Little Log team.",
-   "where": "app.js:1015"
+   "where": "app.js:1202"
   },
   {
    "id": "1gh6uzv",
    "en": "Where did you see it?",
-   "where": "app.js:1017"
+   "where": "app.js:1204"
   },
   {
    "id": "1emwp13",
    "en": "What does it say?",
-   "where": "app.js:1018"
+   "where": "app.js:1205"
   },
   {
    "id": "18nmxzj",
    "en": "Copy or type the words that read wrong",
-   "where": "app.js:1018"
+   "where": "app.js:1205"
   },
   {
    "id": "hl0yv5",
    "en": "What should it say?",
-   "where": "app.js:1019"
+   "where": "app.js:1206"
   },
   {
    "id": "1plka29",
    "en": "(if you know)",
-   "where": "app.js:1019"
+   "where": "app.js:1206"
   },
   {
    "id": "1kmfqvq",
    "en": "Only what you type here is sent, with the language and the screen. Nothing from your log or your account.",
-   "where": "app.js:1020"
+   "where": "app.js:1207"
   },
   {
    "id": "1vatbdb",
    "en": "Send",
-   "where": "app.js:1021"
+   "where": "app.js:1208"
   },
   {
    "id": "1x8hjxj",
    "en": "Write what it says first",
-   "where": "app.js:1024"
+   "where": "app.js:1211"
   },
   {
    "id": "15r3dgd",
    "en": "Sending…",
-   "where": "app.js:1025"
+   "where": "app.js:1212"
   },
   {
    "id": "1mw4c11",
    "en": "Thank you! Your report was sent.",
-   "where": "app.js:1028"
+   "where": "app.js:1215"
   },
   {
    "id": "18rm3fy",
    "en": "Thanks, we have had a lot of reports from you lately. Please try again in an hour.",
-   "where": "app.js:1030"
+   "where": "app.js:1217"
   },
   {
    "id": "1t0l5o4",
    "en": "Couldn't send it. Check you're online and try again.",
-   "where": "app.js:1030"
+   "where": "app.js:1217"
   },
   {
    "id": "1nyokcu",
    "en": "The watercolour painting around the day clock. Kept on this phone.",
-   "where": "app.js:1035"
+   "where": "app.js:1222"
   },
   {
    "id": "18wuq59",
    "en": "Change",
-   "where": "app.js:1036"
+   "where": "app.js:1223"
   },
   {
    "id": "17y862q",
    "en": "Match phone",
-   "where": "app.js:1041",
+   "where": "app.js:1228",
    "note": "Appearance: light or dark, the same as the phone."
   },
   {
    "id": "12iob7z",
    "en": "Light",
-   "where": "app.js:1041",
+   "where": "app.js:1228",
    "note": "Appearance: light colours."
   },
   {
    "id": "j8m6w5",
    "en": "Dark",
-   "where": "app.js:1041",
+   "where": "app.js:1228",
    "note": "Appearance: dark colours."
   },
   {
    "id": "r5nxtg",
    "en": "Sunrise & sunset",
-   "where": "app.js:1041",
+   "where": "app.js:1228",
    "note": "Appearance: light by day, dark at night, by the sun where you are."
   },
   {
    "id": "1uawofi",
    "en": "The sun doesn't set here today, so it stays light.",
-   "where": "app.js:1042"
+   "where": "app.js:1229"
   },
   {
    "id": "1cwwc5r",
    "en": "The sun doesn't rise here today, so it stays dark.",
-   "where": "app.js:1042"
+   "where": "app.js:1229"
   },
   {
    "id": "ox9vqf",
    "en": "Today: light from {rise}, dark from {set}.",
-   "where": "app.js:1043"
+   "where": "app.js:1230"
   },
   {
    "id": "dli9wf",
    "en": "Appearance",
-   "where": "app.js:1044"
+   "where": "app.js:1231"
   },
   {
    "id": "1ltad2r",
    "en": "Estimated for the {zone} time zone; your location isn't used.",
-   "where": "app.js:1046"
+   "where": "app.js:1233"
   },
   {
    "id": "w8fitq",
    "en": "Estimated from your time zone; your location isn't used.",
-   "where": "app.js:1046"
+   "where": "app.js:1233"
   },
   {
    "id": "b5n4ch",
    "en": "Follows your phone's light or dark setting.",
-   "where": "app.js:1047"
+   "where": "app.js:1234"
   },
   {
    "id": "hz2bev",
    "en": "Switching plays a little sunrise or sunset.",
-   "where": "app.js:1047"
+   "where": "app.js:1234"
   },
   {
    "id": "we7d5m",
    "en": "Entries are saved on this device and synced to your family log.",
-   "where": "app.js:1056"
+   "where": "app.js:1243"
   },
   {
    "id": "133mp9k",
    "en": "Everything is stored only on this device.",
-   "where": "app.js:1056"
+   "where": "app.js:1243"
   },
   {
    "id": "9r1xct",
    "en": "Export a plain-text copy to share with your pediatrician.",
-   "where": "app.js:1056"
+   "where": "app.js:1243"
   },
   {
    "id": "1gh1w1o",
    "en": "Backup (JSON)",
-   "where": "app.js:1057",
+   "where": "app.js:1244",
    "note": "Button: save a backup file (JSON is a file type; keep it)."
   },
   {
    "id": "8p4e4z",
    "en": "Export CSV",
-   "where": "app.js:1057",
+   "where": "app.js:1244",
    "note": "Button: save the log as a spreadsheet file (CSV is a file type; keep it)."
   },
   {
    "id": "gujowr",
    "en": "Restore from JSON",
-   "where": "app.js:1058"
+   "where": "app.js:1246"
+  },
+  {
+   "id": "pvdmq",
+   "en": "App updates",
+   "where": "app.js:1248",
+   "note": "Heading in More: the card with the Update app button."
+  },
+  {
+   "id": "1ub1vmh",
+   "en": "New versions of Little Log come through the app store.",
+   "where": "app.js:1248"
+  },
+  {
+   "id": "12kqjpb",
+   "en": "Update app",
+   "where": "app.js:1249",
+   "note": "Button: opens the app's page in the app store (Google Play or the App Store), where the update is installed."
   },
   {
    "id": "ycx0wd",
    "en": "Delete all entries",
-   "where": "app.js:1060"
+   "where": "app.js:1250"
+  },
+  {
+   "id": "f7nw84",
+   "en": "Open the App Store, tap your picture at the top, and update Little Log from the list there.",
+   "where": "app.js:1256"
+  },
+  {
+   "id": "6jtfo4",
+   "en": "In the phone app, this opens the app store to update Little Log.",
+   "where": "app.js:1256"
   },
   {
    "id": "2s5mib",
    "en": "You can't change entries added by {name}",
-   "where": "app.js:1066"
+   "where": "app.js:1262"
   },
   {
    "id": "1wavbac",
    "en": "someone else",
-   "where": "app.js:1066",
+   "where": "app.js:1262",
    "note": "Used as a name: 'You can't change entries added by someone else'."
   },
   {
    "id": "1crqpdj",
    "en": "You can't change entries",
-   "where": "app.js:1066"
+   "where": "app.js:1262"
+  },
+  {
+   "id": "1nxau8h",
+   "en": "Version {version}",
+   "where": "app.js:1298",
+   "note": "{version} is the app's version number, as in '1.2 (14)'."
   },
   {
    "id": "1prezo3",
    "en": "Where you are: {region}",
-   "where": "app.js:1099"
+   "where": "app.js:1300"
   },
   {
    "id": "2pa6xa",
    "en": "{name} still has entries – open one and move it to another child, or delete them first",
-   "where": "app.js:1125"
+   "where": "app.js:1326"
   },
   {
    "id": "1x439ex",
    "en": "Remove {name} from this log?",
-   "where": "app.js:1126"
+   "where": "app.js:1327"
   },
   {
    "id": "v92oor",
    "en": "Removed",
-   "where": "app.js:1127",
+   "where": "app.js:1328",
    "note": "Message after a child is removed."
-  },
-  {
-   "id": "13crbi5",
-   "en": "Child",
-   "where": "app.js:1133",
-   "note": "Column of the spreadsheet (CSV) export: which child the entry is for."
-  },
-  {
-   "id": "ggjuyh",
-   "en": "Date",
-   "where": "app.js:1133",
-   "note": "Column of the spreadsheet (CSV) export."
-  },
-  {
-   "id": "1q4eyv8",
-   "en": "Time",
-   "where": "app.js:1133",
-   "note": "When it happened."
   },
   {
    "id": "1m2zofh",
    "en": "Type",
-   "where": "app.js:1133",
+   "where": "app.js:1334",
    "note": "Kind of feed (breast or bottle) in the feed form; also a column of the spreadsheet (CSV) export: the kind of entry."
   },
   {
    "id": "i4c62b",
    "en": "Summary",
-   "where": "app.js:1133",
+   "where": "app.js:1334",
    "note": "Column of the spreadsheet (CSV) export: the entry in short, such as 'Bottle 90 ml'."
   },
   {
    "id": "1llf32i",
    "en": "End",
-   "where": "app.js:1133",
+   "where": "app.js:1334",
    "note": "Column of the spreadsheet (CSV) export: when the entry ended (the end of a sleep)."
   },
   {
    "id": "y2rbpc",
    "en": "That file is not a valid backup",
-   "where": "app.js:1142"
+   "where": "app.js:1343"
   },
   {
    "id": "mne0pi",
    "en": "Delete ALL entries?",
-   "where": "app.js:1146"
+   "where": "app.js:1347"
   },
   {
    "id": "1mu6012",
    "en": "This also deletes them for everyone sharing this log.",
-   "where": "app.js:1146"
+   "where": "app.js:1347"
   },
   {
    "id": "1x7m3fy",
    "en": "This cannot be undone.",
-   "where": "app.js:1146"
+   "where": "app.js:1347"
   },
   {
    "id": "qtyd93",
    "en": "Really delete everything?",
-   "where": "app.js:1147"
+   "where": "app.js:1348"
   },
   {
    "id": "161k76n",
    "en": "Could not share the file",
-   "where": "app.js:1151"
+   "where": "app.js:1352"
   },
   {
    "id": "154aufy",
    "en": "You don't have access to health notes",
-   "where": "app.js:1168"
+   "where": "app.js:1369"
   },
   {
    "id": "1gwxv0",
    "en": "breast",
-   "where": "app.js:1175",
+   "where": "app.js:1376",
    "note": "Kind of feed in the feed form: breastfeed."
   },
   {
    "id": "shh409",
    "en": "bottle",
-   "where": "app.js:1175",
+   "where": "app.js:1376",
    "note": "Kind of feed in the feed form: bottle feed."
   },
   {
    "id": "f7vpn2",
    "en": "Minutes",
-   "where": "app.js:1176",
+   "where": "app.js:1377",
    "note": "How long the breastfeed lasted, in minutes."
   },
   {
    "id": "1liy0e7",
    "en": "e.g. 15",
-   "where": "app.js:1176",
+   "where": "app.js:1377",
    "note": "Example in an empty field (minutes). Keep the number."
   },
   {
    "id": "wovk63",
    "en": "Amount (ml)",
-   "where": "app.js:1177",
+   "where": "app.js:1378",
    "note": "How much milk was in the bottle, in millilitres."
   },
   {
    "id": "1oll2mg",
    "en": "e.g. 90",
-   "where": "app.js:1177",
+   "where": "app.js:1378",
    "note": "Example in an empty field (millilitres). Keep the number."
   },
   {
    "id": "1ufns1u",
    "en": "Milk",
-   "where": "app.js:1177",
+   "where": "app.js:1378",
    "note": "What was in the bottle: breast milk or formula."
   },
   {
    "id": "bfb6pk",
    "en": "Which formula",
-   "where": "app.js:1178",
+   "where": "app.js:1379",
    "note": "Which brand of infant formula."
   },
   {
    "id": "jzr8pf",
    "en": "What was in it?",
-   "where": "app.js:1180"
+   "where": "app.js:1381"
   },
   {
    "id": "76t153",
    "en": "Poo colour",
-   "where": "app.js:1181",
+   "where": "app.js:1382",
    "note": "The colour of the baby's poo (stool)."
   },
   {
    "id": "druf3h",
    "en": "Woke up at",
-   "where": "app.js:1183"
+   "where": "app.js:1384"
   },
   {
    "id": "1opv11x",
    "en": "(leave empty if still asleep)",
-   "where": "app.js:1183"
+   "where": "app.js:1384"
   },
   {
    "id": "12mubvb",
    "en": "Now",
-   "where": "app.js:1184",
+   "where": "app.js:1385",
    "note": "Button: set the time to now."
   },
   {
    "id": "111llgb",
    "en": "Awake for (minutes)",
-   "where": "app.js:1185"
+   "where": "app.js:1386"
   },
   {
    "id": "pmjdq3",
    "en": "e.g. 20",
-   "where": "app.js:1185",
+   "where": "app.js:1386",
    "note": "Example in an empty field (minutes). Keep the number."
   },
   {
    "id": "mfl4pe",
    "en": "Why?",
-   "where": "app.js:1185",
+   "where": "app.js:1386",
    "note": "Why the baby woke in the night (answers: Hungry, Diaper, Gas / fussy, Unknown)."
   },
   {
    "id": "a2ky21",
    "en": "Amount",
-   "where": "app.js:1186",
+   "where": "app.js:1387",
    "note": "How much the baby vomited."
   },
   {
    "id": "vf7262",
    "en": "Projectile",
-   "where": "app.js:1186",
+   "where": "app.js:1387",
    "note": "Projectile vomiting (forceful): a checkbox in the vomit form."
   },
   {
    "id": "1k4zzxc",
    "en": "e.g. 10",
-   "where": "app.js:1187",
+   "where": "app.js:1388",
    "note": "Example in an empty field (minutes). Keep the number."
   },
   {
    "id": "wbgc",
    "en": "Check anything you noticed",
-   "where": "app.js:1188"
+   "where": "app.js:1389"
   },
   {
    "id": "a6rzg2",
    "en": "Temperature (°)",
-   "where": "app.js:1188",
+   "where": "app.js:1389",
    "note": "Body temperature in degrees (whatever unit the parent uses)."
   },
   {
    "id": "kgw9o9",
    "en": "optional",
-   "where": "app.js:1188",
+   "where": "app.js:1389",
    "note": "Example in an empty field: it may be left empty."
   },
   {
    "id": "1894f8m",
    "en": "Medicine / vitamin",
-   "where": "app.js:1189"
+   "where": "app.js:1390"
   },
   {
    "id": "16mbxhd",
    "en": "e.g. Vitamin D",
-   "where": "app.js:1189",
+   "where": "app.js:1390",
    "note": "Example in an empty field: a medicine or vitamin."
   },
   {
    "id": "xr0o9s",
    "en": "Dose",
-   "where": "app.js:1189",
+   "where": "app.js:1390",
    "note": "How much medicine was given."
   },
   {
    "id": "m8m4tt",
    "en": "e.g. 1 ml",
-   "where": "app.js:1189",
+   "where": "app.js:1390",
    "note": "Example in an empty field: a dose. Keep the number and unit."
   },
   {
    "id": "4ar1o0",
    "en": "For",
-   "where": "app.js:1193",
+   "where": "app.js:1394",
    "note": "Which children the entry is for."
   },
   {
    "id": "1rf4err",
    "en": "For (tick everyone it applies to)",
-   "where": "app.js:1193"
+   "where": "app.js:1394"
   },
   {
    "id": "76y2ad",
    "en": "Edit {what}",
-   "where": "app.js:1195",
+   "where": "app.js:1396",
    "note": "Title of the form for changing an entry. {what} is one of: feed, diaper, sleep, night wake, vomit, play, health note, meds (translated)."
   },
   {
    "id": "1ohn8hi",
    "en": "Add {what}",
-   "where": "app.js:1195",
+   "where": "app.js:1396",
    "note": "Title of the form for a new entry. {what} is one of: feed, diaper, sleep, night wake, vomit, play, health note, meds (translated)."
   },
   {
    "id": "6lrz0j",
    "en": "Fell asleep at",
-   "where": "app.js:1197"
+   "where": "app.js:1398"
   },
   {
    "id": "88cuie",
    "en": "{n} min ago",
-   "where": "app.js:1198"
+   "where": "app.js:1399"
   },
   {
    "id": "zq8egr",
    "en": "1 hr ago",
-   "where": "app.js:1198"
+   "where": "app.js:1399"
   },
   {
    "id": "paff3s",
    "en": "Note (optional)",
-   "where": "app.js:1200"
+   "where": "app.js:1401"
   },
   {
    "id": "19h22py",
    "en": "Anything worth remembering",
-   "where": "app.js:1200"
+   "where": "app.js:1401"
   },
   {
    "id": "m8rlkv",
    "en": "Delete this entry?",
-   "where": "app.js:1223"
+   "where": "app.js:1424"
   },
   {
    "id": "1v6qcju",
    "en": "Deleted",
-   "where": "app.js:1223",
+   "where": "app.js:1424",
    "note": "Message after an entry is deleted."
   },
   {
    "id": "1luu5h8",
    "en": "Please pick a time",
-   "where": "app.js:1226"
+   "where": "app.js:1427"
   },
   {
    "id": "1npc9wk",
    "en": "Save as a dry diaper?",
-   "where": "app.js:1234"
+   "where": "app.js:1435"
   },
   {
    "id": "k9bwto",
    "en": "Wake time must be after bedtime",
-   "where": "app.js:1236"
+   "where": "app.js:1437"
   },
   {
    "id": "1rr6v7r",
    "en": "Tick a symptom or add a note",
-   "where": "app.js:1242"
+   "where": "app.js:1443"
   },
   {
    "id": "1g4bzph",
    "en": "Enter a name",
-   "where": "app.js:1244"
+   "where": "app.js:1445"
   },
   {
    "id": "1ifs5kd",
    "en": "{name} is sleeping – tap “Woke up” first",
-   "where": "app.js:1248"
+   "where": "app.js:1449"
   },
   {
    "id": "qpequ0",
    "en": "Already sleeping – tap “Woke up” first",
-   "where": "app.js:1248"
+   "where": "app.js:1449"
   },
   {
    "id": "1n9x36p",
    "en": "{formula} is now {names}'s usual formula",
-   "where": "app.js:1259"
+   "where": "app.js:1460"
   },
   {
    "id": "1qdig2e",
    "en": "Red-streaked or pale / white stools can be a sign of a problem. Please tell your pediatrician (and call straight away if your baby seems unwell).",
-   "where": "app.js:1260"
+   "where": "app.js:1461"
   },
   {
    "id": "r363d1",
    "en": "One of these symptoms can be urgent. If your baby has blue lips/face, trouble breathing, a fever (38°C / 100.4°F+ in a newborn) or is hard to wake, call your pediatrician or emergency services now.",
-   "where": "app.js:1261"
+   "where": "app.js:1462"
   },
   {
    "id": "plvxbk",
    "en": "Cannot save on this phone – free up space",
-   "where": "app.js:1292"
+   "where": "app.js:1493"
   },
   {
    "id": "x3k3ic",
    "en": "Your saved log was damaged and has been restored from a recent backup",
-   "where": "app.js:1293"
+   "where": "app.js:1494"
   },
   {
    "id": "1faqwbi",
    "en": "A damaged copy of the log was set aside; it will be re-downloaded from your family log",
-   "where": "app.js:1293"
+   "where": "app.js:1494"
   },
   {
    "id": "16pr4dg",
@@ -6336,12 +6692,12 @@
   {
    "id": "1vznzfa",
    "en": "Save or share",
-   "where": "native.js:40"
+   "where": "native.js:51"
   },
   {
    "id": "pgpbj8",
    "en": "Use passcode",
-   "where": "native.js:52",
+   "where": "native.js:63",
    "note": "Button on the phone's fingerprint or face prompt: use the phone's passcode instead."
   }
  ]

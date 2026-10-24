@@ -31,9 +31,9 @@ const pickFormula = async (page, scope, name) => {
     await step('the day clock draws one ray per entry, at the right time, in its group\'s colour', async () => {
       assert.equal(await P.$$eval('.clock .ray', r => r.length), 5);
       const [cx, cy] = await P.evaluate(() => { const c = document.querySelector('svg.clock'); return [+c.dataset.cx, +c.dataset.cy]; });
-      const pos = await P.evaluate(id => { const c = document.querySelector(`.ray[data-edit="${id}"] .dot`); return [+c.getAttribute('cx'), +c.getAttribute('cy')]; }, 'fdiaper' + at(13));
+      const pos = await P.evaluate(id => { const c = document.querySelector(`.ray[data-info="${id}"] .dot`); return [+c.getAttribute('cx'), +c.getAttribute('cy')]; }, 'fdiaper' + at(13));
       assert(pos[0] < cx && Math.abs(pos[0] - cx) < 25 && pos[1] > cy + 50, '1 PM is just past the bottom of a 24-hour dial (noon at the bottom): ' + pos);
-      const top = await P.evaluate(id => +document.querySelector(`.ray[data-edit="${id}"] .dot`).getAttribute('cy'), 'ffeed' + at(1));
+      const top = await P.evaluate(id => +document.querySelector(`.ray[data-info="${id}"] .dot`).getAttribute('cy'), 'ffeed' + at(1));
       assert(top < cy - 50, '1 AM is near the top');
       const colours = await P.evaluate(() => [...document.querySelectorAll('.clock .ray .dot')].map(d => getComputedStyle(d).fill));
       assert.equal(new Set(colours).size, 4, 'feed, diaper, vomit and sleep each in their own colour: ' + colours);
@@ -41,11 +41,19 @@ const pickFormula = async (page, scope, name) => {
       assert(/Diapers\s*2/.test(await P.textContent('.clegend')), 'the legend counts each group');
     });
 
-    await step('tapping a dot opens that entry; it also works from the keyboard', async () => {
-      await P.click(`.ray[data-edit="fvomit${at(19)}"]`); await P.waitForSelector('#save');
-      assert(/Edit vomit/.test(await P.textContent('#sheet h3'))); await P.click('#cancel');
-      await P.focus(`.ray[data-edit="ffeed${at(1)}"]`); await P.keyboard.press('Enter'); await P.waitForSelector('#save');
-      assert(/Edit feed/.test(await P.textContent('#sheet h3'))); await P.click('#cancel');
+    await step('tapping a dot shows that entry without a way to change it (that is in the list below); it also works from the keyboard', async () => {
+      await P.click(`.ray[data-info="fvomit${at(19)}"]`); await P.waitForSelector('#infoList');
+      const r = await P.evaluate(() => ({ h: $('#sheet h3').textContent, body: $('#sheet').textContent, fields: $('#sheet').querySelectorAll('input, textarea, select, #save, #del').length }));
+      assert(/Vomit/.test(r.h) && /Spit-up/.test(r.body) && /7:00 PM/.test(r.body), JSON.stringify(r));
+      assert.equal(r.fields, 0, 'nothing to change in it'); assert(/tap it in the list below the clock/.test(r.body));
+      // "Show in the list" opens the entry's group and lights the row up; tapping the row is what opens it for changes
+      await P.evaluate(() => document.querySelectorAll('details.grp').forEach(d => { d.open = false; }));
+      await P.click('#infoList'); await P.waitForSelector('#sheet', { state: 'hidden' });
+      const row = `.ev[data-edit="fvomit${at(19)}"]`;
+      assert(await P.isVisible(row), 'its group is opened'); assert(await P.$eval(row, x => x.classList.contains('flash')), 'and the row lit up');
+      await P.click(row); await P.waitForSelector('#save'); assert(/Edit vomit/.test(await P.textContent('#sheet h3'))); await P.click('#cancel');
+      await P.focus(`.ray[data-info="ffeed${at(1)}"]`); await P.keyboard.press('Enter'); await P.waitForSelector('#infoList');
+      assert(/Feed/.test(await P.textContent('#sheet h3'))); assert.equal(await P.$$eval('#sheet #save', x => x.length), 0); await P.click('#sheet [data-close]');
     });
 
     await step('tapping a quarter of the clock lists only those hours; "Whole day" goes back', async () => {
@@ -75,12 +83,12 @@ const pickFormula = async (page, scope, name) => {
       assert.equal(await P.$eval('svg.clock', c => c.dataset.dial), '12');
       assert.deepEqual(await P.$$eval('.clock text.num', t => t.map(x => x.textContent)), ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']);
       await P.click('[data-half="0"]');
-      assert.deepEqual(await P.$$eval('.clock .ray', r => r.map(x => x.dataset.edit).sort()), ['fdiaper' + at(7.5), 'ffeed' + at(1), 'fsleep' + at(2)].sort(), 'AM: midnight to noon');
+      assert.deepEqual(await P.$$eval('.clock .ray', r => r.map(x => x.dataset.info).sort()), ['fdiaper' + at(7.5), 'ffeed' + at(1), 'fsleep' + at(2)].sort(), 'AM: midnight to noon');
       assert.equal(await P.textContent('.clock .ampm'), 'a.m.');
       await P.click('[data-half="1"]');
-      assert.deepEqual(await P.$$eval('.clock .ray', r => r.map(x => x.dataset.edit).sort()), ['fdiaper' + at(13), 'fvomit' + at(19)].sort(), 'PM: noon to midnight');
+      assert.deepEqual(await P.$$eval('.clock .ray', r => r.map(x => x.dataset.info).sort()), ['fdiaper' + at(13), 'fvomit' + at(19)].sort(), 'PM: noon to midnight');
       const [cx, cy] = await P.evaluate(() => { const c = document.querySelector('svg.clock'); return [+c.dataset.cx, +c.dataset.cy]; });
-      const pos = await P.evaluate(id => { const c = document.querySelector(`.ray[data-edit="${id}"] .dot`); return [+c.getAttribute('cx'), +c.getAttribute('cy')]; }, 'fdiaper' + at(13));
+      const pos = await P.evaluate(id => { const c = document.querySelector(`.ray[data-info="${id}"] .dot`); return [+c.getAttribute('cx'), +c.getAttribute('cy')]; }, 'fdiaper' + at(13));
       assert(pos[0] > cx && pos[1] < cy, '1 PM sits at one o\'clock: ' + pos);
       assert(/Diapers\s*1/.test(await P.textContent('.clegend')), 'the legend counts what the dial shows');
       await P.evaluate(() => document.querySelector('[data-quad="0"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -95,6 +103,24 @@ const pickFormula = async (page, scope, name) => {
       assert.equal(await P.evaluate(async () => { await Store.whenSaved(); return (await Store.peek()).meta.clock; }), '12', 'and saved on the phone');
       await P.click('[data-face="24"]'); assert.equal(await P.$$eval('.clock text.num', t => t.length), 10, 'back to the 24-hour face');
       assert.deepEqual(await P.$$eval('.clock .hand', h => h.map(x => x.dataset.hand)), ['d'], 'with its single 24-hour hand');
+    });
+
+    await step('the numbers on the clock: Roman by default, or easy-to-read upright numbers (24-hour ones where times are written that way), kept on the phone', async () => {
+      const nums = () => P.$$eval('.clock text.num', t => t.map(x => [x.textContent, !!x.getAttribute('transform'), x.classList.contains('plain')]));
+      assert.deepEqual((await nums()).map(x => x[0]), ['II', 'IV', 'VI', 'VIII', 'X', 'II', 'IV', 'VI', 'VIII', 'X']);
+      assert.deepEqual(await P.$$eval('[data-nums]', b => b.map(x => [x.textContent, x.getAttribute('aria-label'), x.getAttribute('aria-pressed')])), [['XII', 'Roman numerals', 'true'], ['123', 'Easy-to-read numbers', 'false']]);
+      await P.click('[data-nums="plain"]');
+      const h24 = await P.evaluate(() => writes24()), plain = await nums();
+      assert.deepEqual(plain.map(x => x[0]), h24 ? ['2', '4', '6', '8', '10', '14', '16', '18', '20', '22'] : ['2', '4', '6', '8', '10', '2', '4', '6', '8', '10']);
+      assert(plain.every(x => !x[1] && x[2]), 'upright, in the plain style');
+      await P.evaluate(() => { I18n.locale = () => 'en-GB'; render(); });   // where times are written 13:00, the afternoon has its own numbers
+      assert.deepEqual((await nums()).map(x => x[0]), ['2', '4', '6', '8', '10', '14', '16', '18', '20', '22']);
+      await P.evaluate(async () => { delete I18n.locale; await I18n.set(''); render(); });
+      await P.click('[data-face="12"]'); assert.deepEqual((await nums()).map(x => x[0]), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'], 'the 12-hour face too');
+      await P.click('[data-face="24"]');
+      assert.equal(await P.evaluate(async () => { await Store.whenSaved(); return (await Store.peek()).meta.nums; }), 'plain', 'kept on the phone');
+      await P.reload(); await P.waitForSelector('svg.clock'); assert((await nums()).every(x => x[2]), 'still plain after a restart');
+      await P.click('[data-nums="roman"]'); assert.equal((await nums())[0][0], 'II');
     });
 
     await step('every painting draws, quickly, without errors (the eight to choose from and the four travel ones)', async () => {
@@ -472,7 +498,7 @@ const pickFormula = async (page, scope, name) => {
       await P.click('[data-qadd=diaper]'); await P.click('[name=qago][value="15"]'); await P.click('[name=qdia][value=pee]');
       await P.waitForSelector('#sheet', { state: 'hidden' });
       const d = await P.evaluate(() => { const e = db.events.filter(x => x.type === 'diaper').sort((a, b) => b.updated - a.updated)[0];
-        return { data: e.data, ago: Math.round((Date.now() - e.ts) / 60000), child: e.child, dashed: document.querySelector(`.ray[data-edit="${e.id}"]`).classList.contains('approx'), t: document.querySelector(`.ev[data-edit="${e.id}"] .t`).textContent }; });
+        return { data: e.data, ago: Math.round((Date.now() - e.ts) / 60000), child: e.child, dashed: document.querySelector(`.ray[data-info="${e.id}"]`).classList.contains('approx'), t: document.querySelector(`.ev[data-edit="${e.id}"] .t`).textContent }; });
       assert.deepEqual(d.data, { pee: true, poo: false, rash: false, approx: true }); assert(d.ago >= 15 && d.ago <= 16, d.ago); assert.equal(d.child, leo);
       assert(d.dashed, 'drawn dashed on the clock'); assert(/^~/.test(d.t), d.t);
       await P.click('[data-qadd=feed]'); await P.click('[name=qkind][value=bottle]'); await P.click('[name=qml][value="120"]'); await P.click('[name=qmilk][value=Formula]'); await P.click('#qSave');

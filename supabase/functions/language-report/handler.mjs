@@ -10,7 +10,7 @@
 //   send({ to, from, subject, text })                        throws when the email could not be sent
 
 export const LIMITS = { says: 500, should: 500, body: 8000 };
-export const SCREENS = ['day', 'month', 'stats', 'guide', 'family', 'more', 'signin', 'other'];
+export const SCREENS = ['day', 'routine', 'month', 'stats', 'guide', 'family', 'more', 'signin', 'other'];
 const LANG = /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/;   // es, fil, zh-Hans …
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info', 'access-control-allow-methods': 'POST, OPTIONS' };
 

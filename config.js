@@ -9,4 +9,5 @@ window.LL_CONFIG = {
   googleClientId: '',   // Google OAuth client ID of type "iOS" (Drive appdata scope)
   msClientId: '',       // Azure app registration (mobile & desktop), scope Files.ReadWrite.AppFolder
   appScheme: 'app.littlelog.newborn', // must match the app id; the OS uses it to return to the app after cloud sign-in and for invite links
+  appStoreId: '',       // the app's number in the App Store (apps.apple.com/app/id…), once it is published: More → Update app opens it on iPhones
 };

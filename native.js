@@ -23,6 +23,16 @@ const Native = (() => {
     /** URL scheme the OS routes back to this app (registered in AndroidManifest / Info.plist). */
     scheme: CFG.appScheme || 'app.littlelog.newborn',
     openUrl: url => P().Browser.open({ url }),
+    /** Leave the app for another one (the store, a phone call): the app's web view hands such links to the OS. */
+    openExternal(url) { location.href = url; },
+    /** Where this app is in its store, to update it: Google Play, or the App Store once its number is in config.js; null elsewhere. */
+    storeUrl() {
+      if (!is) return null;
+      if (cap.getPlatform() === 'android') return `https://play.google.com/store/apps/details?id=${encodeURIComponent(CFG.appScheme || 'app.littlelog.newborn')}`;
+      return CFG.appStoreId ? `https://apps.apple.com/app/id${encodeURIComponent(CFG.appStoreId)}` : null;
+    },
+    /** The version of the app on this phone ("1.2 (14)"), or '' when it can't tell. */
+    async version() { if (!is) return ''; try { const i = await P().App.getInfo(); return i.build && i.build !== i.version ? `${i.version} (${i.build})` : i.version || ''; } catch (e) { return ''; } },
     closeBrowser: () => Promise.resolve(P().Browser.close()).catch(() => {}),
     onUrl(cb) { if (is) P().App.addListener('appUrlOpen', e => cb(e.url)); },
     /** Android back button: return true from cb if it handled the press. */
@@ -32,10 +42,11 @@ const Native = (() => {
     onAppState(cb) { if (is) P().App.addListener('appStateChange', e => cb(e.isActive)); },
     /** Share text through the OS share sheet (the Web Share API is missing from Android's WebView). */
     async shareText(title, text) { await P().Share.share({ title, text, dialogTitle: title }); },
-    /** Write a text file and open the OS share sheet (Save to Files / iCloud Drive / Drive / email …). */
-    async saveFile(name, text) {
-      const dir = 'CACHE';
-      await P().Filesystem.writeFile({ path: name, data: text, directory: dir, encoding: 'utf8' });
+    /** Write a file (text, or bytes such as a PDF) and open the OS share sheet (Save to Files / iCloud Drive / Drive / email …). */
+    async saveFile(name, data) {
+      const dir = 'CACHE', bytes = typeof data !== 'string';
+      let b64 = ''; if (bytes) for (let i = 0; i < data.length; i += 0x8000) b64 += String.fromCharCode.apply(null, data.subarray(i, i + 0x8000));
+      await P().Filesystem.writeFile({ path: name, data: bytes ? btoa(b64) : data, directory: dir, ...(bytes ? {} : { encoding: 'utf8' }) });
       const { uri } = await P().Filesystem.getUri({ path: name, directory: dir });
       await P().Share.share({ title: name, url: uri, dialogTitle: __('Save or share') });
     },
