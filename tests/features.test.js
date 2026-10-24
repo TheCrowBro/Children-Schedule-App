@@ -1,6 +1,7 @@
 // The day clock, twirl-down groups, month day counts, stats charts, formula, the Guide (pediatrician, milestones) and people's contact
 // details – including that the new private data stays end-to-end encrypted.   node tests/features.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
+/* global writes24 */
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
