@@ -12,7 +12,7 @@ once, then fill in `config.js` (all values are public client IDs, not secrets) a
 2. **SQL Editor** → paste and run [`supabase/schema.sql`](supabase/schema.sql). This is version 3 (end-to-end encryption, roles,
    permissions, approvals, audit log). If you ran an earlier version, drop its tables first; there is no data migration.
    It also holds people's encrypted contact details (`members.details`, written only through `set_my_details`) and room for the larger
-   encrypted profile (children, formula, pediatrician).
+   encrypted profile (children, formula, allergies, pediatrician; 8 KB, which is why a child can have at most 12 allergies).
 3. **Project Settings → API**: copy the *Project URL* and *anon public* key into `supabaseUrl` / `supabaseKey`.
 
 ### Lock down sign-in (dashboard settings)
@@ -43,7 +43,7 @@ Parents are admins. Everyone else gets a role plus check boxes that the parents 
 | Edit / delete **others'** entries | ✅ | ❌ never | ☑️ choose |
 | See health notes & medications | ✅ | ☑️ choose | ☑️ choose |
 | See who else has access (emails, roles) | ✅ | ☑️ choose | ☑️ choose |
-| Change the baby's name / birthday | ✅ | ❌ never | ☑️ choose |
+| Change the children's names, birthdays, colours and allergies | ✅ | ❌ never | ☑️ choose |
 | Invite, approve, change or remove people; see the **activity log** | ✅ | ❌ | ❌ |
 
 These are enforced **in the database** (see `schema.sql`), not just hidden in the app: a modified app is refused and the

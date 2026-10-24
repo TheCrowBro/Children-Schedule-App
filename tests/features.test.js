@@ -273,7 +273,8 @@ const pickFormula = async (page, scope, name) => {
 
     await step('the Guide tab: common newborn issues with when to call, and every month\'s milestones', async () => {
       await P.click('[data-tab=guide]');
-      assert.equal(await P.$$eval('details.gd[data-grp^=g]', d => d.length), 18);
+      assert.equal(await P.$$eval('details.gd[data-grp^=g]:not([data-grp=gsolids])', d => d.length), 18);
+      assert.equal(await P.$$eval('details.gd[data-grp=gsolids]', d => d.length), 1, 'and starting solid foods, under Food');
       await P.click('details[data-grp=gfever] > summary');
       assert(/100\.4°F \(38°C\)/.test(await P.textContent('details[data-grp=gfever]')));
       assert.deepEqual(await P.$$eval('details.gd[data-grp^=m] b', b => b.map(x => x.textContent)), ['1 month', '2 months', '3 months', '4 months', '5 months', '6 months', '7 months', '8 months', '9 months', '10 months', '11 months', '12 months', '15 months', '18 months', '2 years']);

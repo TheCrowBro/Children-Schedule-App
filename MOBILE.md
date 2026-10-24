@@ -26,6 +26,10 @@ npm test            # database + end-to-end tests
    | Google Drive | OAuth client of type **iOS**; put it in `googleClientId`. `npm run sync` registers its reverse-client-id scheme. |
 
 4. Icons / splash: edit `scripts/make-icons.js`, then `npm run icons`.
+5. **Update app** (More): on Android it opens the app's Google Play page from the app id (`appScheme` in `config.js`), so it
+   works as soon as the app is on Google Play. On iPhones it needs the app's number in the App Store: once the app is published,
+   put the number from its address (`apps.apple.com/app/id…`) in `appStoreId` in `config.js` and `npm run sync`. Until then the
+   button says to look in the App Store.
 
 ## Security features in the app
 * **Keychain / Keystore** (`@aparajita/capacitor-secure-storage`): sign-in session, cloud tokens, backup passphrase. Items stay
