@@ -25,11 +25,11 @@ const Cloud = (() => {
     return JSON.stringify({ app: 'littlelog', v: 2, iter: KDF_ITER, salt: b64(salt), iv: b64(iv), ct: b64(ct) });
   }
   async function decrypt(file, pass) {
-    let o; try { o = JSON.parse(file); } catch (e) { throw new Error('That is not a Little Log backup'); }
-    if (o.app !== 'littlelog' || !o.ct) throw new Error('That is not a Little Log backup');
+    let o; try { o = JSON.parse(file); } catch (e) { throw new Error(N_('That is not a Little Log backup')); }
+    if (o.app !== 'littlelog' || !o.ct) throw new Error(N_('That is not a Little Log backup'));
     const iter = Math.min(+o.iter || KDF_ITER_V1, 5000000);   // v1 files had no `iter` field
     try { return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(o.iv) }, await keyFrom(pass, unb64(o.salt), iter), unb64(o.ct))); }
-    catch (e) { throw new Error('Wrong passphrase, or the file is damaged'); }
+    catch (e) { throw new Error(N_('Wrong passphrase, or the file is damaged')); }
   }
   /** A random passphrase (~120 bits) in groups of four, e.g. K7QM-2XWD-… (unambiguous characters). */
   function generatePass() {
@@ -51,7 +51,7 @@ const Cloud = (() => {
   async function tokenCall(p, body) {
     const r = await Native.fetch(PKCE[p].token, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: PKCE[p].id(), ...body }).toString() });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error_description || j.error || 'Sign-in with ' + label(p) + ' failed');
+    if (!r.ok) throw new Error(j.error_description || j.error || __('Sign-in with {service} failed', { service: label(p) }));
     c.tokens[p] = { access: j.access_token, refresh: j.refresh_token || (c.tokens[p] && c.tokens[p].refresh), exp: Date.now() + (j.expires_in || 3600) * 1000 };
     await persist();
   }
@@ -70,16 +70,16 @@ const Cloud = (() => {
     let saved; try { saved = JSON.parse(await Native.Secure.get(PKCE_K)); } catch (e) {}
     await Native.Secure.remove(PKCE_K);
     Native.closeBrowser();
-    if (!saved || saved.state !== state) return 'Cloud sign-in was cancelled or expired. Please try again.';
-    if (q.get('error')) return 'Cloud sign-in was cancelled.';
-    try { await tokenCall(m[1], { grant_type: 'authorization_code', code: q.get('code'), redirect_uri: saved.redirect, code_verifier: saved.verifier }); return 'Connected to ' + label(m[1]); }
+    if (!saved || saved.state !== state) return N_('Cloud sign-in was cancelled or expired. Please try again.');
+    if (q.get('error')) return N_('Cloud sign-in was cancelled.');
+    try { await tokenCall(m[1], { grant_type: 'authorization_code', code: q.get('code'), redirect_uri: saved.redirect, code_verifier: saved.verifier }); return __('Connected to {service}', { service: label(m[1]) }); }
     catch (e) { return e.message; }
   }
   async function token(p) {
     const t = c.tokens[p];
-    if (!t) throw new Error('Not connected');
+    if (!t) throw new Error(N_('Not connected'));
     if (t.exp - Date.now() < 60000) {
-      if (!t.refresh) throw new Error('Session expired – reconnect ' + label(p));
+      if (!t.refresh) throw new Error(__('Session expired – reconnect {service}', { service: label(p) }));
       await tokenCall(p, { grant_type: 'refresh_token', refresh_token: t.refresh });
     }
     return c.tokens[p].access;
@@ -90,31 +90,31 @@ const Cloud = (() => {
   const label = p => NAMES[p] || p;
   const available = () => ({ dropbox: !!CFG.dropboxKey, onedrive: !!CFG.msClientId, google: !!CFG.googleClientId });
   const connected = p => !!c.tokens[p];
-  async function ok(r, what) { if (!r.ok) { const e = new Error(what + ' failed (' + r.status + ')'); e.status = r.status; throw e; } return r; }
+  async function ok(r, what) { if (!r.ok) { const e = new Error(__('{what} failed ({status})', { what: __(what), status: r.status })); e.status = r.status; throw e; } return r; }
 
   const ops = {
     dropbox: {
-      async put(text) { const t = await token('dropbox'); await ok(await Native.fetch('https://content.dropboxapi.com/2/files/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Dropbox-API-Arg': JSON.stringify({ path: '/' + FILE, mode: 'overwrite', mute: true }), 'Content-Type': 'application/octet-stream' }, body: text }), 'Dropbox upload'); },
-      async get() { const t = await token('dropbox'); const r = await Native.fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Dropbox-API-Arg': JSON.stringify({ path: '/' + FILE }) } }); if (r.status === 409) throw new Error('No backup found in Dropbox yet'); return (await ok(r, 'Dropbox download')).text(); },
+      async put(text) { const t = await token('dropbox'); await ok(await Native.fetch('https://content.dropboxapi.com/2/files/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Dropbox-API-Arg': JSON.stringify({ path: '/' + FILE, mode: 'overwrite', mute: true }), 'Content-Type': 'application/octet-stream' }, body: text }), N_('Dropbox upload')); },
+      async get() { const t = await token('dropbox'); const r = await Native.fetch('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Dropbox-API-Arg': JSON.stringify({ path: '/' + FILE }) } }); if (r.status === 409) throw new Error(N_('No backup found in Dropbox yet')); return (await ok(r, 'Dropbox download')).text(); },
     },
     onedrive: {
-      async put(text) { const t = await token('onedrive'); await ok(await Native.fetch(`https://graph.microsoft.com/v1.0/me/drive/special/approot:/${FILE}:/content`, { method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/octet-stream' }, body: text }), 'OneDrive upload'); },
-      async get() { const t = await token('onedrive'); const r = await Native.fetch(`https://graph.microsoft.com/v1.0/me/drive/special/approot:/${FILE}:/content`, { headers: { Authorization: 'Bearer ' + t } }); if (r.status === 404) throw new Error('No backup found in OneDrive yet'); return (await ok(r, 'OneDrive download')).text(); },
+      async put(text) { const t = await token('onedrive'); await ok(await Native.fetch(`https://graph.microsoft.com/v1.0/me/drive/special/approot:/${FILE}:/content`, { method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/octet-stream' }, body: text }), N_('OneDrive upload')); },
+      async get() { const t = await token('onedrive'); const r = await Native.fetch(`https://graph.microsoft.com/v1.0/me/drive/special/approot:/${FILE}:/content`, { headers: { Authorization: 'Bearer ' + t } }); if (r.status === 404) throw new Error(N_('No backup found in OneDrive yet')); return (await ok(r, 'OneDrive download')).text(); },
     },
     google: {
-      async find(t) { const r = await ok(await Native.fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(`name='${FILE}'`)}&fields=files(id)`, { headers: { Authorization: 'Bearer ' + t } }), 'Google Drive lookup'); return ((await r.json()).files || [])[0]; },
+      async find(t) { const r = await ok(await Native.fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(`name='${FILE}'`)}&fields=files(id)`, { headers: { Authorization: 'Bearer ' + t } }), N_('Google Drive lookup')); return ((await r.json()).files || [])[0]; },
       async put(text) {
         const t = await token('google'), f = await this.find(t);
-        if (f) return void await ok(await Native.fetch(`https://www.googleapis.com/upload/drive/v3/files/${f.id}?uploadType=media`, { method: 'PATCH', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: text }), 'Google Drive upload');
+        if (f) return void await ok(await Native.fetch(`https://www.googleapis.com/upload/drive/v3/files/${f.id}?uploadType=media`, { method: 'PATCH', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: text }), N_('Google Drive upload'));
         const bd = 'llb' + rnd(10);
         const body = `--${bd}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({ name: FILE, parents: ['appDataFolder'] })}\r\n--${bd}\r\nContent-Type: application/json\r\n\r\n${text}\r\n--${bd}--`;
-        await ok(await Native.fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'multipart/related; boundary=' + bd }, body }), 'Google Drive upload');
+        await ok(await Native.fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'multipart/related; boundary=' + bd }, body }), N_('Google Drive upload'));
       },
-      async get() { const t = await token('google'), f = await this.find(t); if (!f) throw new Error('No backup found in Google Drive yet'); return (await ok(await Native.fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, { headers: { Authorization: 'Bearer ' + t } }), 'Google Drive download')).text(); },
+      async get() { const t = await token('google'), f = await this.find(t); if (!f) throw new Error(N_('No backup found in Google Drive yet')); return (await ok(await Native.fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, { headers: { Authorization: 'Bearer ' + t } }), N_('Google Drive download'))).text(); },
     },
   };
 
-  const needPass = () => { if (!c.pass || c.pass.length < MIN_PASS) throw new Error(`Set a backup passphrase (${MIN_PASS}+ characters) first`); };
+  const needPass = () => { if (!c.pass || c.pass.length < MIN_PASS) throw new Error(__('Set a backup passphrase ({n}+ characters) first', { n: MIN_PASS })); };
   const payload = () => JSON.stringify({ app: 'littlelog', v: 1, baby: db.baby, events: db.events });
 
   return {
@@ -133,7 +133,7 @@ const Cloud = (() => {
     async restore(p) { needPass(); return JSON.parse(await decrypt(await ops[p].get(), c.pass)); },
     /** Encrypted backup as a file the user can save to Files / iCloud Drive (or anywhere). */
     async toFile() { needPass(); return new File([await encrypt(payload(), c.pass)], FILE, { type: 'application/json' }); },
-    async fromFile(file) { needPass(); if (file.size > 25e6) throw new Error('That file is too large to be a Little Log backup'); return JSON.parse(await decrypt(await file.text(), c.pass)); },
+    async fromFile(file) { needPass(); if (file.size > 25e6) throw new Error(N_('That file is too large to be a Little Log backup')); return JSON.parse(await decrypt(await file.text(), c.pass)); },
     /** Daily silent backup to every connected provider. */
     async autoBackup() {
       if (!c.auto || !c.pass) return;

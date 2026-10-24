@@ -13,7 +13,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function setup({ port = 8126 } = {}) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'll-rb-')), www = path.join(tmp, 'www'), APP = `http://localhost:${port}/`;
   fs.writeFileSync(path.join(tmp, 'config.js'), `window.LL_CONFIG={supabaseUrl:'${SB}',supabaseKey:'anon',dropboxKey:'dbx',appScheme:'app.littlelog.newborn'}`);
-  execSync('node scripts/build-web.js', { cwd: root, env: { ...process.env, LL_CONFIG: path.join(tmp, 'config.js'), LL_OUT: www }, stdio: 'pipe' });
+  execSync('node scripts/build-web.js', { cwd: root, env: { ...process.env, LL_CONFIG: path.join(tmp, 'config.js'), LL_OUT: www, LL_PSEUDO: '1' }, stdio: 'pipe' });
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png' };
   const server = http.createServer((req, res) => {
     const f = path.join(www, req.url.split('?')[0] === '/' ? 'index.html' : req.url.split('?')[0]);

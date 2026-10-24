@@ -7,6 +7,8 @@ let css = rd('style.css');
 // colour tokens follow the viewer's light / dark choice as well as the system setting
 css = css.replace('body::before{', '#phone::before{');
 const app = rd('app.js');
+/** Every language's catalogue, embedded in the page (it is a single file), so each can be tried in the demo. */
+const languages = () => { const I18n = require('./i18n.js'); return I18n.languages().map(code => I18n.catalogue(code)).join(''); };
 /** The Guide's pictures, embedded in the page (it is a single file). */
 const pictures = () => {
   const dir = path.join(root, 'img', 'guide'), type = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' };
@@ -31,9 +33,11 @@ html,body{height:auto}
 const page = `<title>Little Log Demo</title>
 <style>${css}\n${frame}</style>
 <script>\n${rd('theme.js')}\n</script>
+<script>\n${rd('i18n.js')}\n${languages()}\n</script>
 <div id="phone"><div id="scroll">${head}</div>${rest}</div>
 ${['kids.js', 'icons.js', 'guide.js', 'formulas.js', 'travel.js', 'tour.js', 'art.js', 'demo/stubs.js'].map(f => `<script>\n${rd(f).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}
 <script>\n${pictures()}\n</script>
 <script>\n${app.replace(/<\/script/gi, '<\\/script')}\n</script>
+<script>\n// The demo has no server: reports of language problems are not sent anywhere.\nReport.can = () => true; Report.send = async () => 'sent';\n</script>
 `;
 fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, page); console.log('wrote', out, (page.length / 1024).toFixed(0) + ' KB');

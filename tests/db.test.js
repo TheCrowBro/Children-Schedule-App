@@ -326,6 +326,22 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F'];
       const first = await A('select * from activity_log($1,2)', [baby]); assert((await A('select * from activity_log($1,2,$2)', [baby, first[1].id]))[0].id < first[1].id, 'paging works');
     });
 
+    await t('language reports: only the server function can use the limits (5 an hour per sender, 200 a day in all); the app can neither call it nor read who reported', async () => {
+      await rejects(A('select language_report_allow($1) ok', ['x'.repeat(64)]), /permission denied/, 'a signed-in person');
+      await rejects(anon('select language_report_allow($1) ok', ['x'.repeat(64)]), /permission denied/, 'anyone');
+      await rejects(A('select * from report_limits'), /permission denied/, 'reading the table');
+      const allow = async k => (await q('select language_report_allow($1) ok', [k]))[0].ok, k1 = 'a'.repeat(64), k2 = 'b'.repeat(64);
+      const r = []; for (let i = 0; i < 6; i++) r.push(await allow(k1));
+      assert.deepEqual(r, [true, true, true, true, true, false], 'five an hour');
+      assert.equal(await allow(k2), true, 'someone else still can');
+      await q(`update report_limits set since = now() - interval '61 minutes' where k = $1`, [k1]);
+      assert.equal(await allow(k1), true, 'an hour later they can again');
+      await q(`update report_limits set n = 200 where k = '*'`);
+      assert.equal(await allow('c'.repeat(64)), false, '200 a day from everyone at most');
+      await rejects(q('select language_report_allow($1)', ['*']), /bad key/); await rejects(q('select language_report_allow($1)', ['short']), /bad key/);
+      assert.equal((await q(`select count(*)::int c from report_limits where k <> '*' and k !~ '^[a-c]{64}$'`))[0].c, 0, 'only the hashed keys are kept');
+    });
+
     await t('account deletion: a non-parent just leaves (log asks for rotation); sole parent takes the log with them; with another parent the log stays', async () => {
       await D('select delete_my_account()'); assert.equal((await q('select count(*)::int c from auth.users where id=$1', [id.D]))[0].c, 0);
       assert.equal((await q('select count(*)::int c from babies where id=$1', [baby]))[0].c, 1); assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, true);

@@ -5,25 +5,25 @@
    anything else can be typed in. */
 const Formulas = (() => {
   const REGIONS = [
-    { id: 'na', name: 'North America (US & Canada)', items: ['Similac 360 Total Care', 'Similac 360 Total Care Sensitive', 'Similac Advance', 'Similac Pro-Advance', 'Similac Sensitive', 'Similac Total Comfort', 'Similac For Spit-Up', 'Similac Soy Isomil', 'Similac Alimentum', 'Similac NeoSure',
+    { id: 'na', name: N_('North America (US & Canada)'), items: ['Similac 360 Total Care', 'Similac 360 Total Care Sensitive', 'Similac Advance', 'Similac Pro-Advance', 'Similac Sensitive', 'Similac Total Comfort', 'Similac For Spit-Up', 'Similac Soy Isomil', 'Similac Alimentum', 'Similac NeoSure',
       'Enfamil NeuroPro', 'Enfamil NeuroPro Gentlease', 'Enfamil Enspire', 'Enfamil Infant', 'Enfamil Gentlease', 'Enfamil A.R.', 'Enfamil Reguline', 'Enfamil ProSobee', 'Enfamil Nutramigen', 'Enfamil EnfaCare',
       'Gerber Good Start GentlePro', 'Gerber Good Start SoothePro', 'Gerber Good Start Soy', 'Gerber Good Start Extensive HA', 'Nestlé Good Start (Canada)',
       'Bobbie Organic', "Earth's Best Organic", 'Happy Baby Organics', 'Kendamil Classic', 'Kendamil Organic', 'Kabrita Goat Milk',
       'Kirkland Signature ProCare', "Parent's Choice", 'up&up', "Member's Mark", 'Neocate Infant', 'EleCare', 'PurAmino', 'Alfamino Infant'] },
-    { id: 'latam', name: 'Latin America', items: ['NAN Optipro', 'NAN Supreme Pro', 'NAN AR', 'NAN HA', 'Lactogen', 'Enfamil Premium', 'Enfamil Confort', 'Enfamil A.R.', 'Nutramigen',
+    { id: 'latam', name: N_('Latin America'), items: ['NAN Optipro', 'NAN Supreme Pro', 'NAN AR', 'NAN HA', 'Lactogen', 'Enfamil Premium', 'Enfamil Confort', 'Enfamil A.R.', 'Nutramigen',
       'Similac', 'Similac Total Comfort', 'Nutrilon', 'Aptamil', 'Frisolac Gold', 'S-26 Gold', 'Neocate', 'Alfamino'] },
-    { id: 'uk', name: 'UK & Ireland', items: ['Aptamil First Infant Milk', 'Aptamil Profutura First Infant Milk', 'Aptamil Comfort', 'Aptamil Anti-Reflux', 'Aptamil Pepti',
+    { id: 'uk', name: N_('UK & Ireland'), items: ['Aptamil First Infant Milk', 'Aptamil Profutura First Infant Milk', 'Aptamil Comfort', 'Aptamil Anti-Reflux', 'Aptamil Pepti',
       'Cow & Gate First Infant Milk', 'Cow & Gate Comfort', 'Cow & Gate Anti-Reflux', 'SMA PRO First Infant Milk', 'SMA Little Steps First Infant Milk', 'SMA Comfort', 'SMA Anti-Reflux', 'SMA Lactose Free',
       'Kendamil Classic First Infant Milk', 'Kendamil Organic First Infant Milk', 'Kendamil Goat First Infant Milk', 'HiPP Organic First Infant Milk', 'Kabrita Goat Milk', 'Mamia (Aldi)',
       'Nutramigen', 'Neocate LCP', 'Similac Alimentum'] },
-    { id: 'eu', name: 'Europe', items: ['Aptamil Profutura', 'Aptamil Pronutra', 'Aptamil Comfort', 'Aptamil Anti-Reflux', 'Aptamil Pepti', 'HiPP Organic PRE', 'HiPP Organic Combiotic 1', 'HiPP HA', 'HiPP Comfort',
+    { id: 'eu', name: N_('Europe'), items: ['Aptamil Profutura', 'Aptamil Pronutra', 'Aptamil Comfort', 'Aptamil Anti-Reflux', 'Aptamil Pepti', 'HiPP Organic PRE', 'HiPP Organic Combiotic 1', 'HiPP HA', 'HiPP Comfort',
       'Holle Organic PRE', 'Holle Organic Goat', 'Lebenswert Bio', 'NAN Optipro', 'NAN Supreme Pro', 'NAN HA', 'NAN AR', 'BEBA Optipro', 'BEBA Supreme', 'Milupa Milumil', 'Nutrilon', 'Bebilon',
       'Gallia Calisma', 'Guigoz', 'Modilac', 'Novalac', 'Hero Baby', 'Kendamil', 'Neocate', 'Alfamino', 'Nutramigen'] },
-    { id: 'anz', name: 'Australia & New Zealand', items: ['a2 Platinum Premium', 'Aptamil Gold+', 'Aptamil Profutura', 'Aptamil Essensis', 'Karicare', 'Alula Gold', 'NAN Optipro', 'NAN Supreme Pro',
+    { id: 'anz', name: N_('Australia & New Zealand'), items: ['a2 Platinum Premium', 'Aptamil Gold+', 'Aptamil Profutura', 'Aptamil Essensis', 'Karicare', 'Alula Gold', 'NAN Optipro', 'NAN Supreme Pro',
       "Bellamy's Organic", 'Oli6 Goat', 'Bubs Goat', 'Bubs Organic', 'Kendamil', 'Novalac', 'Neocate', 'Alfamino', 'Nutramigen'] },
-    { id: 'asia', name: 'Asia', items: ['Meiji Hohoemi', 'Morinaga Hagukumi', 'Glico Icreo', 'Wakodo Haihai', 'Bean Stalk Sukoyaka', 'Feihe', 'Yili', 'Junlebao', 'Beingmate', 'Namyang Imperial', 'Maeil Absolute',
+    { id: 'asia', name: N_('Asia'), items: ['Meiji Hohoemi', 'Morinaga Hagukumi', 'Glico Icreo', 'Wakodo Haihai', 'Bean Stalk Sukoyaka', 'Feihe', 'Yili', 'Junlebao', 'Beingmate', 'Namyang Imperial', 'Maeil Absolute',
       'Enfamil A+', 'Similac', 'NAN Optipro', 'Lactogen', 'Nestogen', 'S-26 Gold', 'Wyeth Illuma', 'Friso Gold', 'Aptamil', 'a2 Platinum', 'Dexolac', 'Neocate', 'Nutramigen'] },
-    { id: 'mea', name: 'Middle East & Africa', items: ['Aptamil', 'NAN Optipro', 'NAN Supreme Pro', 'Similac Gold', 'Enfamil A+', 'S-26 Gold', 'Bebelac', 'Novalac', 'Lactogen', 'Nutrilon', 'Hero Baby', 'Blédilait',
+    { id: 'mea', name: N_('Middle East & Africa'), items: ['Aptamil', 'NAN Optipro', 'NAN Supreme Pro', 'Similac Gold', 'Enfamil A+', 'S-26 Gold', 'Bebelac', 'Novalac', 'Lactogen', 'Nutrilon', 'Hero Baby', 'Blédilait',
       'Infacare', 'Neocate', 'Nutramigen'] },
   ];
   const ALL = new Set(REGIONS.flatMap(r => r.items));

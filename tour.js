@@ -29,10 +29,10 @@ const Tour = (() => {
     cur.i = i;
     const s = steps[i], el = document.querySelector(s.sel), tall = el.getBoundingClientRect().height > window.innerHeight * 0.5;
     el.scrollIntoView({ block: tall ? 'start' : 'center' });
-    cur.tip.querySelector('.tt-n').textContent = `${i + 1} of ${steps.length}`;
+    cur.tip.querySelector('.tt-n').textContent = __('{n} of {total}', { n: i + 1, total: steps.length });
     cur.tip.querySelector('#tourT').textContent = s.title;
     cur.tip.querySelector('#tourW').textContent = s.why;
-    cur.back.hidden = i === 0; cur.next.textContent = i === steps.length - 1 ? 'Done' : 'Next';
+    cur.back.hidden = i === 0; cur.next.textContent = i === steps.length - 1 ? __('Done') : __('Next');
     cur.box.classList.remove('pulse'); void cur.box.offsetWidth; cur.box.classList.add('pulse');   // start the pulse again on each button
     place(); requestAnimationFrame(place);
     cur.next.focus({ preventScroll: true });
@@ -55,9 +55,9 @@ const Tour = (() => {
     if (!steps.length) return false;
     const root = document.createElement('div');
     root.className = 'tour'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'tourT'); root.setAttribute('aria-describedby', 'tourW');
-    root.innerHTML = `<div class="tour-box" aria-hidden="true"></div><div class="tour-tip"><div class="tt-top"><span class="tt-n"></span><button type="button" class="tt-skip">Skip tour</button></div>
+    root.innerHTML = `<div class="tour-box" aria-hidden="true"></div><div class="tour-tip"><div class="tt-top"><span class="tt-n"></span><button type="button" class="tt-skip">${__h('Skip tour')}</button></div>
       <div aria-live="polite"><b id="tourT"></b><p id="tourW"></p></div>
-      <div class="tt-btns"><button type="button" class="btn tt-back">Back</button><button type="button" class="btn p tt-next">Next</button></div></div>`;
+      <div class="tt-btns"><button type="button" class="btn tt-back">${__h('Back')}</button><button type="button" class="btn p tt-next">${__h('Next')}</button></div></div>`;
     document.body.appendChild(root);
     cur = { steps, i: 0, root, box: root.querySelector('.tour-box'), tip: root.querySelector('.tour-tip'), back: root.querySelector('.tt-back'), next: root.querySelector('.tt-next'), onEnd, from: document.activeElement };
     cur.next.onclick = () => go(cur.i + 1);

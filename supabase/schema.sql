@@ -702,6 +702,31 @@ begin
 end $$;
 
 -- ── My account, my requests ───────────────────────────────────────────────────────────────────
+-- ── language reports ────────────────────────────────────────────────────────────────────────────
+-- The language-report Edge Function (supabase/functions/language-report) passes reports of translation problems on by email. So
+-- that nobody can flood that inbox, it asks here first: at most 5 reports an hour from one sender, and 200 a day from everyone.
+-- Senders are kept only as hashes (of an account id or an address), never as they are. Only the function's service role calls this;
+-- the app itself can't read the table or call the function (see the privileges below).
+create table report_limits (k text primary key check (length(k) <= 128), since timestamptz not null default now(), n int not null default 0);
+alter table report_limits enable row level security;   -- and no policies: nobody but the service role gets in
+create function language_report_allow(p_key text) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare mine int; everyone int;
+begin
+  if p_key is null or length(p_key) not between 8 and 128 or p_key = '*' then raise exception 'bad key'; end if;
+  insert into report_limits as r (k, since, n) values (p_key, now(), 1)
+    on conflict (k) do update set n = case when r.since < now() - interval '1 hour' then 1 else r.n + 1 end,
+                                  since = case when r.since < now() - interval '1 hour' then now() else r.since end
+    returning n into mine;
+  insert into report_limits as r (k, since, n) values ('*', now(), 1)
+    on conflict (k) do update set n = case when r.since < now() - interval '1 day' then 1 else r.n + 1 end,
+                                  since = case when r.since < now() - interval '1 day' then now() else r.since end
+    returning n into everyone;
+  delete from report_limits where k <> '*' and since < now() - interval '1 day';   -- old senders are forgotten
+  return mine <= 5 and everyone <= 200;
+end $$;
+do $$ begin if exists (select 1 from pg_roles where rolname = 'service_role') then grant execute on function language_report_allow(text) to service_role; end if; end $$;
+
 -- ── privileges: clients read three tables and call the functions below; nothing else ──────────
 revoke all on all tables in schema public from anon, authenticated;
 grant select on babies, members, events to authenticated;

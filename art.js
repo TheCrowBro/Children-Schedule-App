@@ -6,12 +6,12 @@
 const Art = (() => {
   const W = 264, H = 336, DIAL = { x: 132, y: 132, r: 122 };   // the panel, and where the dial sits on it (the clock uses the same numbers)
   const THEMES = [
-    { id: 'blossom', name: 'Cherry blossoms', base: '#f3e3e6' }, { id: 'maple', name: 'Japanese maple', base: '#f4e2c8' }, { id: 'ocean', name: 'Ocean', base: '#cfe3ec' },
-    { id: 'forest', name: 'Forest', base: '#e2eadb' }, { id: 'mountains', name: 'Mountains', base: '#dbe1ee' }, { id: 'garden', name: 'Rose garden', base: '#f2efe2' },
-    { id: 'night', name: 'Starry night', base: '#22325e', edge: 0.86 }, { id: 'classic', name: 'Gilt classic', base: '#d9b04f', edge: 0.97 },
+    { id: 'blossom', name: N_('Cherry blossoms'), base: '#f3e3e6' }, { id: 'maple', name: N_('Japanese maple'), base: '#f4e2c8' }, { id: 'ocean', name: N_('Ocean'), base: '#cfe3ec' },
+    { id: 'forest', name: N_('Forest'), base: '#e2eadb' }, { id: 'mountains', name: N_('Mountains'), base: '#dbe1ee' }, { id: 'garden', name: N_('Rose garden'), base: '#f2efe2' },
+    { id: 'night', name: N_('Starry night'), base: '#22325e', edge: 0.86 }, { id: 'classic', name: N_('Gilt classic'), base: '#d9b04f', edge: 0.97 },
     // shown only while travelling, never in the art picker
-    { id: 'car', name: 'Road trip', base: '#e3ebd5', travel: true }, { id: 'plane', name: 'In the air', base: '#d9e7f1', travel: true },
-    { id: 'train', name: 'By train', base: '#e4e9da', travel: true }, { id: 'ship', name: 'At sea', base: '#cde2ec', travel: true },
+    { id: 'car', name: N_('Road trip'), base: '#e3ebd5', travel: true }, { id: 'plane', name: N_('In the air'), base: '#d9e7f1', travel: true },
+    { id: 'train', name: N_('By train'), base: '#e4e9da', travel: true }, { id: 'ship', name: N_('At sea'), base: '#cde2ec', travel: true },
   ];
   const byId = id => THEMES.find(t => t.id === id) || THEMES[0];
 

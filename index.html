@@ -12,20 +12,20 @@
 </head>
 <body>
 <header class="top">
-  <div class="titlerow"><span id="av" hidden></span><h1 id="title">Little Log</h1><button id="helpBtn" class="helpbtn" type="button" aria-label="Show me around this screen" title="Show me around">❓</button></div>
-  <nav id="kidBar" class="kidbar" aria-label="Children" hidden></nav>
+  <div class="titlerow"><span id="av" hidden></span><h1 id="title">Little Log</h1><button id="helpBtn" class="helpbtn" type="button" aria-label="Show me around this screen" data-i18n-label="Show me around this screen" title="Show me around this screen">❓</button></div>
+  <nav id="kidBar" class="kidbar" aria-label="Children" data-i18n-label="Children" hidden></nav>
   <div id="syncLine" class="note" aria-live="polite"></div>
   <div id="sleepBanner" class="banner" hidden></div>
 </header>
 <main id="view"></main>
 
 <nav class="tabs" id="tabs">
-  <button data-tab="day" class="on"><span>📅</span>Day</button>
-  <button data-tab="month"><span>🗓️</span>Month</button>
-  <button data-tab="stats"><span>📊</span>Stats</button>
-  <button data-tab="guide"><span>📖</span>Guide</button>
-  <button data-tab="family"><span>👨‍👩‍👧</span>Family<i id="famBadge" class="badge" hidden></i></button>
-  <button data-tab="more"><span>⚙️</span>More</button>
+  <button data-tab="day" class="on"><span>📅</span><em class="tl" data-i18n>Day</em></button>
+  <button data-tab="month"><span>🗓️</span><em class="tl" data-i18n>Month</em></button>
+  <button data-tab="stats"><span>📊</span><em class="tl" data-i18n>Stats</em></button>
+  <button data-tab="guide"><span>📖</span><em class="tl" data-i18n>Guide</em></button>
+  <button data-tab="family"><span>👨‍👩‍👧</span><em class="tl" data-i18n>Family</em><i id="famBadge" class="badge" hidden></i></button>
+  <button data-tab="more"><span>⚙️</span><em class="tl" data-i18n>More</em></button>
 </nav>
 
 <div id="sheetBack" class="sheet-back" hidden></div>
@@ -35,6 +35,7 @@
 
 <script src="native-plugins.js"></script>
 <script src="config.js"></script>
+<script src="i18n.js"></script>
 <script src="vendor/qrcode.js"></script>
 <script src="vendor/jsqr.js"></script>
 <script src="kids.js"></script>

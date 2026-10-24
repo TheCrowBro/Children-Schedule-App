@@ -14,7 +14,7 @@ const Sync = (() => {
   const notify = changed => { if (Sync.onChange) Sync.onChange(changed); };
   const q = encodeURIComponent;
   /** Server lists must really be lists. Anything else is a broken or foreign reply: fail (and retry later) instead of acting on it. */
-  const list = r => { if (!Array.isArray(r)) throw new TypeError('Unexpected reply from the server'); return r; };
+  const list = r => { if (!Array.isArray(r)) throw new TypeError(N_('Unexpected reply from the server')); return r; };
 
   // ---- permissions (UI only – the server enforces the same rules) -----------------------------
   const isParent = () => !linked() || db.meta.role === 'parent';
@@ -32,7 +32,7 @@ const Sync = (() => {
     }
     return false;
   }
-  const nameOf = id => { const p = st.people.find(x => x.user_id === id); return p ? (p.is_you ? 'you' : p.display_name) : ''; };
+  const nameOf = id => { const p = st.people.find(x => x.user_id === id); return p ? (p.is_you ? __('you') : p.display_name) : ''; };
 
   // ---- local merge -------------------------------------------------------------------------
   /** Merge event rows (local shape, plus `deleted`) into db. `force` ignores timestamps (used to restore the server's
@@ -95,7 +95,7 @@ const Sync = (() => {
     db.meta.role = mem[0].role; db.meta.perms = mem[0].perms || {};
     st.needMfa = false;
     const baby = list(await Auth.api(`/babies?id=eq.${b}&select=profile,epoch,rotate_needed`));
-    if (!baby.length) { st.needMfa = true; st.state = 'error'; st.err = 'Two-step verification is required'; return false; }   // a parent without an MFA session
+    if (!baby.length) { st.needMfa = true; st.state = 'error'; st.err = N_('Two-step verification is required'); return false; }   // a parent without an MFA session
     st.rotateNeeded = !!baby[0].rotate_needed;
     // Encryption keys: fetch them if this phone has none, or the log moved to a newer key epoch.
     await E2EE.load(b);
@@ -141,7 +141,7 @@ const Sync = (() => {
       if (!stale) break;
       // The log moved to newer keys than this phone used: fetch them and send again (nothing is lost).
       await E2EE.refresh(b, db.meta);
-      if (E2EE.epoch(b) < stale || attempt) throw new Error('Waiting for the new encryption keys');
+      if (E2EE.epoch(b) < stale || attempt) throw new Error(N_('Waiting for the new encryption keys'));
       ({ rows, cut } = await encodeRows(b));
     }
     if (cut > ceiling) {   // this phone's clock runs fast: the server stored these edits no later than its ceiling, so do the same here
@@ -166,7 +166,7 @@ const Sync = (() => {
   async function run(manual) {
     if (!linked()) return;
     if (manual !== true && Date.now() < retryAt) return;
-    if (db.meta.role === 'parent' && Auth.aal !== 'aal2') { st.needMfa = true; st.state = 'error'; st.err = 'Two-step verification is required'; return notify(); }
+    if (db.meta.role === 'parent' && Auth.aal !== 'aal2') { st.needMfa = true; st.state = 'error'; st.err = N_('Two-step verification is required'); return notify(); }
     if (busy && Date.now() - busyAt < 120000) { again = true; return; }   // (a sync stuck for 2 minutes is treated as dead)
     busy = true; busyAt = Date.now(); st.state = 'syncing'; notify();
     let changed = 0;
@@ -299,7 +299,7 @@ const Sync = (() => {
     await E2EE.setJoinSecret(secret || null);
     const proof = secret ? await E2EE.joinProof(secret, dev.id, dev.pub) : null;
     const r = await Auth.rpc('redeem_invite', { p_code: code, p_display_name: displayName || '', p_device: dev.id, p_proof: proof });
-    if (!r || r.status !== 'pending') throw new Error('This invite is invalid or has expired');
+    if (!r || r.status !== 'pending') throw new Error(N_('This invite is invalid or has expired'));
     await loadMyRequests();
   }
   /** Check whether a pending request was approved; if so, switch to that log. */

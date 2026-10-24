@@ -250,7 +250,7 @@ const E2EE = (() => {
       try {
         if (!main) main = await unwrapWith(dev.priv, g.wrap_main, ctx + '|m');
         if (!health && g.wrap_health) health = await unwrapWith(dev.priv, g.wrap_health, ctx + '|h');
-      } catch (e) { throw new Error('The keys sent to this phone could not be opened. Ask a parent to approve this phone again.'); }
+      } catch (e) { throw new Error(N_('The keys sent to this phone could not be opened. Ask a parent to approve this phone again.')); }
       const first = !(store[baby] && Object.values(store[baby].keys).some(e => e.main));
       if (!heldMain) {
         const body = `${ctx}|${g.wrap_main}|${g.wrap_health || ''}`;
@@ -258,7 +258,7 @@ const E2EE = (() => {
           const sec = await joinSecretGet();
           if (sec) {   // joined with a QR code: the keys must carry the proof only the inviting parent could make (a missing proof is as bad as a wrong one)
             const want = await hmac(await hkdf(unb64u(sec), new Uint8Array(0), 'll1/grant-auth'), body);
-            if (!g.auth || want !== g.auth) throw new Error('These encryption keys did not come from the parent who invited you. Do not continue – tell them.');
+            if (!g.auth || want !== g.auth) throw new Error(N_('These encryption keys did not come from the parent who invited you. Do not continue – tell them.'));
           } else if (meta) meta.unverified = true;   // typed code / approved phone: compare the log security code
         } else if (g.epoch > store[baby].epoch) {
           // A key change must be signed with keys this phone already trusts; otherwise the server could substitute keys of its own.
@@ -268,11 +268,11 @@ const E2EE = (() => {
             const have = Object.keys(store[baby].keys).map(Number).filter(e => raw(baby, e, 'main') && m[e]).sort((a, b) => b - a);
             if (have.length) ok = m[have[0]] === await hmac(raw(baby, have[0], 'main'), body);
           } catch (e) { ok = false; }
-          if (!ok) throw new Error('A change of encryption keys was not signed by anyone who held the previous keys, so this phone ignored it. Tell a parent.');
+          if (!ok) throw new Error(N_('A change of encryption keys was not signed by anyone who held the previous keys, so this phone ignored it. Tell a parent.'));
         }
       }
       // The health key must match the fingerprint that holders of the main key signed.
-      if (health && !heldHealth && (!kr.health_check || kr.health_check !== await healthCheck(baby, g.epoch, main, health))) throw new Error('The health key sent to this phone did not check out, so it was ignored. Tell a parent.');
+      if (health && !heldHealth && (!kr.health_check || kr.health_check !== await healthCheck(baby, g.epoch, main, health))) throw new Error(N_('The health key sent to this phone did not check out, so it was ignored. Tell a parent.'));
       await setKeys(baby, g.epoch, main, health);
       if (first) await setJoinSecret(null);   // used up
     }
@@ -285,14 +285,14 @@ const E2EE = (() => {
 
   async function unlockWithRecovery(baby, code, meta) {
     await load(baby); await ensureDevice();
-    const r = (await Auth.rpc('get_recovery', { p_baby: baby }))[0]; if (!r) throw new Error('This log has no recovery code on file.');
+    const r = (await Auth.rpc('get_recovery', { p_baby: baby }))[0]; if (!r) throw new Error(N_('This log has no recovery code on file.'));
     let priv;
     try { priv = JSON.parse(dec.decode(await open(await recoveryKey(code), r.recovery_priv_wrapped, 'll1|recovery-priv'))); }
-    catch (e) { throw new Error('That recovery code is not right.'); }
+    catch (e) { throw new Error(N_('That recovery code is not right.')); }
     const ctx = grantCtx(baby, r.epoch, 'recovery');
     const main = await unwrapWith(priv, r.wrap_main, ctx + '|m'), health = r.wrap_health ? await unwrapWith(priv, r.wrap_health, ctx + '|h') : null;
     const kr = (await Auth.rpc('get_keyring', { p_baby: baby }))[0];
-    if (health && (!kr || kr.health_check !== await healthCheck(baby, r.epoch, main, health))) throw new Error('The health key did not check out.');
+    if (health && (!kr || kr.health_check !== await healthCheck(baby, r.epoch, main, health))) throw new Error(N_('The health key did not check out.'));
     await setKeys(baby, r.epoch, main, health);
     if (meta) meta.unverified = false;
     await selfGrant(baby);   // so the next key change includes this phone
@@ -316,14 +316,14 @@ const E2EE = (() => {
   }
   /** Keys for a join request. The parent must have verified the requester (QR proof, or compared security codes). */
   async function grantForRequest(baby, req, { manualOk } = {}) {
-    const cur = current(baby); if (!cur) throw new Error('This phone does not have the keys yet.');
+    const cur = current(baby); if (!cur) throw new Error(N_('This phone does not have the keys yet.'));
     const s = await inviteSecret(req.invite_code), qrOk = await verifyRequest(req);
-    if (!qrOk && !manualOk) throw new Error('Compare the security code with their phone first.');
+    if (!qrOk && !manualOk) throw new Error(N_('Compare the security code with their phone first.'));
     const health = req.role === 'parent' || !!(req.perms && req.perms.view_health);
     return makeGrant(baby, cur.epoch, cur, 'd:' + req.device_id, req.device_pub, { health, secret: qrOk ? s : null });
   }
   async function approveDevice(baby, d) {   // d: a row from list_devices (without keys yet); the approver compared security codes
-    const cur = current(baby); if (!cur) throw new Error('This phone does not have the keys yet.');
+    const cur = current(baby); if (!cur) throw new Error(N_('This phone does not have the keys yet.'));
     const g = await makeGrant(baby, cur.epoch, cur, d.grantee, d.pubkey, { health: d.view_health, chain: chainOf(baby) });   // chain: lets a phone that still holds older keys check it
     await Auth.rpc('grant_device', { p_baby: baby, p_device: d.grantee.slice(2), p_wrap_main: g.wrap_main, p_wrap_health: g.wrap_health, p_auth: g.auth, p_tag: g.tag });
   }
@@ -347,7 +347,7 @@ const E2EE = (() => {
       grants.push({ grantee: d.grantee, wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: g.auth, tag: g.tag });
     }
     const rec = (await Auth.rpc('list_recovery', { p_baby: baby }))[0];
-    if (!rec || !rec.recovery_pub || !await tagOk(baby, cur, { grantee: 'recovery', pubkey: rec.recovery_pub, tag: rec.tag })) throw new Error('The recovery key could not be verified, so the keys were not changed. Create a new recovery code first.');
+    if (!rec || !rec.recovery_pub || !await tagOk(baby, cur, { grantee: 'recovery', pubkey: rec.recovery_pub, tag: rec.tag })) throw new Error(N_('The recovery key could not be verified, so the keys were not changed. Create a new recovery code first.'));
     const rg = await makeGrant(baby, epoch, keys, 'recovery', rec.recovery_pub, { health: true });
     grants.push({ grantee: 'recovery', wrap_main: rg.wrap_main, wrap_health: rg.wrap_health, tag: rg.tag });
     const s = store[baby], hist = { main: {}, health: {} };

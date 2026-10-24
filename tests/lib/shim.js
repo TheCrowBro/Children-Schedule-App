@@ -1,7 +1,9 @@
 // A stand-in for Supabase's HTTP layer (GoTrue + PostgREST) that runs the REAL schema.sql on a real Postgres.
 // Auth: email code, sessions with aal1/aal2, real TOTP (RFC 6238) enrolment + verification, global sign-out.
 // REST: the handful of table reads + RPC calls the app uses, executed as role `authenticated` with the session's JWT claims.
-const crypto = require('crypto');
+// Functions: language-report, running the real handler (supabase/functions/language-report/handler.mjs) and the real limits in the
+// database; the emails it "sends" are kept in `mail`, and where they go (`reportTo`) is known only here, as on the real server.
+const crypto = require('crypto'), path = require('path');
 const { Client, Pool } = require('pg');
 
 const b64u = b => Buffer.from(b).toString('base64url');
@@ -15,7 +17,7 @@ function totp(secret, t = Date.now()) {
 }
 
 function createShim(superUrl, opts = {}) {
-  const o = { code: '12345678', expiresIn: 3600, captcha: false, ...opts };
+  const o = { code: '12345678', expiresIn: 3600, captcha: false, reportTo: 'reports@little-log.example', mail: [], ...opts };
   const sessions = new Map();     // refresh token -> {sub,email,aal}
   const challenges = new Map();
   let su;   // pool of superuser connections, for the auth side and metadata lookups
@@ -93,6 +95,20 @@ function createShim(superUrl, opts = {}) {
       const r = await fn(c); await c.query('commit'); return r;
     } catch (e) { await c.query('rollback').catch(() => {}); throw e; } finally { await c.end(); }
   }
+  // ---- Edge Functions -------------------------------------------------------------------------
+  async function functions(req, url) {
+    if (url.pathname !== '/functions/v1/language-report') return J(404, { message: 'no such function' });
+    const bearer = (req.headers()['authorization'] || '').replace('Bearer ', '');
+    if (bearer !== 'anon' && !parse(bearer)) return J(401, { message: 'Invalid JWT' });   // the gateway checks the key or the session first
+    const { handle, senderKey } = await import(path.join(__dirname, '..', '..', 'supabase', 'functions', 'language-report', 'handler.mjs'));
+    const r = new Request(url.toString(), { method: req.method(), headers: req.headers(), body: req.postData() || undefined });
+    const res = await handle(r, { to: o.reportTo, from: 'Little Log <reports@little-log.example>' }, {
+      who: x => senderKey(x, 'test-salt'),
+      allow: async k => (await su.query('select language_report_allow($1) ok', [k])).rows[0].ok,
+      send: async m => { if (o.mailDown) throw new Error('mail service down'); o.mail.push(m); },
+    });
+    return { status: res.status, headers: Object.fromEntries(res.headers), body: await res.text() };
+  }
   const pgErr = e => J(/permission denied/.test(e.message) ? 403 : 400, { message: e.message, code: e.code });
   async function rest(req, url, body) {
     const bearer = (req.headers()['authorization'] || '').replace('Bearer ', ''), claims = parse(bearer);
@@ -147,7 +163,7 @@ function createShim(superUrl, opts = {}) {
         if (o.refreshFail && url.pathname === '/auth/v1/token') return route.fulfill(J(500, { message: 'auth service unavailable' }));
         if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
         let body = null; try { body = req.postData() ? JSON.parse(req.postData()) : null; } catch (e) {}
-        try { route.fulfill(url.pathname.startsWith('/auth/') ? await auth(req, url.pathname, body) : await rest(req, url, body)); }
+        try { route.fulfill(url.pathname.startsWith('/auth/') ? await auth(req, url.pathname, body) : url.pathname.startsWith('/functions/') ? await functions(req, url) : await rest(req, url, body)); }
         catch (e) { route.fulfill(J(500, { message: String(e.stack || e) })); }
       });
     },

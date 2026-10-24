@@ -349,3 +349,4 @@ details.pix figcaption small{display:block;margin-top:4px;color:var(--mute);font
 ul.credits{margin:0 16px 10px;padding-left:18px;font-size:13px;line-height:1.5}ul.credits li{margin-bottom:6px}
 .credits .url{overflow-wrap:anywhere;color:var(--mute)}
 details.gd[data-grp=credits]>.note{margin:0 16px 12px}
+.tabs .tl{font-style:normal;max-width:100%;padding:0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

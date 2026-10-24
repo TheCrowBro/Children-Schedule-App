@@ -28,9 +28,9 @@ const Lock = (() => {
     /** Turn the lock on/off. Returns an error message, or null on success. */
     async set(on) {
       if (on) {
-        if (!await Native.Biometric.available()) return 'Set a screen lock (passcode, Face ID or fingerprint) in your phone settings first.';
-        trying = true; const ok = await Native.Biometric.authenticate('Turn on app lock'); trying = false;
-        if (!ok) return 'App lock was not turned on.';
+        if (!await Native.Biometric.available()) return N_('Set a screen lock (passcode, Face ID or fingerprint) in your phone settings first.');
+        trying = true; const ok = await Native.Biometric.authenticate(__('Turn on app lock')); trying = false;
+        if (!ok) return N_('App lock was not turned on.');
       }
       cfg.enabled = on; store(); locked = false; return null;
     },
@@ -38,7 +38,7 @@ const Lock = (() => {
     async unlock() {
       if (trying) return false;
       trying = true;
-      try { const ok = await Native.Biometric.authenticate('Unlock Little Log'); if (ok) { locked = false; away = Date.now(); } return ok; }
+      try { const ok = await Native.Biometric.authenticate(__('Unlock Little Log')); if (ok) { locked = false; away = Date.now(); } return ok; }
       finally { trying = false; }
     },
     reset() { locked = false; },

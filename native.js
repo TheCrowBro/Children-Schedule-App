@@ -15,7 +15,7 @@ const Native = (() => {
     /** fetch() that gives up (and reports a network error) instead of hanging forever. */
     fetch(url, opt = {}, ms = CFG.netTimeoutMs || 30000) {
       const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; let timer;
-      const timeout = new Promise((_, no) => { timer = setTimeout(() => { no(new TypeError('Network timeout')); try { if (ctl) ctl.abort(); } catch (e) { /* ignore */ } }, ms); });   // reject first, so the timeout (not the abort) is what callers see
+      const timeout = new Promise((_, no) => { timer = setTimeout(() => { no(new TypeError(N_('Network timeout'))); try { if (ctl) ctl.abort(); } catch (e) { /* ignore */ } }, ms); });   // reject first, so the timeout (not the abort) is what callers see
       return Promise.race([fetch(url, ctl ? { ...opt, signal: ctl.signal } : opt), timeout]).finally(() => clearTimeout(timer));
     },
     is,
@@ -37,7 +37,7 @@ const Native = (() => {
       const dir = 'CACHE';
       await P().Filesystem.writeFile({ path: name, data: text, directory: dir, encoding: 'utf8' });
       const { uri } = await P().Filesystem.getUri({ path: name, directory: dir });
-      await P().Share.share({ title: name, url: uri, dialogTitle: 'Save or share' });
+      await P().Share.share({ title: name, url: uri, dialogTitle: __('Save or share') });
     },
     /** iOS Keychain / Android Keystore-backed storage for secrets (sign-in tokens, backup passphrase, cloud tokens). */
     Secure: {
@@ -49,7 +49,7 @@ const Native = (() => {
     Biometric: {
       async available() { try { const r = await P().BiometricAuth.checkBiometry(); return !!(r.isAvailable || r.deviceIsSecure); } catch (e) { return false; } },
       async authenticate(reason) {
-        try { await P().BiometricAuth.authenticate({ reason, cancelTitle: 'Cancel', allowDeviceCredential: true, iosFallbackTitle: 'Use passcode', androidTitle: 'Little Log', androidSubtitle: reason }); return true; }
+        try { await P().BiometricAuth.authenticate({ reason, cancelTitle: __('Cancel'), allowDeviceCredential: true, iosFallbackTitle: __('Use passcode'), androidTitle: 'Little Log', androidSubtitle: reason }); return true; }
         catch (e) { return false; }
       },
     },

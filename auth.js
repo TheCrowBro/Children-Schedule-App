@@ -14,9 +14,9 @@ const Auth = (() => {
     let j = null, junk = false; try { j = txt ? JSON.parse(txt) : null; } catch (e) { j = { message: txt }; junk = true; }
     // A reply that is not JSON although the request "succeeded" is a captive portal / proxy login page, not our server: treat it as no connection
     // (never as an answer, or the app could mistake it for "you were removed").
-    if (r.ok && junk) throw new TypeError('This network is not letting Little Log reach its server (is there a login page?)');
+    if (r.ok && junk) throw new TypeError(N_('This network is not letting Little Log reach its server (is there a login page?)'));
     if (!r.ok) {
-      const err = new Error((j && (j.msg || j.message || j.error_description || j.error)) || 'Request failed (' + r.status + ')');
+      const err = new Error((j && (j.msg || j.message || j.error_description || j.error)) || __('Request failed ({status})', { status: r.status }));
       err.status = r.status; throw err;
     }
     return j;
@@ -38,7 +38,7 @@ const Auth = (() => {
     return refreshing;
   }
   async function token() {
-    if (!s) throw new Error('Not signed in');
+    if (!s) throw new Error(N_('Not signed in'));
     if (s.exp - Date.now() < 60000) await refresh();
     return s.access;
   }
@@ -49,6 +49,8 @@ const Auth = (() => {
     configured,
     async init() { try { const v = await Native.Secure.get(K); s = v ? JSON.parse(v) : null; } catch (e) { s = null; } },
     get signedIn() { return !!s; },
+    /** The session's access token (refreshed when it is about to run out), for calls outside this module. */
+    accessToken: token,
     get email() { return s && s.email; },
     get id() { return s && s.id; },
     /** 'aal2' once two-step verification has been completed in this session. */
