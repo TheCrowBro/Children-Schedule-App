@@ -145,12 +145,10 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .clockwrap{margin:2px 0 14px}
 .clock{display:block;width:100%;max-width:460px;height:auto;margin:0 auto;touch-action:manipulation}
 .clock .num{font:600 12.5px Georgia,'Times New Roman',serif;letter-spacing:-.4px}
-.clock .plaque{font:italic 600 11px Georgia,'Times New Roman',serif;fill:#4a3510}
-.clock .ring{stroke-opacity:.8}
 .clock .qw{fill:transparent;cursor:pointer}
 .clock .qw.on{fill:var(--wash1)}
 .clock .qw:focus-visible,.clock .ray:focus-visible{outline:none;stroke:var(--ink);stroke-width:2}
-.clock .ring{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}
+.clock .ring{fill:none;stroke:#d3c9ba;stroke-width:1;stroke-dasharray:2 4}
 .clock .sarc{fill:none;stroke:var(--g-sleep);stroke-width:8;stroke-linecap:round;opacity:.35}
 .clock .ray{cursor:pointer}
 .clock .ray path{stroke:var(--c);stroke-width:2;stroke-linecap:round}

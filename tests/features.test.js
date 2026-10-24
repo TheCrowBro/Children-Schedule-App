@@ -49,10 +49,11 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       await P.click('[data-quadclear]'); assert.equal(await P.$$eval('.quadlist', x => x.length), 0);
     });
 
-    await step('the clock is a carriage clock: a painted panel, Roman numerals with a moon at midnight and a sun at noon, and a hand only on today', async () => {
-      const r = await P.evaluate(() => ({ nums: [...document.querySelectorAll('.clock text.num')].map(t => t.textContent), moonSun: document.querySelectorAll('.clock g[aria-hidden] path[d^="M2.5 -6.2"], .clock g[aria-hidden] circle[r="3.6"]').length, hand: !!document.querySelector('.clock .hand'), plaque: document.querySelector('.clock .plaque').textContent }));
+    await step('the clock: a light watercolour frame, a painted panel, a white face with a black rim, Roman numerals with a moon at midnight and a sun at noon, and a hand only on today', async () => {
+      const r = await P.evaluate(() => ({ nums: [...document.querySelectorAll('.clock text.num')].map(t => t.textContent), moonSun: document.querySelectorAll('.clock g[aria-hidden] path[d^="M2.5 -6.2"], .clock g[aria-hidden] circle[r="3.6"]').length, hand: !!document.querySelector('.clock .hand'), face: document.querySelector('.clock .face').getAttribute('fill'), rim: document.querySelector('.clock .rim').getAttribute('stroke') }));
       assert.deepEqual(r.nums, ['II', 'IV', 'VI', 'VIII', 'X', 'II', 'IV', 'VI', 'VIII', 'X']);
-      assert.equal(r.moonSun, 2); assert.equal(r.plaque, 'Leo');
+      assert.equal(r.moonSun, 2); assert.equal(r.face, '#fffdf8', 'a white face'); assert.equal(r.rim, '#1f1b16', 'with a black rim');
+      await P.waitForFunction(() => /^(blob|data):/.test(document.querySelector('.clock image.frame').getAttribute('href') || ''), null, { timeout: 10000 });
       assert.equal(r.hand, true, "today's clock has the hand");
       await P.click('[data-nav="-1"]'); assert.equal(await P.$$eval('.clock .hand', h => h.length), 0, 'yesterday has none'); await P.click('[data-nav="1"]');
       await P.waitForFunction(() => /^(blob|data):/.test(document.querySelector('.clock image.art').getAttribute('href') || ''), null, { timeout: 10000 });
@@ -91,6 +92,8 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       const r = await P.evaluate(async () => { const out = []; for (const t of Art.THEMES) { const t0 = performance.now(); const u = await Art.url(t.id, 1); const ok = await new Promise(res => { const i = new Image(); i.onload = () => res(i.naturalWidth > 0); i.onerror = () => res(false); i.src = u; }); out.push([t.id, ok, Math.round(performance.now() - t0)]); } return out; });
       assert.deepEqual(r.map(x => x[0]), ['blossom', 'maple', 'ocean', 'forest', 'mountains', 'garden', 'night', 'classic']);
       assert(r.every(x => x[1]), JSON.stringify(r)); assert(r.every(x => x[2] < 3000), 'each under 3 s: ' + JSON.stringify(r));
+      const fr = await P.evaluate(async () => { const out = []; for (const d of [false, true]) { const u = await Art.frameUrl(d); out.push(await new Promise(res => { const i = new Image(); i.onload = () => res([i.naturalWidth, i.naturalHeight]); i.onerror = () => res(null); i.src = u; })); } return out; });
+      assert(fr.every(x => x && x[0] >= 340 && x[1] >= 436), 'the frame draws for light and dark mode: ' + JSON.stringify(fr));
     });
 
     await step('the clock art can be changed for a page, and it sticks', async () => {
@@ -132,6 +135,16 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
       assert(r.top.includes('2'), 'axis labels include the top value: ' + r.top);
       const row = await P.evaluate(() => [...document.querySelectorAll('.scard')][1].querySelector('.tw tbody tr').textContent);
       assert(/2.*1/.test(row), 'the table shows today: ' + row);
+    });
+
+    await step('in dark mode the clock keeps its white face, and the entries on it keep the colours checked against white', async () => {
+      await P.emulateMedia({ colorScheme: 'dark' }); await P.click('[data-tab=day]');
+      const r = await P.evaluate(() => ({ face: document.querySelector('.clock .face').getAttribute('fill'), dot: getComputedStyle(document.querySelector('.clock .ray .dot')).fill, legend: getComputedStyle(document.querySelector('.clockwrap .clegend i')).backgroundColor }));
+      assert.equal(r.face, '#f1ece3', 'a warm white face at night');
+      const rgb = h => `rgb(${[1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(', ')})`;
+      assert.equal(r.legend, rgb('#c9761f'), 'the legend matches the dots: ' + r.legend);
+      assert([rgb('#c9761f'), rgb('#2a9db8'), rgb('#5b5fc7'), rgb('#5f8a1f'), rgb('#a845a8'), rgb('#c0392b')].includes(r.dot), 'a light-palette colour: ' + r.dot);
+      await P.emulateMedia({ colorScheme: 'light' }); await P.evaluate(() => render());
     });
 
     await step('group colours stay readable on the paper in light and dark mode (3:1 for marks)', async () => {

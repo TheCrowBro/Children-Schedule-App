@@ -195,7 +195,7 @@ function dayView() {
     <div class="d">${isToday ? 'Today' : fmtDate(viewDay)}<small>${isToday ? fmtDate(viewDay) : ''}${ageText(viewDay)}</small></div>
     <button data-nav="1" aria-label="Next day" ${isToday ? 'disabled' : ''}>›</button></div>
   ${quickButtons()}
-  <div class="clockwrap">${clockSvg(shown, viewDay)}
+  <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${GCOLOR.light[g.id]}`).join(';')}">${clockSvg(shown, viewDay)}
     <div class="clockctl">${seg('face', [['24', '24 h'], ['12', '12 h']], twelve ? '12' : '24', 'Clock face')}${twelve ? seg('half', [['0', 'AM'], ['1', 'PM']], String(half), 'Half of the day') : ''}<button class="artbtn" data-art>🎨 ${esc(Art.byId(artOf()).name)}</button></div>
     ${clockLegend(shown)}
     <p class="note hint">${twelve ? `Showing ${half ? 'noon to midnight' : 'midnight to noon'}; switch AM and PM for the other half of the day.` : 'Midnight is at the top, noon at the bottom.'} Tap a dot to open an entry, or a quarter of the dial for just those hours.</p></div>
@@ -234,56 +234,45 @@ function artOf(id = dayKid()) {
 function setArt(id, theme) { (db.meta.art || (db.meta.art = {}))[id] = theme; Store.save(db); }
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
 function clockSvg(evs, day) {
-  const th = Art.byId(artOf()), dk = dark(), X0 = 38, Y0 = 84, C = { x: X0 + Art.DIAL.x, y: Y0 + Art.DIAL.y }, RD = Art.DIAL.r;
-  const RR = { sleep: 90, feed: 78, diaper: 66, vomit: 54, play: 42, health: 30 };
+  // The frame (a light watercolour carriage-clock outline) and the painting are pictures drawn once and reused; the dial is a plain white
+  // face with a black rim, the same in light and dark mode, so the entries on it always read the same way.
+  const th = Art.byId(artOf()), dk = dark(), F = Art.FRAME, K = F.k, PW = Art.W * K, PH = Art.H * K;
+  const C = { x: F.x + Art.DIAL.x * K, y: F.y + Art.DIAL.y * K }, RD = Art.DIAL.r * K, rr = r => r * K;
+  const RR = { sleep: rr(90), feed: rr(78), diaper: rr(66), vomit: rr(54), play: rr(42), health: rr(30) };
   const sp = clockSpan(day), twelve = face12(), frac = t => (t - sp.start) / sp.len, ang = fr => fr * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C.x + r * Math.cos(a), C.y + r * Math.sin(a)];
   const f1 = n => n.toFixed(1), xy = (a, r) => P(a, r).map(f1).join(' ');
-  const arc = (a0, a1, r) => `M${xy(a0, r)}A${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${xy(a1, r)}`;
-  const ink = dk ? '#efe6d3' : '#1f1b16', dialC = dk ? '39,36,31' : '255,253,248', edge = Math.max(th.edge || 0.62, dk ? 0.78 : 0);
-  // ---- case: handle, finials, cornice, columns, base and feet (gilt brass)
-  const defs = `<defs>
-    <linearGradient id="cc-bh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0bd"/><stop offset=".3" stop-color="#e3b955"/><stop offset=".62" stop-color="#b3832a"/><stop offset=".85" stop-color="#dcae4a"/><stop offset="1" stop-color="#7f5a1c"/></linearGradient>
-    <linearGradient id="cc-bv" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6f4e17"/><stop offset=".18" stop-color="#c99a3b"/><stop offset=".42" stop-color="#fff0bd"/><stop offset=".58" stop-color="#e8c060"/><stop offset=".84" stop-color="#a87b26"/><stop offset="1" stop-color="#5f4313"/></linearGradient>
-    <radialGradient id="cc-ball" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#fff6d6"/><stop offset=".35" stop-color="#e9c262"/><stop offset=".8" stop-color="#9a6e22"/><stop offset="1" stop-color="#6a4a14"/></radialGradient>
-    <pattern id="cc-fret" width="14" height="14" patternUnits="userSpaceOnUse" y="2"><rect width="14" height="14" fill="#3e2c0b"/><path d="M0 7C3.5 0 10.5 0 14 7C10.5 14 3.5 14 0 7Z" fill="none" stroke="#e2b955" stroke-width="2"/><path d="M7 0V14M0 7H14" stroke="#c99a3b" stroke-width="1.2"/><circle cx="7" cy="7" r="1.7" fill="#f6dc8e"/></pattern>
-    <radialGradient id="cc-dial" gradientUnits="userSpaceOnUse" cx="${C.x}" cy="${C.y}" r="${RD}"><stop offset="0" stop-color="rgb(${dialC})" stop-opacity=".95"/><stop offset=".7" stop-color="rgb(${dialC})" stop-opacity=".93"/><stop offset=".86" stop-color="rgb(${dialC})" stop-opacity="${Math.max(0.82, edge)}"/><stop offset="1" stop-color="rgb(${dialC})" stop-opacity="${edge}"/></radialGradient>
-    <clipPath id="cc-panel"><rect x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" rx="2"/></clipPath></defs>`;
-  const flutes = x => [0.22, 0.42, 0.62, 0.8].map(t => `<path d="M${f1(x + 24 * t)} 96V408" stroke="#5f4313" stroke-opacity=".45"/><path d="M${f1(x + 24 * t + 1.3)} 96V408" stroke="#fff3c4" stroke-opacity=".55"/>`).join('');
-  const column = x => `<rect x="${x}" y="86" width="24" height="332" fill="url(#cc-bv)"/>${flutes(x)}<rect x="${x - 3}" y="86" width="30" height="8" rx="2" fill="url(#cc-bv)"/><rect x="${x - 2}" y="94" width="28" height="3" fill="url(#cc-bv)"/><rect x="${x - 2}" y="407" width="28" height="3" fill="url(#cc-bv)"/><rect x="${x - 3}" y="410" width="30" height="8" rx="2" fill="url(#cc-bv)"/>`;
-  const finial = x => `<ellipse cx="${x}" cy="55" rx="11" ry="3" fill="url(#cc-bh)"/><path d="M${x - 5} 53L${x - 3} 47L${x + 3} 47L${x + 5} 53Z" fill="url(#cc-bv)"/><ellipse cx="${x}" cy="41" rx="7" ry="7.5" fill="url(#cc-ball)"/><rect x="${x - 2}" y="31" width="4" height="4" fill="url(#cc-bv)"/><circle cx="${x}" cy="28" r="4.2" fill="url(#cc-ball)"/><path d="M${x} 18L${x + 1.6} 24L${x - 1.6} 24Z" fill="url(#cc-bv)"/>`;
-  const post = x => `<rect x="${x - 3.5}" y="26" width="7" height="30" fill="url(#cc-bv)"/><ellipse cx="${x}" cy="41" rx="6.5" ry="8" fill="url(#cc-bv)"/><rect x="${x - 5}" y="50" width="10" height="4" fill="url(#cc-bv)"/>`;
-  const block = x => `<rect x="${x - 9}" y="10" width="18" height="18" rx="1.5" fill="url(#cc-bh)"/><rect x="${x - 6}" y="13" width="12" height="12" fill="none" stroke="#7f5a1c" stroke-opacity=".5"/>`;
-  const handle = `${post(92)}${post(248)}<rect x="99" y="14" width="142" height="10" rx="4" fill="url(#cc-bh)"/>${[16.5, 19, 21.5].map(y => `<path d="M104 ${y}H236" stroke="#7f5a1c" stroke-opacity=".45" stroke-width=".8"/>`).join('')}<rect x="160" y="11" width="20" height="16" rx="5" fill="url(#cc-bh)"/><path d="M165 11V27M175 11V27" stroke="#7f5a1c" stroke-opacity=".5"/>${block(92)}${block(248)}`;
-  const frieze = (y, h) => `<rect x="8" y="${y}" width="324" height="${h}" fill="url(#cc-fret)"/><rect x="8" y="${y}" width="324" height="${h}" fill="url(#cc-bh)" opacity=".35"/>`;
-  const caseTop = `<rect x="4" y="54" width="332" height="7" rx="2" fill="url(#cc-bh)"/>${frieze(61, 19)}<rect x="4" y="80" width="332" height="6" rx="1.5" fill="url(#cc-bh)"/><rect x="6" y="54" width="36" height="32" rx="2" fill="url(#cc-bv)"/><rect x="298" y="54" width="36" height="32" rx="2" fill="url(#cc-bv)"/><ellipse cx="200" cy="53" rx="4" ry="2.4" fill="url(#cc-ball)"/>`;
-  const caseBase = `<rect x="4" y="418" width="332" height="6" rx="1.5" fill="url(#cc-bh)"/>${frieze(424, 18)}<rect x="4" y="442" width="332" height="7" rx="2" fill="url(#cc-bh)"/><rect x="6" y="418" width="36" height="31" rx="2" fill="url(#cc-bv)"/><rect x="298" y="418" width="36" height="31" rx="2" fill="url(#cc-bv)"/>
-    <rect x="128" y="423" width="84" height="20" rx="10" fill="url(#cc-bh)" stroke="#7f5a1c" stroke-opacity=".6"/><text class="plaque" x="170" y="437" text-anchor="middle">${esc(dayKid() === 'all' ? 'Everyone' : kidName(kidById(dayKid())))}</text>`;
-  const foot = x => `<ellipse cx="${x}" cy="456" rx="15" ry="8" fill="url(#cc-ball)"/><ellipse cx="${x}" cy="465" rx="10" ry="4" fill="url(#cc-bv)"/><ellipse cx="${x}" cy="470" rx="13" ry="3" fill="url(#cc-bh)"/>`;
-  // ---- the painted panel (drawn once per painting, then reused) and the dial painted over it
-  const url = Art.peek(th.id);
-  if (!url) Art.url(th.id).then(u => document.querySelectorAll(`.clock image.art[data-theme="${th.id}"]`).forEach(im => { im.setAttribute('href', u); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', u); }));
-  const panel = `<g clip-path="url(#cc-panel)"><rect x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" fill="${th.base}"/><image class="art" data-theme="${th.id}" x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" preserveAspectRatio="none"${url ? ` href="${url}" xlink:href="${url}"` : ''}/>${dk ? `<rect x="${X0}" y="${Y0}" width="${Art.W}" height="${Art.H}" fill="#120f0b" opacity=".36"/>` : ''}</g><rect x="${X0 - 1.5}" y="${Y0 - 1.5}" width="${Art.W + 3}" height="${Art.H + 3}" rx="3" fill="none" stroke="url(#cc-bh)" stroke-width="3"/>`;
-  let dial = `<circle cx="${C.x}" cy="${C.y}" r="${RD}" fill="url(#cc-dial)"/>`;
+  const arc = (a0, a1, r) => `M${xy(a0, r)}A${f1(r)} ${f1(r)} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${xy(a1, r)}`;
+  const ink = '#1f1b16', gilt = '#b8862b', line = dk ? '#ead3a0' : '#6e5226';
+  const pic = (cls, attr, u) => `<image class="${cls}" ${attr} preserveAspectRatio="none"${u ? ` href="${u}" xlink:href="${u}"` : ''}/>`;
+  const fill = (sel, p) => p.then(u => document.querySelectorAll(sel).forEach(im => { im.setAttribute('href', u); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', u); }));
+  const frameUrl = Art.peekFrame(dk), artUrl = Art.peek(th.id);
+  if (!frameUrl) fill(`.clock image.frame[data-mode="${dk ? 'dark' : 'light'}"]`, Art.frameUrl(dk));
+  if (!artUrl) fill(`.clock image.art[data-theme="${th.id}"]`, Art.url(th.id));
+  const frame = pic('frame', `data-mode="${dk ? 'dark' : 'light'}" x="0" y="0" width="${F.W}" height="${F.H}"`, frameUrl);
+  const panel = `<clipPath id="cc-panel"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5"/></clipPath>
+    <g clip-path="url(#cc-panel)"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="${th.base}"/>${pic('art', `data-theme="${th.id}" x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}"`, artUrl)}${dk ? `<rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="#120f0b" opacity=".3"/>` : ''}</g>
+    <rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5" fill="none" stroke="${line}" stroke-opacity=".5" stroke-width=".9"/>`;
+  let dial = `<circle class="face" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="${dk ? '#f1ece3' : '#fffdf8'}"/><circle class="rim" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="none" stroke="${ink}" stroke-width="1.6"/>`;
   // railway minute track and the hours. 24-hour face: Roman numerals on the even hours, a moon at midnight and a sun at noon.
   // 12-hour face: all twelve numerals, with a.m. or p.m. under the centre.
-  dial += `<circle cx="${C.x}" cy="${C.y}" r="112" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/><circle cx="${C.x}" cy="${C.y}" r="118" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/>`;
+  dial += `<circle cx="${C.x}" cy="${f1(C.y)}" r="${f1(rr(112))}" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/><circle cx="${C.x}" cy="${f1(C.y)}" r="${f1(rr(118))}" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/>`;
   let ticks = '';
   const marks = twelve ? 60 : 96, every = twelve ? 5 : 4;
-  for (let q = 0; q < marks; q++) { const a = ang(q / marks), hr = q % every === 0; ticks += `M${xy(a, hr ? 110 : 112)}L${xy(a, hr ? 120 : 118)}`; }
+  for (let q = 0; q < marks; q++) { const a = ang(q / marks), hr = q % every === 0; ticks += `M${xy(a, rr(hr ? 110 : 112))}L${xy(a, rr(hr ? 120 : 118))}`; }
   dial += `<path d="${ticks}" stroke="${ink}" stroke-opacity=".75" stroke-width=".7"/>`;
   if (twelve) {
-    for (let h = 1; h <= 12; h++) { const [x, y] = P(ang(h / 12), 101); dial += `<text class="num" transform="translate(${f1(x)} ${f1(y)}) rotate(${h * 30})" text-anchor="middle" dy=".36em" fill="${ink}">${h === 12 ? 'XII' : ROMAN[h]}</text>`; }
-    dial += `<text class="ampm" x="${C.x}" y="${C.y + 15}" text-anchor="middle" fill="${ink}">${half ? 'p.m.' : 'a.m.'}</text>`;
+    for (let h = 1; h <= 12; h++) { const [x, y] = P(ang(h / 12), rr(101)); dial += `<text class="num" transform="translate(${f1(x)} ${f1(y)}) rotate(${h * 30})" text-anchor="middle" dy=".36em" fill="${ink}">${h === 12 ? 'XII' : ROMAN[h]}</text>`; }
+    dial += `<text class="ampm" x="${C.x}" y="${f1(C.y + rr(15))}" text-anchor="middle" fill="${ink}">${half ? 'p.m.' : 'a.m.'}</text>`;
   } else for (let h = 0; h < 24; h += 2) {
-    const a = ang(h / 24), [x, y] = P(a, 101);
-    if (h === 0) dial += `<path transform="translate(${f1(x)} ${f1(y)})" d="M2.5 -6.2A6.4 6.4 0 1 0 2.5 6.2A5 5 0 1 1 2.5 -6.2Z" fill="${dk ? '#e9cf7d' : '#a77a27'}"/>`;
-    else if (h === 12) dial += `<g transform="translate(${f1(x)} ${f1(y)})" fill="${dk ? '#e9cf7d' : '#b8862b'}" stroke="${dk ? '#e9cf7d' : '#b8862b'}"><circle r="3.6"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(k => `<path d="M0 -5.4V-7.6" transform="rotate(${k * 45})" stroke-width="1.2" stroke-linecap="round"/>`).join('')}</g>`;
+    const a = ang(h / 24), [x, y] = P(a, rr(101));
+    if (h === 0) dial += `<path transform="translate(${f1(x)} ${f1(y)})" d="M2.5 -6.2A6.4 6.4 0 1 0 2.5 6.2A5 5 0 1 1 2.5 -6.2Z" fill="${gilt}"/>`;
+    else if (h === 12) dial += `<g transform="translate(${f1(x)} ${f1(y)})" fill="${gilt}" stroke="${gilt}"><circle r="3.6"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(k => `<path d="M0 -5.4V-7.6" transform="rotate(${k * 45})" stroke-width="1.2" stroke-linecap="round"/>`).join('')}</g>`;
     else dial += `<text class="num" transform="translate(${f1(x)} ${f1(y)}) rotate(${h * 15})" text-anchor="middle" dy=".36em" fill="${ink}">${ROMAN[h % 12]}</text>`;
   }
   // quarters (tap targets), washed in the page colour when chosen
   let quads = '';
-  for (let i = 0; i < 4; i++) { const a0 = ang(i / 4), a1 = ang((i + 1) / 4); quads += `<path class="qw ${quad === i ? 'on' : ''}" data-quad="${i}" role="button" tabindex="0" aria-pressed="${quad === i}" aria-label="${quadInfo(i, day).label}, ${quadInfo(i, day).range}" d="M${C.x} ${C.y}L${xy(a0, RD)}A${RD} ${RD} 0 0 1 ${xy(a1, RD)}Z"/>`; }
-  let data = RING.map(g => `<circle class="ring" cx="${C.x}" cy="${C.y}" r="${RR[g]}"/>`).join('');
+  for (let i = 0; i < 4; i++) { const a0 = ang(i / 4), a1 = ang((i + 1) / 4); quads += `<path class="qw ${quad === i ? 'on' : ''}" data-quad="${i}" role="button" tabindex="0" aria-pressed="${quad === i}" aria-label="${quadInfo(i, day).label}, ${quadInfo(i, day).range}" d="M${C.x} ${f1(C.y)}L${xy(a0, RD)}A${f1(RD)} ${f1(RD)} 0 0 1 ${xy(a1, RD)}Z"/>`; }
+  let data = RING.map(g => `<circle class="ring" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RR[g])}"/>`).join('');
   for (const e of scoped()) if (e.type === 'sleep') {   // every sleep that overlaps what the dial shows, even one that began before it
     const s0 = Math.max(0, frac(e.ts)), s1 = Math.min(1, frac(e.end || Date.now()));
     if (s1 > s0) data += `<path class="sarc" d="${arc(ang(s0), ang(Math.max(s1, s0 + 0.004)), RR.sleep)}"/>`;
@@ -293,24 +282,23 @@ function clockSvg(evs, day) {
     const g = groupOf(e.type).id, a = ang(frac(e.ts)), r = RR[g], [x, y] = P(a, r), [d] = describe(e), k = all ? kidById(childOf(e)) : null;
     data += `<g class="ray" data-edit="${e.id}" role="button" tabindex="0" aria-label="${esc(fmtTime(e.ts) + ' ' + TYPES[e.type].label + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
       <title>${esc(fmtTime(e.ts) + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
-      <path d="M${xy(a, 17)}L${xy(a, r - 5)}"/><path class="hitl" d="M${xy(a, 20)}L${xy(a, r)}"/><circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="10"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="4.6"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
+      <path d="M${xy(a, rr(17))}L${xy(a, r - rr(5))}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/><circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
   }
   // blued-steel hands at the current time, when it is on the dial: one 24-hour hand, or an hour and a minute hand; then the centre boss
   let hand = '';
-  const steel = dk ? '#e9cf7d' : '#24356b', hy = (L, k) => f1(C.y - L * k);
-  const spade = (kind, deg, L) => `<path class="hand" data-hand="${kind}" transform="rotate(${deg.toFixed(2)} ${C.x} ${C.y})" fill="${steel}" d="M${C.x - 1.2} ${C.y + 14}L${C.x - 1.2} ${hy(L, 0.727)}C${C.x - 6.5} ${hy(L, 0.747)} ${C.x - 7.5} ${hy(L, 0.808)} ${C.x - 4.8} ${hy(L, 0.848)}C${C.x - 2.6} ${hy(L, 0.879)} ${C.x - 0.8} ${hy(L, 0.909)} ${C.x} ${hy(L, 1)}C${C.x + 0.8} ${hy(L, 0.909)} ${C.x + 2.6} ${hy(L, 0.879)} ${C.x + 4.8} ${hy(L, 0.848)}C${C.x + 7.5} ${hy(L, 0.808)} ${C.x + 6.5} ${hy(L, 0.747)} ${C.x + 1.2} ${hy(L, 0.727)}L${C.x + 1.2} ${C.y + 14}Z"/>`;
-  const needle = (deg, L) => `<path class="hand" data-hand="m" transform="rotate(${deg.toFixed(2)} ${C.x} ${C.y})" fill="${steel}" d="M${C.x - 0.9} ${C.y + 16}L${C.x - 0.9} ${hy(L, 0.86)}L${C.x - 3.2} ${hy(L, 0.92)}L${C.x} ${hy(L, 1)}L${C.x + 3.2} ${hy(L, 0.92)}L${C.x + 0.9} ${hy(L, 0.86)}L${C.x + 0.9} ${C.y + 16}Z"/>`;
+  const steel = '#24356b', hy = (L, k) => f1(C.y - L * k);
+  const spade = (kind, deg, L) => `<path class="hand" data-hand="${kind}" transform="rotate(${deg.toFixed(2)} ${C.x} ${f1(C.y)})" fill="${steel}" d="M${C.x - 1.2} ${f1(C.y + 14)}L${C.x - 1.2} ${hy(L, 0.727)}C${C.x - 6.5} ${hy(L, 0.747)} ${C.x - 7.5} ${hy(L, 0.808)} ${C.x - 4.8} ${hy(L, 0.848)}C${C.x - 2.6} ${hy(L, 0.879)} ${C.x - 0.8} ${hy(L, 0.909)} ${C.x} ${hy(L, 1)}C${C.x + 0.8} ${hy(L, 0.909)} ${C.x + 2.6} ${hy(L, 0.879)} ${C.x + 4.8} ${hy(L, 0.848)}C${C.x + 7.5} ${hy(L, 0.808)} ${C.x + 6.5} ${hy(L, 0.747)} ${C.x + 1.2} ${hy(L, 0.727)}L${C.x + 1.2} ${f1(C.y + 14)}Z"/>`;
+  const needle = (deg, L) => `<path class="hand" data-hand="m" transform="rotate(${deg.toFixed(2)} ${C.x} ${f1(C.y)})" fill="${steel}" d="M${C.x - 0.9} ${f1(C.y + 16)}L${C.x - 0.9} ${hy(L, 0.86)}L${C.x - 3.2} ${hy(L, 0.92)}L${C.x} ${hy(L, 1)}L${C.x + 3.2} ${hy(L, 0.92)}L${C.x + 0.9} ${hy(L, 0.86)}L${C.x + 0.9} ${f1(C.y + 16)}Z"/>`;
   const now = Date.now();
   if (now >= sp.start && now < sp.start + sp.len) {
     const h = handAngles(now, sp);
-    hand = twelve ? needle(h.m, 106) + spade('h', h.h, 70) : spade('d', h.d, 99);
+    hand = twelve ? needle(h.m, rr(106)) + spade('h', h.h, rr(70)) : spade('d', h.d, rr(99));
   }
-  const boss = `<circle cx="${C.x}" cy="${C.y}" r="6" fill="url(#cc-ball)"/><circle cx="${C.x}" cy="${C.y}" r="1.6" fill="#5f4313"/>`;
-  const shadow = `<ellipse cx="170" cy="474" rx="160" ry="4" fill="#3b2a12" opacity=".16"/>`;
+  const boss = `<circle cx="${C.x}" cy="${f1(C.y)}" r="5.6" fill="#dcb86c" stroke="#6e5226" stroke-width=".9"/><circle cx="${C.x}" cy="${f1(C.y)}" r="1.5" fill="#6e5226"/>`;
   const summary = GROUPS.map(gr => [gr.label, evs.filter(e => gr.types.includes(e.type)).length]).filter(x => x[1]).map(x => `${x[1]} ${x[0].toLowerCase()}`).join(', ');
   const what = twelve ? `12-hour clock, ${half ? 'noon to midnight' : 'midnight to noon'}` : '24-hour clock of the day, midnight at the top and noon at the bottom';
-  return `<svg class="clock" viewBox="0 0 340 478" data-cx="${C.x}" data-cy="${C.y}" data-painting="${th.id}" data-dial="${twelve ? 12 : 24}" role="group" aria-label="${what}${summary ? ': ' + esc(summary) : ', no entries'}">${defs}
-    <g aria-hidden="true">${shadow}${handle}${finial(24)}${finial(316)}${caseTop}${column(12)}${column(304)}${caseBase}${foot(24)}${foot(316)}${panel}${dial}</g>${quads}<g class="data">${data}</g><g aria-hidden="true">${hand}${boss}</g></svg>`;
+  return `<svg class="clock" viewBox="0 0 ${F.W} ${F.H}" data-cx="${C.x}" data-cy="${f1(C.y)}" data-painting="${th.id}" data-dial="${twelve ? 12 : 24}" role="group" aria-label="${what}${summary ? ': ' + esc(summary) : ', no entries'}">
+    <g aria-hidden="true">${frame}${panel}${dial}</g>${quads}<g class="data">${data}</g><g aria-hidden="true">${hand}${boss}</g></svg>`;
 }
 /** Where the hands point (degrees): the 24-hour hand, and the hour and minute hands of a 12-hour face. */
 function handAngles(now, sp) {
