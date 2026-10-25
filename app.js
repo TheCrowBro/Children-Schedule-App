@@ -989,7 +989,7 @@ function growthChart(k, kind, list) {
   const us = usUnits(), val = e => (kind === 'bmi' ? bmiOf(e.data) : +e.data[kind] || 0), conv = v => (kind === 'weight' ? (us ? v / LB : v) : kind === 'bmi' ? v : us ? v / IN : v);
   const unit = kind === 'weight' ? (us ? __('lb') : __('kg')) : kind === 'bmi' ? __('kg/m²') : us ? __('in') : __('cm');
   const now = ageMonths(k, Date.now()), small = kind === 'head' || (kind !== 'bmi' && now <= 36);
-  const x0 = small ? 0 : 24, x1 = small ? Math.min(36, Math.max(12, Math.ceil((now + 3) / 6) * 6)) : Math.min(240, Math.max(60, Math.ceil((now + 6) / 12) * 12));   // (a baby's chart: the first year)
+  const x0 = small ? 0 : 24, x1 = small ? Math.min(36, Math.max(6, Math.ceil((now + 2) / 6) * 6)) : Math.min(240, Math.max(60, Math.ceil((now + 6) / 12) * 12));   // (a newborn's chart: the first months)
   const pts = list.map(e => [ageMonths(k, e.ts), val(e)]).filter(([m, v]) => v > 0 && m >= x0 - 0.01 && m <= x1).sort((a, b) => a[0] - b[0]);
   const sexed = k.sex === 'boy' || k.sex === 'girl', lines = sexed ? Growth.curves(kind, k.sex, x0, x1, [3, 15, 50, 85, 97], small ? 0.5 : 3) : [];
   const ys = [...lines.flatMap(c => c.pts.map(p => conv(p[1]))), ...pts.map(p => conv(p[1]))];
@@ -999,13 +999,17 @@ function growthChart(k, kind, list) {
   const X = m => L + ((m - x0) / (x1 - x0)) * (W - L - R), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B), f1 = n => n.toFixed(1);
   let g = '';
   for (let v = lo; v <= hi + 1e-9; v += step) g += `<path class="grid" d="M${L} ${f1(Y(v))}H${W - R}"/><text class="ax" x="${L - 4}" y="${f1(Y(v) + 3)}" text-anchor="end">${esc(fmtNum(v, 1))}</text>`;
-  const years = !small, ticks = []; for (let m = x0; m <= x1 + 1e-9; m += small ? 6 : (x1 - x0 > 120 ? 24 : 12)) ticks.push(m);
+  const years = !small, ticks = []; for (let m = x0; m <= x1 + 1e-9; m += small ? (x1 <= 6 ? 1 : x1 <= 12 ? 3 : 6) : (x1 - x0 > 120 ? 24 : 12)) ticks.push(m);
   for (const m of ticks) g += `<path class="grid v" d="M${f1(X(m))} ${T}V${H - B}"/><text class="ax" x="${f1(X(m))}" y="${H - B + 13}" text-anchor="middle">${esc(fmtNum(years ? m / 12 : m, 0))}</text>`;
-  g += `<text class="ax unit" x="${L - 4}" y="${T - 4}" text-anchor="end">${esc(unit)}</text><text class="ax" x="${W - R}" y="${H - 3}" text-anchor="end">${years ? __h('Age (years)') : __h('Age (months)')}</text>`;
+  g += `<text class="ax unit" x="${L - 4}" y="${T - 12}" text-anchor="end">${esc(unit)}</text><text class="ax" x="${W - R}" y="${H - 3}" text-anchor="end">${years ? __h('Age (years)') : __h('Age (months)')}</text>`;
   const path = ps => ps.map((p, i) => `${i ? 'L' : 'M'}${f1(X(p[0]))} ${f1(Y(conv(p[1])))}`).join('');
   if (lines.length) {
     const outer = [...lines[0].pts, ...[...lines[4].pts].reverse()];
-    g += `<path class="band" d="${path(outer)}Z"/>` + lines.map(c => `<path class="pline${c.p === 50 ? ' mid' : ''}" d="${path(c.pts)}"/><text class="plab" x="${W - R + 3}" y="${f1(Y(conv(c.pts[c.pts.length - 1][1])) + 3)}">${c.p}</text>`).join('');
+    // the percentile at the end of each line, moved apart where the lines run close (3rd at the bottom, 97th at the top)
+    const ly = lines.map(c => Y(conv(c.pts[c.pts.length - 1][1])) + 3);
+    for (let i = 1; i < ly.length; i++) ly[i] = Math.min(ly[i], ly[i - 1] - 9);
+    if (ly[ly.length - 1] < T) { const up = T - ly[ly.length - 1]; for (let i = 0; i < ly.length; i++) ly[i] += up; }
+    g += `<path class="band" d="${path(outer)}Z"/>` + lines.map((c, i) => `<path class="pline${c.p === 50 ? ' mid' : ''}" d="${path(c.pts)}"/><text class="plab" x="${W - R + 3}" y="${f1(ly[i])}">${c.p}</text>`).join('');
   }
   if (pts.length) g += `<path class="kline" d="${path(pts)}" style="stroke:${k.color}"/>` + pts.map(p => `<circle class="kdot" cx="${f1(X(p[0]))}" cy="${f1(Y(conv(p[1])))}" r="3.6" style="fill:${k.color}"/>`).join('');
   const last = pts[pts.length - 1], lp = last && sexed && Growth.percentile(kind, k.sex, last[0], last[1]);
