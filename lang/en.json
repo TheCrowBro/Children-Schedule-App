@@ -2798,8 +2798,8 @@
    "note": "Button and sheet title in the family tree: join another family's log (for example to look after a sister's children) by scanning an invite from one of its parents."
   },
   {
-   "id": "eo7ae9",
-   "en": "Looking after someone else's children? Scan the QR code one of their parents shows you. They approve it, and their family joins your tree.",
+   "id": "17n774r",
+   "en": "Looking after someone else's children? Scan the QR code one of their parents shows you. Once they approve it, their family is on this page: in your family tree if you are family, or with the families you help with.",
    "where": "app.js:1244"
   },
   {
@@ -4441,8 +4441,8 @@
    "note": "Heading in the Family tab: the families this person looks after as a caregiver, babysitter, medical assistant or friend (not a relative), listed apart from the family tree."
   },
   {
-   "id": "vqblnv",
-   "en": "Looking after someone else's children? Ask one of their parents to open Family → Invite someone in their Little Log, choose what you may do, and show you the QR code. Scan it here. Once they approve, their family joins your tree, and you can switch between families at any time.",
+   "id": "195vm2m",
+   "en": "Looking after someone else's children? Ask one of their parents to open Family → Invite someone in their Little Log, choose what you may do, and show you the QR code. Scan it here. Once they approve, their family appears here: in your family tree if you are family, or with the families you help with. You can switch between families at any time.",
    "where": "account.js:455"
   },
   {

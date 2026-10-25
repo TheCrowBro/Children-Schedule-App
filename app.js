@@ -1241,7 +1241,7 @@ const TOURS = {
     { sel: '#invCard', title: N_('Invite someone'), why: N_('Make a one-time QR code. You approve them before they see anything.') },
     { sel: '#actBtn', title: N_('Activity'), why: N_('Who added, changed or deleted what. Only parents see this.') },
     { sel: '#view .code.mono', title: N_('Security code'), why: N_('Everyone sharing the log sees the same code: a quick check that only your family has the keys.') },
-    { sel: '#famAdd', title: N_('Add a family'), why: N_('Looking after someone else\'s children? Scan the QR code one of their parents shows you. They approve it, and their family joins your tree.') },
+    { sel: '#famAdd', title: N_('Add a family'), why: N_('Looking after someone else\'s children? Scan the QR code one of their parents shows you. Once they approve it, their family is on this page: in your family tree if you are family, or with the families you help with.') },
     { sel: '#view .card', title: N_('Family sharing'), why: N_('Sign in to share the log with family and caregivers, end-to-end encrypted.') },
   ],
   more: [

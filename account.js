@@ -452,7 +452,7 @@ const Acct = (() => {
   /** Join another family's log: scan the QR code one of its parents shows you (or type its code); they approve the request. */
   function addFamily() {
     const close = showSheet(`<h3>🌳 ${__h('Add a family')}</h3>
-      <p class="note">${__h("Looking after someone else's children? Ask one of their parents to open Family → Invite someone in their Little Log, choose what you may do, and show you the QR code. Scan it here. Once they approve, their family joins your tree, and you can switch between families at any time.")}</p>
+      <p class="note">${__h("Looking after someone else's children? Ask one of their parents to open Family → Invite someone in their Little Log, choose what you may do, and show you the QR code. Scan it here. Once they approve, their family appears here: in your family tree if you are family, or with the families you help with. You can switch between families at any time.")}</p>
       <div class="row"><button class="btn p" id="afScan" style="flex:1">📷 ${__h('Scan QR code')}</button></div>
       <label class="f" for="afCode">${__h('Or enter a code')}</label><div class="row"><input id="afCode" type="text" maxlength="10" autocapitalize="characters" placeholder="ABCDE12345" style="flex:2"><button class="btn" id="afJoin">${__h('Send request')}</button></div>
       <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Close')}</button></div>`);
