@@ -19,7 +19,11 @@ const Acct = (() => {
     ['family', N_('Family member'), N_('Can add entries and change their own; cannot change settings or other people\'s entries')],
     ['caregiver', N_('Caregiver'), N_('You choose exactly what they can do')],
     ['babysitter', N_('Babysitter'), N_('You choose exactly what they can do')],
+    ['medical', N_('Medical assistant'), N_('You choose exactly what they can do')],
     ['friend', N_('Friend'), N_('You choose exactly what they can do')]];
+  // Relatives (in the family tree) and the people who help (a list of their own, and the ones who can be retired)
+  const RELATIVES = ['parent', 'family'], HELPERS = ['caregiver', 'babysitter', 'medical', 'friend'];
+  const REASONS = { moved: N_('Moved away'), stopped: N_('No longer helps'), passed: N_('Passed away'), other: N_('Other') };
   /** A role's name, in the app's language. */
   const roleName = r => __((ROLES.find(x => x[0] === r) || [0, r || N_('Member')])[1]);
   const PRESET = role => ({ add_entries: true, edit_own: true, delete_own: true, edit_others: role === 'parent', delete_others: role === 'parent',
@@ -407,7 +411,7 @@ const Acct = (() => {
   function famName(m) {
     if (!m) return '';
     if (m.role === 'parent' && Sync.st.memberships.filter(x => x.role === 'parent').length < 2) return __('Your family');
-    const ps = Sync.st.familyParents[m.id] || [];
+    const ps = (Sync.st.familyPeople[m.id] || []).filter(p => p.role === 'parent').map(p => p.name);
     if (ps.length) return __("{names}'s family", { names: andList(ps) });
     return andList(famKidNames(m));
   }
@@ -420,7 +424,7 @@ const Acct = (() => {
     if (tab === 'family') render();
     const had = Sync.st.memberships.map(m => m.id).join();
     try { await Promise.all([Sync.loadMemberships(), Sync.loadMyRequests()]); } catch (e) { return; }   // (offline: the tree as the phone knows it)
-    await Promise.all([Sync.loadFamilyParents(), Sync.loadFamilyRequests()]);
+    await Promise.all([Sync.loadFamilyPeople(), Sync.loadFamilyRequests(), Sync.loadRetired()]);
     const now = Sync.st.memberships.filter(m => !had.split(',').includes(m.id));
     if (had && now.length) toast(__("You're in: {family}", { family: famName(now[0]) }));
     if (tab === 'family') render();
@@ -429,18 +433,21 @@ const Acct = (() => {
     const s = Sync.st, mine = s.myRequests.filter(r => r.status === 'pending'), me = s.people.find(p => p.is_you);
     const branch = m => {
       const on = m.id === db.meta.babyId, name = famName(m), reqs = on ? [] : s.familyRequests[m.id] || [], waiting = on && Sync.isParent() ? s.requests.length : 0, kept = F.keptUnsent[m.id] || 0;
+      const kin = on ? s.people.filter(p => RELATIVES.includes(p.role) && !p.is_you).map(p => p.display_name) : (s.familyPeople[m.id] || []).map(p => p.name);
       return `<li class="fam${on ? ' on' : ''}" data-fam="${esc(m.id)}">
         <div class="fhead"><span><b>${esc(name)}</b><br><small>${esc(roleName(m.role))}</small></span>${on ? `<small class="fshow">${__h('Showing')}</small>` : `<button class="btn" data-famopen="${esc(m.id)}">${__h('Open')}</button>`}</div>
         <div class="fkids">${famKids(m).map((k, i) => `<span class="fkid">${avatar(k)}${esc(famKidNames(m)[i])}</span>`).join('')}</div>
+        ${RELATIVES.includes(m.role) && kin.length ? `<p class="note fkin">${__h('Family: {names}', { names: andList(kin) })}</p>` : ''}
         ${kept ? `<p class="note">⏳ ${__hn('{n} change not sent yet: it goes when you open this family.', '{n} changes not sent yet: they go when you open this family.', kept)}</p>` : ''}
         ${waiting ? `<p class="note fwait">📨 ${__hn('{n} waiting for your approval (below)', '{n} waiting for your approval (below)', waiting)}</p>` : ''}
         ${reqs.map(r => reqCard(r, name)).join('')}</li>`;
     };
     return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftree">
       <div class="froot"><span class="av lg">${esc(((me && me.display_name) || Auth.email || '?').trim().charAt(0).toUpperCase())}</span><span><b>${__h('You')}</b>${me && me.display_name ? `<br><small>${esc(me.display_name)}</small>` : ''}</span></div>
-      <ul class="fbranches">${s.memberships.map(branch).join('')}
+      <ul class="fbranches">${s.memberships.filter(m => RELATIVES.includes(m.role)).map(branch).join('')}
         ${mine.map(r => `<li class="fam pending"><div class="fhead"><span>⏳ ${__h('Request sent')}<br><small>${__h('Waiting for a parent to approve')}</small></span><button class="btn d" data-cancelreq="${esc(r.id)}">${__h('Cancel')}</button></div></li>`).join('')}</ul>
-      <button class="btn" id="famAdd" style="width:100%;margin-top:10px">+ ${__h('Add a family')}</button></div>`;
+      <button class="btn" id="famAdd" style="width:100%;margin-top:10px">+ ${__h('Add a family')}</button></div>
+      ${s.memberships.some(m => HELPERS.includes(m.role)) ? `<h2>${__h('Families you help with')}</h2><div class="card fhelp"><ul class="fbranches flat">${s.memberships.filter(m => HELPERS.includes(m.role)).map(branch).join('')}</ul></div>` : ''}`;
   }
   /** Join another family's log: scan the QR code one of its parents shows you (or type its code); they approve the request. */
   function addFamily() {
@@ -480,9 +487,17 @@ const Acct = (() => {
     if (!Auth.configured || !db.meta.babyId) return `<div class="card"><b>${__h('Family sharing is off')}</b><p class="note">${Auth.configured ? __h('Create a baby log to share it.') : __h("Account service isn't configured (see {file}), so this device keeps its own private log.", { file: 'SETUP.md' })}</p></div>`;
     const s = Sync.st, parent = Sync.isParent();
     if (Date.now() - (F.treeAt || 0) > 30000) refreshTree();
-    if (membersLoadedFor !== db.meta.babyId) { membersLoadedFor = db.meta.babyId; Promise.all([Sync.loadPeople(), parent ? Sync.loadAdmin() : null, Sync.loadDevices(), Sync.myDevices().then(r => { F.myPhones = r; }), Sync.securityCode().then(c => { F.secCode = c; })]).then(() => { if (tab === 'family') render(); }).catch(() => {}); }
-    const people = s.people.map(m => `<div class="stat"><button class="pbtn" data-pview="${esc(m.user_id)}"><span>${esc(m.display_name || __('Member'))}${m.is_you ? ` <small>${__h('(you)')}</small>` : ''}<br><small>${m.role ? esc(roleName(m.role)) : ''}${m.info && m.info.relation ? ' · ' + esc(m.info.relation) : ''}${m.email && m.role ? ' · ' + esc(m.email) : ''}</small></span><span class="chev" aria-hidden="true">›</span></button>
-      ${parent && !m.is_you ? `<button class="btn" data-person="${esc(m.user_id)}" style="padding:6px 12px">${__h('Edit')}</button>` : ''}</div>`).join('') || `<div class="note">${__h('Loading…')}</div>`;
+    if (membersLoadedFor !== db.meta.babyId) { membersLoadedFor = db.meta.babyId; Promise.all([Sync.loadPeople(), Sync.loadRetired(), parent ? Sync.loadAdmin() : null, Sync.loadDevices(), Sync.myDevices().then(r => { F.myPhones = r; }), Sync.securityCode().then(c => { F.secCode = c; })]).then(() => { if (tab === 'family') render(); }).catch(() => {}); }
+    const person = m => `<div class="stat"><button class="pbtn" data-pview="${esc(m.user_id)}"><span>${esc(m.display_name || __('Member'))}${m.is_you ? ` <small>${__h('(you)')}</small>` : ''}<br><small>${m.role ? esc(roleName(m.role)) : ''}${m.info && m.info.relation ? ' · ' + esc(m.info.relation) : ''}${m.email && m.role ? ' · ' + esc(m.email) : ''}</small></span><span class="chev" aria-hidden="true">›</span></button>
+      ${parent && !m.is_you ? `<span class="btns"><button class="btn" data-person="${esc(m.user_id)}" style="padding:6px 12px">${__h('Edit')}</button>${HELPERS.includes(m.role) ? `<button class="btn" data-retire="${esc(m.user_id)}" style="padding:6px 12px">${__h('Retire')}</button>` : ''}</span>` : ''}</div>`;
+    // with roles shown (people allowed to see the family list): relatives, then the people who help, each list on its own
+    const roles = s.people.some(m => m.role), kin = s.people.filter(m => !roles || RELATIVES.includes(m.role)), help = roles ? s.people.filter(m => HELPERS.includes(m.role)) : [];
+    const retired = s.retired.length ? `<details class="more retired"><summary>${__hn('Retired ({n})', 'Retired ({n})', s.retired.length)}<span class="chev" aria-hidden="true">›</span></summary>
+      ${s.retired.map(r => `<div class="stat"><button class="pbtn" data-rview="${esc(r.id)}"><span>${esc(r.display_name)}<br><small>${esc(roleName(r.role))} · ${esc(retiredLine(r))}</small></span><span class="chev" aria-hidden="true">›</span></button></div>`).join('')}</details>` : '';
+    const people = !s.people.length ? `<h2>${__h('People with access')}</h2><div class="card"><div class="note">${__h('Loading…')}</div></div>`
+      : roles ? `<h2>${__h('Family')}</h2><div class="card">${kin.map(person).join('')}</div>
+        <h2>${__h('Caregivers and helpers')}</h2><div class="card" id="helpers">${help.map(person).join('') || `<p class="note" style="margin:0">${__h('No caregivers, babysitters or medical assistants yet. A parent invites them below.')}</p>`}${retired}</div>`
+      : `<h2>${__h('People with access')}</h2><div class="card">${s.people.map(person).join('')}</div>`;
     const reqs = parent && s.requests.length ? `<h2>${__h('Waiting for your approval')}</h2>${s.requests.map(r => reqCard(r)).join('')}` : '';
     const phones = E2EE.hasKeys(db.meta.babyId) ? Sync.pendingPhones() : [];
     const phonesCard = phones.length ? `<h2>${__h('Phones waiting for access')}</h2>${phones.map(d => `<div class="card"><b>${esc(d.person)}</b> · ${esc(phoneName(d.device_name))}
@@ -503,7 +518,7 @@ const Acct = (() => {
       ${s.denied ? `<div class="note" style="margin-top:6px">⚠️ ${__hn('{n} change was not allowed with your access and was undone.', '{n} changes were not allowed with your access and were undone.', s.denied)}</div>` : ''}
       <div class="note" style="margin-top:6px">${__h('Signed in as {email} · {role}', { email: Auth.email, role: roleName(db.meta.role) })}</div></div>
     ${reqs}${phonesCard}
-    <h2>${__h('People with access')}</h2><div class="card">${people}</div>
+    ${people}
     ${parent ? `<h2>${__h('Invite someone')}</h2><div class="card" id="invCard">
       <p class="note" style="margin-top:0">${__h('Invites work once and last 2 hours. After they scan it, you approve them.')}</p>
       ${accessFormHtml('inv', 'caregiver')}
@@ -526,6 +541,8 @@ const Acct = (() => {
     const el = id => document.getElementById(id);
     if (!el('syncNow')) return;
     document.querySelectorAll('[data-pview]').forEach(b => b.onclick = () => viewPerson(b.dataset.pview));   // anyone can open a person's card
+    document.querySelectorAll('[data-rview]').forEach(b => b.onclick = () => viewRetired(b.dataset.rview));
+    document.querySelectorAll('[data-retire]').forEach(b => b.onclick = () => retirePerson(b.dataset.retire));
     $('#famBadge').hidden = true;
     el('syncNow').onclick = () => Sync.run(true);
     if (el('unvOk')) el('unvOk').onclick = () => { db.meta.unverified = false; save(true); render(); toast(__('Thanks')); };
@@ -576,11 +593,43 @@ const Acct = (() => {
     el('actBtn').onclick = showActivity;
   }
   /** A person's card: their contact details (they fill these in themselves), with call buttons. */
+  /** A person's contact details (relationship, phones with a Call button, work, notes), as they wrote them. */
+  function detailsHtml(i, email) {
+    const line = (label, v, call) => (v ? `<div class="stat"><span>${__h(label)}<br><b class="sel">${esc(v)}</b></span>${call && Guide.tel(v) ? `<a class="btn callbtn" href="${esc(Guide.tel(v))}">📞 ${__h('Call')}</a>` : ''}</div>` : '');
+    return [line(N_('Relationship'), i.relation), line(N_('Phone'), i.phone, true), line(N_('Email'), email), line(N_('Place of work'), i.work), line(N_('Work phone'), i.workPhone, true), line(N_('Notes'), i.notes)].join('');
+  }
+  const retiredLine = r => [__('retired {date}', { date: new Date(r.retired_at).toLocaleDateString(I18n.locale(), { day: 'numeric', month: 'short', year: 'numeric' }) }), r.reason && REASONS[r.reason] ? __(REASONS[r.reason]) : ''].filter(Boolean).join(' · ');
+  /** Retire a caregiver, babysitter, medical assistant or friend who no longer helps: they moved away, stopped, or died. */
+  function retirePerson(userId) {
+    const p = Sync.st.people.find(x => x.user_id === userId); if (!p || !Sync.isParent()) return;
+    const name = p.display_name || __('Member');
+    const close = showSheet(`<h3>${__h('Retire {name}', { name })}</h3>
+      <p class="note">${__h('For a caregiver, babysitter, medical assistant or friend who no longer helps. Their access ends now, as if they were removed, and the log changes its keys. They stay on the Retired list with their details, and their entries still say who added them. To have them back, invite them again.')}</p>
+      <label class="f">${__h('Why (optional)')}</label><div class="chips">${Object.entries(REASONS).map(([v, l]) => chip('rtWhy', v, __h(l), false, '', true)).join('')}</div>
+      <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Cancel')}</button><button class="btn d" id="rtGo">${__h('Retire')}</button></div>`);
+    $('#sheet [data-close]').onclick = close;
+    $('#rtGo').onclick = async () => {
+      const why = (document.querySelector('#sheet [name=rtWhy]:checked') || {}).value || '';
+      try { await Sync.retireMember(userId, why); close(); toast(__('{name} is retired', { name })); render(); } catch (e) { toast(err(e)); }
+    };
+  }
+  /** A retired helper: who they were and their details, kept for the family. A parent can delete the note. */
+  function viewRetired(id) {
+    const r = Sync.st.retired.find(x => x.id === id); if (!r) return;
+    const close = showSheet(`<h3>${esc(r.display_name)}</h3><p class="note" style="margin-top:0">${esc(roleName(r.role))} · ${esc(retiredLine(r))}</p>
+      ${detailsHtml(r.info || {}) || `<p class="note">${__h('No details were added.')}</p>`}
+      <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button></div>
+      ${Sync.isParent() ? `<div class="row"><button class="btn d" id="rtForget">${__h('Remove from the list')}</button></div>` : ''}`);
+    $('#sheet [data-close]').onclick = close;
+    if ($('#rtForget')) $('#rtForget').onclick = async () => {
+      if (!confirm(__('Remove {name} from the Retired list? Their details are deleted.', { name: r.display_name }))) return;
+      try { await Sync.forgetRetired(id); close(); render(); } catch (e) { toast(err(e)); }
+    };
+  }
   function viewPerson(userId) {
     const p = Sync.st.people.find(x => x.user_id === userId); if (!p) return;
     const i = p.info || {}, parent = Sync.isParent();
-    const line = (label, v, call) => (v ? `<div class="stat"><span>${__h(label)}<br><b class="sel">${esc(v)}</b></span>${call && Guide.tel(v) ? `<a class="btn callbtn" href="${esc(Guide.tel(v))}">📞 ${__h('Call')}</a>` : ''}</div>` : '');
-    const info = [line(N_('Relationship'), i.relation), line(N_('Phone'), i.phone, true), line(N_('Email'), p.email), line(N_('Place of work'), i.work), line(N_('Work phone'), i.workPhone, true), line(N_('Notes'), i.notes)].join('');
+    const info = detailsHtml(i, p.email);
     const f = (id, label, v, type = 'text', max = 60, ph = '') => `<label class="f">${__h(label)}</label><input id="${id}" type="${type}" maxlength="${max}" value="${esc(v || '')}" placeholder="${ph ? __h(ph) : ''}"${type === 'tel' ? ' inputmode="tel" autocomplete="tel"' : ''}>`;
     const form = `<p class="note">${__h('Everyone who can see the family list sees these. They are end-to-end encrypted like the rest of the log.')}</p>
       ${f('dRel', N_('Relationship to the baby'), i.relation, 'text', 40, N_('e.g. Mum, Grandma, Nanny'))}${f('dPhone', N_('Phone'), i.phone, 'tel', 30)}
@@ -590,9 +639,10 @@ const Acct = (() => {
       <p class="note" style="margin-top:0">${p.role ? esc(roleName(p.role)) : ''}</p>
       ${p.is_you ? form : (info || `<p class="note">${__h('No details yet. People add their own phone number and work details from their phone: Family → tap their name.')}</p>`)}
       <div class="row" style="margin-top:16px"><button class="btn" id="pvClose">${p.is_you ? __h('Cancel') : __h('Close')}</button>${p.is_you ? `<button class="btn p" id="pvSave">${__h('Save')}</button>` : ''}</div>
-      ${parent && !p.is_you ? `<div class="row"><button class="btn" id="pvAccess">${__h('Change access')}</button></div>` : ''}`);
+      ${parent && !p.is_you ? `<div class="row"><button class="btn" id="pvAccess">${__h('Change access')}</button>${HELPERS.includes(p.role) ? `<button class="btn" id="pvRetire">${__h('Retire')}</button>` : ''}</div>` : ''}`);
     $('#pvClose').onclick = close;
     if ($('#pvAccess')) $('#pvAccess').onclick = () => editPerson(userId);
+    if ($('#pvRetire')) $('#pvRetire').onclick = () => { close(); retirePerson(userId); };
     if ($('#pvSave')) $('#pvSave').onclick = async () => {
       const d = { relation: $('#dRel').value, phone: $('#dPhone').value, work: $('#dWork').value, workPhone: $('#dWorkPhone').value, notes: $('#dNotes').value };
       try { await Sync.setMyDetails(d); close(); render(); toast(__('Saved')); } catch (e) { toast(err(e)); }
@@ -623,7 +673,7 @@ const Acct = (() => {
     join_requested: l => __('{email} asked to join as {role}', l.v),
     member_approved: l => __('{actor} approved {email} as {role}', l.v), request_denied: l => __('{actor} denied {email}', l.v),
     role_changed: l => __('{actor} made {person} a {role}', l.v), permissions_changed: l => __('{actor} changed what {person} can do', l.v),
-    member_removed: l => __('{actor} removed {person}', l.v), left: l => __('{person} left the log', { person: l.detail.person || l.actor }),
+    member_removed: l => __('{actor} removed {person}', l.v), member_retired: l => __('{actor} retired {person}', l.v), left: l => __('{person} left the log', { person: l.detail.person || l.actor }),
     mfa_reset: l => __('{actor} reset two-step verification for {person}', l.v),
   };
   const activityLine = l => {

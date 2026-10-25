@@ -5,7 +5,7 @@
    server's push_events(), which enforces each person's role and permissions. Conflicts: newest `updated` timestamp wins.
    Relies on the globals `db` and `save()` from app.js (read lazily, at call time). */
 const Sync = (() => {
-  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyParents: {} };
+  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyPeople: {}, retired: [] };
   const PAGE = 500, OVERLAP_MS = 5000;
   let busy = false, busyAt = 0, again = false, timer = null, started = false, peopleAt = 0, failures = 0, retryAt = 0;
   let flight = Promise.resolve(), switching = false;   // (the sync under way, and a switch to another family log)
@@ -35,7 +35,10 @@ const Sync = (() => {
     }
     return false;
   }
-  const nameOf = id => { const p = st.people.find(x => x.user_id === id); return p ? (p.is_you ? __('you') : p.display_name) : ''; };
+  const nameOf = id => {   // (a retired helper's entries still say who added them)
+    const p = st.people.find(x => x.user_id === id); if (p) return p.is_you ? __('you') : p.display_name;
+    const r = st.retired.find(x => x.user_id === id); return r ? r.display_name : '';
+  };
 
   // ---- local merge -------------------------------------------------------------------------
   /** Merge event rows (local shape, plus `deleted`) into db. `force` ignores timestamps (used to restore the server's
@@ -264,14 +267,28 @@ const Sync = (() => {
     }
     st.familyRequests = out; return out;
   }
-  /** The parents of each family log, to name it in the family tree ("Sarah's family"), where this person may see who has which role. */
-  async function loadFamilyParents() {
+  /** The relatives in each family log (its parents and family members, not you), to name it in the family tree ("Sarah's family") and
+      show who is in it, where this person may see who has which role: { id: [{ name, role }] }. */
+  async function loadFamilyPeople() {
     const out = {};
     for (const m of st.memberships) {
-      try { out[m.id] = list(await Auth.rpc('list_people', { p_baby: m.id })).filter(p => p.role === 'parent' && !p.is_you).map(p => p.display_name); } catch (e) { /* named after the children instead */ }
+      try { out[m.id] = list(await Auth.rpc('list_people', { p_baby: m.id })).filter(p => (p.role === 'parent' || p.role === 'family') && !p.is_you).map(p => ({ name: p.display_name, role: p.role })); } catch (e) { /* named after the children instead */ }
     }
-    st.familyParents = out; return out;
+    st.familyPeople = out; return out;
   }
+  /** Retire a helper who no longer helps (moved away, stopped, died): their access ends like removing them, a note of them stays. */
+  async function retireMember(user, reason) {
+    await Auth.rpc('retire_member', { p_baby: db.meta.babyId, p_user: user, p_reason: reason || '' });
+    await Promise.all([loadPeople(), loadRetired()]); schedule(300);   // (the keys change on the next sync)
+  }
+  /** The retired helpers of the log shown (for people who may see the family list), with their contact details opened. */
+  async function loadRetired() {
+    const b = db.meta.babyId; let rows = [];
+    try { rows = list(await Auth.rpc('list_retired', { p_baby: b })); } catch (e) { rows = []; }
+    for (const r of rows) r.info = r.details ? await E2EE.openDetails(b, r.user_id, r.details, r.details_epoch).catch(() => null) : null;
+    st.retired = rows; return rows;
+  }
+  const forgetRetired = async id => { await Auth.rpc('forget_retired', { p_id: id }); await loadRetired(); };
   async function setMember(user, role, perms) {
     // Someone newly allowed to see health notes needs the health key for each of their phones.
     const p = st.people.find(x => x.user_id === user), had = !!p && (p.role === 'parent' || !!(p.perms && p.perms.view_health));
@@ -339,7 +356,7 @@ const Sync = (() => {
       else { reset(); db.baby = { name: m.name || '', birth: m.birth || '', kids: Kids.clean(m.kids, m.name, m.birth) }; }
       if (db.meta.unverifiedIn && db.meta.unverifiedIn[id]) { db.meta.unverified = true; delete db.meta.unverifiedIn[id]; }   // (its keys came with the family tree)
       db.meta.babyId = id; db.meta.role = m.role; db.meta.perms = m.perms;
-      st.people = []; st.devices = []; st.requests = []; st.invites = []; st.needsAccess = false; st.denied = 0; peopleAt = 0;
+      st.people = []; st.devices = []; st.requests = []; st.invites = []; st.retired = []; st.needsAccess = false; st.denied = 0; peopleAt = 0;
       save(true); await Store.whenSaved();
       if (kept) await Store.drop(id);   // (it is the main copy now)
     } finally { switching = false; }
@@ -395,5 +412,5 @@ const Sync = (() => {
 
   return { st, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
     createInvite, rescind, decide, setMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
-    pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyParents, get switching() { return switching; }, onChange: null, onSessionLost: null };
+    pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyPeople, retireMember, loadRetired, forgetRetired, get switching() { return switching; }, onChange: null, onSessionLost: null };
 })();

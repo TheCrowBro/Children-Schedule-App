@@ -423,6 +423,24 @@
   "Could not switch: {reason}": "Short message when switching to another family's log failed; {reason} says why.",
   "Switch family": "Title of the sheet (and the spoken label of the button at the top of the screen) for choosing which family's log is shown.",
   "Open": "Button in the family tree: show this family's log.",
-  "asked to join {family} as **{role}**": "Under a request to join another of the parent's family logs; {family} is its name in the family tree, {role} a role such as Caregiver."
+  "asked to join {family} as **{role}**": "Under a request to join another of the parent's family logs; {family} is its name in the family tree, {role} a role such as Caregiver.",
+  "Medical assistant": "A role in the family log: a nurse, a home health aide or similar who helps with the baby. Shown next to people's names.",
+  "Moved away": "A reason for retiring a helper (a caregiver, babysitter or medical assistant who no longer helps).",
+  "No longer helps": "A reason for retiring a helper: they stopped doing the work.",
+  "Passed away": "A reason for retiring a helper: they died. Use the gentle, respectful wording.",
+  "Family: {names}": "In the family tree, under a family: its relatives (parents and family members), e.g. \"Family: Dad and Gran\".",
+  "Families you help with": "Heading in the Family tab: the families this person looks after as a caregiver, babysitter, medical assistant or friend (not a relative), listed apart from the family tree.",
+  "Retire": "Button for a parent: mark a caregiver, babysitter, medical assistant or friend as no longer helping (they moved away, stopped, or died). Their access ends; a note of them stays.",
+  "Retired ({n})": "Heading of a twirl-down list of the helpers who were retired, with how many there are.",
+  "Caregivers and helpers": "Heading in the Family tab: the caregivers, babysitters, medical assistants and friends of the family shown, listed apart from its family. Also a tour step.",
+  "No caregivers, babysitters or medical assistants yet. A parent invites them below.": "Shown when the list of caregivers and helpers is empty.",
+  "retired {date}": "On the Retired list, after a person's role: when they were retired, e.g. \"Babysitter · retired Mar 3, 2026 · Moved away\".",
+  "Retire {name}": "Title of the sheet for retiring a caregiver, babysitter, medical assistant or friend.",
+  "Why (optional)": "Label above the reasons for retiring someone (Moved away, No longer helps, Passed away, Other).",
+  "{name} is retired": "Short message after a parent retired a helper.",
+  "No details were added.": "On a retired helper's card, when they never added contact details.",
+  "Remove from the list": "Button on a retired helper's card: delete the note about them from the Retired list.",
+  "Remove {name} from the Retired list? Their details are deleted.": "Question before deleting the note about a retired helper.",
+  "{actor} retired {person}": "A line of the activity log: a parent retired a helper."
  }
 }

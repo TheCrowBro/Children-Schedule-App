@@ -45,14 +45,15 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     });
 
     await step('asking to join the sister\'s family: the request waits on the tree; once she approves, her family appears, named after her, with her children', async () => {
-      await askToJoin(await invite(S, 'caregiver', { add_entries: true, edit_own: true, delete_own: true, view_people: true }));
+      await askToJoin(await invite(S, 'family', {}));   // (as family: relatives' families are the family tree)
       assert.deepEqual((await tree()).map(f => [f.pending, f.name]), [[false, 'Your family'], [true, '']]);
       assert(/Waiting for a parent to approve/.test(await J.textContent('.ftree .fam.pending')));
       await approveAll(S);
       // the tree looks again every 15 seconds while a request waits
       await J.waitForFunction(() => document.querySelectorAll('.ftree .fam:not(.pending)').length === 2, null, { timeout: 40000 });
       assert(/You're in: Sarah's family/.test(await J.textContent('#toast')));
-      assert.deepEqual(await tree(), [{ name: 'Your family', pending: false, on: true, kids: ['Leo'], role: 'Parent' }, { name: "Sarah's family", pending: false, on: false, kids: ['Ava'], role: 'Caregiver' }]);
+      assert.deepEqual(await tree(), [{ name: 'Your family', pending: false, on: true, kids: ['Leo'], role: 'Parent' }, { name: "Sarah's family", pending: false, on: false, kids: ['Ava'], role: 'Family member' }]);
+      assert(/Family: Sarah/.test(await J.textContent(`.ftree .fam[data-fam="${ids.sarah}"]`)), 'with the relatives in it');
       assert.equal(await J.isVisible('#famSw'), true, 'the switcher at the top, now there are two'); assert(/Your family/.test(await J.textContent('#famSw')));
     });
 
@@ -62,7 +63,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert(/Now showing Sarah's family/.test(await J.textContent('#toast')));
       await syncNow(J);
       const r = await J.evaluate(() => ({ kids: kids().map(k => k.name), events: db.events.map(e => e.id), role: db.meta.role, top: document.querySelector('#famSw').textContent }));
-      assert.deepEqual(r.kids, ['Ava']); assert(r.events.includes('sarah-1') && !r.events.includes('jo-own'), JSON.stringify(r.events)); assert.equal(r.role, 'caregiver'); assert(/Sarah's family/.test(r.top));
+      assert.deepEqual(r.kids, ['Ava']); assert(r.events.includes('sarah-1') && !r.events.includes('jo-own'), JSON.stringify(r.events)); assert.equal(r.role, 'family'); assert(/Sarah's family/.test(r.top));
       await J.evaluate(() => { db.events.push({ id: 'jo-at-sarahs', type: 'diaper', ts: Date.now() - 600e3, data: { pee: true }, note: '', updated: stamp(), by: Auth.id, child: kids()[0].id }); save(); });
       await syncNow(J); await syncNow(S);
       assert(await S.evaluate(() => db.events.some(e => e.id === 'jo-at-sarahs')), 'Sarah sees it');
@@ -110,24 +111,62 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await syncNow(G); assert.deepEqual(await G.evaluate(() => [kids().map(k => k.name), db.events.map(e => e.id)]), [['Leo'], ['jo-own']], 'and sees your family');
     });
 
-    await step('a family whose parents she may not see is named after its children; a request still waiting can be cancelled', async () => {
+    let A;
+    await step('the family shown lists its family and, apart from them, its caregivers, babysitters and medical assistants; a parent retires one who no longer helps', async () => {
+      await J.click('#famSw'); await J.click(`#sheet [data-fampick="${ids.jo}"]`); await J.waitForFunction(id => db.meta.babyId === id && !Sync.switching, ids.jo);
+      const code = await invite(J, 'medical', {});
+      A = await H.device(); await H.signIn(A, 'amy@x.com'); await A.waitForSelector('#oJoin');
+      await A.evaluate(c => Sync.requestJoin(c, 'Amy', null), code); await approveAll(J);
+      assert.equal(await A.evaluate(() => Sync.checkApproval()), true); await syncNow(A);
+      await A.evaluate(() => Sync.setMyDetails({ relation: 'Visiting nurse', phone: '(555) 010-2468', work: 'Westside Pediatrics', workPhone: '', notes: '' }));
+      await A.evaluate(() => { db.events.push({ id: 'amy-1', type: 'health', ts: Date.now() - 900e3, data: { temp: 37.2 }, note: 'checkup', updated: stamp(), by: Auth.id, child: kids()[0].id }); save(); });
+      await syncNow(A); await syncNow(J);
+      const amy = await A.evaluate(() => Auth.id), gran = await G.evaluate(() => Auth.id);
+      await J.evaluate(() => Sync.loadPeople()); await family();
+      const lists = await J.evaluate(() => [...document.querySelectorAll('#view h2')].map(h => h.textContent));
+      assert(lists.includes('Family') && lists.includes('Caregivers and helpers'), JSON.stringify(lists));
+      const helpers = await J.textContent('#helpers');
+      assert(/Amy/.test(helpers) && /Medical assistant/.test(helpers) && !/Gran/.test(helpers), helpers);
+      assert.equal(await J.$$eval(`[data-retire="${gran}"]`, x => x.length), 0, 'relatives are never retired');
+      await J.click(`#helpers [data-pview="${amy}"]`);
+      const card = await J.textContent('#sheet'); assert(/\(555\) 010-2468/.test(card) && /Westside Pediatrics/.test(card) && /Visiting nurse/.test(card), 'her details: ' + card);
+      await J.click('#pvRetire');
+      assert(/Retire Amy/.test(await J.textContent('#sheet h3')) && /Their access ends now/.test(await J.textContent('#sheet')));
+      await J.click('#sheet input[name=rtWhy][value=moved]'); await J.click('#rtGo');
+      await J.waitForFunction(() => /Amy is retired/.test(document.querySelector('#toast').textContent));
+      // her access ends: her phone loses the family
+      await syncNow(A); assert.equal(await A.evaluate(() => db.meta.babyId), null, 'no access any more');
+      // she stays on the Retired list, with her details, and her entries still say who added them
+      await family(); const ret = await J.textContent('#helpers details.retired'); assert(/Retired \(1\)/.test(ret) && /Amy/.test(ret) && /Moved away/.test(ret), ret);
+      assert.equal(await J.evaluate(u => Sync.nameOf(u), amy), 'Amy', 'her entries still say who added them');
+      assert(!/Amy/.test(await J.evaluate(() => [...document.querySelectorAll('#helpers > .stat')].map(x => x.textContent).join())), 'no longer among the helpers');
+      assert((await J.evaluate(() => Sync.activity().then(r => r.map(l => l.action)))).includes('member_retired'), 'in the activity log');
+      await J.evaluate(() => { document.querySelector('#helpers details.retired').open = true; });
+      await J.click('#helpers [data-rview]'); assert(/Westside Pediatrics/.test(await J.textContent('#sheet')), 'her details are kept');
+      await J.click('#rtForget'); await J.waitForFunction(() => !document.querySelector('#helpers details.retired'));
+    });
+
+    await step('a family she helps with (not a relative\'s) is listed apart from the family tree, named after its children; a request still waiting can be cancelled', async () => {
       await askToJoin(await invite(T, 'babysitter', { add_entries: true }));
       assert.equal((await tree()).filter(f => f.pending).length, 1);
       await J.click('.ftree .fam.pending [data-cancelreq]'); await J.waitForFunction(() => !document.querySelector('.ftree .fam.pending'));
       await askToJoin(await invite(T, 'babysitter', { add_entries: true }));
       await approveAll(T);
-      await J.waitForFunction(() => document.querySelectorAll('.ftree .fam:not(.pending)').length === 3, null, { timeout: 40000 });
-      assert.deepEqual((await tree()).map(f => [f.name, f.kids.join(), f.role]), [['Your family', 'Leo', 'Parent'], ["Sarah's family", 'Ava', 'Caregiver'], ['Noah', 'Noah', 'Babysitter']]);
+      await J.waitForFunction(() => document.querySelectorAll('.fhelp .fam').length === 1, null, { timeout: 40000 });
+      assert.deepEqual((await tree()).map(f => [f.name, f.kids.join(), f.role]), [['Your family', 'Leo', 'Parent'], ["Sarah's family", 'Ava', 'Family member']], 'the family tree: relatives only');
+      const helped = await J.evaluate(() => [...document.querySelectorAll('.fhelp .fam')].map(f => [f.querySelector('.fhead b').textContent, f.querySelector('.fhead small').textContent]));
+      assert.deepEqual(helped, [['Noah', 'Babysitter']]);
+      assert(/Families you help with/.test(await J.textContent('#view')));
     });
 
-    await step('removed from a family: it leaves the tree, and nothing of it stays on the phone', async () => {
+    await step('removed from a family: it leaves the app, and nothing of it stays on the phone', async () => {
       await J.click(`[data-famopen="${ids.tom}"]`); await J.waitForFunction(id => db.meta.babyId === id && !Sync.switching, ids.tom); await syncNow(J);
       await J.click('#famSw'); await J.click(`#sheet [data-fampick="${ids.jo}"]`); await J.waitForFunction(id => db.meta.babyId === id && !Sync.switching, ids.jo);
       assert((await J.evaluate(() => Store.parkedIds())).includes(ids.tom));
       const jo = await J.evaluate(() => Auth.id);
       await T.evaluate(u => Sync.loadPeople().then(() => Sync.removeMember(u)), jo);
       await J.evaluate(() => Sync.loadMemberships()); await family();
-      assert.deepEqual((await tree()).map(f => f.name), ['Your family', "Sarah's family"]);
+      assert.deepEqual((await tree()).map(f => f.name), ['Your family', "Sarah's family"]); assert.equal(await J.$('.fhelp'), null, 'and the list of families she helps with is gone');
       assert(!(await J.evaluate(() => Store.parkedIds())).includes(ids.tom), "the brother-in-law's family is gone from the phone");
     });
 

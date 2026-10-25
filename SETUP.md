@@ -36,7 +36,7 @@ parent loses it, remove their factor in Supabase → Authentication → Users.
 ## 2. Who can do what
 Parents are admins. Everyone else gets a role plus check boxes that the parents control per person (and can change later):
 
-| | Parent | Family member | Caregiver / Babysitter / Friend |
+| | Parent | Family member | Caregiver / Babysitter / Medical assistant / Friend |
 |---|---|---|---|
 | Add entries | ✅ | ✅ | ☑️ choose |
 | Edit / delete their **own** entries | ✅ | ✅ | ☑️ choose |
@@ -45,10 +45,14 @@ Parents are admins. Everyone else gets a role plus check boxes that the parents 
 | See who else has access (emails, roles) | ✅ | ☑️ choose | ☑️ choose |
 | Change the children's names, birthdays, colours and allergies | ✅ | ❌ never | ☑️ choose |
 | Invite, approve, change or remove people; see the **activity log** | ✅ | ❌ | ❌ |
+| **Retire** a caregiver, babysitter, medical assistant or friend (their access ends; a note of them stays) | ✅ | ❌ | ❌ |
 
 These are enforced **in the database** (see `schema.sql`), not just hidden in the app: a modified app is refused and the
 phone is put back to the server's version. Joining takes an invite (valid **2 hours**, one use, rescindable) **and** a parent's approval.
 The activity log (who added / edited / deleted what, who joined / left, role changes) can't be edited by anyone and is visible to parents only.
+Relatives (parents and family members) are never retired; retiring a helper is removing them plus a note in the `retired` table (name, role,
+dates, reason, and their contact details as they were, still encrypted), which the people who may see the family list can read and a parent
+can delete. Deleting an account deletes the notes about that person too.
 It records *that* something happened, never the contents of entries.
 
 ## 3. Cloud backup providers (optional; each is independent)

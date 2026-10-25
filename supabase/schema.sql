@@ -5,7 +5,7 @@
 -- Security model
 --   * Clients can only READ babies / their own membership row / events (row-level security).
 --     Every write goes through the security-definer functions below, which check role + permissions.
---   * Roles: parent (admin, everything), family, caregiver, babysitter, friend. Everyone except parents has
+--   * Roles: parent (admin, everything), family, caregiver, babysitter, medical (a medical assistant), friend. Everyone except parents has
 --     per-person permission flags (see role_preset). Parents must use an MFA (aal2) session; without one a parent
 --     has no more access than a stranger.
 --   * Joining needs an invite code AND a parent's approval. Invites last 2 hours, work once, and can be rescinded.
@@ -61,7 +61,7 @@ create table members (
   user_id uuid not null references auth.users(id) on delete cascade,
   email text not null default '',
   display_name text not null default '' check (length(display_name) <= 60),
-  role text not null check (role in ('parent','family','caregiver','babysitter','friend')),
+  role text not null check (role in ('parent','family','caregiver','babysitter','medical','friend')),
   perms jsonb not null default '{}',
   joined_at timestamptz not null default now(),
   details text not null default '' check (length(details) <= 4096),   -- encrypted {relation, phone, work…}, written by the person themselves
@@ -69,10 +69,27 @@ create table members (
   primary key (baby_id, user_id)
 );
 
+-- Helpers who no longer help (they moved away, stopped, or died). Retiring one ends their access exactly like removing them, but the
+-- family keeps a note of who they were: name, role, dates, why, and their contact details (still end-to-end encrypted, with the keys of
+-- that time), so past entries still say who added them. Only caregivers, babysitters, medical assistants and friends are retired.
+create table retired (
+  id uuid primary key default gen_random_uuid(),
+  baby_id uuid not null references babies(id) on delete cascade,
+  user_id uuid,                                                                -- (no reference: the note outlives a deleted account's membership)
+  display_name text not null default '' check (length(display_name) <= 60),
+  role text not null check (role in ('caregiver','babysitter','medical','friend')),
+  details text not null default '' check (length(details) <= 4096),
+  details_epoch int not null default 0,
+  joined_at timestamptz,
+  retired_at timestamptz not null default now(),
+  reason text not null default '' check (reason in ('', 'moved', 'stopped', 'passed', 'other'))
+);
+create index retired_by_baby on retired (baby_id, retired_at desc);
+
 create table invites (
   code text primary key,
   baby_id uuid not null references babies(id) on delete cascade,
-  role text not null check (role in ('parent','family','caregiver','babysitter','friend')),
+  role text not null check (role in ('parent','family','caregiver','babysitter','medical','friend')),
   perms jsonb not null default '{}',
   created_by uuid not null,
   created_at timestamptz not null default now(),
@@ -430,7 +447,7 @@ language plpgsql security definer set search_path = public as $$
 declare old members; new_perms jsonb; old_vh boolean; new_vh boolean; g jsonb; n int;
 begin
   if not is_parent(p_baby) then raise exception 'Only parents can change access'; end if;
-  if p_role not in ('parent','family','caregiver','babysitter','friend') then raise exception 'bad role'; end if;
+  if p_role not in ('parent','family','caregiver','babysitter','medical','friend') then raise exception 'bad role'; end if;
   select * into old from members where baby_id = p_baby and user_id = p_user for update;
   if not found then raise exception 'not a member'; end if;
   if old.role = 'parent' and p_role <> 'parent'
@@ -476,6 +493,46 @@ begin
   update babies set rotate_needed = true where id = p_baby;   -- they may still hold the keys: change them
 end $$;
 
+-- Retire a helper (caregiver, babysitter, medical assistant, friend): their access ends as with remove_member, and the note above is kept.
+create function retire_member(p_baby uuid, p_user uuid, p_reason text default '') returns void
+language plpgsql security definer set search_path = public as $$
+declare t members;
+begin
+  if not is_parent(p_baby) then raise exception 'Only parents can retire people'; end if;
+  if coalesce(p_reason, '') not in ('', 'moved', 'stopped', 'passed', 'other') then raise exception 'bad reason'; end if;
+  select * into t from members where baby_id = p_baby and user_id = p_user for update;
+  if not found then return; end if;
+  if t.role not in ('caregiver','babysitter','medical','friend') then raise exception 'Only caregivers, babysitters, medical assistants and friends can be retired'; end if;
+  insert into retired (baby_id, user_id, display_name, role, details, details_epoch, joined_at, reason)
+    values (p_baby, p_user, coalesce(nullif(t.display_name, ''), split_part(t.email, '@', 1)), t.role, t.details, t.details_epoch, t.joined_at, coalesce(p_reason, ''));
+  perform log_activity(p_baby, 'member_retired', null, null, jsonb_build_object('person', display_of(p_baby, p_user), 'reason', coalesce(p_reason, '')));
+  delete from members where baby_id = p_baby and user_id = p_user;
+  delete from key_grants where baby_id = p_baby and grantee in (select 'd:' || id::text from devices where user_id = p_user);
+  update babies set rotate_needed = true where id = p_baby;   -- they may still hold the keys: change them
+end $$;
+
+-- The retired helpers of a log, for the people who may see the family list (newest first).
+create function list_retired(p_baby uuid)
+returns table (id uuid, user_id uuid, display_name text, role text, details text, details_epoch int, joined_at timestamptz, retired_at timestamptz, reason text)
+language plpgsql security definer stable set search_path = public as $$
+begin
+  if not is_member(p_baby) then raise exception 'no access'; end if;
+  if not has_perm(p_baby, 'view_people') then return; end if;
+  return query select r.id, r.user_id, r.display_name, r.role, r.details, r.details_epoch, r.joined_at, r.retired_at, r.reason
+               from retired r where r.baby_id = p_baby order by r.retired_at desc;
+end $$;
+
+-- A parent can delete the note about a retired helper.
+create function forget_retired(p_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare b uuid;
+begin
+  select baby_id into b from retired where id = p_id;
+  if b is null then return; end if;
+  if not is_parent(b) then raise exception 'Only parents can do this'; end if;
+  delete from retired where id = p_id;
+end $$;
+
 -- Lost authenticator: another parent can reset a member's two-step verification (they re-enrol on next sign-in).
 create function reset_member_mfa(p_baby uuid, p_user uuid) returns void
 language plpgsql security definer set search_path = public as $$
@@ -494,7 +551,7 @@ language plpgsql security definer set search_path = public as $$
 declare c text;
 begin
   if not is_parent(p_baby) then raise exception 'Only parents can invite'; end if;
-  if p_role not in ('parent','family','caregiver','babysitter','friend') then raise exception 'bad role'; end if;
+  if p_role not in ('parent','family','caregiver','babysitter','medical','friend') then raise exception 'bad role'; end if;
   delete from invites where expires_at < now() - interval '1 day';
   if (select count(*) from invites where baby_id = p_baby and used_by is null and expires_at > now()) >= 10 then
     raise exception 'Too many open invites – rescind some first';
@@ -698,6 +755,7 @@ begin
       update babies set rotate_needed = true where id = b.baby_id;
     end if;
   end loop;
+  delete from retired where user_id = me;          -- (notes about this person as a retired helper go too)
   delete from auth.users where id = me;            -- cascades to remaining memberships, requests and phones
 end $$;
 
@@ -738,6 +796,7 @@ grant execute on function
   rotate_keys(uuid, int, jsonb, text, text, text, text),
   create_baby(text, text, uuid, jsonb, jsonb, text, jsonb, uuid, text), update_baby(uuid, text, int), list_people(uuid), set_display_name(text), set_my_details(uuid, text, int),
   set_member(uuid, uuid, text, jsonb, jsonb), remove_member(uuid, uuid), reset_member_mfa(uuid, uuid),
+  retire_member(uuid, uuid, text), list_retired(uuid), forget_retired(uuid),
   create_invite(uuid, text, jsonb), list_invites(uuid), rescind_invite(text), redeem_invite(text, text, uuid, text),
   my_requests(), cancel_my_request(uuid), list_requests(uuid), decide_request(uuid, boolean, text, jsonb, jsonb),
   push_events(uuid, jsonb), activity_log(uuid, int, bigint), delete_my_account()

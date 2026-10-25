@@ -16,7 +16,7 @@ const grant = (health = true, extra = {}) => ({ wrap_main: W('m'), wrap_health: 
 const BLOB = 'B'.repeat(40);
 const ev = (id, o = {}) => ({ id, blob: BLOB, epoch: 1, sensitive: false, updated: now(), deleted: false, ...o });
 const bad = async (who, code, dev) => assert.equal((await who('select redeem_invite($1,$2,$3,$4) r', [code, '', dev, null]))[0].r.status, 'invalid');
-const names = ['A', 'B', 'C', 'D', 'E', 'F'];
+const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 (async () => {
   const admin = startCluster();
@@ -25,7 +25,7 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F'];
     const id = {}; for (const x of names) id[x] = (await su.query(`insert into auth.users(email) values ($1) returning id`, [x.toLowerCase() + '@x.com'])).rows[0].id;
     const as = (x, aal = 'aal2') => actor(url, { sub: id[x], email: x.toLowerCase() + '@x.com', aal });
     const anon = actor(url, { role: 'anon' });
-    const A = as('A'), A1 = as('A', 'aal1'), B = as('B'), C = as('C'), D = as('D'), E = as('E'), F = as('F');
+    const A = as('A'), A1 = as('A', 'aal1'), B = as('B'), C = as('C'), D = as('D'), E = as('E'), F = as('F'), G = as('G'), H = as('H');
     const q = async (sql, p) => (await su.query(sql, p)).rows;
     const dev = async (who, name = 'phone') => (await who('select register_device($1,$2::jsonb) d', [name, JSON.stringify(pub())]))[0].d;
     const push = (who, baby, rows) => who('select push_events($1,$2::jsonb) r', [baby, JSON.stringify(rows)]).then(r => r[0].r);
@@ -294,6 +294,29 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F'];
       assert.equal((await E('select * from events')).length, 0); await rejects(push(E, baby, [ev('e9', { epoch: 2 })]), /no access/); await rejects(E('select * from my_grant($1,$2)', [baby, dA.E]), /no access/);
       assert.equal((await q(`select count(*)::int c from key_grants where grantee=$1`, ['d:' + dA.E]))[0].c, 0); assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, true);
       await F('select remove_member($1,$2)', [baby, id.F]); await su.query('update babies set rotate_needed=false');
+    });
+    await t('retiring a helper (caregiver, babysitter, medical assistant, friend) ends their access like removing them; a note of who they were stays', async () => {
+      await enroll(G, 'G', 'medical'); await enroll(H, 'H', 'babysitter');
+      assert.equal((await q('select role from members where user_id=$1', [id.G]))[0].role, 'medical', 'the medical assistant role');
+      await G('select set_my_details($1,$2,$3)', [baby, 'D'.repeat(60), 1]);   // their contact details (ciphertext, as always)
+      await rejects(G('select retire_member($1,$2,$3)', [baby, id.H, 'moved']), /Only parents/);
+      await rejects(as('A', 'aal1')('select retire_member($1,$2,$3)', [baby, id.G, 'moved']), /Only parents/, 'parent without MFA');
+      await rejects(A('select retire_member($1,$2,$3)', [baby, id.A, 'moved']), /Only caregivers, babysitters, medical assistants and friends/, 'never a parent or family member');
+      await rejects(A('select retire_member($1,$2,$3)', [baby, id.G, 'gone fishing']), /bad reason/);
+      await A('select retire_member($1,$2,$3)', [baby, id.G, 'moved']);
+      assert.equal((await G('select * from events')).length, 0, 'no more access'); await rejects(G('select * from my_grant($1,$2)', [baby, dA.G]), /no access/);
+      assert.equal((await q(`select count(*)::int c from key_grants where grantee=$1`, ['d:' + dA.G]))[0].c, 0); assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, true);
+      const r = await A('select * from list_retired($1)', [baby]);
+      assert.deepEqual(r.map(x => [x.display_name, x.role, x.reason, x.details, x.details_epoch, x.user_id]), [['g', 'medical', 'moved', 'D'.repeat(60), 1, id.G]]);
+      assert((await A('select * from activity_log($1)', [baby])).some(l => l.action === 'member_retired' && l.detail.person === 'g' && l.detail.reason === 'moved'));
+      assert.deepEqual(await H('select * from list_retired($1)', [baby]), [], 'only for people who may see the family list');
+      await rejects(G('select * from list_retired($1)', [baby]), /no access/, 'not the retired person');
+      await rejects(H('select forget_retired($1)', [r[0].id]), /Only parents/);
+      await A('select retire_member($1,$2,$3)', [baby, id.H, 'passed']);
+      await A('select forget_retired($1)', [r[0].id]);
+      assert.deepEqual((await A('select * from list_retired($1)', [baby])).map(x => [x.display_name, x.reason]), [['h', 'passed']], 'a parent can delete the note');
+      await H('select delete_my_account()'); assert.deepEqual(await A('select * from list_retired($1)', [baby]), [], 'a deleted account takes the note about it along');
+      await su.query('update babies set rotate_needed=false');
     });
     await t('a second parent can be added; then the first may step down', async () => {
       await A('select set_member($1,$2,$3,$4::jsonb,$5::jsonb)', [baby, id.B, 'parent', '{}', JSON.stringify((await A('select * from list_devices($1)', [baby])).filter(d => d.user_id === id.B).map(d => ({ device: d.grantee.slice(2), wrap_health: W('bh') })))]);
