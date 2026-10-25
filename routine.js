@@ -1,8 +1,9 @@
 'use strict';
-/* The routine: the times of day that keep coming back. Little Log looks at the last 7 days before today. A feed, a sleep, a kind of
-   play or a medicine that happens within 45 minutes of the same time on more than half of the days that were logged (and on at
-   least 3 of them) is part of the routine. Nothing is stored: it is worked out again from the log every time, so it moves with the
-   baby when their routine changes. Diapers, night wakings, vomiting and health notes are left out: they don't keep to a clock.
+/* The routine: the times of day that keep coming back. Little Log looks at the last 7 days before today. A feed, a meal, a sleep, a
+   kind of play or a medicine that happens within 45 minutes of the same time on more than half of the days that were logged (and on
+   at least 3 of them) is part of the routine. Nothing is stored: it is worked out again from the log every time, so it moves with the
+   child when their routine changes. Diapers, the potty, night wakings, vomiting and health notes are left out: they don't keep to a
+   clock.
    The routine's day runs from morning to night: from 6 AM to 6 the next morning, so the hours after midnight come last, with the
    evening before them. */
 const Routine = (() => {
@@ -21,11 +22,12 @@ const Routine = (() => {
   const median = xs => { const s = [...xs].sort((a, b) => a - b), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
   const most = xs => { const c = new Map(); let best = '', bn = 0; for (const x of xs) { const n = (c.get(x) || 0) + 1; c.set(x, n); if (n > bn) { bn = n; best = x; } } return best; };
 
-  /** Which routine an entry belongs to: all milk feeds together, all meals of solid food together, all sleeps together, and each kind of
-      play and each medicine on its own. */
+  /** Which routine an entry belongs to: all milk feeds together, all of a baby's meals of solid food together, each meal of the day
+      (breakfast, lunch, dinner, snacks) on its own, all sleeps together, and each kind of play and each medicine on its own. */
   function keyOf(e) {
     const d = e.data || {};
     if (e.type === 'feed') return d.kind === 'solids' ? 'solids' : 'feed';   // (meals of solid food keep their own times)
+    if (e.type === 'meal') return 'meal:' + (d.meal || 'Meal');
     if (e.type === 'sleep') return 'sleep';
     if (e.type === 'play') return 'play:' + (d.activity || 'Play');
     if (e.type === 'med') { const n = String(d.name || '').trim().toLowerCase().replace(/\s+/g, ' '); return n ? 'med:' + n : null; }
@@ -54,11 +56,14 @@ const Routine = (() => {
     if (type === 'sleep') { const long = es.filter(e => e.end > e.ts).map(e => (e.end - e.ts) / MIN); if (long.length) slot.minutes = Math.round(median(long)); }
     if (type === 'play') { slot.activity = key.slice(5); const m = es.map(e => +d(e).min).filter(x => x > 0); if (m.length) slot.minutes = Math.round(median(m)); }
     if (type === 'med') { slot.name = most(es.map(e => String(d(e).name || '').trim())); slot.dose = most(es.map(e => String(d(e).dose || '').trim()).filter(Boolean)); }
-    if (key === 'solids') { const c = new Map(); for (const f of es.flatMap(e => d(e).foods || [])) c.set(f, (c.get(f) || 0) + 1); slot.kind = 'solids'; slot.foods = [...c].sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]); }
+    if (key === 'solids' || type === 'meal') { const c = new Map(); for (const f of es.flatMap(e => d(e).foods || [])) c.set(f, (c.get(f) || 0) + 1); slot.foods = [...c].sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]); }
+    if (key === 'solids') slot.kind = 'solids';
+    if (type === 'meal') slot.meal = key.slice(5);
     else if (type === 'feed') {
-      const bottles = es.filter(e => d(e).kind === 'bottle');
+      const bottles = es.filter(e => d(e).kind === 'bottle' || d(e).kind === 'cup');   // (a cup of milk is measured like a bottle)
       slot.kind = bottles.length * 2 > es.length ? 'bottle' : 'breast';   // what it usually is
-      const ml = bottles.map(e => +d(e).ml).filter(x => x > 0), m = es.filter(e => d(e).kind !== 'bottle').map(e => +d(e).min).filter(x => x > 0);
+      if (slot.kind === 'bottle' && es.filter(e => d(e).kind === 'cup').length * 2 > bottles.length) slot.cup = true;
+      const ml = bottles.map(e => +d(e).ml).filter(x => x > 0), m = es.filter(e => d(e).kind !== 'bottle' && d(e).kind !== 'cup').map(e => +d(e).min).filter(x => x > 0);
       if (slot.kind === 'bottle' && ml.length) slot.ml = Math.round(median(ml) / 5) * 5;
       if (slot.kind === 'breast' && m.length) slot.minutes = Math.round(median(m));
     }
@@ -67,7 +72,7 @@ const Routine = (() => {
 
   /** The routine in one child's log, as it stands at `now`: { slots (from morning to night), logged (days with entries), need (days a time
       must repeat on), enough (whether there are days enough to tell) }. A slot: { key, type, at, from, to (minutes after midnight),
-      days, of, entries, and what it usually is: minutes, ml, kind, activity, name, dose }. */
+      days, of, entries, and what it usually is: minutes, ml, kind, activity, meal, foods, name, dose }. */
   function find(events, now = Date.now(), { days = DAYS, window = WINDOW } = {}) {
     const today = dayStart(now), from = back(today, days);
     const recent = events.filter(e => e.ts >= from && e.ts < today);

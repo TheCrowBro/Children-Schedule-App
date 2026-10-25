@@ -53,7 +53,7 @@ main{max-width:640px;margin:0 auto;padding:0 16px}
 .sheet{position:fixed;left:0;right:0;bottom:0;max-height:92vh;overflow:auto;background:var(--card);border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));z-index:6;max-width:640px;margin:0 auto}
 .sheet h3{margin:0 0 10px;font-family:var(--serif);font-weight:600;font-size:20px}
 .sheet label.f{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
-.sheet input[type=datetime-local],.sheet input[type=number],.sheet input[type=text],.sheet textarea,.sheet select{width:100%;padding:10px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.sheet input[type=datetime-local],.sheet input[type=date],.sheet input[type=number],.sheet input[type=text],.sheet textarea,.sheet select{width:100%;padding:10px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{position:relative}
 .chip input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
@@ -271,8 +271,8 @@ details.tips{margin-top:10px;border-top:1px solid var(--line)}
 details.tips>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:8px 2px;min-height:44px;font-weight:600;font-size:14px}
 details.tips ul{margin:0 0 6px;padding-inline-start:20px;line-height:1.5;font-size:14px}
 .tripcard .row{margin-top:10px}.tripcard .row .btn{padding:10px;font-size:15px}
-.tripbtn{display:flex;align-items:center;gap:12px;width:100%;margin:18px 0 8px;padding:14px;border-radius:18px;border:2px dashed var(--trip);background:var(--card);color:var(--ink);font:inherit;text-align:start}
-.tripbtn>span:nth-child(2){flex:1;min-width:0}.tripbtn small{display:block;color:var(--mute);margin-top:2px}.tripbtn .tm{line-height:0}
+.tripbtn,.momentbtn{display:flex;align-items:center;gap:12px;width:100%;margin:18px 0 8px;padding:14px;border-radius:18px;border:2px dashed var(--trip);background:var(--card);color:var(--ink);font:inherit;text-align:start}
+.tripbtn>span:nth-child(2),.momentbtn>span:nth-child(2){flex:1;min-width:0}.tripbtn small,.momentbtn small{display:block;color:var(--mute);margin-top:2px}.tripbtn .tm,.momentbtn .tm{line-height:0}
 .quick.tq button{min-height:96px;font-size:15px}.quick.tq .ic{width:44px;height:44px}
 .qmore{display:block;width:100%;margin:8px 0 10px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 14px/1.2 inherit}
 .tripart{cursor:default}
@@ -444,3 +444,18 @@ details.famlist .fbranches{margin:0 14px 14px;margin-inline-start:26px}details.f
 .fampick{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;text-align:start;margin:0 0 8px;cursor:pointer;color:inherit;font:inherit}.fampick.on{border-color:var(--brand)}
 .fbranches.flat{margin:0;border:0}.fbranches.flat .fam{margin-inline-start:0}.fbranches.flat .fam::before{display:none}
 .fkin{margin:6px 0 0}
+/* Growing up: big moments in gold (a card at the top of their day, a star on the calendar, the Month tab's journal), and the note on
+   a milestone sheet when a new stage begins */
+.moment{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:start;font:inherit;color:var(--ink);border-inline-start:4px solid var(--g-moment);background:linear-gradient(100deg,var(--mwash,rgba(212,165,72,.16)),transparent 65%),var(--card)}
+.moment .mi{line-height:0;flex:none}.moment .mi .ic{width:28px;height:28px;color:var(--g-moment)}
+.moment .mb{flex:1;min-width:0}.moment small{display:block;color:var(--mute);margin-top:2px}.moment .mn{font-style:italic;color:var(--ink)}
+.momentbtn{border-color:var(--g-moment)}.momentbtn+.tripbtn{margin-top:4px}.momentbtn .tm .ic{width:42px;height:42px;color:var(--g-moment)}
+.mmark{position:absolute;top:1px;inset-inline-start:3px;color:var(--g-moment);font:700 11px/1 system-ui,sans-serif;font-style:normal}
+.legend .mmkey .mmark{position:static;display:inline-block;margin-inline-end:4px}
+details.moments>.moment,details.moments>.mmadd{margin:0 12px 8px;width:calc(100% - 24px)}details.moments>.mmadd{margin-bottom:12px}
+details.moments>.mh{margin:10px 16px 6px;color:var(--g-moment)}
+details.mmmore{margin-top:8px}details.mmmore>summary{display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:var(--brand);font-weight:600;padding:4px 0;list-style:none}
+details.mmmore>summary::-webkit-details-marker{display:none}details.mmmore[open]>summary .chev{transform:rotate(90deg)}
+.kstage{margin:6px 0 0}.kmo{margin:4px 0}.kmo .ic{color:var(--g-moment)}.kmo small{color:var(--mute)}
+.grow{background:var(--wash2);border-radius:12px;padding:8px 10px;margin:8px 0}.grow .ic{color:var(--brand)}
+:root[data-mode="dark"] .moment{--mwash:rgba(211,165,72,.13)}

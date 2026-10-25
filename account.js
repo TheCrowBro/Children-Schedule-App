@@ -619,9 +619,11 @@ const Acct = (() => {
   /** A child tapped on the tree: their age and allergies, and their day (their family is opened first). */
   function kidCard(m, k, name) {
     const fam = famName(m), al = (k.allergies || []).map(a => __(a.food));
+    const big = m.id === db.meta.babyId ? momentsOf([k.id]).slice(-3).reverse() : [];   // (the family shown: its latest big moments)
     const close = showSheet(`<h3 class="kidhead"><span class="av lg" style="--k:${esc(k.color)}">${esc(firstOf(name))}</span>${esc(name)}</h3>
       <p class="note" style="margin-top:0">${[kidAge(k), fam].filter(Boolean).map(esc).join(' · ')}</p>
       ${al.length ? `<p class="note allergyline">⚠️ ${__h('Allergies: {foods}', { foods: al.join(', ') })}</p>` : ''}
+      ${big.length ? `<p class="mh">${__h('Latest big moments')}</p>${big.map(e => `<p class="kmo">🌟 <b>${esc(describe(e)[0])}</b> <small>${esc([fmtShort(e.ts), Stages.age(k.birth, e.ts)].filter(Boolean).join(' · '))}</small></p>`).join('')}` : ''}
       <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button><button class="btn p" id="tcDay">${__h("Show {name}'s day", { name })}</button></div>`);
     $('#sheet [data-close]').onclick = close;
     $('#tcDay').onclick = async () => {

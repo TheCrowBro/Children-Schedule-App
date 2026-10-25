@@ -9,8 +9,9 @@ Each saved version is a git tag, and a backup zip holds the same version ready t
 | Version | Tag | Saved | What it is |
 |---|---|---|---|
 | 1.0.0 | `v1.0.0` | 25 October 2026 | The newborn tracker: feeds, sleep, diapers, solids and allergies, the routine, the day clock, travel, the doctor's report, several children and families, the watercolour family tree, 32 languages. Saved before the app grows with the child up to 18. |
+| 1.1.0 | `v1.1.0` | 25 October 2026 | Growing up, phase 1: stages from newborn to 18, the Day page by age (meals, milk from a cup, potty training, the rest behind More), big moments, the Guide's toddler topics and milestones to 5. A phone still on 1.0.0 skips meals, the potty and big moments; once it is updated it fetches them. Going back to 1.0.0 needs nothing on the server. |
 
-Android shows version 1.0.0 as "1.0".
+Android shows the version without its last number: 1.1.0 as "1.1". All the phones in a family should run the same version.
 
 ## 1. Try it without installing
 `npm run demo` writes `demo/little-log-demo.html`: one page that runs in any browser with made-up data. It needs no account and sends

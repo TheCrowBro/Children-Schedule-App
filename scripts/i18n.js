@@ -6,7 +6,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), langDir = path.join(root, 'lang');
 // The files whose text is shown to people, in the order they are listed for translators.
-const SOURCES = ['index.html', 'app.js', 'account.js', 'guide.js', 'travel.js', 'formulas.js', 'foods.js', 'art.js', 'tour.js', 'sync.js', 'e2ee.js', 'cloud.js', 'auth.js', 'lock.js', 'native.js'];
+const SOURCES = ['index.html', 'app.js', 'account.js', 'guide.js', 'stages.js', 'travel.js', 'formulas.js', 'foods.js', 'art.js', 'tour.js', 'sync.js', 'e2ee.js', 'cloud.js', 'auth.js', 'lock.js', 'native.js'];
 const TEXT = new Set(['__', '__h', 'N_']), PLURAL = new Set(['__n', '__hn']);
 
 function idOf(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); }

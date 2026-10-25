@@ -129,18 +129,20 @@ function demoTreeTap(key) {
     <div class="row" style="margin-top:16px"><button class="btn" data-close>Close</button>${w.kind === 'parent' ? '' : '<button class="btn d" id="dmRemove">Remove from the tree</button>'}</div>`);
   if ($('#dmRemove')) $('#dmRemove').onclick = () => { FamilyTree.remove(t, w.p.id); DEMO_TREE.tree = FamilyTree.clean(t); close(); render(); };
 }
-const DEMO_FAMILIES = [['Your family', 'Leo, Mia, Sam', 'Parent'], ["Sarah's family", 'Ava, Jack', 'Family member'], ["Tom's family", 'Noah', 'Family member']];
+const DEMO_FAMILIES = [['Your family', 'Ella, Leo, Mia, Sam', 'Parent'], ["Sarah's family", 'Ava, Jack', 'Family member'], ["Tom's family", 'Noah', 'Family member']];
 window.confirm = () => true; window.alert = () => {};
 function demoDb() {
   const h = 3600e3, DAYMS = 864e5, t0 = new Date().setHours(0, 0, 0, 0);
-  const kids = [{ id: 'c1', name: 'Leo', birth: '', sex: 'boy', color: '', formula: 'Similac 360 Total Care' }, { id: 'k2', name: 'Mia', birth: '', sex: 'girl', color: '' }, { id: 'k3', name: 'Sam', birth: '', sex: 'boy', color: '' }];
-  const ks = Kids.clean(kids), born = new Date(t0); born.setMonth(born.getMonth() - 2); const iso = `${born.getFullYear()}-${String(born.getMonth() + 1).padStart(2, '0')}-${String(born.getDate()).padStart(2, '0')}`;
-  ks.forEach(k => { k.birth = iso; });
+  const kids = [{ id: 'c1', name: 'Leo', birth: '', sex: 'boy', color: '', formula: 'Similac 360 Total Care' }, { id: 'k2', name: 'Mia', birth: '', sex: 'girl', color: '' }, { id: 'k3', name: 'Sam', birth: '', sex: 'boy', color: '' }, { id: 'k4', name: 'Ella', birth: '', sex: 'girl', color: '' }];
+  const ks = Kids.clean(kids), day0 = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const born = new Date(t0); born.setMonth(born.getMonth() - 2); const iso = day0(born);
+  ks.slice(0, 3).forEach(k => { k.birth = iso; });
+  const ella = ks[3], eb = new Date(t0); eb.setFullYear(eb.getFullYear() - 3); eb.setMonth(eb.getMonth() - 2); ella.birth = day0(eb);   // the triplets' big sister, a preschooler
   const events = [], FORMULA = { c1: 'Similac 360 Total Care', k2: 'Enfamil NeuroPro' }; let n = 0;   // (Mia's usual formula is learned from her feeds)
   const add = (type, ts, data, kid, extra = {}) => { if (ts > Date.now()) return; events.push({ id: 'd' + (n++), type, ts, data, note: '', updated: Date.now(), child: kid.id, ...extra }); };
   for (let day = 6; day >= 0; day--) {
     const b = t0 - day * DAYMS;
-    ks.forEach((k, i) => {
+    ks.slice(0, 3).forEach((k, i) => {   // (the triplets)
       const o = i * 0.15;
       [0.8, 3.6, 6.4, 9.3, 12.2, 15.1, 18, 21].forEach((x, j) => add('feed', b + (x + o) * h, j % 3 ? { kind: 'bottle', ml: 70 + ((j * 7 + i * 5) % 30), milk: 'Formula', ...(FORMULA[k.id] ? { formula: FORMULA[k.id] } : {}) } : { kind: 'breast', side: j % 2 ? 'Left' : 'Right', min: 12 + j }, k));
       [1.5, 4.5, 7.5, 10.5, 13.5, 16.5, 19.5].forEach((x, j) => add('diaper', b + (x + o) * h, { pee: true, poo: j % 2 === 0, rash: false, color: j % 2 === 0 ? 'Yellow' : undefined }, k));
@@ -149,6 +151,24 @@ function demoDb() {
       add('play', b + (11 + o) * h, { activity: 'Tummy time', min: 10 }, k);
     });
   }
+  // Ella's week: meals, milk from a cup, the potty (an accident now and then), a nap, play; and her big moments, and the triplets' first ones
+  for (let day = 6; day >= 0; day--) {
+    const b = t0 - day * DAYMS, A = ['Most', 'All of it', 'Some', 'Hardly any'];
+    add('feed', b + 7 * h, { kind: 'cup', ml: 150, milk: "Cow's milk" }, ella); add('feed', b + 19 * h, { kind: 'cup', ml: 150, milk: "Cow's milk" }, ella);
+    add('meal', b + 7.5 * h, { meal: 'Breakfast', foods: ['Oats', 'Banana'], amount: A[day % 2] }, ella); add('meal', b + 10 * h, { meal: 'Snack', foods: ['Apple'], amount: 'All of it' }, ella);
+    add('meal', b + 12.25 * h, { meal: 'Lunch', foods: ['Pasta', 'Peas', 'Cheese'], amount: A[(day + 2) % 4] }, ella); add('meal', b + 15.5 * h, { meal: 'Snack', foods: ['Yogurt'], amount: 'All of it' }, ella);
+    add('meal', b + 17.75 * h, { meal: 'Dinner', foods: ['Chicken', 'Rice', 'Broccoli'], amount: A[(day + 1) % 4] }, ella);
+    [6.9, 9.5, 12, 14.75, 18.5].forEach((x, j) => add('potty', b + x * h, j === 3 && day % 2 ? { pee: true, poo: false, accident: true } : { pee: true, poo: j === 1, where: j === 1 ? 'Toilet' : 'Potty', ...(j === 2 ? { asked: true } : {}) }, ella));
+    add('sleep', b + 13 * h, {}, ella, { end: b + 14.5 * h }); add('sleep', b - 4.5 * h, {}, ella, { end: b + 6.75 * h });
+    add('play', b + 10.5 * h, { activity: 'Play', min: 30 }, ella);
+  }
+  const at = (d, x) => { const t = new Date(d); t.setHours(x, 0, 0, 0); return t.getTime(); }, plus = (d, m, dd = 0) => { const t = new Date(d); t.setMonth(t.getMonth() + m); t.setDate(t.getDate() + dd); return t; };
+  const moment = (kid, t, what, note = '') => events.push({ id: 'd' + (n++), type: 'moment', ts: t, data: { what }, note, updated: Date.now(), child: kid.id });
+  moment(ella, at(plus(eb, 0), 9), 'Born', '3.4 kg, just before breakfast'); moment(ella, at(plus(eb, 2, 3), 10), 'First smile'); moment(ella, at(plus(eb, 11, 20), 18), 'First steps', 'Three wobbly steps to Grandpa');
+  moment(ella, at(plus(eb, 12), 15), 'Birthday'); moment(ella, at(plus(eb, 31, 5), 9), 'Out of diapers in the day'); moment(ella, at(plus(eb, 36), 16), 'Birthday', 'Unicorn cake, and a nap at the party');
+  moment(ella, at(new Date(t0 - 20 * DAYMS), 9), 'First day of preschool', 'Waved goodbye at the gate'); moment(ella, at(new Date(t0 - 5 * DAYMS), 17), 'Rode a tricycle');
+  ks.slice(0, 3).forEach(k => { moment(k, at(born, 6), 'Born'); moment(k, at(plus(born, 0, 4), 14), 'Came home'); });
+  moment(ks[1], at(plus(born, 1, 12), 8), 'First smile', 'At Ella, of course');
   // a car trip earlier in the week, with two stretches on the road (travel days keep their own look)
   const away = t0 - 4 * DAYMS, leg = (a, b) => ({ id: 'd' + (n++), type: 'leg', ts: away + a * h, end: away + b * h, data: { means: 'car' }, note: '', updated: Date.now() });
   events.push({ id: 'd' + (n++), type: 'trip', ts: away, end: t0 - 2 * DAYMS, data: { means: 'car' }, note: '', updated: Date.now() }, leg(9, 11.5), leg(13.5, 15.8));

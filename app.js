@@ -4,10 +4,11 @@
 // ---------- Config ----------
 // Entries come in six groups; each group has one colour. The colours were checked as a set (colour-blind separation, contrast on the
 // paper background) in this ring order, inner to outer, separately for light and dark mode. On the day clock each group also has its
-// own ring and icon, so colour is never the only way to tell them apart.
+// own ring and icon, so colour is never the only way to tell them apart. As a child grows the groups keep their colours: meals join
+// the feeds and the potty joins the diapers (big moments are kept apart, in gold, and never go on the clock).
 const GROUPS = [
-  { id: 'feed', label: N_('Feeding'), icon: '🍼', types: ['feed'] },
-  { id: 'diaper', label: N_('Diapers'), icon: '💧', types: ['diaper'] },
+  { id: 'feed', label: N_('Feeding'), icon: '🍼', types: ['feed', 'meal'] },
+  { id: 'diaper', label: N_('Diapers'), icon: '💧', types: ['diaper', 'potty'] },
   { id: 'sleep', label: N_('Sleep & night wakings'), icon: '😴', types: ['sleep', 'wake'] },
   { id: 'vomit', label: N_('Vomit'), icon: '🤮', types: ['vomit'] },
   { id: 'play', label: N_('Play'), icon: '🧸', types: ['play'] },
@@ -15,10 +16,12 @@ const GROUPS = [
 ];
 const RING = ['sleep', 'feed', 'diaper', 'vomit', 'play', 'health'];
 const GCOLOR = {
-  light: { sleep: '#5b5fc7', feed: '#c9761f', diaper: '#2a9db8', vomit: '#5f8a1f', play: '#a845a8', health: '#c0392b', poo: '#8a5a2b' },
-  dark: { sleep: '#7478d8', feed: '#c97a2a', diaper: '#2b9fc0', vomit: '#8a9a2a', play: '#b85ab0', health: '#dd5a4a', poo: '#b98a55' },
+  light: { sleep: '#5b5fc7', feed: '#c9761f', diaper: '#2a9db8', vomit: '#5f8a1f', play: '#a845a8', health: '#c0392b', poo: '#8a5a2b', moment: '#a47414' },
+  dark: { sleep: '#7478d8', feed: '#c97a2a', diaper: '#2b9fc0', vomit: '#8a9a2a', play: '#b85ab0', health: '#dd5a4a', poo: '#b98a55', moment: '#d3a548' },
 };
 const groupOf = t => GROUPS.find(g => g.types.includes(t)) || GROUPS[0];
+/** A type's colour in a palette: its group's, or gold for a big moment. */
+const colorOf = (t, P) => (t === 'moment' ? P.moment || GCOLOR.light.moment : P[groupOf(t).id]);
 const TYPES = {
   feed:   { label: N_('Feed'),     noun: N_('feed'),       icon: '🍼' },
   diaper: { label: N_('Diaper'),   noun: N_('diaper'),     icon: '💧' },
@@ -28,8 +31,11 @@ const TYPES = {
   play:   { label: N_('Play'),     noun: N_('play'),       icon: '🧸' },
   health: { label: N_('Health'),   noun: N_('health note'), icon: '🩺' },
   med:    { label: N_('Meds'),     noun: N_('meds'),       icon: '💊' },
+  meal:   { label: N_('Meal'),     noun: N_('meal'),       icon: '🍽' },
+  potty:  { label: N_('Potty'),    noun: N_('potty'),      icon: '🚽' },
+  moment: { label: N_('Big moment'), noun: N_('big moment'), icon: '🌟' },
 };
-for (const [t, T] of Object.entries(TYPES)) T.color = GCOLOR.light[groupOf(t).id];   // plain hex (light) for the few places that need one
+for (const [t, T] of Object.entries(TYPES)) T.color = colorOf(t, GCOLOR.light);   // plain hex (light) for the few places that need one
 const INK = '#2a241c';   // the dark the type colours are mixed with, so icons and text in them stay easy to read
 // The answers below are saved in the log in English (so every phone reads them the same) and shown in each phone's language.
 const SYMPTOMS = [
@@ -44,6 +50,20 @@ const STOOL_WARN = ['Red-streaked', 'White/pale'];
 const PLAYS = [N_('Tummy time'), N_('Play'), N_('Walk / outing'), N_('Bath'), N_('Skin-to-skin')];
 const WAKE_WHY = [N_('Hungry'), N_('Diaper'), N_('Gas / fussy'), N_('Unknown')];
 const SIDES = [N_('Left'), N_('Right'), N_('Both')], MILKS = [N_('Breast milk'), N_('Formula')], AMOUNTS = [N_('Spit-up'), N_('Medium'), N_('Large')];
+// From a year old: milk from a cup too, and cow's milk or another milk instead of formula.
+const MILKS_OLDER = [...MILKS, N_("Cow's milk"), N_('Plant milk')];
+// What a toddler or an older child might be unwell with (the list above is for babies).
+const KID_SYMPTOMS = [
+  N_('Fever'), N_('Cough'), N_('Runny or stuffy nose'), N_('Sore throat'), N_('Ear pain'), N_('Tummy ache'), N_('Diarrhea'), N_('Vomiting'), N_('Constipation'),
+  N_('Rash'), N_('Teething'), N_('Headache'), N_('Fall or injury'), N_('Trouble breathing'), N_('Blue lips or face'), N_('Very sleepy / hard to wake'),
+];
+const KID_URGENT = ['Trouble breathing', 'Blue lips or face', 'Very sleepy / hard to wake'];
+const MEALS = [N_('Breakfast'), N_('Lunch'), N_('Dinner'), N_('Snack')], EATEN = [N_('Hardly any'), N_('Some'), N_('Most'), N_('All of it')];
+/** The meal it probably is at the time `t`. */
+const mealAt = t => { const h = new Date(t).getHours() + new Date(t).getMinutes() / 60; return h >= 4 && h < 10.5 ? 'Breakfast' : h >= 11 && h < 14 ? 'Lunch' : h >= 17 && h < 21 ? 'Dinner' : 'Snack'; };
+// The potty: what happened (one answer), and where.
+const POTTY = [['pee', '💧 ', N_('Pee')], ['poo', '💩 ', N_('Poo')], ['both', '', N_('Pee + Poo')], ['none', '', N_('Nothing yet')], ['dry', '', N_('Stayed dry')]];
+const POTTY_WHERE = [N_('Potty'), N_('Toilet'), N_('Accident')];
 
 // ---------- Storage ----------
 // The log lives in memory (`db`) and is persisted by store.js (IndexedDB). It is loaded once at startup, before the first render.
@@ -62,6 +82,7 @@ function normalize(d) {
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 // `quiet` saves skip scheduling a sync (used by the sync engine itself).
 function save(quiet) {
+  schoolDays = null;   // (a first day of school may have been saved or deleted)
   Store.save(db);
   if (!quiet) Sync.schedule();
 }
@@ -107,6 +128,7 @@ function describeEntry(e) {
     case 'feed':
       if (d.kind === 'solids') return [__('Solids'), [(d.foods || []).map(f => __(f)).join(', '), d.amount && __(d.amount)].filter(Boolean).join(' · ')];
       if (d.kind === 'bottle') return [d.ml ? __('Bottle {ml} ml', { ml: d.ml }) : __('Bottle'), [d.milk && __(d.milk), d.formula].filter(Boolean).join(' · ')];
+      if (d.kind === 'cup') return [d.ml ? __('Cup {ml} ml', { ml: d.ml }) : __('Cup'), [d.milk && __(d.milk), d.formula].filter(Boolean).join(' · ')];
       return [d.side ? __('Breast – {side}', { side: __(d.side) }) : __('Breast'), d.min ? min(d.min) : ''];
     case 'diaper':
       return [d.pee && d.poo ? __('Pee + Poo') : d.pee ? __('Pee') : d.poo ? __('Poo') : __('Dry'), [d.poo && d.color && __(d.color), d.rash && __('rash')].filter(Boolean).join(', ')];
@@ -116,6 +138,12 @@ function describeEntry(e) {
     case 'play': return [__(d.activity || 'Play'), d.min ? min(d.min) : ''];
     case 'health': return [(d.symptoms || []).map(x => __(x)).join(', ') || __('Note'), d.temp ? __('Temp {t}°', { t: d.temp }) : ''];
     case 'med': return [d.name || __('Medication'), d.dose || ''];
+    case 'meal': return [__(d.meal || 'Meal'), [(d.foods || []).map(f => __(f)).join(', '), d.amount && __(d.amount)].filter(Boolean).join(' · ')];
+    case 'potty': {
+      const what = d.dry ? __('Stayed dry') : d.pee && d.poo ? __('Pee + Poo') : d.pee ? __('Pee') : d.poo ? __('Poo') : d.accident ? '' : __('Nothing yet');
+      return [d.accident ? (what ? __('Accident: {what}', { what }) : __('Accident')) : what, [!d.dry && !d.accident && __(d.where || 'Potty'), d.asked && __('asked to go')].filter(Boolean).join(' · ')];
+    }
+    case 'moment': return [d.own ? d.what || '' : __(d.what || 'Big moment'), ''];
     case 'trip': return [__('Trip {by}', { by: __(Travel.MEANS[Travel.meansOf(e)].by) }), `${fmtShort(e.ts)} – ${fmtShort(Travel.ends(e) - 1)}`];
     case 'leg': return [__(Travel.MEANS[Travel.meansOf(e)].moving), Number.isFinite(e.end) ? fmtDur((e.end - e.ts) / MIN) : __('under way')];
   }
@@ -143,11 +171,38 @@ function setKid(id) { selKid = id; if (id !== 'all') lastKid = id; db.meta.kid =
 /** The child whose numbers the Month and Stats tabs show (Everyone falls back to the last child looked at). */
 function viewKid() { const k = curKid(); return k !== 'all' ? k : (kidById(lastKid) ? lastKid : kids()[0].id); }
 const dayKid = () => (tab === 'day' ? curKid() : viewKid());
-const scoped = () => { const k = dayKid(), log = db.events.filter(e => !Travel.isTravel(e.type)); return k === 'all' ? log : log.filter(e => childOf(e) === k); };
+const scoped = () => { const k = dayKid(), log = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'moment'); return k === 'all' ? log : log.filter(e => childOf(e) === k); };   // (big moments are kept apart)
 const eventsOnDay = day => scoped().filter(e => e.ts >= day && e.ts < day + DAY).sort((a, b) => a.ts - b.ts);
 const activeSleep = id => db.events.find(e => e.type === 'sleep' && !e.end && (!id || childOf(e) === id));
 const initial = k => esc([...kidName(k)][0] || '?').toUpperCase();
 const avatar = (k, cls = '') => `<span class="av ${cls}" style="--k:${k.color}">${initial(k)}</span>`;
+
+// ---------- Growing up ----------
+// Each child's stage of life (stages.js) decides what the Day page offers and what its groups are called, and what the Guide shows first.
+let schoolDays = null;   // (worked out again whenever the log changes or a screen is drawn)
+/** The day a child's first day of school was saved as a big moment ('' if it wasn't). */
+function schoolDay(id) {
+  if (!schoolDays) {
+    schoolDays = new Map();
+    for (const e of db.events) if (e.type === 'moment' && e.data && !e.data.own && e.data.what === Stages.SCHOOL_DAY) { const k = childOf(e), d = dkey(e.ts); if (!schoolDays.has(k) || d < schoolDays.get(k)) schoolDays.set(k, d); }
+  }
+  return schoolDays.get(id) || '';
+}
+/** A child's stage on the day `t`. */
+const stageOf = (k, t = Date.now()) => (k ? Stages.of(k.birth, { t, region: myRegion(), school: schoolDay(k.id) }) : 'newborn');
+/** The children a page is about: the one whose page it is, or everyone on the All page. */
+const pageKids = () => (dayKid() === 'all' ? kids() : [kidById(dayKid())].filter(Boolean));
+/** Whether every child on the page has reached the stage `s` ('toddler': a year old). */
+const allFrom = s => pageKids().every(k => Stages.from(stageOf(k), s));
+/** A group's name on the page, for the children's ages: feeding becomes meals, and diapers the potty. */
+function gLabel(g) {
+  const ss = pageKids().map(k => stageOf(k)), past = x => ss.length && ss.every(y => Stages.from(y, x)), some = x => ss.some(y => Stages.from(y, x));
+  if (g.id === 'feed') return past('preschool') ? N_('Meals') : past('toddler') ? N_('Meals & milk') : some('toddler') ? N_('Feeding & meals') : g.label;
+  if (g.id === 'diaper') return past('school') ? N_('Potty') : some('toddler') ? N_('Diapers & potty') : g.label;
+  return g.label;
+}
+/** A type's name on the page: from a year old, a feed is milk. */
+const tLabel = t => (t === 'feed' && allFrom('toddler') ? N_('Milk') : TYPES[t].label);
 const dark = () => Theme.isDark();   // light or dark, as chosen in More → Appearance (theme.js)
 /** Colours the whole app in the open child's colour (set as plain hex, so no modern CSS colour functions are needed). */
 function theme() {
@@ -163,9 +218,9 @@ function theme() {
 
 /** The colour variables of a palette (the home set, or the travel set) for light or dark. */
 function paletteVars(P, dk) {
-  const G = P[dk ? 'dark' : 'light'], v = GROUPS.map(g => [`--g-${g.id}`, G[g.id]]);
-  v.push(['--g-poo', G.poo], ['--g-meds', Kids.mix(G.health, dk ? '#1d1b19' : '#ffffff', 0.45)]);
-  for (const t of Object.keys(TYPES)) { const c = G[groupOf(t).id]; v.push([`--${t}`, c], [`--${t}-ink`, dk ? Kids.mix(c, '#ffffff', 0.3) : Kids.mix(c, INK, 0.25)]); }
+  const G = { moment: GCOLOR[dk ? 'dark' : 'light'].moment, ...P[dk ? 'dark' : 'light'] }, v = GROUPS.map(g => [`--g-${g.id}`, G[g.id]]), paper = dk ? '#1d1b19' : '#ffffff';
+  v.push(['--g-poo', G.poo], ['--g-meds', Kids.mix(G.health, paper, 0.45)], ['--g-snack', Kids.mix(G.feed, paper, 0.45)], ['--g-oops', Kids.mix(G.diaper, paper, 0.5)], ['--g-moment', G.moment]);
+  for (const t of Object.keys(TYPES)) { const c = colorOf(t, G); v.push([`--${t}`, c], [`--${t}-ink`, dk ? Kids.mix(c, '#ffffff', 0.3) : Kids.mix(c, INK, 0.25)]); }
   v.push(['--poo-ink', P === GCOLOR ? (dk ? '#d0b080' : '#7d5a2c') : G.poo]);
   return v;
 }
@@ -188,6 +243,7 @@ function fitTabs() {
 window.addEventListener('resize', () => fitTabs());
 function render() {
   if (voyageFirst()) return;   // travel mode is switching: the page changes under the journey in a moment
+  schoolDays = null;
   document.querySelectorAll('#view details[data-grp]').forEach(d => { d.open ? openGroups.add(d.dataset.grp) : openGroups.delete(d.dataset.grp); });   // keep twirl-downs as the user left them
   if (tab !== 'guide') openGroups.forEach(g => { if (g.startsWith('pix')) openGroups.delete(g); });   // except the Guide's pictures: hidden again next time
   const multi = kids().length > 1, vk = kidById(dayKid()), single = kids()[0];
@@ -241,6 +297,7 @@ function dayView() {
     <div class="d">${isToday ? __h('Today') : esc(fmtDate(viewDay))}<small>${isToday ? esc(fmtDate(viewDay)) : ''}${esc(ageText(viewDay))}</small></div>
     <button data-nav="1" aria-label="${__h('Next day')}" ${isToday ? 'disabled' : ''}>›</button></div>
   ${allergyLine()}
+  ${momentCards(viewDay)}
   ${trip && isToday ? travelQuick() : quickButtons()}
   <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${(trip ? Travel.PALETTE : GCOLOR).light[g.id]}`).join(';')};--trip:${Travel.ACCENT.light}">${clockSvg(shown, viewDay)}
     <div class="clockctl">${seg('face', [['24', N_('24 h')], ['12', N_('12 h')]], twelve ? '12' : '24', N_('Clock face'))}${twelve ? seg('half', [['0', N_('AM')], ['1', N_('PM')]], String(half), N_('Half of the day')) : ''}${numsSeg()}${trip ? `<span class="artbtn tripart">${TM.icon} ${__h(Art.byId(TM.art).name)}</span>` : `<button class="artbtn" data-art>🎨 ${__h(Art.byId(artOf()).name)}</button>`}</div>
@@ -249,6 +306,7 @@ function dayView() {
   ${q ? `<div class="card quadlist"><div class="qhead"><span><b>${esc(q.label)}</b> <small>${esc(q.range)} · ${__hn('{n} entry', '{n} entries', inQ.length)}</small></span><button class="btn" data-quadclear style="padding:6px 12px">${__h('Whole day')}</button></div>
       ${inQ.length ? inQ.map(evRow).join('') : `<div class="empty">${__h('Nothing in these hours.')}</div>`}</div>`
     : (evs.length ? `<h2>${__h('Details')}</h2>${groupedList(evs)}` : `<div class="empty">${__h('Nothing logged yet.')}${Sync.can('add') ? '<br>' + __h('Tap a button above to add an entry.') : ''}</div>`)}
+  ${momentButton()}
   ${!trip && isToday ? tripButton() : ''}`;
 }
 
@@ -351,7 +409,7 @@ function clockSvg(evs, day) {
   for (const e of evs) {
     const g = groupOf(e.type).id, a = ang(frac(e.ts)), r = RR[g], [x, y] = P(a, r), [d] = describe(e), k = all ? kidById(childOf(e)) : null;
     const approx = !!(e.data && e.data.approx), when = approx ? __('about {time}', { time: fmtTime(e.ts) }) : fmtTime(e.ts);
-    data += `<g class="ray${approx ? ' approx' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(TYPES[e.type].label) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
+    data += `<g class="ray${approx ? ' approx' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
       <title>${esc(when + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
       <path d="M${xy(a, rr(17))}L${xy(a, r - rr(5))}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/><circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
   }
@@ -366,7 +424,7 @@ function clockSvg(evs, day) {
     hand = twelve ? needle(h.m, rr(106)) + spade('h', h.h, rr(70)) : spade('d', h.d, rr(99));
   }
   const boss = `<circle cx="${C.x}" cy="${f1(C.y)}" r="5.2" fill="#fffdf8" stroke="${ink}" stroke-width="1.2"/><circle cx="${C.x}" cy="${f1(C.y)}" r="1.6" fill="${ink}"/>`;
-  const summary = GROUPS.map(gr => [gr.label, evs.filter(e => gr.types.includes(e.type)).length]).filter(x => x[1]).map(x => __('{group}: {n}', { group: __(x[0]), n: x[1] })).join(', ');
+  const summary = GROUPS.map(gr => [gLabel(gr), evs.filter(e => gr.types.includes(e.type)).length]).filter(x => x[1]).map(x => __('{group}: {n}', { group: __(x[0]), n: x[1] })).join(', ');
   const what = twelve ? (half ? __('12-hour clock, noon to midnight') : __('12-hour clock, midnight to noon')) : __('24-hour clock of the day, midnight at the top and noon at the bottom');
   return `<svg class="clock" viewBox="0 0 ${F.W} ${F.H}" data-cx="${C.x}" data-cy="${f1(C.y)}" data-painting="${th.id}" data-dial="${twelve ? 12 : 24}" role="group" aria-label="${esc(summary ? __('{clock}: {entries}', { clock: what, entries: summary }) : __('{clock}, no entries', { clock: what }))}">
     <g aria-hidden="true">${frame}${panel}${dial}</g>${quads}<g class="data">${data}</g><g class="hands" aria-hidden="true">${hand}${boss}</g></svg>`;
@@ -385,18 +443,23 @@ function tickHands() {
 }
 setInterval(tickHands, 20000);
 function clockLegend(evs) {
-  return `<div class="clegend">${GROUPS.map(g => { const n = evs.filter(e => g.types.includes(e.type)).length; return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})"></i>${__h(g.label)} <b>${n}</b></span>`; }).join('')}</div>`;
+  return `<div class="clegend">${GROUPS.map(g => { const n = evs.filter(e => g.types.includes(e.type)).length; return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))} <b>${n}</b></span>`; }).join('')}</div>`;
 }
 /** One twirl-down per group (pee and poo together, sleep and night wakings together…), each with a one-line summary. */
 const openGroups = new Set();
 function groupSummary(g, list) {
   const n = list.length;
   switch (g.id) {
-    case 'feed': {   // (milk feeds, and meals of solid food counted apart)
-      const milk = list.filter(e => e.data.kind !== 'solids'), ml = milk.reduce((a, e) => a + (+e.data.ml || 0), 0), meals = n - milk.length;
-      return [milk.length && __n('{n} feed', '{n} feeds', milk.length) + (ml ? ' · ' + __('{n} ml', { n: ml }) : ''), meals && `${__('Solids')} ×${meals}`].filter(Boolean).join(' · ');
+    case 'feed': {   // (milk feeds, and meals counted apart: a baby's solid food, an older child's meals)
+      const milk = list.filter(e => e.type === 'feed' && e.data.kind !== 'solids'), ml = milk.reduce((a, e) => a + (+e.data.ml || 0), 0), solids = list.filter(e => e.type === 'feed' && e.data.kind === 'solids').length, meals = n - milk.length - solids;
+      const drinks = milk.length && (allFrom('toddler') ? `${__('Milk')} ×${milk.length}` : __n('{n} feed', '{n} feeds', milk.length));
+      return [meals && __n('{n} meal', '{n} meals', meals), drinks && drinks + (ml ? ' · ' + __('{n} ml', { n: ml }) : ''), solids && `${__('Solids')} ×${solids}`].filter(Boolean).join(' · ');
     }
-    case 'diaper': return `${__n('{n} diaper', '{n} diapers', n)} · ${__('{pee} pee, {poo} poo', { pee: list.filter(e => e.data.pee).length, poo: list.filter(e => e.data.poo).length })}`;
+    case 'diaper': {   // (diapers, and the potty)
+      const dia = list.filter(e => e.type === 'diaper'), pot = list.filter(e => e.type === 'potty'), oops = pot.filter(e => e.data.accident).length;
+      return [dia.length && `${__n('{n} diaper', '{n} diapers', dia.length)} · ${__('{pee} pee, {poo} poo', { pee: dia.filter(e => e.data.pee).length, poo: dia.filter(e => e.data.poo).length })}`,
+        pot.length && [__n('{n} on the potty', '{n} on the potty', pot.filter(e => !e.data.accident && (e.data.pee || e.data.poo)).length), oops && __n('{n} accident', '{n} accidents', oops)].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
+    }
     case 'sleep': { const sl = list.filter(e => e.type === 'sleep'), w = list.length - sl.length, m = sl.reduce((a, e) => a + ((e.end || Date.now()) - e.ts) / MIN, 0); return [sl.length && `${__n('{n} sleep', '{n} sleeps', sl.length)} · ${fmtDur(m)}`, w && __n('{n} night waking', '{n} night wakings', w)].filter(Boolean).join(' · '); }
     case 'play': { const m = list.reduce((a, e) => a + (+e.data.min || 0), 0); return __n('{n} time', '{n} times', n) + (m ? ` · ${fmtDur(m)}` : ''); }
     case 'health': { const h = list.filter(e => e.type === 'health').length; return [h && __n('{n} note', '{n} notes', h), n - h && __n('{n} medicine', '{n} medicines', n - h)].filter(Boolean).join(' · '); }
@@ -407,7 +470,7 @@ function groupedList(evs, key = 'd') {
   return GROUPS.map(g => {
     const list = evs.filter(e => g.types.includes(e.type)); if (!list.length) return '';
     const id = key + g.id, warn = list.some(isWarn);
-    return `<details class="grp ${warn ? 'alert' : ''}" data-grp="${id}" ${openGroups.has(id) ? 'open' : ''} style="--c:var(--g-${g.id})"><summary><span class="gi">${g.icon}</span><span class="gt"><b>${__h(g.label)}</b><small>${esc(groupSummary(g, list))}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    return `<details class="grp ${warn ? 'alert' : ''}" data-grp="${id}" ${openGroups.has(id) ? 'open' : ''} style="--c:var(--g-${g.id})"><summary><span class="gi">${g.icon}</span><span class="gt"><b>${__h(gLabel(g))}</b><small>${esc(groupSummary(g, list))}</small></span><span class="chev" aria-hidden="true">›</span></summary>
       <div class="grows">${list.map(evRow).join('')}</div></details>`;
   }).join('');
 }
@@ -415,18 +478,35 @@ function groupedList(evs, key = 'd') {
 function dayCounts(evs, day) {
   const of = t => evs.filter(e => e.type === t), feeds = of('feed').filter(e => e.data.kind !== 'solids'), ml = feeds.reduce((a, e) => a + (+e.data.ml || 0), 0), dia = of('diaper');
   const sleeps = of('sleep'), mins = sleeps.reduce((a, e) => a + (Math.min(e.end || Date.now(), day + DAY) - Math.max(e.ts, day)) / MIN, 0), play = of('play').reduce((a, e) => a + (+e.data.min || 0), 0);
-  const tiles = [['feed', '🍼', N_('Feeds'), feeds.length, ml ? __('{n} ml', { n: ml }) : ''], ['diaper', '💧', N_('Pee'), dia.filter(e => e.data.pee).length, ''], ['poo', '💩', N_('Poo'), dia.filter(e => e.data.poo).length, ''],
-    ['sleep', '😴', N_('Sleep'), sleeps.length ? fmtDur(mins) : 0, sleeps.length ? __n('{n} sleep', '{n} sleeps', sleeps.length) : ''], ['sleep', '🌙', N_('Night wakings'), of('wake').length, ''],
-    ['feed', '🥄', N_('Solids'), of('feed').length - feeds.length, ''], ['vomit', '🤮', N_('Vomit'), of('vomit').length, ''], ['play', '🧸', N_('Play'), play ? fmtDur(play) : of('play').length, ''], ['health', '🩺', N_('Health notes'), of('health').length, ''], ['health', '💊', N_('Medicines'), of('med').length, '']]
-    .filter((t, i) => i < 4 || t[3]);
+  const pot = of('potty'), oops = pot.filter(e => e.data.accident).length, older = allFrom('toddler');
+  const T = { feeds: ['feed', '🍼', older ? N_('Milk') : N_('Feeds'), feeds.length, ml ? __('{n} ml', { n: ml }) : ''], pee: ['diaper', '💧', N_('Pee'), dia.filter(e => e.data.pee).length, ''], poo: ['poo', '💩', N_('Poo'), dia.filter(e => e.data.poo).length, ''],
+    sleep: ['sleep', '😴', N_('Sleep'), sleeps.length ? fmtDur(mins) : 0, sleeps.length ? __n('{n} sleep', '{n} sleeps', sleeps.length) : ''], wakes: ['sleep', '🌙', N_('Night wakings'), of('wake').length, ''],
+    solids: ['feed', '🥄', N_('Solids'), of('feed').length - feeds.length, ''], meals: ['feed', '🍽', N_('Meals'), of('meal').length, ''],
+    potty: ['diaper', '🚽', N_('Potty'), pot.filter(e => !e.data.accident && (e.data.pee || e.data.poo)).length, oops ? __n('{n} accident', '{n} accidents', oops) : ''], vomit: ['vomit', '🤮', N_('Vomit'), of('vomit').length, ''],
+    play: ['play', '🧸', N_('Play'), play ? fmtDur(play) : of('play').length, ''], health: ['health', '🩺', N_('Health notes'), of('health').length, ''], meds: ['health', '💊', N_('Medicines'), of('med').length, ''] };
+  // a baby's day starts with feeds and diapers; an older child's with meals and sleep (the rest show when there are any)
+  const order = older ? ['meals', 'sleep', 'feeds', 'potty', 'pee', 'poo', 'wakes', 'solids', 'vomit', 'play', 'health', 'meds'] : ['feeds', 'pee', 'poo', 'sleep', 'wakes', 'solids', 'meals', 'potty', 'vomit', 'play', 'health', 'meds'];
+  const tiles = order.map(k => T[k]).filter((t, i) => i < (older ? 2 : 4) || t[3] || t[4]);
   return `<div class="tiles">${tiles.map(([g, ic, l, v, sub]) => `<div class="tile" style="--c:var(--g-${g})"><span class="tv">${ic} <b>${esc(v)}</b></span><span class="tl">${__h(l)}${sub ? `<small>${esc(sub)}</small>` : ''}</span></div>`).join('')}</div>`;
 }
 const kidTag = e => { if (dayKid() !== 'all') return ''; const k = kidById(childOf(e)); return `<span class="ktag" style="--k:${k.color}">${avatar(k)}${esc(kidName(k))}</span>`; };
-const quickButtons = () => Sync.can('add')
-  ? `<div class="quick" style="margin-bottom:10px">${Object.entries(TYPES).filter(([k]) => Sync.can('health') || (k !== 'health' && k !== 'med')).map(([k, t]) => `<button data-add="${k}" style="--cw:${Kids.rgba(t.color, 0.3)}"><b>${t.icon}</b>${__h(t.label)}</button>`).join('')}</div>` : '';
+/** How many entries of each type the children on the page had in the last two weeks. */
+function usedLately() {
+  const ids = new Set(pageKids().map(k => k.id)), since = Date.now() - 14 * DAY, n = {};
+  for (const e of db.events) if (e.ts > since && ids.has(childOf(e))) n[e.type] = (n[e.type] || 0) + 1;
+  return n;
+}
+/** The Day page's buttons for the children's ages (stages.js), with what the family has been logging lately moved up: { shown, more }. */
+const dayButtons = () => Stages.buttons(pageKids().map(k => stageOf(k)), usedLately(), t => Sync.can('health') || (t !== 'health' && t !== 'med'));
+function quickButtons() {
+  if (!Sync.can('add')) return '';
+  const { shown, more } = dayButtons();
+  return `<div class="quick" style="margin-bottom:10px">${shown.map(k => `<button data-add="${k}" style="--cw:${Kids.rgba(TYPES[k].color, 0.3)}"><b>${TYPES[k].icon}</b>${__h(tLabel(k))}</button>`).join('')}${more.length ? `<button data-addmore="${more.join(' ')}" aria-label="${__h('More to log')}"><b>⚙</b>${__h('More')}</button>` : ''}</div>`;
+}
 /** "added by Dad" – only when the log is shared and the person is known. */
 const byLine = e => { const n = Sync.linked() && e.by && e.by !== Auth.id ? Sync.nameOf(e.by) : ''; return n ? `<small>${__h('added by {name}', { name: n })}</small>` : ''; };
-const isWarn = e => (e.type === 'health' && (e.data.symptoms || []).some(s => URGENT.includes(s))) || (e.type === 'diaper' && !!e.data.poo && STOOL_WARN.includes(e.data.color));
+const urgentFor = e => (Stages.from(stageOf(kidById(childOf(e)), e.ts), 'toddler') ? KID_URGENT : URGENT);
+const isWarn = e => (e.type === 'health' && (e.data.symptoms || []).some(s => urgentFor(e).includes(s))) || (e.type === 'diaper' && !!e.data.poo && STOOL_WARN.includes(e.data.color));
 function evRow(e) {
   const [a, b] = describe(e), t = TYPES[e.type];
   return `<div class="card ev ${isWarn(e) ? 'alert' : ''}" style="--c:var(--${e.type})" data-edit="${e.id}">
@@ -434,32 +514,31 @@ function evRow(e) {
     <div class="b">${kidTag(e)}${t.icon} <b>${esc(a)}</b>${b ? `<small>${esc(b)}</small>` : ''}${e.note ? `<small>“${esc(e.note)}”</small>` : ''}${byLine(e)}</div></div>`;
 }
 function ageText(day) {
-  const k = kidById(dayKid());
-  if (!k || !k.birth) return '';
-  const d = Math.floor((day - startOfDay(new Date(k.birth + 'T00:00').getTime())) / DAY);
-  if (d < 0) return '';
-  return ' · ' + (d < 14 ? __('day {n}', { n: d + 1 }) : __n('{n} week', '{n} weeks', Math.floor(d / 7)));
+  const k = kidById(dayKid()), a = k ? Stages.age(k.birth, day) : '';
+  return a ? ' · ' + a : '';
 }
 
 function monthView() {
   const y = calMonth.getFullYear(), m = calMonth.getMonth();
   const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate(), today = startOfDay(Date.now());
-  let cells = '', anyAway = false, anyAllergy = false;
-  const tv = travelVars(), firsts = allergyDays([dayKid()]);
+  let cells = '', anyAway = false, anyAllergy = false, anyMoment = false;
+  const tv = travelVars(), firsts = allergyDays([dayKid()]), big = new Map();
+  for (const e of momentsOf(pageKids().map(k => k.id))) { const key = dkey(e.ts); if (!big.has(key)) big.set(key, []); big.get(key).push(describe(e)[0]); }
   for (let i = 0; i < (first.getDay() - I18n.firstDay() + 7) % 7; i++) cells += '<button class="blank" disabled></button>';
   for (let d = 1; d <= days; d++) {
-    const t = new Date(y, m, d).getTime(), evs = eventsOnDay(t), away = Travel.during(db.events, t, addDays(t, 1)), al = firsts.get(dkey(t));
-    if (away) anyAway = true; if (al) anyAllergy = true;
-    cells += `<button data-day="${t}" class="${t === viewDay ? 'sel' : ''} ${t === today ? 'today' : ''} ${away ? 'tripday' : ''} ${al ? 'allergyday' : ''}"${away ? ` style="${tv}"` : ''} aria-label="${esc([fmtDate(t), away && __('travelling'), al && __('first allergic reaction: {foods}', { foods: andList(al.map(x => __(x.allergy.food))) }), evs.length && __n('{n} entry', '{n} entries', evs.length)].filter(Boolean).join(', '))}">${d}${al ? '<i class="almark" aria-hidden="true">!</i>' : ''}<span class="dots">${GROUPS.filter(g => evs.some(e => g.types.includes(e.type))).map(g => `<i class="dot" style="--c:var(--g-${g.id})"></i>`).join('')}</span></button>`;
+    const t = new Date(y, m, d).getTime(), evs = eventsOnDay(t), away = Travel.during(db.events, t, addDays(t, 1)), al = firsts.get(dkey(t)), mo = big.get(dkey(t));
+    if (away) anyAway = true; if (al) anyAllergy = true; if (mo) anyMoment = true;
+    cells += `<button data-day="${t}" class="${t === viewDay ? 'sel' : ''} ${t === today ? 'today' : ''} ${away ? 'tripday' : ''} ${al ? 'allergyday' : ''} ${mo ? 'momentday' : ''}"${away ? ` style="${tv}"` : ''} aria-label="${esc([fmtDate(t), away && __('travelling'), al && __('first allergic reaction: {foods}', { foods: andList(al.map(x => __(x.allergy.food))) }), mo && __('big moment: {what}', { what: andList(mo) }), evs.length && __n('{n} entry', '{n} entries', evs.length)].filter(Boolean).join(', '))}">${d}${al ? '<i class="almark" aria-hidden="true">!</i>' : ''}${mo ? '<i class="mmark" aria-hidden="true">★</i>' : ''}<span class="dots">${GROUPS.filter(g => evs.some(e => g.types.includes(e.type))).map(g => `<i class="dot" style="--c:var(--g-${g.id})"></i>`).join('')}</span></button>`;
   }
   return `
   <div class="datenav"><button data-month="-1" aria-label="${__h('Previous month')}">‹</button>
     <div class="d">${esc(calMonth.toLocaleDateString(I18n.locale(), { month: 'long', year: 'numeric' }))}</div>
     <button data-month="1" aria-label="${__h('Next month')}">›</button></div>
   <div class="cal">${weekLetters().map(d => `<div class="h">${esc(d)}</div>`).join('')}${cells}</div>
-  <div class="legend">${GROUPS.map(g => `<span><i style="--c:var(--g-${g.id})"></i>${__h(g.label)}</span>`).join('')}${anyAway ? `<span class="tripkey"><i></i>${__h('Travelling (its own colours)')}</span>` : ''}${anyAllergy ? `<span class="alkey"><i class="almark">!</i>${__h('First allergic reaction')}</span>` : ''}</div>
+  <div class="legend">${GROUPS.map(g => `<span><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))}</span>`).join('')}${anyAway ? `<span class="tripkey"><i></i>${__h('Travelling (its own colours)')}</span>` : ''}${anyAllergy ? `<span class="alkey"><i class="almark">!</i>${__h('First allergic reaction')}</span>` : ''}${anyMoment ? `<span class="mmkey"><i class="mmark">★</i>${__h('Big moment')}</span>` : ''}</div>
   ${monthTrip()}
-  ${monthDay()}`;
+  ${monthDay()}
+  ${momentsJournal()}`;
 }
 /** On the calendar: plan a trip leaving on the day picked (or today), or change the trip that covers it. */
 function monthTrip() {
@@ -474,6 +553,7 @@ function monthDay() {
   const evs = eventsOnDay(viewDay), away = Travel.during(db.events, viewDay, addDays(viewDay, 1)), M = away && Travel.MEANS[Travel.meansOf(away)];
   const al = allergyDays([dayKid()]).get(dkey(viewDay)) || [];
   return `<h2>${esc(fmtDate(viewDay))}</h2>
+  ${momentCards(viewDay)}
   ${al.map(x => `<div class="card alert alcard">⚠️ <b>${__h('First allergic reaction: {foods}', { foods: __(x.allergy.food) })}</b>${x.allergy.note ? `<br><small>${esc(x.allergy.note)}</small>` : ''}</div>`).join('')}
   <div class="${away ? 'travelday' : ''}"${away ? ` style="${travelVars()}"` : ''}>${away ? `<p class="tripnote">${M.icon} ${__h('Travelling {by}', { by: __(M.by) })}</p>` : ''}
   ${evs.length ? `${dayCounts(evs, viewDay)}<details class="more" data-grp="mAll" ${openGroups.has('mAll') ? 'open' : ''}><summary>${__h('All entries for this day')}<span class="chev" aria-hidden="true">›</span></summary>${groupedList(evs, 'm')}</details>` : `<div class="empty">${__h('No entries this day.')}</div>`}</div>
@@ -498,6 +578,10 @@ function dayStats(day) {
     sleep: sleepMinutesOn(day), longest: Math.max(0, ...sleeps.map(e => (e.end - e.ts) / MIN)), naps: sleeps.length,
     wakes: of('wake').length, vomit: of('vomit').length, play: of('play').reduce((a, e) => a + (+e.data.min || 0), 0), health: of('health').length, meds: of('med').length,
     feedTimes: feeds.map(e => e.ts),
+    meals: of('meal').filter(e => e.data.meal !== 'Snack').length, snacks: of('meal').filter(e => e.data.meal === 'Snack').length,
+    rated: of('meal').filter(e => EATEN.includes(e.data.amount)).length, ateWell: of('meal').filter(e => e.data.amount === 'Most' || e.data.amount === 'All of it').length,
+    potty: of('potty').filter(e => !e.data.accident && (e.data.pee || e.data.poo)).length, accidents: of('potty').filter(e => e.data.accident).length,
+    asked: of('potty').filter(e => e.data.asked).length, dry: of('potty').filter(e => e.data.dry).length,
   };
 }
 function feedGaps(list) {
@@ -548,21 +632,27 @@ function statsView() {
   const flagged = mine.filter(e => e.type === 'health' && e.ts >= addDays(today, -statDays + 1) && (e.data.symptoms || []).length).sort((a, b) => b.ts - a.ts);
   const sym = {}; flagged.forEach(e => e.data.symptoms.forEach(s => sym[s] = (sym[s] || 0) + 1));
   const poo = {}; mine.filter(e => e.type === 'diaper' && e.data.poo && e.ts >= addDays(today, -statDays + 1) && e.data.color).forEach(e => poo[e.data.color] = (poo[e.data.color] || 0) + 1);
-  const lowWet = used.length && per('pee') < 6 && ageDays() >= 5;
+  const lowWet = used.length && per('pee') < 6 && ageDays() >= 5 && !allFrom('toddler');
+  const older = allFrom('toddler'), has = k => sum(k) > 0, pct = x => new Intl.NumberFormat(I18n.locale(), { style: 'percent' }).format(x);
   return `
   <div class="seg">${[7, 14, 30].map(n => `<button data-range="${n}" class="${n === statDays ? 'on' : ''}">${__hn('{n} day', '{n} days', n)}</button>`).join('')}</div>
   ${mine.length ? `<button class="btn pdfbtn" id="pdfBtn">📄 ${__h('Report for the doctor (PDF)')}</button>` : ''}
   ${kids().length > 1 ? `<h2>${esc(kidName(kidById(viewKid())))}</h2>` : ''}
   ${mine.length ? '' : `<div class="empty">${__h('Log a few entries and your stats will show up here.')}</div>`}
   ${lowWet ? `<div class="card alert">⚠️ ${__h('Fewer than 6 wet diapers/day on average. After the first week this can signal low intake – worth mentioning to your pediatrician.')}</div>` : ''}
-  ${card('🍼', N_('Feeding'), [[N_('Feeds per day'), per('feeds')], [N_('Avg time between feeds'), gaps.length ? fmtDur(avg(gaps)) : '–'], [N_('Bottle ml per day'), per('ml') || '–'], ...(sum('solids') ? [[N_('Solid meals per day'), per('solids')]] : [])],
-    chart(days, [{ name: __('feeds'), color: 'var(--g-feed)', values: S.map(s => s.feeds) }]) + (sum('ml') ? `<p class="ch">${__h('Bottle ml per day')}</p>${chart(days, [{ name: __('ml'), color: 'var(--g-feed)', values: S.map(s => s.ml) }])}` : ''))}
-  ${card('💧', N_('Diapers'), [[N_('Pee per day'), per('pee')], [N_('Poo per day'), per('poo')], ...(Object.keys(poo).length ? [[N_('Poo colours'), Object.entries(poo).map(([k, v]) => `${__(k)} ×${v}`).join(', ')]] : [])],
-    chart(days, [{ name: __('pee'), color: 'var(--g-diaper)', values: S.map(s => s.pee) }, { name: __('poo'), color: 'var(--g-poo)', values: S.map(s => s.poo) }], { mode: 'group' }))}
+  ${older ? card('🍽', N_('Meals'), [[N_('Meals per day'), per('meals')], [N_('Snacks per day'), per('snacks')], ...(sum('rated') ? [[N_('Ate most or all of it'), pct(sum('ateWell') / sum('rated'))]] : [])],
+    chart(days, [{ name: __('meals'), color: 'var(--g-feed)', values: S.map(s => s.meals) }, { name: __('snacks'), color: 'var(--g-snack)', values: S.map(s => s.snacks) }])) : ''}
+  ${!older || has('feeds') ? card('🍼', older ? N_('Milk') : N_('Feeding'), older ? [[N_('Milk feeds per day'), per('feeds')], [N_('Milk ml per day'), per('ml') || '–']]
+    : [[N_('Feeds per day'), per('feeds')], [N_('Avg time between feeds'), gaps.length ? fmtDur(avg(gaps)) : '–'], [N_('Bottle ml per day'), per('ml') || '–'], ...(sum('solids') ? [[N_('Solid meals per day'), per('solids')]] : [])],
+    chart(days, [{ name: __('feeds'), color: 'var(--g-feed)', values: S.map(s => s.feeds) }]) + (sum('ml') ? `<p class="ch">${older ? __h('Milk ml per day') : __h('Bottle ml per day')}</p>${chart(days, [{ name: __('ml'), color: 'var(--g-feed)', values: S.map(s => s.ml) }])}` : '')) : ''}
+  ${(older && !allFrom('school')) || has('potty') || has('accidents') || has('dry') ? card('🚽', N_('Potty'), [[N_('On the potty per day'), per('potty')], [N_('Accidents per day'), per('accidents')], [N_('Asked to go'), sum('asked')], ...(has('dry') ? [[N_('Stayed dry'), sum('dry')]] : [])],
+    chart(days, [{ name: __('on the potty'), color: 'var(--g-diaper)', values: S.map(s => s.potty) }, { name: __('accidents'), color: 'var(--g-oops)', values: S.map(s => s.accidents) }], { mode: 'group' })) : ''}
+  ${!older || has('pee') || has('poo') ? card('💧', N_('Diapers'), [[N_('Pee per day'), per('pee')], [N_('Poo per day'), per('poo')], ...(Object.keys(poo).length ? [[N_('Poo colours'), Object.entries(poo).map(([k, v]) => `${__(k)} ×${v}`).join(', ')]] : [])],
+    chart(days, [{ name: __('pee'), color: 'var(--g-diaper)', values: S.map(s => s.pee) }, { name: __('poo'), color: 'var(--g-poo)', values: S.map(s => s.poo) }], { mode: 'group' })) : ''}
   ${card('😴', N_('Sleep'), [[N_('Sleep per day'), fmtDur(avg(used.map(s => s.sleep)))], [N_('Longest stretch (avg)'), fmtDur(avg(used.map(s => s.longest)))], [N_('Naps/sleeps per day'), per('naps')], [N_('Night wakings per day'), per('wakes')]],
     chart(days, [{ name: __('hours asleep'), color: 'var(--g-sleep)', values: S.map(s => r1(s.sleep / 60)) }], { fmt: v => __('{h}h', { h: v }) }) + `<p class="ch">${__h('Night wakings per day')}</p>${chart(days, [{ name: __('night wakings'), color: 'var(--g-sleep)', values: S.map(s => s.wakes) }])}`)}
-  ${card('🤮', N_('Vomit'), [[N_('Total'), sum('vomit')], [N_('Per day'), per('vomit')]], chart(days, [{ name: __('vomits'), color: 'var(--g-vomit)', values: S.map(s => s.vomit) }]))}
-  ${card('🧸', N_('Play'), [[N_('Play per day'), fmtDur(per('play'))]], chart(days, [{ name: __('minutes of play'), color: 'var(--g-play)', values: S.map(s => s.play) }], { fmt: v => __('{m}m', { m: v }) }))}
+  ${!older || has('vomit') ? card('🤮', N_('Vomit'), [[N_('Total'), sum('vomit')], [N_('Per day'), per('vomit')]], chart(days, [{ name: __('vomits'), color: 'var(--g-vomit)', values: S.map(s => s.vomit) }])) : ''}
+  ${!older || has('play') ? card('🧸', N_('Play'), [[N_('Play per day'), fmtDur(per('play'))]], chart(days, [{ name: __('minutes of play'), color: 'var(--g-play)', values: S.map(s => s.play) }], { fmt: v => __('{m}m', { m: v }) })) : ''}
   ${Sync.can('health') ? card('🩺', N_('Health & meds'), Object.keys(sym).length ? Object.entries(sym).map(([k, v]) => [k, v + '×']) : [[N_('Health notes'), __('none')]],
     chart(days, [{ name: __('health notes'), color: 'var(--g-health)', values: S.map(s => s.health) }, { name: __('medicines'), color: 'var(--g-meds)', values: S.map(s => s.meds) }]), flagged.length ? 'alert' : '') : ''}
   <p class="note">${__h('Stats are for your own tracking and are not medical advice. If something worries you, call your pediatrician. Call emergency services for blue lips/face, trouble breathing, or a baby who is hard to wake.')}</p>`;
@@ -577,16 +667,17 @@ function routineView(now = Date.now()) {
   const R = Routine.find(mine, now), T = Routine.today(R.slots, mine, now);
   const clock = m => { const d = new Date(now); d.setHours(0, m, 0, 0); return fmtTime(d.getTime()); };
   const night = s => s.at >= 19 * 60 || s.at < 5 * 60;
-  const name = s => (s.key === 'solids' ? __('Solids') : s.type === 'feed' ? __(TYPES.feed.label) : s.type === 'sleep' ? (night(s) ? __('Night sleep') : __('Nap')) : s.type === 'play' ? __(s.activity) : s.name);
+  const name = s => (s.key === 'solids' ? __('Solids') : s.type === 'feed' ? __(tLabel('feed')) : s.type === 'meal' ? __(s.meal) : s.type === 'sleep' ? (night(s) ? __('Night sleep') : __('Nap')) : s.type === 'play' ? __(s.activity) : s.name);
   const what = s => {
-    if (s.key === 'solids') return (s.foods || []).map(f => __(f)).join(', ');
-    if (s.type === 'feed') return s.kind === 'bottle' ? (s.ml ? __('Bottle {ml} ml', { ml: s.ml }) : __('Bottle')) : [__('Breast'), s.minutes && __('{n} min', { n: s.minutes })].filter(Boolean).join(' · ');
+    if (s.key === 'solids' || s.type === 'meal') return (s.foods || []).map(f => __(f)).join(', ');
+    if (s.type === 'feed') return s.kind === 'bottle' ? (s.ml ? (s.cup ? __('Cup {ml} ml', { ml: s.ml }) : __('Bottle {ml} ml', { ml: s.ml })) : s.cup ? __('Cup') : __('Bottle')) : [__('Breast'), s.minutes && __('{n} min', { n: s.minutes })].filter(Boolean).join(' · ');
     if (s.type === 'sleep') return s.minutes ? __('until about {time} ({long})', { time: clock(s.at + s.minutes), long: fmtDur(s.minutes) }) : '';
     if (s.type === 'play') return s.minutes ? __('{n} min', { n: s.minutes }) : '';
     return s.dose || '';
   };
   const head = kids().length > 1 ? `<h2>${esc(kidName(kidById(k)))}</h2>` : '';
-  const how = `<p class="note rhow">${__h('Worked out from the last {days} days: feeds, sleep, play and medicines that happen within {minutes} minutes of the same time on more than half of the days logged. It updates by itself as the routine changes. Diapers are left out.', { days: Routine.DAYS, minutes: Routine.WINDOW })}</p>`;
+  const how = `<p class="note rhow">${allFrom('toddler') ? __h('Worked out from the last {days} days: meals, milk, sleep, play and medicines that happen within {minutes} minutes of the same time on more than half of the days logged. It updates by itself as the routine changes. Diapers and the potty are left out.', { days: Routine.DAYS, minutes: Routine.WINDOW })
+    : __h('Worked out from the last {days} days: feeds, sleep, play and medicines that happen within {minutes} minutes of the same time on more than half of the days logged. It updates by itself as the routine changes. Diapers are left out.', { days: Routine.DAYS, minutes: Routine.WINDOW })}</p>`;
   if (!R.enough) return `${head}<div class="empty">⏰ ${__h('Your routine will show up here after a few days of logging.')}<br><small>${__hn('{n} day logged in the last week so far.', '{n} days logged in the last week so far.', R.logged)}</small></div>${how}`;
   if (!R.slots.length) return `${head}<div class="empty">⏰ ${__h('No regular times yet.')}<br><small>${__h('Anything that happens at about the same time on most days will show up here.')}</small></div>${how}`;
   const nx = T.next, ni = nx && TYPES[nx.slot.type];
@@ -629,7 +720,8 @@ function reportData(kidId, days, now = Date.now()) {
     const milk = of('feed').filter(e => e.data.kind !== 'solids');
     list.push({ d, es, feeds: milk.length, solids: of('feed').length - milk.length, ml: milk.reduce((a, e) => a + (+e.data.ml || 0), 0), pee: of('diaper').filter(e => e.data.pee).length,
       poo: of('diaper').filter(e => e.data.poo).length, sleep: asleep, longest: Math.max(0, ...of('sleep').map(e => ((e.end || now) - e.ts) / MIN)),
-      wakes: of('wake').length, vomit: of('vomit').length, health: of('health'), meds: of('med') });
+      wakes: of('wake').length, vomit: of('vomit').length, health: of('health'), meds: of('med'), meals: of('meal').length,
+      potty: of('potty').filter(e => !e.data.accident && (e.data.pee || e.data.poo)).length, accidents: of('potty').filter(e => e.data.accident).length });
   }
   return { from, to, evs, days: list };
 }
@@ -639,7 +731,8 @@ function reportBlocks(kidId, { days, every, notes }, now = Date.now()) {
   const avg = key => r1(used.reduce((a, x) => a + x[key], 0) / n), count = xs => Object.entries(xs.reduce((m, x) => ({ ...m, [x]: (m[x] || 0) + 1 }), {})).sort((a, b) => b[1] - a[1]).map(([x, c]) => `${x} ×${c}`).join(', ');
   const when = e => `${fmtShort(e.ts)} ${e.data && e.data.approx ? __('about {time}', { time: fmtTime(e.ts) }) : fmtTime(e.ts)}`;
   const born = k.birth ? new Date(k.birth + 'T00:00').getTime() : null, m = born ? Guide.monthsOld(k.birth, now) : -1;
-  const age = born == null || m < 0 ? '' : m < 1 ? __n('{n} week', '{n} weeks', Math.max(0, Math.floor((now - born) / DAY / 7))) : __n('{n} month', '{n} months', m);
+  const age = born == null || m < 0 ? '' : m < 1 ? __n('{n} week', '{n} weeks', Math.max(0, Math.floor((now - born) / DAY / 7))) : m < 24 ? __n('{n} month', '{n} months', m) : Stages.age(k.birth, now);
+  const older = Stages.from(stageOf(k, now), 'toddler'), anyOf = key => R.days.some(x => x[key]);   // (an older child's report leaves out what isn't logged any more)
   const doc = Guide.cleanDoctor(db.baby.doctor), formula = usualFormula(k);
   const health = R.evs.filter(e => e.type === 'health'), meds = R.evs.filter(e => e.type === 'med'), temps = health.filter(e => +e.data.temp > 0);
   const hot = temps.length ? temps.reduce((a, e) => (+e.data.temp > +a.data.temp ? e : a)) : null, vomits = R.evs.filter(e => e.type === 'vomit');
@@ -658,8 +751,10 @@ function reportBlocks(kidId, { days, every, notes }, now = Date.now()) {
   if (!R.evs.length) blocks.push({ p: __('Nothing was logged in this period.'), muted: true });
   else {
     blocks.push({ p: __n('Averages over the {n} day with entries.', 'Averages over the {n} days with entries.', used.length), muted: true, size: 8.5 }, { kv: [
-      [__('Feeds per day'), String(avg('feeds'))], ...(avg('ml') ? [[__('Bottle ml per day'), __('{n} ml', { n: Math.round(avg('ml')) })]] : []), ...(avg('solids') ? [[__('Solid meals per day'), String(avg('solids'))]] : []),
-      [__('Pee per day'), String(avg('pee'))], [__('Poo per day'), String(avg('poo'))],
+      ...(anyOf('meals') ? [[__('Meals per day'), String(avg('meals'))]] : []),
+      ...(!older || anyOf('feeds') ? [[older ? __('Milk feeds per day') : __('Feeds per day'), String(avg('feeds'))]] : []), ...(avg('ml') ? [[older ? __('Milk ml per day') : __('Bottle ml per day'), __('{n} ml', { n: Math.round(avg('ml')) })]] : []), ...(avg('solids') ? [[__('Solid meals per day'), String(avg('solids'))]] : []),
+      ...(anyOf('potty') || anyOf('accidents') ? [[__('On the potty per day'), String(avg('potty'))], [__('Accidents per day'), String(avg('accidents'))]] : []),
+      ...(!older || anyOf('pee') || anyOf('poo') ? [[__('Pee per day'), String(avg('pee'))], [__('Poo per day'), String(avg('poo'))]] : []),
       ...(R.evs.some(e => e.type === 'diaper' && e.data.poo && e.data.color) ? [[__('Poo colours'), count(R.evs.filter(e => e.type === 'diaper' && e.data.poo && e.data.color).map(e => __(e.data.color)))]] : []),
       [__('Sleep per day'), fmtDur(avg('sleep'))], [__('Longest stretch (avg)'), fmtDur(avg('longest'))], [__('Night wakings per day'), String(avg('wakes'))],
       [__('Vomit'), vomits.length ? __n('{n} time', '{n} times', vomits.length) + (vomits.some(e => e.data.projectile) ? ` (${__('projectile')}: ${vomits.filter(e => e.data.projectile).length})` : '') : __('none')],
@@ -669,12 +764,16 @@ function reportBlocks(kidId, { days, every, notes }, now = Date.now()) {
       ...(tried.size ? [[__('Foods tried (first time)'), [...tried.values()].map(([f, t]) => `${__(f)} (${fmtShort(t)})`).join(', ')]] : []),
     ] });
   }
+  // the columns of the table: a baby's always; an older child's meals and potty, and only what was logged in the period
+  const C = (head, w, v, on = true, align = 'center') => ({ head, w, v, on, align });
+  const cols = [C(__('Date'), 2.3, x => fmtShort(x.d), true, 'left'), C(__('Meals'), 1.1, x => x.meals, anyOf('meals')), C(older ? __('Milk') : __('Feeds'), 1, x => x.feeds, !older || anyOf('feeds')),
+    C(__('ml'), 1.1, x => x.ml || '–', !older || anyOf('ml')), C(__('Potty'), 1.1, x => x.potty, anyOf('potty') || anyOf('accidents')), C(__('Accidents'), 1.3, x => x.accidents, anyOf('accidents')),
+    C(__('Pee'), 1, x => x.pee, !older || anyOf('pee')), C(__('Poo'), 1, x => x.poo, !older || anyOf('poo')), C(__('Sleep'), 1.3, x => (x.sleep ? fmtDur(x.sleep) : '–')),
+    C(__('Night wakings'), 1.2, x => x.wakes), C(__('Vomit'), 1, x => x.vomit),
+    C(__('Health & meds'), 2.8, x => [...x.health.map(e => (e.data.symptoms || []).map(s => __(s)).join(', ') || __('Note')), ...x.meds.map(e => e.data.name || __('Medication'))].join('; '), true, 'left')].filter(c => c.on);
   blocks.push({ h: 2, text: __('Day by day') }, { table: {
-    cols: [{ w: 2.3 }, { w: 1, align: 'center' }, { w: 1.1, align: 'center' }, { w: 1, align: 'center' }, { w: 1, align: 'center' }, { w: 1.3, align: 'center' }, { w: 1.2, align: 'center' }, { w: 1, align: 'center' }, { w: 2.8 }],
-    head: [__('Date'), __('Feeds'), __('ml'), __('Pee'), __('Poo'), __('Sleep'), __('Night wakings'), __('Vomit'), __('Health & meds')],
-    rows: R.days.map(x => (x.es.length ? [fmtShort(x.d), x.feeds, x.ml || '–', x.pee, x.poo, x.sleep ? fmtDur(x.sleep) : '–', x.wakes, x.vomit,
-      [...x.health.map(e => (e.data.symptoms || []).map(s => __(s)).join(', ') || __('Note')), ...x.meds.map(e => e.data.name || __('Medication'))].join('; ')]
-      : [fmtShort(x.d), '–', '–', '–', '–', x.sleep ? fmtDur(x.sleep) : '–', '–', '–', __('Nothing logged')]).map(String)),
+    cols: cols.map(c => (c.align === 'left' ? { w: c.w } : { w: c.w, align: c.align })), head: cols.map(c => c.head),
+    rows: R.days.map(x => cols.map((c, i) => (x.es.length ? c.v(x) : i === 0 ? c.v(x) : c.head === __('Sleep') ? c.v(x) : i === cols.length - 1 ? __('Nothing logged') : '–')).map(String)),
   } });
   blocks.push({ h: 2, text: __('Health notes and medicines') });
   if (health.length + meds.length) {
@@ -735,12 +834,12 @@ const fmtDay = key => new Date(key + 'T00:00').toLocaleDateString(I18n.locale(),
 function saveProfile(msg) { db.baby.name = kids()[0].name; db.baby.birth = kids()[0].birth; Sync.linked() ? Sync.pushBaby() : save(); render(); if (msg) toast(msg); }
 /** The foods of a solid meal: a twirl-down of the common first foods by group (the key allergens first, marked as such), any food the
     child is allergic to flagged, and room for any other food. */
-function foodsPicker(picked, kidIds) {
+function foodsPicker(picked, kidIds, { open = true, baby = true } = {}) {
   const allergic = f => kidIds.some(id => allergicTo(id, f));
   const one = f => chip('food', f, `${__h(f)}${Foods.allergen(f) ? ` <small class="kal">${__h('key allergen')}</small>` : ''}${allergic(f) ? ` <small class="kbad">⚠️ ${__h('allergy')}</small>` : ''}`, picked.includes(f), allergic(f) ? 'warn' : '');
-  return `<details class="foods" open><summary><span>${__h('Foods')} <small class="fsum">${esc(picked.map(f => __(f)).join(', '))}</small></span><span class="chev" aria-hidden="true">›</span></summary>
-    ${Foods.GROUPS.map(g => `<details class="fgrp" data-fg="${g.id}"${g.id === 'allergens' || g.items.some(([f]) => picked.includes(f)) ? ' open' : ''}><summary>${__h(g.name)}<span class="chev" aria-hidden="true">›</span></summary>
-      ${g.id === 'allergens' ? `<p class="note">${__h('Offering these from around 6 months, one new one at a time and then often, lowers the chance of a food allergy. If your baby has severe eczema or already has a food allergy, ask your pediatrician first.')}</p>` : ''}
+  return `<details class="foods"${open ? ' open' : ''}><summary><span>${__h('Foods')} <small class="fsum">${esc(picked.map(f => __(f)).join(', '))}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    ${Foods.GROUPS.map(g => `<details class="fgrp" data-fg="${g.id}"${(baby && g.id === 'allergens') || g.items.some(([f]) => picked.includes(f)) ? ' open' : ''}><summary>${__h(g.name)}<span class="chev" aria-hidden="true">›</span></summary>
+      ${g.id === 'allergens' && baby ? `<p class="note">${__h('Offering these from around 6 months, one new one at a time and then often, lowers the chance of a food allergy. If your baby has severe eczema or already has a food allergy, ask your pediatrician first.')}</p>` : ''}
       <div class="chips">${g.items.map(([f]) => one(f)).join('')}</div></details>`).join('')}
     <div class="chips" id="foodTyped">${picked.filter(f => !Foods.known(f)).map(one).join('')}</div>
     <div class="row addfood"><input id="foodOther" type="text" maxlength="60" placeholder="${__h('Another food')}" aria-label="${__h('Another food')}"><button type="button" class="btn" id="foodAdd">${__h('Add')}</button></div></details>`;
@@ -802,6 +901,84 @@ function allergyDays(ids) {
   return m;
 }
 
+// ---------- Big moments ----------
+// The firsts and the days to remember (the first smile, the first steps, the first day of school) are entries of their own, shared and
+// end-to-end encrypted like the rest of the log. They show at the top of their day, with a star on the calendar, and in the Month tab's
+// journal, in chapters for each stage of growing up. stages.js has ideas for every age; anything else can be written in.
+const momentsOf = ids => { const set = new Set(ids); return db.events.filter(e => e.type === 'moment' && set.has(childOf(e))).sort((a, b) => a.ts - b.ts); };
+/** A big moment as a card: what happened, for whom (on a page with several children) and how old they were; in the journal, the day. */
+function momentRow(e, inJournal) {
+  const k = kidById(childOf(e)), [what] = describe(e), age = k ? Stages.age(k.birth, e.ts) : '';
+  const sub = [inJournal && fmtDay(dkey(e.ts)), !inJournal && kids().length > 1 && k && kidName(k), age].filter(Boolean).join(' · ');
+  return `<button class="card moment" data-moment="${e.id}"><span class="mi">🌟</span><span class="mb"><b>${esc(what)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}${e.note ? `<small class="mn">“${esc(e.note)}”</small>` : ''}${byLine(e)}</span></button>`;
+}
+/** The day's big moments, at the top of the day. */
+const momentCards = day => momentsOf(pageKids().map(k => k.id)).filter(e => e.ts >= day && e.ts < day + DAY).map(e => momentRow(e)).join('');
+/** At the bottom of the Day page: save a big moment, with a few ideas for the child's age. */
+function momentButton() {
+  if (!Sync.can('add')) return '';
+  const k = pageKids()[0], have = new Set(momentsOf([k.id]).map(e => e.data.what));
+  const ideas = Stages.ideas(stageOf(k, Math.min(viewDay, Date.now()))).filter(w => w !== 'Birthday' && !have.has(w)).slice(0, 3);
+  return `<button class="momentbtn" data-momentnew><span class="tm">🌟</span><span><b>${__h('Save a big moment')}</b><small>${ideas.length ? ideas.map(w => __h(w)).join(' · ') : __h('A first, or a day to remember')}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
+}
+/** A big moment, for someone who may not change it. */
+function momentInfo(e) {
+  const k = kidById(childOf(e)), [what] = describe(e);
+  popup(`<h3>🌟 ${esc(what)}</h3><p class="note">${esc([fmtDay(dkey(e.ts)), kids().length > 1 && k && kidName(k), k && Stages.age(k.birth, e.ts)].filter(Boolean).join(' · '))}</p>
+    ${e.note ? `<p>“${esc(e.note)}”</p>` : ''}${byLine(e)}<div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Close')}</button></div>`);
+}
+/** Save a big moment, or change one: what happened (an idea for the child's age, or in your own words), the day, and a note. */
+function openMoment(ev, pre = {}) {
+  const editing = !!ev;
+  if (editing ? !Sync.can('edit', ev) : !Sync.can('add')) return toast(__("You don't have permission to do that"));
+  const multi = kids().length > 1, k = kidById(ev ? childOf(ev) : pre.kid || (dayKid() === 'all' ? kids()[0].id : dayKid())) || kids()[0];
+  const d = (ev && ev.data) || {}, day = startOfDay(Math.min(ev ? ev.ts : pre.day ?? Date.now(), Date.now()));
+  const have = new Set(momentsOf([k.id]).filter(e => e !== ev && !e.data.own).map(e => e.data.what)), cur = d.own ? '' : d.what || pre.what || '';
+  const st = stageOf(k, day), fresh = w => w === 'Birthday' || w === cur || !have.has(w);   // (a first can only happen once)
+  const mine = Stages.ideas(st).filter(fresh);
+  const others = Stages.IDS.filter(x => x !== st).map(x => [x, (Stages.MOMENTS[x] || []).filter(w => fresh(w) && !mine.includes(w))]).filter(([, l]) => l.length);
+  const who = multi ? `<label class="f">${editing ? __h('For') : __h('For (tick everyone it applies to)')}</label><div class="chips kidchips">${kids().map(c => `<label class="chip kidchip" style="--k:${c.color}"><input type="${editing ? 'radio' : 'checkbox'}" name="mmKid" value="${c.id}" ${c.id === k.id ? 'checked' : ''}><span>${avatar(c)}${esc(kidName(c))}</span></label>`).join('')}</div>` : '';
+  const ideas = (list, x) => `${x ? `<p class="mh">${__h(Stages.byId(x).name)}</p>` : ''}<div class="chips mmideas">${list.map(w => chip('mmWhat', w, __h(w), w === cur, '', true)).join('')}</div>`;
+  const close = popup(`<h3>🌟 ${editing ? __h('Change the big moment') : __h('Save a big moment')}</h3>${who}
+    <label class="f" for="mmDay">${__h('Day')}</label><input id="mmDay" type="date" value="${dkey(day)}" max="${dkey(Date.now())}">
+    <label class="f">${__h('What happened?')}</label>${ideas(mine)}
+    ${others.length ? `<details class="mmmore"><summary>${__h('Ideas for other ages')}<span class="chev" aria-hidden="true">›</span></summary>${others.map(([x, l]) => ideas(l, x)).join('')}</details>` : ''}
+    <label class="f" for="mmOwn">${__h('Or in your own words')}</label><input id="mmOwn" type="text" maxlength="80" value="${d.own ? esc(d.what) : ''}" placeholder="${__h('e.g. First time at the beach')}">
+    <label class="f" for="mmNote">${__h('Note (optional)')}</label><textarea id="mmNote" rows="3" maxlength="1000" placeholder="${__h('Where you were, who was there, what they did')}">${esc(ev ? ev.note : '')}</textarea>
+    <div class="row" style="margin-top:14px">${editing && Sync.can('delete', ev) ? `<button class="btn d" id="mmDel">${__h('Delete')}</button>` : ''}<button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="mmSave">${__h('Save')}</button></div>`);
+  const S = $('#sheet');
+  if (cur && others.some(([, l]) => l.includes(cur))) S.querySelector('.mmmore').open = true;
+  $('#mmOwn').oninput = () => { if ($('#mmOwn').value.trim()) S.querySelectorAll('[name=mmWhat]:checked').forEach(r => { r.checked = false; }); };
+  S.querySelectorAll('[name=mmWhat]').forEach(r => r.addEventListener('change', () => { if (r.checked) $('#mmOwn').value = ''; }));
+  if ($('#mmDel')) $('#mmDel').onclick = () => { if (confirm(__('Delete this entry?'))) { removeEvent(ev); save(); close(); render(); toast(__('Deleted')); } };
+  $('#mmSave').onclick = () => {
+    const own = $('#mmOwn').value.trim().slice(0, 80), pick = S.querySelector('[name=mmWhat]:checked'), what = own || (pick ? pick.value : '');
+    if (!what) return toast(__('Choose what happened, or write it'));
+    const dv = $('#mmDay').value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dv) || dv > dkey(Date.now())) return toast(__('Please pick a date'));
+    const d0 = new Date(dv + 'T00:00').getTime(), ts = editing && dkey(ev.ts) === dv ? ev.ts : d0 === startOfDay(Date.now()) ? Date.now() : d0 + 12 * 60 * MIN;
+    const ids = multi ? [...S.querySelectorAll('[name=mmKid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
+    if (!ids.length) return toast(__('Choose who this is for'));
+    const data = own && !Stages.known(own) ? { what: own, own: true } : { what };   // (typed in: shown as typed)
+    for (const id of ids) {
+      const rec = ev || { id: uid(), type: 'moment', by: Auth.id || undefined };
+      Object.assign(rec, { ts, data: structuredClone(data), note: $('#mmNote').value.trim(), updated: stamp(), child: id });
+      if (!ev) db.events.push(rec);
+    }
+    save(); close(); viewDay = startOfDay(ts); render(); toast(ids.length > 1 ? __n('Saved for {n} child', 'Saved for {n} children', ids.length) : __('Saved'));
+  };
+}
+/** The Month tab's journal: every big moment of the child, in chapters for each stage of growing up. */
+function momentsJournal() {
+  const k = kidById(viewKid()); if (!k) return '';
+  const list = momentsOf([k.id]);
+  let body = '', ch = '';
+  for (const e of list) { const st = stageOf(k, e.ts); if (st !== ch) { body += `<p class="mh">${__h(Stages.byId(st).name)}</p>`; ch = st; } body += momentRow(e, true); }
+  return `<details class="gd moments" data-grp="moments" ${openGroups.has('moments') ? 'open' : ''}><summary><span class="gi">🌟</span><span class="gt"><b>${__h('Big moments')}</b><small>${list.length ? __hn('{n} big moment', '{n} big moments', list.length) : __h('None saved yet')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    ${body || `<p class="note">${__h('First smiles, first steps, first days at school: save them as they happen, and they are kept here.')}</p>`}
+    ${Sync.can('add') ? `<button class="btn mmadd" data-momentnew>🌟 ${__h('Save a big moment')}</button>` : ''}</details>`;
+}
+
 // ---------- Guide ----------
 function doctorHtml() {
   const d = (db.baby.doctor || {}), set = d.name || d.phone || d.practice;
@@ -810,23 +987,32 @@ function doctorHtml() {
 function guideView() {
   const ks = [kidById(viewKid())].filter(k => k && k.birth), now = Date.now();
   const cur = ks.map(k => [k, Guide.monthsOld(k.birth, now)]).filter(([, m]) => m >= 0);
-  const ms = Object.entries(Guide.MILESTONES), sos = __(Guide.sos(myRegion()));
-  return `${doctorHtml()}
-  <p class="note emer"><b>${__h('Emergency?')}</b> ${__h('Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.', { sos })}</p>
-  ${cur.length ? `<h2>${__h('Right now')}</h2>${cur.map(([k, m]) => { const key = ms.map(([n]) => +n).filter(n => n <= Math.max(1, m)).pop() || 1, M = Guide.MILESTONES[key];
-    const age = m < 1 ? __n('{n} week', '{n} weeks', Math.max(0, Math.floor((now - new Date(k.birth + 'T00:00').getTime()) / DAY / 7))) : __n('{n} month', '{n} months', m);
+  const ms = Object.entries(Guide.MILESTONES), sos = __(Guide.sos(myRegion())), older = allFrom('toddler');
+  // what is common at the child's age: the milestones until 5, then what the school and teenage years are about
+  const nowCard = ([k, m]) => {
+    const key = ms.map(([n]) => +n).filter(n => n <= Math.max(1, m)).pop() || 1, M = Guide.MILESTONES[key], st = stageOf(k, now), note = Guide.STAGE_NOTES[st === 'grown' ? 'teen' : st];
+    const age = m < 1 ? __n('{n} week', '{n} weeks', Math.max(0, Math.floor((now - new Date(k.birth + 'T00:00').getTime()) / DAY / 7))) : m < 24 ? __n('{n} month', '{n} months', m) : Stages.age(k.birth, now);
     return `<div class="card nowcard" style="--k:${k.color}">${kids().length > 1 ? avatar(k) + ' ' : ''}<b>${__h('{name} is {age} old', { name: kidName(k), age })}</b>
-      <p class="note">${m < 1 ? __h('The first month is mostly feeding, sleeping and getting to know each other. Here is what is common around one month:') : __h('Around {age}:', { age: __(M.title) })}</p><ul>${M.does.map(x => `<li>${__h(x)}</li>`).join('')}</ul></div>`; }).join('')}` : ''}
+      ${note ? `<p class="note">${__h(note)}</p>` : `<p class="note">${m < 1 ? __h('The first month is mostly feeding, sleeping and getting to know each other. Here is what is common around one month:') : __h('Around {age}:', { age: __(M.title) })}</p><ul>${M.does.map(x => `<li>${__h(x)}</li>`).join('')}</ul>`}</div>`;
+  };
+  const card = (grp, c) => `<details class="gd" data-grp="${grp}${c.id}" ${openGroups.has(grp + c.id) ? 'open' : ''}><summary><span class="gi">${c.icon}</span><span class="gt"><b>${__h(c.title)}</b></span><span class="chev" aria-hidden="true">›</span></summary>
+    <p>${__h(c.body)}</p>${c.call ? `<p class="call">${__h(c.call, { sos })}</p>` : ''}${grp === 'g' ? picsHtml(c.id) : ''}</details>`;
+  const newborn = `<h2>${__h('Common with newborns')}</h2>${Guide.COMMON.map(c => card('g', c)).join('')}`;
+  const toddler = `<h2>${__h('Toddlers and preschoolers')}</h2>${Guide.TODDLER.map(c => card('t', c)).join('')}`;
+  return `${doctorHtml()}
+  <p class="note emer"><b>${__h('Emergency?')}</b> ${older ? __h('Call {sos} for blue lips or face, trouble breathing, a child who is hard to wake, or a seizure.', { sos }) : __h('Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.', { sos })}</p>
+  ${cur.length ? `<h2>${__h('Right now')}</h2>${cur.map(nowCard).join('')}` : ''}
+  ${older ? toddler : ''}
   <h2>${__h('Food')}</h2>
   <details class="gd" data-grp="gsolids" ${openGroups.has('gsolids') ? 'open' : ''}><summary><span class="gi">🥄</span><span class="gt"><b>${__h('Starting solid foods')}</b><small>${__h('From around 6 months, with the key allergens early')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
     ${solidsGuideHtml(sos)}</details>
-  <h2>${__h('Common with newborns')}</h2>
-  ${Guide.COMMON.map(c => `<details class="gd" data-grp="g${c.id}" ${openGroups.has('g' + c.id) ? 'open' : ''}><summary><span class="gi">${c.icon}</span><span class="gt"><b>${__h(c.title)}</b></span><span class="chev" aria-hidden="true">›</span></summary>
-    <p>${__h(c.body)}</p>${c.call ? `<p class="call">${__h(c.call, { sos })}</p>` : ''}${picsHtml(c.id)}</details>`).join('')}
+  ${older ? '' : newborn}
   <h2>${__h('Medicines')}</h2>
   ${medsHtml()}
+  ${older ? '' : toddler}
   <h2>${__h('Month by month')}</h2>
   ${ms.map(([n, M]) => milestoneDetails(+n, M)).join('')}
+  ${older ? newborn : ''}
   <p class="note">${__h("General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.")}</p>
   ${I18n.lang() === 'en' ? '' : `<p class="note">${__h('This translation was made with the help of AI and may have mistakes. In an emergency, call {sos}. If something reads wrong, tell us: More → Language → Report a language issue.', { sos })}</p>`}
   ${picCreditsHtml()}`;
@@ -944,9 +1130,16 @@ function milestoneCheck() {
   const m = due[0][1], M = Guide.MILESTONES[m], who = due.filter(x => x[1] === m).map(x => x[0]);
   who.forEach(k => { seen[k.id] = m; }); Store.save(db);
   const names = who.map(kidName), age = __(M.title);
-  popup(`<h3>🌟 ${who.length > 1 ? __h('{names} are {age} old', { names: andList(names), age }) : __h('{name} is {age} old', { name: names[0], age })}</h3><p class="note">${__h("Every baby is different; this is what's common around now.")}</p>${milestoneBody(M)}
+  // a new stage of growing up: what changes in the app (stages.js); on a birthday, a way to keep it as a big moment
+  const grow = { 12: N_('Little Log grows with {name}: Meals and Potty are on the Day page now, milk feeds are called Milk, and the buttons you stop using move behind More. The Guide has topics for toddlers.'),
+    36: N_('The preschool years: the Day page and the Guide keep growing with {name}.') }[m];
+  const day = new Date(who[0].birth + 'T12:00'); day.setMonth(day.getMonth() + m);
+  popup(`<h3>🌟 ${who.length > 1 ? __h('{names} are {age} old', { names: andList(names), age }) : __h('{name} is {age} old', { name: names[0], age })}</h3><p class="note">${m >= 24 ? __h("Every child is different; this is what's common around now.") : __h("Every baby is different; this is what's common around now.")}</p>
+    ${grow ? `<p class="grow">🌿 ${__h(grow, { name: andList(names) })}</p>` : ''}${milestoneBody(M)}
+    ${m % 12 === 0 && Sync.can('add') ? `<button class="btn" id="msMoment" style="width:100%;margin-top:12px">🌟 ${__h('Save the birthday as a big moment')}</button>` : ''}
     <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button><button class="btn p" id="msGuide">${__h('More in the Guide')}</button></div>`);
   $('#msGuide').onclick = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; tab = 'guide'; render(); window.scrollTo(0, 0); };
+  if ($('#msMoment')) $('#msMoment').onclick = () => openMoment(null, { kid: who[0].id, what: 'Birthday', day: Math.min(day.getTime(), Date.now()) });
 }
 
 // ---------- Formula ----------
@@ -1026,16 +1219,29 @@ function tripButton() {
   if (up) { const M = Travel.MEANS[Travel.meansOf(up)]; return `<button class="tripbtn" data-tripedit="${up.id}"><span class="tm">${M.icon}</span><span><b>${__h('Trip coming up {by}', { by: __(M.by) })}</b><small>${__h('{from} – {to}. Tap to change it.', { from: fmtShort(up.ts), to: fmtShort(Travel.ends(up) - 1) })}</small></span><span class="chev" aria-hidden="true">›</span></button>`; }
   return `<button class="tripbtn" data-tripnew><span class="tm">🧳</span><span><b>${__h('Travelling?')}</b><small>${__h('Switch to travel mode for the trip: quicker logging and a clock to match the journey')}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
+/** What has a one-tap sheet for travel mode (openQuick). */
+const QUICKABLE = ['feed', 'meal', 'diaper', 'potty', 'sleep', 'vomit'];
+/** Travel: the (up to) four things a child of this age is logged for most, sleep always among them: { big, rest }. */
+function travelTypes() {
+  const { shown, more } = dayButtons(), q = shown.filter(t => QUICKABLE.includes(t));
+  const big = q.length > 4 ? q.filter(t => t === 'sleep' || q.filter(x => x !== 'sleep').indexOf(t) < 3) : q;
+  return { big, rest: [...shown, ...more].filter(t => !big.includes(t)) };
+}
 /** Travel: the four things logged most, as big buttons with one-tap sheets; the rest are one more tap away. */
 function travelQuick() {
   if (!Sync.can('add')) return '';
-  const P = Travel.PALETTE.light, label = { feed: N_('Feed'), diaper: N_('Diaper'), sleep: N_('Asleep'), vomit: N_('Spit-up') };
-  return `<div class="quick tq">${Object.keys(label).map(k => `<button data-qadd="${k}" style="--cw:${Kids.rgba(P[groupOf(k).id], 0.3)}"><b>${TYPES[k].icon}</b>${__h(label[k])}</button>`).join('')}</div>
-    <button class="qmore" data-qmore>${Sync.can('health') ? __h('More: play, night waking, health and medicine') : __h('More: play, night waking')}</button>`;
+  const P = Travel.PALETTE.light, { big, rest } = travelTypes(), young = !allFrom('toddler');
+  const label = { feed: young ? N_('Feed') : N_('Milk'), diaper: N_('Diaper'), sleep: N_('Asleep'), vomit: young ? N_('Spit-up') : N_('Vomit'), meal: N_('Meal'), potty: N_('Potty') };
+  const babyRest = ['wake', 'play', 'health', 'med'], usual = rest.length && rest.every(t => babyRest.includes(t)) && rest.includes('wake') && rest.includes('play');
+  const what = usual ? (rest.includes('health') ? __h('More: play, night waking, health and medicine') : __h('More: play, night waking'))
+    : __h('More: {list}', { list: andList(rest.slice(0, 4).map(t => __(TYPES[t].noun))) + (rest.length > 4 ? '…' : '') });
+  return `<div class="quick tq">${big.map(k => `<button data-qadd="${k}" style="--cw:${Kids.rgba(P[groupOf(k).id], 0.3)}"><b>${TYPES[k].icon}</b>${__h(label[k])}</button>`).join('')}</div>
+    ${rest.length ? `<button class="qmore" data-qmore="${rest.join(' ')}">${what}</button>` : ''}`;
 }
-function openMoreTypes() {
-  const types = ['play', 'wake', 'health', 'med'].filter(k => Sync.can('health') || (k !== 'health' && k !== 'med'));
-  const close = popup(`<h3>${__h('More to log')}</h3><div class="quick">${types.map(k => `<button data-more="${k}"><b>${TYPES[k].icon}</b>${__h(TYPES[k].label)}</button>`).join('')}</div>
+/** The rest of what there is to log, a tap away (the Day page's More, and travel mode's). */
+function openMoreTypes(types = travelTypes().rest) {
+  types = types.filter(k => TYPES[k] && (Sync.can('health') || (k !== 'health' && k !== 'med')));
+  const close = popup(`<h3>${__h('More to log')}</h3><div class="quick">${types.map(k => `<button data-more="${k}" style="--cw:${Kids.rgba(TYPES[k].color, 0.3)}"><b>${TYPES[k].icon}</b>${__h(tLabel(k))}</button>`).join('')}</div>
     <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Close')}</button></div>`);
   $('#sheet').querySelectorAll('[data-more]').forEach(b => b.onclick = () => { close(); openSheet(b.dataset.more); });
 }
@@ -1145,33 +1351,41 @@ function openQuick(type) {
   const big = (name, opts, cur, cls = '') => `<div class="chips big ${cls}">${opts.map(([v, l]) => chip(name, v, l, String(v) === String(cur), '', true)).join('')}</div>`;   // (labels come as HTML)
   const near = (v, list) => list.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
   const who = multi ? `<div class="chips kidchips">${kids().map(k => `<label class="chip kidchip" style="--k:${k.color}"><input type="checkbox" name="qkid" value="${k.id}" ${pre.includes(k.id) ? 'checked' : ''}><span>${avatar(k)}${esc(kidName(k))}</span></label>`).join('')}</div>` : '';
-  const ML = [60, 90, 120, 150, 180];
-  let body = '', instant = false, title = __(T.label);
+  const ML = [60, 90, 120, 150, 180], older = allFrom('toddler');
+  let body = '', instant = false, title = __(tLabel(type));
   const ifYouLike = ` <small>${__h('(if you like)')}</small>`;
-  if (type === 'feed') body = `<label class="f">${__h('Bottle or breast?')}</label>${big('qkind', [['bottle', '🍼 ' + __h('Bottle')], ['breast', __h('Breast')]], pd.kind || 'bottle')}
-    <div id="qBottle"><label class="f">${__h('About how much?')}</label>${big('qml', ML.map(v => [v, __h('{n} ml', { n: v })]), pd.ml ? near(+pd.ml, ML) : 90)}${big('qmilk', [['Formula', __h('Formula')], ['Breast milk', __h('Breast milk')]], pd.milk || 'Formula')}</div>
+  if (type === 'feed') body = older ? `<label class="f">${__h('Cup, bottle or breast?')}</label>${big('qkind', [['cup', __h('Cup')], ['bottle', '🍼 ' + __h('Bottle')], ['breast', __h('Breast')]], pd.kind || 'cup')}
+    <div id="qBottle"><label class="f">${__h('About how much?')}</label>${big('qml', ML.map(v => [v, __h('{n} ml', { n: v })]), pd.ml ? near(+pd.ml, ML) : 120)}${big('qmilk', MILKS_OLDER.map(v => [v, __h(v)]), pd.milk || "Cow's milk")}</div>`
+    : `<label class="f">${__h('Bottle or breast?')}</label>${big('qkind', [['bottle', '🍼 ' + __h('Bottle')], ['breast', __h('Breast')]], pd.kind || 'bottle')}
+    <div id="qBottle"><label class="f">${__h('About how much?')}</label>${big('qml', ML.map(v => [v, __h('{n} ml', { n: v })]), pd.ml ? near(+pd.ml, ML) : 90)}${big('qmilk', [['Formula', __h('Formula')], ['Breast milk', __h('Breast milk')]], pd.milk || 'Formula')}</div>`;
+  if (type === 'feed') body += `
     <div id="qBreast"><label class="f">${__h('Side')}${ifYouLike}</label>${big('qside', SIDES.map(v => [v, __h(v)]), '')}
       <label class="f">${__h('About how long?')}${ifYouLike}</label>${big('qmin', [5, 10, 15, 20, 30].map(v => [v, __h('{n} min', { n: v })]), '')}</div>`;
   if (type === 'diaper') { instant = true; body = `<label class="f">${__h('Tap one to save')}</label>${big('qdia', [['pee', '💧 ' + __h('Pee')], ['poo', '💩 ' + __h('Poo')], ['both', __h('Pee + Poo')]], '', 'save')}`; }
-  if (type === 'vomit') { instant = true; title = __('Spit-up'); body = `<label class="f">${__h('Tap one to save')}</label>${big('qvom', [['Spit-up', __h('A little')], ['Large', __h('More than usual')]], '', 'save')}`; }
+  if (type === 'meal') body = `<label class="f">${__h('Which meal?')}</label>${big('qmeal', MEALS.map(v => [v, __h(v)]), mealAt(Date.now()))}
+    <label class="f">${__h('How much did they eat?')}${ifYouLike}</label>${big('qeat', EATEN.map(v => [v, __h(v)]), '')}`;
+  if (type === 'potty') { instant = true; body = `<label class="f">${__h('Tap one to save')}</label>${big('qpot', [['pee', '💧 ' + __h('Pee')], ['poo', '💩 ' + __h('Poo')], ['both', __h('Pee + Poo')], ['accident', __h('Accident')]], '', 'save')}`; }
+  if (type === 'vomit') { instant = true; title = older ? __('Vomit') : __('Spit-up'); body = `<label class="f">${__h('Tap one to save')}</label>${big('qvom', [['Spit-up', __h('A little')], ['Large', __h('More than usual')]], '', 'save')}`; }
   if (type === 'sleep') title = __('Fell asleep');
   const close = popup(`<h3>${T.icon} ${esc(title)}</h3>${who}<label class="f">${__h('When?')}</label>${big('qago', [[0, __h('Just now')], [15, __h('~{n} min ago', { n: 15 })], [30, __h('~{n} min ago', { n: 30 })], [60, __h('~1 hr ago')]], 0)}
     ${body}<div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Cancel')}</button>${instant ? '' : `<button class="btn p" id="qSave">${__h('Save')}</button>`}</div>`);
   const S = $('#sheet'), val = n => { const c = S.querySelector(`[name=${n}]:checked`); return c ? c.value : ''; };
-  const sync = () => { if ($('#qBottle')) { const b = val('qkind') === 'bottle'; $('#qBottle').hidden = !b; $('#qBreast').hidden = b; } };
+  const sync = () => { if ($('#qBottle')) { const b = val('qkind') !== 'breast'; $('#qBottle').hidden = !b; $('#qBreast').hidden = b; } };
   S.onchange = sync; sync();
   const commit = () => {
     const ids = multi ? [...S.querySelectorAll('[name=qkid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
     if (!ids.length) return toast(__('Choose who this is for'));
     const ago = +val('qago') || 0, ts = Date.now() - ago * MIN, est = ago ? { approx: true } : {};
     let data = { ...est };
-    if (type === 'feed') data = val('qkind') === 'breast' ? { kind: 'breast', ...(val('qside') ? { side: val('qside') } : {}), ...(val('qmin') ? { min: +val('qmin') } : {}), ...est } : { kind: 'bottle', ml: +val('qml') || 90, milk: val('qmilk') || 'Formula', ...est };
+    if (type === 'feed') data = val('qkind') === 'breast' ? { kind: 'breast', ...(val('qside') ? { side: val('qside') } : {}), ...(val('qmin') ? { min: +val('qmin') } : {}), ...est } : { kind: val('qkind') === 'cup' ? 'cup' : 'bottle', ml: +val('qml') || 90, milk: val('qmilk') || 'Formula', ...est };
+    if (type === 'meal') data = { meal: val('qmeal') || mealAt(ts), foods: [], ...(val('qeat') ? { amount: val('qeat') } : {}), ...est };
+    if (type === 'potty') { const v = val('qpot'); data = v === 'accident' ? { pee: false, poo: false, accident: true, ...est } : { pee: v !== 'poo', poo: v !== 'pee', where: 'Potty', ...est }; }
     if (type === 'diaper') { const v = val('qdia'); data = { pee: v !== 'poo', poo: v !== 'pee', rash: false, ...est }; }
     if (type === 'vomit') data = { amount: val('qvom') || 'Spit-up', projectile: false, ...est };
     if (type === 'sleep') { const busy = ids.find(id => activeSleep(id)); if (busy) return toast(__('{name} is already asleep', { name: kidName(kidById(busy)) })); }
     for (const id of ids) {
       const d = structuredClone(data);
-      if (type === 'feed' && d.kind === 'bottle' && d.milk === 'Formula') { const f = usualFormula(kidById(id)); if (f) d.formula = f; }
+      if (type === 'feed' && d.kind !== 'breast' && d.milk === 'Formula') { const f = usualFormula(kidById(id)); if (f) d.formula = f; }
       db.events.push({ id: uid(), type, ts, data: d, note: '', updated: stamp(), by: Auth.id || undefined, child: id });
     }
     if (ids.length === 1) { if (dayKid() !== ids[0]) setKid(ids[0]); } else if (dayKid() !== 'all' && !ids.includes(dayKid())) setKid('all');
@@ -1195,6 +1409,7 @@ const TOURS = {
     { sel: '.datenav', title: N_('Other days'), why: N_('Use the arrows to look back at earlier days.') },
     { sel: '#view details.grp', title: N_('Every detail'), why: N_('Everything from the day, grouped: feeds, diapers, sleep and more. Tap a group to open it.') },
     { sel: '.tripbtn', title: N_('Going on a trip?'), why: N_('Travel mode gives you bigger buttons, rough times that are quick to log, and a clock to match the journey.') },
+    { sel: '.momentbtn', title: N_('Big moments'), why: N_('Save the firsts as they happen: the first smile, the first steps, the first day of school. They stay in the Month tab, in a journal of their own.') },
     { sel: '#tabs', title: N_('Everything else'), why: N_('The month, stats, the Guide with medicines and milestones, family sharing, and settings.') },
     { sel: '#helpBtn', title: N_('Help on every screen'), why: N_('Tap ? on any screen for a tour of it.') },
   ],
@@ -1213,6 +1428,7 @@ const TOURS = {
     { sel: '#view .tiles', title: N_('The day in numbers'), why: N_('Feeds, diapers, sleep and more for the day you picked.') },
     { sel: 'details[data-grp=mAll]', title: N_('Every entry'), why: N_('Open this to see each entry of that day, and tap one to change it.') },
     { sel: '#view .quick', title: N_('Add to that day'), why: N_('Log something you forgot, on the day you picked.') },
+    { sel: 'details[data-grp=moments]', title: N_('Big moments'), why: N_('Every big moment, in chapters for each stage of growing up, with how old they were. A star on the calendar marks the day.') },
   ],
   routine: [
     { sel: '#view .rnext', title: N_('Next in the routine'), why: N_('What usually comes next, and how long until then.') },
@@ -1229,6 +1445,7 @@ const TOURS = {
     { sel: '#docBtn', title: N_('Your pediatrician'), why: N_('Save their details once, and everyone sharing the log gets a Call button.') },
     { sel: '.emer', title: N_('Emergencies'), why: N_('The signs that need emergency help straight away.') },
     { sel: '.nowcard', title: N_('Right now'), why: N_('What is common at your baby\'s age.') },
+    { sel: '#view details.gd[data-grp^=t]', title: N_('Toddlers and preschoolers'), why: N_('Potty training, picky eating, tantrums, sleep, teeth, screens and car seats, for 1 to 5 year olds.') },
     { sel: '#view details.gd[data-grp^=g]', title: N_('Common worries'), why: N_('What is normal with a newborn, and when to call. Some have pictures, kept out of sight until you tap them.') },
     { sel: 'details[data-grp=omenu]', title: N_('Medicines'), why: N_('Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.') },
     { sel: '#view details.gd[data-grp^=m]', title: N_('Month by month'), why: N_('Milestones for every month. A reminder pops up on each month birthday.') },
@@ -1277,6 +1494,7 @@ function kidsHtml() {
   return `<div class="card"><b>${ks.length > 1 ? __h('Children') : __h('Baby')}</b>${can ? '' : `<p class="note">${__h('Only parents can change these.')}</p>`}
     ${ks.map(k => `<div class="kidrow" style="--k:${k.color}">
       <div class="kh">${avatar(k, 'lg')}<input type="text" data-kn="${k.id}" maxlength="60" value="${esc(k.name)}" placeholder="${__h('Name')}" aria-label="${__h('Name')}" ${dis}></div>
+      ${k.birth ? `<p class="note kstage">${esc([__(Stages.byId(stageOf(k)).name), Stages.age(k.birth, Date.now())].filter(Boolean).join(' · '))}</p>` : ''}
       <label class="f">${__h('Birth date')}</label><input type="date" data-kb="${k.id}" value="${esc(k.birth)}" ${dis}>
       <label class="f">${__h('Boy or girl')}</label><div class="chips">${chip('ks-' + k.id, 'boy', __h('Boy'), k.sex === 'boy', '', true)}${chip('ks-' + k.id, 'girl', __h('Girl'), k.sex === 'girl', '', true)}${chip('ks-' + k.id, '', __h('Not set'), !k.sex, '', true)}</div>
       <label class="f">${__h('Usual formula')}</label>${formulaPicker({ sel: `data-kfs="${k.id}" aria-label="${__h('Usual formula')}"`, txt: `data-kft="${k.id}" aria-label="${__h('Formula name')}"` }, usualFormula(k), recentFormulas([k]), dis)}
@@ -1404,7 +1622,10 @@ function bind() {
   document.querySelectorAll('svg [role=button]').forEach(b => b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
   if ($('#docBtn')) $('#docBtn').onclick = () => openDoctor(false);
   document.querySelectorAll('[data-qadd]').forEach(b => b.onclick = () => openQuick(b.dataset.qadd));
-  document.querySelectorAll('[data-qmore]').forEach(b => b.onclick = openMoreTypes);
+  document.querySelectorAll('[data-qmore]').forEach(b => b.onclick = () => openMoreTypes(b.dataset.qmore.split(' ')));
+  document.querySelectorAll('[data-addmore]').forEach(b => b.onclick = () => openMoreTypes(b.dataset.addmore.split(' ')));
+  document.querySelectorAll('[data-momentnew]').forEach(b => b.onclick = () => openMoment(null, { day: viewDay }));
+  document.querySelectorAll('[data-moment]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.moment); if (ev) Sync.can('edit', ev) ? openMoment(ev) : momentInfo(ev); });
   document.querySelectorAll('[data-tripnew]').forEach(b => b.onclick = () => openTrip(null));
   document.querySelectorAll('[data-tripplan]').forEach(b => b.onclick = () => openTrip(null, +b.dataset.tripplan));
   document.querySelectorAll('[data-tripedit]').forEach(b => b.onclick = () => { const t = db.events.find(e => e.id === b.dataset.tripedit); if (t) openTrip(t); });
@@ -1500,12 +1721,14 @@ function openSheet(type, ev, pre) {
   const d = (ev && ev.data) || pre || {}, T = TYPES[type];
   // New entries default to now, or to noon of the viewed day when browsing past days.
   const defTs = ev ? ev.ts : (viewDay === startOfDay(Date.now()) ? Date.now() : viewDay + 12 * 60 * MIN);
+  const forKids = ev ? [kidById(childOf(ev))].filter(Boolean) : pageKids(), older = forKids.length > 0 && forKids.every(k => Stages.from(stageOf(k, defTs), 'toddler'));
+  const noun = type === 'feed' && older ? N_('milk') : T.noun;
   let body = '';
   const L = t => `<label class="f">${__h(t)}</label>`;
   if (type === 'feed') body = `
-    ${L(N_('Type'))}${radios('kind', [N_('breast'), N_('bottle'), N_('solids')], d.kind || 'breast')}
+    ${L(N_('Type'))}${radios('kind', older ? [N_('breast'), N_('bottle'), N_('cup'), ...(d.kind === 'solids' ? ['solids'] : [])] : [N_('breast'), N_('bottle'), N_('solids'), ...(d.kind === 'cup' ? ['cup'] : [])], d.kind || (older ? 'cup' : 'breast'))}
     <div id="fBreast">${L(N_('Side'))}${radios('side', SIDES, d.side)}${L(N_('Minutes'))}${num('min', d.min, N_('e.g. 15'))}</div>
-    <div id="fBottle">${L(N_('Amount (ml)'))}${num('ml', d.ml, N_('e.g. 90'))}${L(N_('Milk'))}${radios('milk', MILKS, d.milk)}
+    <div id="fBottle">${L(N_('Amount (ml)'))}${num('ml', d.ml, N_('e.g. 90'))}${L(N_('Milk'))}${radios('milk', older || MILKS_OLDER.slice(2).includes(d.milk) ? MILKS_OLDER : MILKS, d.milk)}
       <div id="fFormula">${L(N_('Which formula'))}${formulaPicker({ sel: `id="formulaSel" aria-label="${__h('Which formula')}"`, txt: `id="formula" aria-label="${__h('Formula name')}"` }, ev ? d.formula || '' : usualFormula(feedKid(ev)), recentFormulas(ev ? [feedKid(ev)] : kids()))}</div></div>
     <div id="fSolids">${foodsPicker(d.foods || [], ev ? [childOf(ev)] : dayKid() === 'all' ? kids().map(k => k.id) : [dayKid()])}${L(N_('How much'))}${radios('amount', Foods.PORTIONS, d.amount)}</div>`;
   if (type === 'diaper') body = `
@@ -1517,14 +1740,24 @@ function openSheet(type, ev, pre) {
   if (type === 'wake') body = `${L(N_('Awake for (minutes)'))}${num('min', d.min, N_('e.g. 20'))}${L(N_('Why?'))}${radios('why', WAKE_WHY, d.why)}`;
   if (type === 'vomit') body = `${L(N_('Amount'))}${radios('amount', AMOUNTS, d.amount || 'Spit-up')}<div class="chips" style="margin-top:12px">${chip('projectile', 1, __h('Projectile'), d.projectile, 'warn')}</div>`;
   if (type === 'play') body = `${L(N_('Activity'))}${radios('activity', PLAYS, d.activity || 'Tummy time')}${L(N_('Minutes'))}${num('min', d.min, N_('e.g. 10'))}`;
-  if (type === 'health') body = `${L(N_('Check anything you noticed'))}<div class="chips">${SYMPTOMS.map(s => chip('sym', s, __h(s), (d.symptoms || []).includes(s), 'warn')).join('')}</div>${L(N_('Temperature (°)'))}${num('temp', d.temp, N_('optional'), 0.1)}`;
+  const symList = older ? KID_SYMPTOMS : SYMPTOMS;
+  if (type === 'health') body = `${L(N_('Check anything you noticed'))}<div class="chips">${[...symList, ...(d.symptoms || []).filter(x => !symList.includes(x))].map(s => chip('sym', s, __h(s), (d.symptoms || []).includes(s), 'warn')).join('')}</div>${L(N_('Temperature (°)'))}${num('temp', d.temp, N_('optional'), 0.1)}`;
+  if (type === 'meal') body = `${L(N_('Which meal?'))}${radios('meal', MEALS, d.meal || mealAt(defTs))}
+    ${foodsPicker(d.foods || [], forKids.map(k => k.id), { open: !!(d.foods || []).length, baby: false })}
+    ${L(N_('How much did they eat?'))}${radios('amount', EATEN, d.amount)}`;
+  if (type === 'potty') {
+    const cur = d.dry ? 'dry' : d.pee && d.poo ? 'both' : d.pee ? 'pee' : d.poo ? 'poo' : editing ? 'none' : 'pee';
+    body = `${L(N_('What happened?'))}<div class="chips">${POTTY.map(([v, ic, l]) => chip('pwhat', v, ic + __h(l), v === cur, '', true)).join('')}</div>
+    <div id="pWhere">${L(N_('Where?'))}${radios('where', POTTY_WHERE, d.accident ? 'Accident' : d.where || 'Potty')}</div>
+    <div class="chips" style="margin-top:12px">${chip('asked', 1, __h('Asked to go'), d.asked)}</div>`;
+  }
   if (type === 'med') body = `${L(N_('Medicine / vitamin'))}<input id="mname" type="text" value="${esc(d.name || '')}" placeholder="${__h('e.g. Vitamin D')}">${L(N_('Dose'))}<input id="mdose" type="text" value="${esc(d.dose || '')}" placeholder="${__h('e.g. 1 ml')}">`;
 
   // Who is it for? Only asked when the log has more than one child. New entries can be logged for several at once (e.g. all three fed together).
   const multi = kids().length > 1, here = ev ? childOf(ev) : dayKid();
   const forHtml = !multi ? '' : `<label class="f">${editing ? __h('For') : __h('For (tick everyone it applies to)')}</label><div class="chips kidchips">${kids().map(k =>
     `<label class="chip kidchip" style="--k:${k.color}"><input type="${editing ? 'radio' : 'checkbox'}" name="kid" value="${k.id}" ${k.id === here ? 'checked' : ''}><span>${avatar(k)}${esc(kidName(k))}</span></label>`).join('')}</div>`;
-  $('#sheet').innerHTML = `<h3>${T.icon} ${editing ? __h('Edit {what}', { what: __(T.noun) }) : __h('Add {what}', { what: __(T.noun) })}</h3>
+  $('#sheet').innerHTML = `<h3>${T.icon} ${editing ? __h('Edit {what}', { what: __(noun) }) : __h('Add {what}', { what: __(noun) })}</h3>
     ${forHtml}
     ${L(type === 'sleep' ? N_('Fell asleep at') : N_('Time'))}<input id="ts" type="datetime-local" value="${toLocalInput(defTs)}">
     <div class="mini">${[5, 15, 30, 60].map(m => `<button type="button" data-ago="${m}">${m < 60 ? __h('{n} min ago', { n: m }) : __h('1 hr ago')}</button>`).join('')}<button type="button" data-ago="0">${__h('Now')}</button></div>
@@ -1537,9 +1770,10 @@ function openSheet(type, ev, pre) {
   bindFormulaPickers(S);
   const val = n => { const c = checked(n); return c ? c.value : ''; };
   const sync = () => {
+    if (S.querySelector('.fsum')) S.querySelector('.fsum').textContent = [...S.querySelectorAll('[name=food]:checked')].map(c => __(c.value)).join(', ');
+    if (type === 'potty') $('#pWhere').hidden = val('pwhat') === 'dry';
     if (type === 'feed' && $('#fBreast')) {
-      const kind = val('kind'), b = kind === 'bottle'; $('#fBreast').hidden = kind !== 'breast'; $('#fBottle').hidden = !b; $('#fSolids').hidden = kind !== 'solids'; $('#fFormula').hidden = val('milk') !== 'Formula';
-      S.querySelector('.fsum').textContent = [...S.querySelectorAll('[name=food]:checked')].map(c => __(c.value)).join(', ');
+      const kind = val('kind'), b = kind === 'bottle' || kind === 'cup'; $('#fBreast').hidden = kind !== 'breast'; $('#fBottle').hidden = !b; $('#fSolids').hidden = kind !== 'solids'; $('#fFormula').hidden = val('milk') !== 'Formula';
       $('#formula').hidden = $('#formulaSel').value !== '__other';
       // logging for several children: suggest the first ticked child's usual formula, until a formula is picked by hand
       const first = S.querySelector('[name=kid]:checked');
@@ -1561,7 +1795,7 @@ function openSheet(type, ev, pre) {
     const n = id => { const v = $(id).value; return v === '' ? undefined : +v; };
     const formulaName = () => { const sel = $('#formulaSel'); return sel ? (sel.value === '__other' ? $('#formula').value : sel.value).trim().slice(0, 60) : ''; };
     let data = {}, end;
-    if (type === 'feed') data = val('kind') === 'bottle' ? { kind: 'bottle', ml: n('#ml'), milk: val('milk'), ...(val('milk') === 'Formula' && formulaName() ? { formula: formulaName() } : {}) }
+    if (type === 'feed') data = val('kind') === 'bottle' || val('kind') === 'cup' ? { kind: val('kind'), ml: n('#ml'), milk: val('milk'), ...(val('milk') === 'Formula' && formulaName() ? { formula: formulaName() } : {}) }
       : val('kind') === 'solids' ? { kind: 'solids', foods: [...S.querySelectorAll('[name=food]:checked')].map(c => c.value), ...(val('amount') ? { amount: val('amount') } : {}) } : { kind: 'breast', side: val('side'), min: n('#min') };
     if (data.kind === 'solids' && !data.foods.length) return toast(__('Choose at least one food'));
     if (type === 'diaper') {
@@ -1578,6 +1812,11 @@ function openSheet(type, ev, pre) {
       if (!data.symptoms.length && !data.temp && !$('#note').value.trim()) return toast(__('Tick a symptom or add a note'));
     }
     if (type === 'med') { data = { name: $('#mname').value.trim(), dose: $('#mdose').value.trim() }; if (!data.name) return toast(__('Enter a name')); }
+    if (type === 'meal') data = { meal: val('meal') || mealAt(ts), foods: [...S.querySelectorAll('[name=food]:checked')].map(c => c.value), ...(val('amount') ? { amount: val('amount') } : {}) };
+    if (type === 'potty') {
+      const w = val('pwhat') || 'none', where = val('where') || 'Potty';
+      data = { pee: w === 'pee' || w === 'both', poo: w === 'poo' || w === 'both', ...(w === 'dry' ? { dry: true } : where === 'Accident' ? { accident: true } : { where }), ...(checked('asked') ? { asked: true } : {}) };
+    }
     if (ev && ev.data && ev.data.approx && Math.floor(ts / MIN) === Math.floor(ev.ts / MIN)) data.approx = true;   // still the estimated time
     const who = multi ? [...S.querySelectorAll('[name=kid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
     if (!who.length) return toast(__('Choose who this is for'));
@@ -1593,10 +1832,15 @@ function openSheet(type, ev, pre) {
     save(); close(); viewDay = startOfDay(ts); render(); toast(who.length > 1 ? __n('Saved for {n} child', 'Saved for {n} children', who.length) : __('Saved'));
     const settled = type === 'feed' ? who.filter(id => learnedFormula(kidById(id)) && usualFormula(kidById(id)) !== usualBefore.get(id)) : [];
     if (settled.length) toast(__("{formula} is now {names}'s usual formula", { formula: usualFormula(kidById(settled[0])), names: andList(settled.map(id => kidName(kidById(id)))) }));
-    const risky = data.kind === 'solids' ? who.flatMap(id => data.foods.filter(f => allergicTo(id, f)).map(f => [id, f])) : [];
-    if (risky.length) setTimeout(() => alert(__('{name} is allergic to {food}. Watch closely, and call {sos} for trouble breathing, swelling of the lips, tongue or face, or if your baby goes floppy or pale.', { name: kidName(kidById(risky[0][0])), food: __(risky[0][1]), sos: __(Guide.sos(myRegion())) })), 300);
+    const risky = data.kind === 'solids' || type === 'meal' ? who.flatMap(id => data.foods.filter(f => allergicTo(id, f)).map(f => [id, f])) : [];
+    if (risky.length) {
+      const a = { name: kidName(kidById(risky[0][0])), food: __(risky[0][1]), sos: __(Guide.sos(myRegion())) };
+      setTimeout(() => alert(older ? __('{name} is allergic to {food}. Watch closely, and call {sos} for trouble breathing, or swelling of the lips, tongue or face.', a)
+        : __('{name} is allergic to {food}. Watch closely, and call {sos} for trouble breathing, swelling of the lips, tongue or face, or if your baby goes floppy or pale.', a)), 300);
+    }
     if (type === 'diaper' && data.poo && STOOL_WARN.includes(data.color)) setTimeout(() => alert(__('Red-streaked or pale / white stools can be a sign of a problem. Please tell your pediatrician (and call straight away if your baby seems unwell).')), 300);
-    if (type === 'health' && data.symptoms.some(s => URGENT.includes(s))) setTimeout(() => alert(__('One of these symptoms can be urgent. If your baby has blue lips/face, trouble breathing, a fever (38°C / 100.4°F+ in a newborn) or is hard to wake, call your pediatrician or emergency services now.')), 300);
+    if (type === 'health' && older && data.symptoms.some(s => KID_URGENT.includes(s))) setTimeout(() => alert(__('One of these symptoms can be urgent. If {name} has trouble breathing, blue lips or face, or is very hard to wake, call {sos} now.', { name: andList(who.map(id => kidName(kidById(id)))), sos: __(Guide.sos(myRegion())) })), 300);
+    else if (type === 'health' && !older && data.symptoms.some(s => URGENT.includes(s))) setTimeout(() => alert(__('One of these symptoms can be urgent. If your baby has blue lips/face, trouble breathing, a fever (38°C / 100.4°F+ in a newborn) or is hard to wake, call your pediatrician or emergency services now.')), 300);
   };
 }
 

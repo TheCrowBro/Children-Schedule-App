@@ -15,7 +15,7 @@
 const E2EE = (() => {
   const enc = new TextEncoder(), dec = new TextDecoder(), S = crypto.subtle;
   const ECDH = { name: 'ECDH', namedCurve: 'P-256' };
-  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg'];
+  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg', 'meal', 'potty', 'moment'];
   const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // exactly 32 symbols = 5 bits each
 
   // ---- encoding helpers ---------------------------------------------------------------------
@@ -173,8 +173,11 @@ const E2EE = (() => {
     d = d && typeof d === 'object' && !Array.isArray(d) ? d : {};
     const o = {}, n = k => { const v = num(d[k]); if (v !== undefined) o[k] = v; }, s = (k, len) => { if (typeof d[k] === 'string') o[k] = str(d[k], len); }, b = k => { if (typeof d[k] === 'boolean') o[k] = d[k]; };
     switch (type) {
-      case 'feed': if (d.kind === 'bottle' || d.kind === 'breast' || d.kind === 'solids') o.kind = d.kind; s('side', 10); s('milk', 20); s('formula', 60); n('min'); n('ml');
+      case 'feed': if (['bottle', 'breast', 'solids', 'cup'].includes(d.kind)) o.kind = d.kind; s('side', 10); s('milk', 20); s('formula', 60); n('min'); n('ml');
         if (Array.isArray(d.foods)) o.foods = d.foods.filter(x => typeof x === 'string' && x.trim()).slice(0, 30).map(x => x.slice(0, 60)); s('amount', 30); break;
+      case 'meal': s('meal', 20); if (Array.isArray(d.foods)) o.foods = d.foods.filter(x => typeof x === 'string' && x.trim()).slice(0, 30).map(x => x.slice(0, 60)); s('amount', 30); break;
+      case 'potty': b('pee'); b('poo'); b('dry'); b('accident'); b('asked'); s('where', 20); break;
+      case 'moment': s('what', 80); b('own'); break;
       case 'diaper': b('pee'); b('poo'); b('rash'); s('color', 20); break;
       case 'wake': n('min'); s('why', 30); break;
       case 'vomit': s('amount', 20); b('projectile'); break;
@@ -381,6 +384,8 @@ const E2EE = (() => {
   return {
     load, ensureDevice, refresh, createLog, makeGrant, unlockWithRecovery, grantForRequest, approveDevice, healthGrants, rotate, replaceRecovery,
     encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile, sealDetails, openDetails, sealTree, openTree,
+    /** The kinds of entry this version of the app knows (an older one skips the newer kinds). */
+    KINDS: TYPES.join(' '),
     uuid, newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,
     fingerprint, securityCode, forget, wipeUser,
     get device() { return dev; },

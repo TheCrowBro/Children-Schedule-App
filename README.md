@@ -1,11 +1,29 @@
-# Little Log – newborn tracker
+# Little Log – from newborn to 18
 
-A **phone app** (Android and iOS; Windows and Mac later) for tracking a newborn's day: feeds, pee/poo, sleep, night wakings,
-vomit, play, health observations and medication, with a calendar and easy-to-read stats. Built with plain web code wrapped by Capacitor.
+A **phone app** (Android and iOS; Windows and Mac later) that grows with a child: a newborn's feeds, pee/poo, sleep, night wakings,
+vomit, play, health observations and medication; then meals, potty training and the big moments of growing up, with a calendar and
+easy-to-read stats, until the child turns 18. Built with plain web code wrapped by Capacitor.
 To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 
 ## Features
 - **Day view**: one-tap entry buttons, tick-box chips, time defaults to now with "5 min ago" shortcuts; tap an entry to edit/delete
+- **Growing up**: every child has a stage that comes from their age: newborn, baby, toddler (from 1), preschooler (from 3), school age
+  (from the age children start school where the family is: 4 in the UK and Ireland, 5 in North America, Australia and New Zealand, 6
+  elsewhere, or from the day a "First day of school" moment is saved), teenager (12) and grown up (18). The Day page's buttons follow it: a
+  newborn's eight, then **Meal**, **Milk** (a cup or a bottle, cow's or plant milk) and **Potty** from a year old, and the buttons a child
+  no longer needs behind **More** (anything the family has logged three times in two weeks keeps its button). The groups are named for the
+  children's ages (Feeding becomes Meals, Diapers becomes Potty), the day starts "2 years 3 months", a toddler's health notes have an older
+  child's symptoms (and a fever alone is no longer flagged as an emergency), and the Routine, Stats and the doctor's report count meals and
+  the potty. On the month birthday a new stage starts, the milestone sheet says what changed and offers to keep the birthday as a big moment
+- **Meals**: breakfast, lunch, dinner or a snack (guessed from the time), the foods (from the same list as a baby's first foods, with
+  allergies flagged), and how much was eaten; each meal of the day keeps its own time in the routine
+- **Potty training**: pee, poo, both, nothing yet or stayed dry; on the potty, the toilet or an accident; and whether they asked to go.
+  Stats show the potty and the accidents per day
+- **Big moments**: the firsts and the days to remember, with ideas for every age from "Born" and "First smile" to "First day of school" and
+  "Passed the driving test", or in your own words, with a note. A first can be saved only once (a birthday every year), for one child or
+  several. They show at the top of their day, with a star on the calendar, in the Month tab's journal (in chapters for each stage of
+  growing up, with how old the child was), and on the family tree when someone taps a child. Shared and end-to-end encrypted like
+  every entry
 - **More than one child**: up to 8 children in one shared log. Each has a page of their own with their own colour (blues for boys, reds for girls, a different shade for each; parents can change any colour), an "All" view, and entries can be logged for several children at once. Names, colours and which child an entry belongs to are end-to-end encrypted like everything else
 - **Watercolour look**: soft washes in the open child's colour and hand-painted style icons, with dark outlines and text kept at readable contrast (light and dark mode)
 - **Day clock**: a French carriage clock (a frame of thin soft-gold lines, a painted panel, a white face
@@ -36,7 +54,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   "Mark an allergy" on a meal tapped on the clock, which fills in its foods and date). It's kept in the child's profile, end-to-end
   encrypted, and seen by everyone sharing the log: the first date is marked on the calendar like a trip, the Day tab shows the child's
   allergies at the top, the foods list flags them, logging one warns straight away, and the doctor's report lists them
-- **Guide tab**: common newborn worries (blue hands, belly bulge, clicking hips, jaundice, cord, spit-up, poop colours, fever…) with when to call,
+- **Guide tab**: for toddlers and preschoolers, potty training, picky eating, tantrums, sleep, teeth and the dentist, screens and car
+  seats come first; milestones go on to 30 months and 3, 4 and 5 years, and after that "Right now" says what the school or teenage years
+  are about. Common newborn worries (blue hands, belly bulge, clicking hips, jaundice, cord, spit-up, poop colours, fever…) with when to call,
   **over-the-counter medicines** (a drop-down by kind: what's considered safe from what age, with US and UK ages where they differ; the
   homeopathic and herbal remedies parents mention, with what the evidence says; what never to give; no doses, which go by weight and come
   from the pediatrician), month-by-month milestones (a reminder pops up on each month birthday), and the **pediatrician's details** with a Call button.
@@ -125,6 +145,16 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   **Report a language issue** (More → Language) emails a wrong or clumsy text to the maintainers without saying who sent it. Where it
   goes is a secret on the server, never in the app (see [SETUP.md](SETUP.md) §6). To translate or add a language, see
   [lang/README.md](lang/README.md).
+
+## Growing to 18
+Little Log grows with the child in phases. Each finished phase is saved as a version you can go back to ([INSTALL.md](INSTALL.md)).
+
+| Phase | Ages | What it adds | |
+|---|---|---|---|
+| 1 | 1 to 5 | Stages by age, meals, milk from a cup, potty training, big moments, toddler topics and milestones to 5 | done |
+| 2 | every age | A health record: vaccines on your country's schedule, checkups, the dentist, height and weight with growth charts, and the doctor's report as a health summary at any age | next |
+| 3 | 3 to 12 | Daycare, preschool and school: drop-off and pick-up (who has the child today), the school calendar, activities, homework and reading | |
+| 4 | 12 to 18 | The teenage years: a family calendar, privacy and the teenager's own say, and at 18 handing the record over, when Little Log's work is done | |
 
 ## Build and test
 ```bash

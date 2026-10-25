@@ -2,7 +2,7 @@
 // from the log every time so it follows the baby; diapers and the like left out; today's entries ticked off; one page per child.
 //   node tests/routine.test.js
 const assert = require('assert');
-/* global T, routineView */
+/* global T, routineView, Icons */
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
@@ -149,6 +149,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
 
     await step('the Routine tab lays the routine out like a day in a calendar: times on the left, parts of the day, a line at the time now', async () => {
       await P.click('[data-tab=routine]');
+      await P.evaluate(() => { $('#view').innerHTML = routineView(T.now); Icons.paint($('#view')); });   // (as at 3 PM, whatever the time the test runs at)
       const r = await P.evaluate(() => ({
         rows: [...document.querySelectorAll('.rslot')].map(x => [x.querySelector('.rt').textContent, x.querySelector('.rb b').textContent.trim(), x.className.replace(/card|rslot/g, '').trim()]),
         parts: [...document.querySelectorAll('.rpart')].map(x => x.textContent), now: document.querySelectorAll('.rnow').length, how: !!document.querySelector('.rhow'),
@@ -160,6 +161,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert(/until about 2:30 PM \(1h 30m\)/.test(await P.textContent('.rslot[data-slot=sleep]')));
       assert.equal(await P.$$eval('.rslot[data-slot="play:Bath"] .rs', x => x.length), 1, 'Bath gets a status too');
       assert.equal(await P.$$eval('.rslot[data-slot^="diaper"]', x => x.length), 0, 'no diapers');
+      await P.evaluate(() => render());
     });
 
     await step('"Next in the routine" says what is coming and when; the routine ticks off what is logged today as it happens', async () => {

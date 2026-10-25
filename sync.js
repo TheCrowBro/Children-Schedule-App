@@ -10,7 +10,7 @@ const Sync = (() => {
   let busy = false, busyAt = 0, again = false, timer = null, started = false, peopleAt = 0, failures = 0, retryAt = 0;
   let flight = Promise.resolve(), switching = false;   // (the sync under way, and a switch to another family log)
   // What belongs to one family log; the rest of db.meta belongs to the phone (language, clock face, region, the sync clock …)
-  const OWN = ['role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'art', 'solids', 'ms', 'kid', 'tree'];
+  const OWN = ['role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'art', 'solids', 'ms', 'kid', 'tree', 'kinds'];
 
   const enabled = () => Auth.configured && Auth.signedIn;
   const linked = () => enabled() && !!db.meta.babyId;
@@ -111,6 +111,7 @@ const Sync = (() => {
     const hadHealth = E2EE.hasHealthKey(b);
     if (!E2EE.hasKeys(b) || E2EE.epoch(b) < baby[0].epoch || (wantHealth && !hadHealth)) await E2EE.refresh(b, db.meta, { health: wantHealth });
     if (!hadHealth && E2EE.hasHealthKey(b)) db.meta.pulledAt = '';   // health entries were invisible until now, so the sync cursor skipped them: fetch everything again
+    if (db.meta.kinds !== E2EE.KINDS) db.meta.pulledAt = '';   // the app was updated and knows new kinds of entry (meals, the potty …), which the older version skipped: fetch everything again
     if (!E2EE.hasKeys(b) || E2EE.epoch(b) < baby[0].epoch) { st.needsAccess = true; st.state = 'needs-access'; st.err = ''; return false; }
     st.needsAccess = false;
     if (db.meta.babyDirty) {
@@ -135,6 +136,7 @@ const Sync = (() => {
       if (rows.length) { since = rows[rows.length - 1].synced_at; db.meta.pulledAt = since; }
       if (rows.length < PAGE) break;
     }
+    db.meta.kinds = E2EE.KINDS;   // (everything there was has been read by this version)
     return changed;
   }
 

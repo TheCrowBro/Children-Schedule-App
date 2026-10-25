@@ -2,7 +2,7 @@
 // and sound, choosing a language changes the whole app (right to left for Arabic, Hebrew, Persian and Urdu), and language problems
 // can be reported without the app ever knowing where the reports go.   node tests/languages.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global saveProfile, Report, fmtDate, milestoneCheck, openEntryInfo, openAllergy, openDoctorReport, doctorPdf, solidsCheck, Foods, dkey, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg */
+/* global saveProfile, Report, fmtDate, milestoneCheck, openEntryInfo, openAllergy, openDoctorReport, doctorPdf, solidsCheck, Foods, dkey, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg, dayButtons, openMoment, momentInfo */
 const { setup } = require('./lib/harness');
 const Cat = require('../scripts/i18n.js');
 
@@ -80,7 +80,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       ...Guide.MEDS.flatMap(c => c.items.flatMap(i => (i.brands || '').split(' · '))), ...Object.values(Guide.PICS).flat().map(p => p.by), 'CC BY-SA 3.0', 'CC BY-SA 4.0', 'CC0 1.0',
       'Dropbox', 'OneDrive', 'Google Drive', 'Google', 'Apple', 'iPhone', 'Android', 'Face ID', 'Google Authenticator', 'Microsoft Authenticator', 'Authy', '1Password',
       ...I18n.LANGS.map(l => l.name), Theme.todaySun().zone || '',
-      ...db.events.flatMap(e => [e.note, e.data && e.data.name, e.data && e.data.dose, e.data && e.data.formula, ...((e.data && e.data.foods) || []).filter(f => !Foods.known(f))]),
+      ...db.events.flatMap(e => [e.note, e.data && e.data.name, e.data && e.data.dose, e.data && e.data.formula, e.data && e.data.own && e.data.what, ...((e.data && e.data.foods) || []).filter(f => !Foods.known(f))]),
       ...kids().flatMap(k => (k.allergies || []).flatMap(a => [a.note, Foods.known(a.food) ? '' : a.food])), window.qNotes || '']);   // (what people type in is shown as typed)
     const found = [];
     const look = async (what, page = P, extra = []) => { for (const [t, where] of await unmarked(page, [...(await data()), ...extra])) found.push(`${what}: ${t}\n      at ${where}`); };
@@ -148,6 +148,40 @@ const unmarked = (page, data) => page.evaluate(data => {
       await P.evaluate(() => { tab = 'day'; db.events.push({ id: 'qtrip', type: 'trip', ts: startOfDay(Date.now()), end: addDays(startOfDay(Date.now()), 3), data: { means: 'car' }, note: '', updated: stamp(), by: Auth.id }); render(); });
       await P.evaluate(() => toggleLeg()); await P.evaluate(() => { Travel.moving(db.events).ts = Date.now() - 125 * 60e3; render(); }); await openAll(); await look('travel page');
       for (const t of ['feed', 'diaper', 'sleep', 'vomit']) await sheet(x => openQuick(x), 'quick ' + t, t);
+      // growing up: a toddler's travel page and quick sheets, day, meals, the potty, milk from a cup, symptoms, big moments, the journal,
+      // stats, routine and Guide; a school child's Guide; the milestone sheet when a stage starts; a child's big moments on the family tree
+      await P.evaluate(() => { const k = kids()[1], d = new Date(); d.setFullYear(d.getFullYear() - 2); d.setMonth(d.getMonth() - 3); d.setDate(d.getDate() - 3); k.birth = dkey(d.getTime()); db.meta.ms = { [k.id]: 999, [kids()[0].id]: 999 }; saveProfile(); setKid(k.id); tab = 'day'; render(); });
+      await openAll(); await look('travel page, a toddler');
+      for (const t of ['meal', 'potty', 'feed']) await sheet(x => openQuick(x), 'quick ' + t + ', a toddler', t);
+      await P.evaluate(() => {
+        db.events = db.events.filter(e => e.id !== 'qtrip' && e.type !== 'leg');
+        const t = startOfDay(Date.now()), h = 3600e3, k = kids()[1].id, add = (type, ts, data) => db.events.push({ id: 'g' + type + ts, type, ts, data, note: '', updated: stamp(), by: Auth.id, child: k });
+        add('meal', t + 8 * h, { meal: 'Breakfast', foods: ['Oats', 'Banana', 'Dragon fruit'], amount: 'Most' }); add('meal', t + 10 * h, { meal: 'Snack', foods: [] }); add('feed', t + 9 * h, { kind: 'cup', ml: 150, milk: "Cow's milk" });
+        add('potty', t + 10 * h, { pee: true, poo: true, where: 'Toilet', asked: true }); add('potty', t + 11 * h, { pee: true, poo: false, accident: true }); add('potty', t + 12 * h, { pee: false, poo: false, dry: true });
+        add('potty', t + 12.5 * h, { pee: false, poo: false, where: 'Potty' }); add('health', t + 14 * h, { symptoms: ['Ear pain', 'Trouble breathing'], temp: 38.2 });
+        add('moment', t + 13 * h, { what: 'First sentence' }); add('moment', addDays(t, -40), { what: 'Our first holiday', own: true }); add('moment', addDays(t, -400), { what: 'First steps' });
+        save(); tab = 'day'; viewDay = t; render();
+      });
+      await openAll(); await look('day, a toddler');
+      await P.evaluate(() => { setKid('all'); render(); }); await openAll(); await look('day, a baby and a toddler'); await P.evaluate(() => { setKid(kids()[1].id); render(); });
+      for (const type of ['meal', 'potty', 'feed', 'health']) {
+        await sheet(t => openSheet(t), 'new ' + type + ', a toddler', type);
+        await sheet(t => openSheet(null, db.events.find(e => e.type === t && e.child === kids()[1].id)), 'edit ' + type + ', a toddler', type);
+      }
+      await sheet(() => openMoreTypes(dayButtons().more), 'more to log, a toddler');
+      await sheet(() => openMoment(null, { day: Date.now() }), 'a big moment');
+      await sheet(() => openMoment(db.events.find(e => e.type === 'moment' && e.data.own)), 'changing a big moment');
+      await sheet(() => momentInfo(db.events.find(e => e.type === 'moment' && !e.data.own)), 'a big moment, to read');
+      await P.evaluate(() => { tab = 'month'; render(); }); await openAll(); await look('month, a toddler with big moments');
+      await P.evaluate(() => { tab = 'stats'; render(); }); await openAll(); await look('stats, a toddler');
+      await P.evaluate(() => { tab = 'routine'; render(); }); await look('routine, a toddler');
+      await P.evaluate(() => { tab = 'guide'; render(); }); await openAll(); await look('guide, a toddler');
+      await P.evaluate(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 8); d.setDate(d.getDate() - 3); kids()[1].birth = dkey(d.getTime()); saveProfile(); tab = 'guide'; render(); }); await look('guide, a school child');
+      await P.evaluate(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 13); d.setDate(d.getDate() - 3); kids()[1].birth = dkey(d.getTime()); saveProfile(); tab = 'guide'; render(); }); await look('guide, a teenager');
+      await P.evaluate(() => { tab = 'day'; render(); }); await look('day, a teenager');
+      await sheet(() => { const k = kids()[1], d = new Date(); d.setFullYear(d.getFullYear() - 1); d.setDate(d.getDate() - 2); k.birth = dkey(d.getTime()); saveProfile(); db.meta.ms = { [kids()[0].id]: 999 }; Tour.mark('day'); tab = 'day'; render(); }, 'milestone, a new stage');
+      await sheet(() => { tab = 'family'; render(); document.querySelector(`.ftreesvg [data-tk="k:${kids()[1].id}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true })); }, 'a child with big moments, tapped on the family tree');
+      await P.evaluate(() => { const k = kids()[1], d = new Date(); d.setFullYear(d.getFullYear() - 2); d.setMonth(d.getMonth() - 3); d.setDate(d.getDate() - 3); k.birth = dkey(d.getTime()); db.meta.ms[k.id] = 999; saveProfile(); tab = 'day'; render(); });
       // every screen's tour, step by step
       for (const t of ['day', 'routine', 'month', 'stats', 'guide', 'family', 'more']) {
         await P.evaluate(x => { tab = x; render(); startTour(); }, t);

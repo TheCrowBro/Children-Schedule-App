@@ -1,8 +1,8 @@
 {
   "name": "little-log",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Newborn tracker \u2013 web app, packaged for iOS and Android with Capacitor",
+  "description": "A child tracker that grows from newborn to 18 \u2013 web app, packaged for iOS and Android with Capacitor",
   "scripts": {
     "build:web": "node scripts/build-web.js",
     "sync": "npm run build:web && cap sync && node scripts/native-config.js",
@@ -11,14 +11,15 @@
     "apk": "npm run sync && cd android && ./gradlew assembleDebug",
     "aab": "npm run sync && cd android && ./gradlew bundleRelease",
     "icons": "node scripts/make-icons.js && npx @capacitor/assets generate",
-    "test": "npm run lint && node tests/db.test.js && node tests/e2e.test.js && node tests/children.test.js && node tests/features.test.js && node tests/robust.test.js && node tests/routine.test.js && node tests/report.test.js && node tests/solids.test.js && node tests/families.test.js && node tests/languages.test.js",
+    "test": "npm run lint && node tests/db.test.js && node tests/e2e.test.js && node tests/children.test.js && node tests/features.test.js && node tests/robust.test.js && node tests/routine.test.js && node tests/report.test.js && node tests/solids.test.js && node tests/families.test.js && node tests/growing.test.js && node tests/languages.test.js",
     "test:db": "node tests/db.test.js",
     "test:e2e": "node tests/e2e.test.js",
     "lint": "eslint .",
     "test:robust": "node tests/robust.test.js",
     "test:children": "node tests/children.test.js",
     "demo": "node scripts/build-demo.js",
-    "test:features": "node tests/features.test.js"
+    "test:features": "node tests/features.test.js",
+    "test:growing": "node tests/growing.test.js"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",

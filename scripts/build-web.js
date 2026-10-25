@@ -6,7 +6,7 @@ const root = path.join(__dirname, '..');
 const out = process.env.LL_OUT || path.join(root, 'www'), configFile = process.env.LL_CONFIG || path.join(root, 'config.js');
 const cfg = (() => { const sb = { window: {} }; vm.runInNewContext(fs.readFileSync(configFile, 'utf8'), sb); return sb.window.LL_CONFIG || {}; })();
 
-const files = ['style.css', 'config.js', 'i18n.js', 'theme.js', 'kids.js', 'icons.js', 'guide.js', 'formulas.js', 'travel.js', 'tour.js', 'routine.js', 'pdf.js', 'foods.js', 'art.js', 'store.js', 'native.js', 'auth.js', 'e2ee.js', 'sync.js', 'cloud.js', 'lock.js', 'ftree.js', 'account.js', 'app.js'];
+const files = ['style.css', 'config.js', 'i18n.js', 'theme.js', 'kids.js', 'icons.js', 'guide.js', 'stages.js', 'formulas.js', 'travel.js', 'tour.js', 'routine.js', 'pdf.js', 'foods.js', 'art.js', 'store.js', 'native.js', 'auth.js', 'e2ee.js', 'sync.js', 'cloud.js', 'lock.js', 'ftree.js', 'account.js', 'app.js'];
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'vendor'), { recursive: true });
 for (const f of files) fs.copyFileSync(f === 'config.js' ? configFile : path.join(root, f), path.join(out, f));
