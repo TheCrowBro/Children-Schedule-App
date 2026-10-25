@@ -15,7 +15,7 @@ const unmarked = (page, data) => page.evaluate(data => {
   const fmt = (o, n) => Array.from({ length: n }, (_, i) => new Intl.DateTimeFormat('en-US', o).format(new Date(2024, o.month ? i : 0, o.month ? 1 : 7 + i)));
   const dates = [...fmt({ weekday: 'long' }, 7), ...fmt({ weekday: 'short' }, 7), ...fmt({ month: 'long' }, 12), ...fmt({ month: 'short' }, 12), 'AM', 'PM',
     ...[2, 3].flatMap(n => new Intl.ListFormat('en-US', { type: 'conjunction' }).format(Array(n).fill('§')).split('§'))];   // (dates, times and lists come from Intl, in its own words)
-  const words = [...new Set([...dates, ...data])].filter(Boolean).sort((a, b) => b.length - a.length).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const words = [...new Set([...dates, ...data])].filter(Boolean).map(String).sort((a, b) => b.length - a.length).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));   // (a vaccine's dose is a number)
   const allowed = new RegExp(`(${words.join('|')})|https?://\\S+|\\S+@\\S+\\.\\S+|#[0-9a-f]{3,6}\\b|\\b[IVX]+\\b|\\b[A-Z0-9]{2,}(?:-[A-Z0-9…]+)+\\b|\\b[A-Z0-9]{8,}\\b`, 'gu');
   const plain = t => !/\p{L}{2,}/u.test(t.replace(allowed, ' '));
   /** What is left of a text once translated parts are taken out; filled-in values are checked on their own as they are met. */
@@ -197,7 +197,7 @@ const unmarked = (page, data) => page.evaluate(data => {
         await sheet(t => openSheet(t), 'new ' + type, type);
         await sheet(t => openSheet(null, db.events.find(e => e.type === t && e.child === kids()[1].id)), 'edit ' + type, type);
       }
-      await P.evaluate(() => { delete db.meta.units; openSheet('growth'); }); await P.fill('#gw', '11.2'); await P.fill('#gh', '85'); await look('a measurement, with its percentiles');
+      await P.evaluate(() => { db.meta.units = 'metric'; openSheet('growth'); }); await P.fill('#gw', '11.2'); await P.fill('#gh', '85'); await look('a measurement, with its percentiles');
       await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; });
       await sheet(() => { tab = 'day'; render(); openSheet('health'); }, 'a health note, with the way to the health record');
       await P.evaluate(() => { kids()[1].sex = ''; saveProfile(); openRecord(kids()[1].id); }); await look('health record, boy or girl not set');
