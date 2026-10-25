@@ -245,7 +245,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       // every screen's tour, step by step
       for (const t of ['day', 'routine', 'month', 'stats', 'guide', 'health', 'family', 'more']) {
         await P.evaluate(x => { tab = x; render(); startTour(); }, t);
-        for (let i = 0; i < 15 && (await P.$('.tour-tip')); i++) { await look('tour of ' + t); await P.click('.tt-next'); }
+        for (let i = 0; i < 40 && (await P.$('.tour-tip')); i++) { await look('tour of ' + t); await P.click('.tt-next'); }
       }
       // before signing in: the sign-in screen, the code, the first steps
       const G = await H.device(); await G.evaluate(async () => { await I18n.set('qps'); render(); });

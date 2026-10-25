@@ -103,7 +103,11 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   reminder to take the baby out of the car seat), and tips for each kind of trip. Travel days stay outlined in the month view. Leaving
   and coming home play a short journey across the screen (from the house, or back to it) while the page changes under it
 - **Tutorial**: a ? on every screen starts a short tour of it: a highlight box glides from button to button with a line on why it's there.
-  The home screen's tour starts by itself the first time
+  The home screen's tour starts by itself the first time. Every part of every screen is in its tour, including what only shows up as a
+  child grows (drop-off, homework, the calendar, turning 18) and the health record, which has a tour of its own
+- **Easy to find the way back**: the health record (a page of its own) has a bar that stays at the top while you scroll, with a big
+  "Back to Guide" (or Stats, or More) and "Today"; every sheet has a big close button in its corner that stays put while the sheet
+  scrolls; and the tabs at the bottom are always there
 - **Formula**: pick from a list with the usual and recent formulas on top, then a twirl-down of common formulas for each region (North
   America, Latin America, UK & Ireland, Europe, Australia & New Zealand, Asia, Middle East & Africa; where you are comes first and open),
   or type in any other.

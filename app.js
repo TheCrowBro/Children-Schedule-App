@@ -559,7 +559,7 @@ function dayView() {
     <div class="clockctl">${seg('face', [['24', N_('24 h')], ['12', N_('12 h')]], twelve ? '12' : '24', N_('Clock face'))}${twelve ? seg('half', [['0', N_('AM')], ['1', N_('PM')]], String(half), N_('Half of the day')) : ''}${numsSeg()}${trip ? `<span class="artbtn tripart">${TM.icon} ${__h(Art.byId(TM.art).name)}</span>` : `<button class="artbtn" data-art>🎨 ${__h(Art.byId(artOf()).name)}</button>`}</div>
     ${clockLegend(shown)}
     <p class="note hint">${twelve ? (half ? __h('Showing noon to midnight; switch AM and PM for the other half of the day.') : __h('Showing midnight to noon; switch AM and PM for the other half of the day.')) : __h('Midnight is at the top, noon at the bottom.')} ${__h('Tap a dot to see an entry (change it in the list below), or a quarter of the dial for just those hours.')}</p></div>
-  ${q ? `<div class="card quadlist"><div class="qhead"><span><b>${esc(q.label)}</b> <small>${esc(q.range)} · ${__hn('{n} entry', '{n} entries', inQ.length)}</small></span><button class="btn" data-quadclear style="padding:6px 12px">${__h('Whole day')}</button></div>
+  ${q ? `<div class="card quadlist"><div class="qhead"><span><b>${esc(q.label)}</b> <small>${esc(q.range)} · ${__hn('{n} entry', '{n} entries', inQ.length)}</small></span><button class="btn" data-quadclear>${__h('Whole day')}</button></div>
       ${inQ.length ? inQ.map(evRow).join('') : `<div class="empty">${__h('Nothing in these hours.')}</div>`}</div>`
     : (evs.length ? `<h2>${__h('Details')}</h2>${groupedList(evs)}` : `<div class="empty">${__h('Nothing logged yet.')}${Sync.can('add') ? '<br>' + __h('Tap a button above to add an entry.') : ''}</div>`)}
   ${momentButton()}
@@ -1310,10 +1310,16 @@ function recordView() {
     : `<p class="note">${__h('No vaccines saved yet. Your vaccination card or your doctor has the dates.')}</p>`}${add ? `<button class="btn" data-add="vaccine">💉 ${__h('Add a vaccine')}</button>` : ''}</div>`;
   const visHtml = `<div class="card visits">${visits.length ? visits.map(e => { const [a, b] = describe(e); return `<button class="vrow vvisit" data-edit="${e.id}"><b>🏥 ${esc(a)}</b><small>${esc([fmtDay(dkey(e.ts)), b].filter(Boolean).join(' · '))}</small>${e.note ? `<small class="mn">“${esc(e.note)}”</small>` : ''}</button>`; }).join('')
     : `<p class="note">${__h('No visits saved yet: checkups, the dentist, eye and hearing tests, and the times your child was seen when unwell.')}</p>`}${add ? `<button class="btn" data-add="visit">🏥 ${__h('Add a visit')}</button>` : ''}</div>`;
-  return `<button class="backbtn" data-recback>‹ ${__h(back)}</button>${head}
+  return `${backBar(back)}${head}
     <h2>${__h('Growth')}</h2>${growthHtml}<h2>${__h('Vaccines')}</h2>${vacHtml}<h2>${__h('Doctor visits')}</h2>${visHtml}
     <button class="btn pdfbtn" id="pdfBtn">📄 ${__h('Report for the doctor (PDF)')}</button>
     <p class="note">${__h('Only people who may see health notes see the health record. Like everything in the log, it is end-to-end encrypted.')}</p>`;
+}
+/** The way back from a page of its own (the health record): a bar that stays at the top while the page scrolls, with a big "Back to …"
+    to the screen it was opened from and "Today" for today's Day page. The tabs below work as always. */
+function backBar(back) {
+  return `<div class="backbar"><button class="btn backbtn" data-recback><span class="bk" aria-hidden="true">‹</span><span>${__h('Back to {screen}', { screen: __(back) })}</span></button>
+    <button class="btn homebtn" data-home>📅 ${__h('Today')}</button></div>`;
 }
 /** The button to a child's health record (the Guide, More → Children). */
 function recordButton(k) {
@@ -1526,7 +1532,14 @@ function showInList(id) {
 /** A small sheet for things that aren't entries (pediatrician, milestones). */
 function popup(html) {
   const S = $('#sheet'), back = $('#sheetBack'); S.innerHTML = html; S.onchange = S.oninput = null; Icons.paint(S); S.hidden = back.hidden = false;
-  const close = () => { S.hidden = back.hidden = true; }; back.onclick = close; S.querySelectorAll('[data-close]').forEach(b => b.onclick = close); return close;
+  const close = () => { S.hidden = back.hidden = true; }; back.onclick = close; S.querySelectorAll('[data-close]').forEach(b => b.onclick = close); sheetX(); return close;
+}
+/** Every sheet gets a big close button in its top corner that stays put while the sheet scrolls, so the way out is never below the
+    fold. It closes the sheet the way tapping outside it does (and so does whatever that sheet does then, like stopping the camera). */
+function sheetX() {
+  const S = $('#sheet');
+  if (!S.querySelector('.sheetx')) S.insertAdjacentHTML('afterbegin', `<div class="sheetxw"><button type="button" class="sheetx" aria-label="${__h('Close')}">×</button></div>`);
+  S.querySelector('.sheetx').onclick = () => $('#sheetBack').click();
 }
 function openDoctor(edit) {
   const d = Guide.cleanDoctor(db.baby.doctor), can = Sync.can('profile');
@@ -1832,15 +1845,26 @@ const TOURS = {
   day: [
     { sel: '#kidBar', title: N_('A page for each child'), why: N_('Each child has their own page in their own colour. "All" shows everyone together.') },
     { sel: '#view .quick', title: N_('Log it in one tap'), why: N_('Tap what just happened. The time is filled in for you, with shortcuts for a few minutes ago.') },
-    { sel: '#sleepBanner', title: N_('Asleep right now'), why: N_('While your baby sleeps the timer runs here. Tap "Woke up" when they wake.') },
+    { sel: '#view .quick [data-add=care]', title: N_('Drop-off and pick-up'), why: N_('Dropping your child off at daycare, preschool or school, and who picks them up and when. While they are there a banner at the top says so, and whoever collects them taps "Picked up".') },
+    { sel: '#view .quick [data-add=study]', title: N_('Homework'), why: N_('Homework, reading and practising, with the subject, the minutes and the pages read. The routine learns the school week from it.') },
+    { sel: '#view .quick [data-addmore]', title: N_('The rest'), why: N_('The buttons for your child\'s age come first, and anything you log often moves up by itself. Everything else is behind More.') },
+    { sel: '#sleepBanner .brow:not(.care)', title: N_('Asleep right now'), why: N_('While your baby sleeps the timer runs here. Tap "Woke up" when they wake.') },
+    { sel: '#sleepBanner .brow.care', title: N_('At daycare or school'), why: N_('While your child is away this says where, since when, and who picks them up. Whoever collects them taps "Picked up".') },
     { sel: 'svg.clock', title: N_('The day at a glance'), why: N_('Each entry is a ray out to the time it happened, in its own colour. Tap a dot to see what it was, or a quarter of the dial for just those hours.') },
     { sel: '.clockctl .seg', title: N_('24 or 12 hours'), why: N_('The whole day on one dial, or a classic 12-hour face with AM and PM.') },
+    { sel: '.clockctl .nums', title: N_('Roman or plain numbers'), why: N_('The dial\'s numbers as on a carriage clock, or plain ones that are easier to read at 3 a.m.') },
     { sel: '.clockctl .artbtn', title: N_('Choose the painting'), why: N_('Pick the watercolour around the clock, for each child.') },
+    { sel: '.clegend', title: N_('What the colours mean'), why: N_('Every kind of entry has its own colour, on the clock and everywhere else, with today\'s count.') },
     { sel: '.datenav', title: N_('Other days'), why: N_('Use the arrows to look back at earlier days.') },
+    { sel: '.allergyline', title: N_('Allergies'), why: N_('A child\'s allergies stay in view at the top of every day, for everyone sharing the log. Mark one from a feed or a meal, or in More.') },
+    { sel: '.grownote', title: N_('Growing up'), why: N_('Little Log grows with your child: the buttons, the routine and the Guide change with their age, and a note here says what is new at each stage.') },
+    { sel: '.grown', title: N_('All the way to 18'), why: N_('At 18 Little Log\'s work is done. Everything stays here, and the book and the record are ready to keep or hand over.') },
+    { sel: '.upcoming', title: N_('Coming up'), why: N_('What is on the family calendar in the next week: exams, appointments, matches, lessons and parties. Add to it from the Month tab.') },
     { sel: '#view details.grp', title: N_('Every detail'), why: N_('Everything from the day, grouped: feeds, diapers, sleep and more. Tap a group to open it.') },
     { sel: '.tripbtn', title: N_('Going on a trip?'), why: N_('Travel mode gives you bigger buttons, rough times that are quick to log, and a clock to match the journey.') },
     { sel: '.momentbtn', title: N_('Big moments'), why: N_('Save the firsts as they happen: the first smile, the first steps, the first day of school. They stay in the Month tab, in a journal of their own.') },
-    { sel: '#tabs', title: N_('Everything else'), why: N_('The month, stats, the Guide with medicines and milestones, family sharing, and settings.') },
+    { sel: '#famSw', title: N_('Whose log'), why: N_('The family whose log this is. Looking after children in more than one family? Tap here to switch.') },
+    { sel: '#tabs', title: N_('Everything else'), why: N_('The routine, the month with the family calendar, stats, the Guide with medicines and milestones, family sharing, and settings.') },
     { sel: '#helpBtn', title: N_('Help on every screen'), why: N_('Tap ? on any screen for a tour of it.') },
   ],
   travel: [
@@ -1852,9 +1876,13 @@ const TOURS = {
     { sel: '#helpBtn', title: N_('Help on every screen'), why: N_('Tap ? on any screen for a tour of it.') },
   ],
   month: [
-    { sel: '.cal', title: N_('The month'), why: N_('Dots show what was logged each day. Days away travelling are outlined.') },
+    { sel: '.cal', title: N_('The month'), why: N_('Dots show what was logged each day. Days away travelling are outlined, a star marks a big moment, and ◆ something on the calendar.') },
     { sel: '.cal button.sel', title: N_('Pick a day'), why: N_('Tap a day to see its numbers below.') },
+    { sel: '#view .datenav', title: N_('Other months'), why: N_('Use the arrows to look back at earlier months, or ahead at what is planned.') },
+    { sel: '#view .legend', title: N_('What the marks mean'), why: N_('The colour of each kind of entry, and the marks for travel days, the calendar, first allergic reactions and big moments.') },
     { sel: '#view .tripbtn', title: N_('Plan a trip'), why: N_('Plan trips ahead: pick the day you leave, then tap here. Travel mode switches on by itself that day.') },
+    { sel: '#view .planbtn', title: N_('The family calendar'), why: N_('Exams, appointments, matches, lessons, school holidays and parties, for one child or several, from the day you picked. The next week\'s show on the Day page under "Coming up", and a school holiday gives the routine\'s school week a break.') },
+    { sel: '#view .prow', title: N_('On the calendar'), why: N_('What is planned for the day you picked. Tap one to change it, for every child it was made for.') },
     { sel: '#view .tiles', title: N_('The day in numbers'), why: N_('Feeds, diapers, sleep and more for the day you picked.') },
     { sel: 'details[data-grp=mAll]', title: N_('Every entry'), why: N_('Open this to see each entry of that day, and tap one to change it.') },
     { sel: '#view .quick', title: N_('Add to that day'), why: N_('Log something you forgot, on the day you picked.') },
@@ -1862,27 +1890,39 @@ const TOURS = {
   ],
   routine: [
     { sel: '#view .rnext', title: N_('Next in the routine'), why: N_('What usually comes next, and how long until then.') },
-    { sel: '#view .routine', title: N_('Your routine'), why: N_('Feeds, sleep, play and medicines that happen at about the same time on most days. A tick shows what is done today.') },
+    { sel: '#view .routine', title: N_('Your routine'), why: N_('Feeds, sleep, play and medicines that happen at about the same time on most days, and from school age the school week: drop-off, pick-up and homework. A tick shows what is done today.') },
+    { sel: '#view .routine.week', title: N_('Other days of the week'), why: N_('What keeps to certain days of the week, like swimming on Tuesdays, with the days it happens on.') },
     { sel: '#view .rhow', title: N_('It keeps up by itself'), why: N_('It is worked out again from the last week every time, so it changes when your baby\'s routine does.') },
   ],
   stats: [
     { sel: '#view .seg', title: N_('How far back'), why: N_('Look at the last 7, 14 or 30 days.') },
     { sel: '#pdfBtn', title: N_('For the doctor'), why: N_('A PDF of everything logged, to share or print for a checkup.') },
+    { sel: '#view .recbtn', title: N_('The health record'), why: N_('Vaccines, doctor visits, and weight, height and head size on the growth charts, for each child: a page of its own, with a tour of its own.') },
+    { sel: '#view .card.alert', title: N_('Worth mentioning'), why: N_('A card turns red when there is something to tell the doctor: symptoms this week, or too few wet diapers.') },
     { sel: '#view .chart', title: N_('A chart for each section'), why: N_('Drawn to scale, one bar per day. Tap a bar for its numbers.') },
     { sel: '#view details.tbl', title: N_('The exact numbers'), why: N_('Each chart has a table with every day\'s numbers, handy for a checkup.') },
   ],
   guide: [
     { sel: '#docBtn', title: N_('Your pediatrician'), why: N_('Save their details once, and everyone sharing the log gets a Call button.') },
+    { sel: '#view .recbtn', title: N_('The health record'), why: N_('Vaccines, doctor visits and growth charts for each child, on a page of their own.') },
     { sel: '.emer', title: N_('Emergencies'), why: N_('The signs that need emergency help straight away.') },
-    { sel: '.nowcard', title: N_('Right now'), why: N_('What is common at your baby\'s age.') },
+    { sel: '.nowcard', title: N_('Right now'), why: N_('What is common at your child\'s age: the milestones until 5, then what the school and teenage years are about.') },
     { sel: '#view details.gd[data-grp^=t]', title: N_('Toddlers and preschoolers'), why: N_('Potty training, picky eating, tantrums, sleep, teeth, screens and car seats, for 1 to 5 year olds.') },
-    { sel: '#view details.gd[data-grp^=g]', title: N_('Common worries'), why: N_('What is normal with a newborn, and when to call. Some have pictures, kept out of sight until you tap them.') },
+    { sel: '#view details.gd[data-grp^=s]', title: N_('School age'), why: N_('Sleep, screens and staying safe online, homework and reading, friends and bullying, teeth, bedwetting, worries, puberty, head lice and getting about safely, for 6 to 12 year olds.') },
+    { sel: '#view details.gd[data-grp^=n]', title: N_('Teenagers'), why: N_('Sleep, mental health, life online, alcohol, vaping and drugs, relationships and consent, periods, skin, food and sport, driving, and growing independence. Shown from 10, as what comes next.') },
+    { sel: 'details[data-grp=gsolids]', title: N_('Food'), why: N_('Starting solid foods from around 6 months, the key allergens early, and what to do about a reaction.') },
+    { sel: '#view details.gd[data-grp^=g]:not([data-grp=gsolids])', title: N_('Common worries'), why: N_('What is normal with a newborn, and when to call. Some have pictures, kept out of sight until you tap them.') },
     { sel: 'details[data-grp=omenu]', title: N_('Medicines'), why: N_('Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.') },
+    { sel: '#view details.gd[data-grp^=h]', title: N_('Health checks'), why: N_('Vaccines and when to call, what checkups look at, and what the growth chart percentiles mean.') },
     { sel: '#view details.gd[data-grp^=m]', title: N_('Month by month'), why: N_('Milestones for every month. A reminder pops up on each month birthday.') },
   ],
   health: [
+    { sel: '.backbar', title: N_('Back'), why: N_('This page is a step away from the rest: tap here to go back to where you came from, or "Today" for today\'s page. The tabs below work as always.') },
     { sel: '.rechead', title: N_('The health record'), why: N_('Vaccines, doctor visits and growth for each child, from birth to 18, kept private to the people who may see health notes.') },
+    { sel: '#view .gkinds', title: N_('Which chart'), why: N_('Weight, length or height, head size, and from 2 years BMI: pick the one to see.') },
     { sel: '#view svg.gchart', title: N_('Growth charts'), why: N_('Each measurement against the CDC growth charts, with the 3rd, 15th, 50th, 85th and 97th percentile lines. Following their own line matters more than the number.') },
+    { sel: '#view details.tbl', title: N_('Every measurement'), why: N_('All the measurements in a table. Tap one to change it.') },
+    { sel: '#view [data-add=growth]', title: N_('Add a measurement'), why: N_('After each checkup, or whenever you weigh and measure at home. The percentile shows as you type.') },
     { sel: '#view .vaccines', title: N_('Vaccines'), why: N_('Every dose with its date, by vaccine. Tap one to change it.') },
     { sel: '#view .visits', title: N_('Doctor visits'), why: N_('Checkups, the dentist, eye and hearing tests, and the times your child was seen when unwell.') },
     { sel: '#pdfBtn', title: N_('For the doctor'), why: N_('The report for the doctor has the health record in it too.') },
@@ -1900,12 +1940,20 @@ const TOURS = {
     { sel: '#view .card', title: N_('Family sharing'), why: N_('Sign in to share the log with family and caregivers, end-to-end encrypted.') },
   ],
   more: [
-    { sel: '.kidrow', title: N_('Your children'), why: N_('Names, birth dates and colours. "Add a child" for twins or triplets.') },
+    { sel: '#langCard', title: N_('Language'), why: N_('The app follows your phone\'s language unless you choose one here. If a translation reads wrong, "Report a language issue" sends it to us.') },
+    { sel: '.card:has(#signOut)', title: N_('Security & account'), why: N_('Who you are signed in as, two-step verification, the app lock with Face ID or a fingerprint, and signing out.') },
+    { sel: '.kidrow', title: N_('Your children'), why: N_('Names, birth dates, boy or girl and colours, with allergies and the health record. "Add a child" for twins or triplets.') },
     { sel: '.kidrow .fpick', title: N_('Usual formula'), why: N_('Pick it from the list; each region folds open. After three days of the same formula it is picked for you.') },
+    { sel: '.kidrow [data-aladd]', title: N_('Allergies'), why: N_('Mark a food your child reacts to, with the date of the first reaction. It stays in view on the Day page and in the Guide.') },
+    { sel: '.kidrow .recbtn', title: N_('The health record'), why: N_('Vaccines, doctor visits and growth charts for each child, on a page of their own.') },
     { sel: '#regionSel', title: N_('Where you are'), why: N_('Formulas sold here come first, and the Guide gives your emergency number and medicine names first.') },
+    { sel: '.card:has([name=units])', title: N_('Units'), why: N_('Kilograms and centimetres, or pounds and inches, for the health record.') },
     { sel: '.card:has([data-art])', title: N_('Clock art'), why: N_('The painting around each child\'s clock.') },
     { sel: '.card:has([name=themeMode])', title: N_('Light or dark'), why: N_('Match your phone, pick one, or follow sunrise and sunset.') },
-    { sel: '#expCsv', title: N_('Your data'), why: N_('Back up the log, or export a copy for your pediatrician.') },
+    { sel: '.card:has(#cPass)', title: N_('Cloud backup'), why: N_('A private, encrypted copy in your own cloud storage, scrambled with a passphrase only you know.') },
+    { sel: '.card:has(#expCsv)', title: N_('Your data'), why: N_('Back up the log as a file, export a copy for your pediatrician, or restore a backup.') },
+    { sel: '#appCard', title: N_('App updates'), why: N_('New versions come through the app store. This opens Little Log\'s page there.') },
+    { sel: '#wipe', title: N_('Starting over'), why: N_('Deletes every entry in this log, for everyone sharing it. Only parents see this button.') },
   ],
 };
 /** The tour of the screen that is showing: the Day tab on a travel day has its own. */
@@ -2077,6 +2125,7 @@ function bind() {
   document.querySelectorAll('[data-export]').forEach(b => b.onclick = () => exportRecord(b.dataset.export));
   document.querySelectorAll('[data-record]').forEach(b => b.onclick = () => openRecord(b.dataset.record));
   document.querySelectorAll('[data-recback]').forEach(b => b.onclick = () => { tab = recordFrom; render(); window.scrollTo(0, 0); });
+  document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => { tab = 'day'; viewDay = startOfDay(Date.now()); quad = null; render(); window.scrollTo(0, 0); });
   document.querySelectorAll('[data-gkind]').forEach(b => b.onclick = () => { growthKind = b.dataset.gkind; render(); });
   document.querySelectorAll('[data-moment]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.moment); if (ev) Sync.can('edit', ev) ? openMoment(ev) : momentInfo(ev); });
   document.querySelectorAll('[data-tripnew]').forEach(b => b.onclick = () => openTrip(null));
@@ -2256,7 +2305,7 @@ function openSheet(type, ev, pre) {
     ${body}
     ${L(N_('Note (optional)'))}<textarea id="note" rows="2" maxlength="1000" placeholder="${__h('Anything worth remembering')}">${esc(ev ? ev.note : '')}</textarea>
     <div class="row" style="margin-top:16px">${editing && Sync.can('delete', ev) ? `<button class="btn d" id="del">${__h('Delete')}</button>` : ''}<button class="btn" id="cancel">${__h('Cancel')}</button><button class="btn p" id="save">${__h('Save')}</button></div>`;
-  Icons.paint($('#sheet')); $('#sheet').hidden = $('#sheetBack').hidden = false;
+  Icons.paint($('#sheet')); $('#sheet').hidden = $('#sheetBack').hidden = false; sheetX();
 
   const S = $('#sheet'), checked = n => S.querySelector(`[name=${n}]:checked`);
   bindFormulaPickers(S);

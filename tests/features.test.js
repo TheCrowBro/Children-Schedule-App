@@ -1,7 +1,7 @@
 // The day clock, twirl-down groups, month day counts, stats charts, formula, the Guide (pediatrician, milestones) and people's contact
 // details – including that the new private data stays end-to-end encrypted.   node tests/features.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global writes24 */
+/* global writes24, openDoctor */
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
@@ -647,7 +647,7 @@ const pickFormula = async (page, scope, name) => {
       assert.equal(await G.$('.tour'), null, '"Done" ends it');
       assert.equal(await G.evaluate(() => localStorage.getItem('ll.tours')), '{"day":1}');
       await G.waitForSelector('#msGuide', { timeout: 3000 }); await G.click('#sheet [data-close]');   // and then it shows
-      for (const [t, first] of [['month', 'The month'], ['stats', 'How far back'], ['guide', 'Your pediatrician'], ['family', 'Family tree'], ['more', 'Your children']]) {
+      for (const [t, first] of [['month', 'The month'], ['stats', 'How far back'], ['guide', 'Your pediatrician'], ['family', 'Family tree'], ['more', 'Language']]) {
         await G.click(`[data-tab=${t}]`); await G.waitForTimeout(700); assert.equal(await G.$('.tour'), null, `${t}: not by itself`);
         await G.click('#helpBtn'); await G.waitForSelector('.tour-tip'); assert.equal((await at()).t, first, t);
         await G.keyboard.press('Escape'); assert.equal(await G.$('.tour'), null, 'Escape closes it');
@@ -656,6 +656,20 @@ const pickFormula = async (page, scope, name) => {
       await G.emulateMedia({ reducedMotion: 'reduce' }); await G.click('[data-tab=day]'); await G.click('#helpBtn');
       assert.equal(await G.evaluate(() => getComputedStyle(document.querySelector('.tour-box')).transitionDuration), '0s', 'no gliding with reduced motion');
       await G.keyboard.press('Escape');
+    });
+
+    await step('every sheet has a big close button in its corner that stays put while the sheet scrolls: the entry form, a pop-up, and the account sheets', async () => {
+      const corner = () => P.evaluate(() => { const x = document.querySelector('#sheet .sheetx'), s = $('#sheet'); if (!x || s.hidden) return null; const r = x.getBoundingClientRect(), b = s.getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height), top: Math.round(r.top - b.top), inset: Math.round(b.right - r.right), label: x.getAttribute('aria-label'), inside: r.top >= b.top && r.bottom <= b.bottom }; });
+      await P.click('[data-tab=day]'); await P.click('#view .quick [data-add=feed]'); await P.waitForSelector('#save');
+      const a = await corner(); assert(a && a.w >= 44 && a.h >= 44 && a.top < 40 && a.inset < 40 && a.label === 'Close' && a.inside, `the entry form: ${JSON.stringify(a)}`);
+      await P.evaluate(() => { $('#sheet').scrollTop = 10000; }); const b = await corner(); assert(b.inside && b.top < 40, `still in the corner when scrolled: ${JSON.stringify(b)}`);
+      await P.click('#sheet .sheetx'); assert.equal(await P.evaluate(() => $('#sheet').hidden && $('#sheetBack').hidden), true, 'closes the entry form');
+      await P.evaluate(() => openDoctor(false)); await P.waitForSelector('#sheet:not([hidden])'); const c = await corner(); assert(c && c.w >= 44 && c.inside, `a pop-up: ${JSON.stringify(c)}`);
+      await P.click('#sheet .sheetx'); assert.equal(await P.evaluate(() => $('#sheet').hidden), true, 'closes a pop-up');
+      await P.click('[data-tab=family]'); await P.evaluate(() => document.querySelector('#view .pbtn').click()); await P.waitForSelector('#sheet:not([hidden])'); const d = await corner(); assert(d && d.w >= 44 && d.inside, `an account sheet: ${JSON.stringify(d)}`);
+      await P.click('#sheet .sheetx'); assert.equal(await P.evaluate(() => $('#sheet').hidden), true, 'closes an account sheet');
+      await P.click('[data-tab=day]');
     });
 
     const pageErrs = H.pages.flatMap(p => p.errs.concat(p.csp));

@@ -51,7 +51,10 @@ main{max-width:640px;margin:0 auto;padding:0 16px}
 .alert{border-color:var(--health-ink);background:rgba(201,117,110,.12)}
 .sheet-back{position:fixed;inset:0;background:#0007;z-index:5}
 .sheet{position:fixed;left:0;right:0;bottom:0;max-height:92vh;overflow:auto;background:var(--card);border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));z-index:6;max-width:640px;margin:0 auto}
-.sheet h3{margin:0 0 10px;font-family:var(--serif);font-weight:600;font-size:20px}
+.sheet h3{margin:0 0 10px;font-family:var(--serif);font-weight:600;font-size:20px}.sheet>h3{padding-inline-end:44px}
+/* Every sheet: a big close button in the corner that stays put while the sheet scrolls (the way out is never below the fold) */
+.sheetxw{position:sticky;top:10px;z-index:3;height:0;display:flex;justify-content:flex-end;margin-top:-6px;margin-inline-end:-6px}
+.sheetx{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font:400 26px/1 system-ui,sans-serif;display:grid;place-items:center;padding:0;box-shadow:0 6px 16px -10px rgba(0,0,0,.6);cursor:pointer}
 .sheet label.f{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
 .sheet input[type=datetime-local],.sheet input[type=date],.sheet input[type=time],.sheet input[type=number],.sheet input[type=text],.sheet textarea,.sheet select{width:100%;padding:10px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -160,7 +163,7 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .clegend i{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
 .clegend b{font-variant-numeric:tabular-nums}
 .hint{margin:8px 2px 0;font-size:12px}
-.quadlist .qhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.quadlist .qhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.quadlist .qhead .btn{flex:none;padding:10px 14px}
 .quadlist .qhead small{color:var(--mute)}
 .quadlist .ev{box-shadow:none}
 /* ---- twirl-down groups ------------------------------------------------------------------------------------------------------------------ */
@@ -469,7 +472,12 @@ details.mmmore>summary::-webkit-details-marker{display:none}details.mmmore[open]
 .grow{background:var(--wash2);border-radius:12px;padding:8px 10px;margin:8px 0}.grow .ic{color:var(--brand)}
 :root[data-mode="dark"] .moment{--mwash:rgba(211,165,72,.13)}
 /* The health record: a page of its own (back button, the child, growth with a chart over the CDC percentile lines, vaccines, visits) */
-.backbtn{background:none;border:0;color:var(--brand);font:600 15px/1 inherit;font-family:inherit;padding:6px 0 12px;cursor:pointer}
+/* The way back from a page of its own: a bar that stays at the top while the page scrolls, with a big "Back to …" and "Today" */
+.backbar{position:sticky;top:0;z-index:4;display:flex;gap:8px;margin:0 -16px 12px;padding:8px 16px 10px;background:linear-gradient(var(--bg) 72%,transparent)}
+.backbar .btn{display:flex;align-items:center;gap:8px;min-height:50px;padding:8px 14px;border-radius:16px;color:var(--brand);box-shadow:0 8px 20px -14px rgba(70,50,30,.6);text-align:start}
+.backbar .backbtn{flex:1;min-width:0}.backbar .backbtn span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.backbar .bk{font-size:30px;line-height:1;margin-top:-4px}[dir=rtl] .backbar .bk{display:inline-block;transform:scaleX(-1)}
+.backbar .homebtn{flex:none}.backbar .homebtn .ic{width:22px;height:22px}
 .rechead{display:flex;align-items:center;gap:12px}.rechead .av{flex:none}.rechead>span{flex:1;min-width:0}.rechead small{display:block;color:var(--mute);margin-top:2px}.rechead .allergyline{color:var(--health-ink)}
 .recbtn{border-inline-start-color:var(--g-moment)}.recbtn .di .ic{color:var(--health-ink)}
 .recgrowth .stat b small{display:block;font-weight:500;color:var(--mute);font-size:12px;text-align:end}

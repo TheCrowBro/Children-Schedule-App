@@ -69,7 +69,7 @@ const Acct = (() => {
   const alertP = t => t ? `<p class="note" style="color:var(--health)" role="alert">${__h(t)}</p>` : '';
   function showSheet(html) {
     const S = $('#sheet'), back = $('#sheetBack'); S.innerHTML = html; Icons.paint(S); S.onchange = null; S.hidden = back.hidden = false;   // (onchange: drop the entry form's handler)
-    const close = () => { S.hidden = back.hidden = true; }; back.onclick = close; return close;
+    const close = () => { S.hidden = back.hidden = true; }; back.onclick = close; sheetX(); return close;
   }
   function qrSvg(text) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); }
 

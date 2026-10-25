@@ -3,7 +3,7 @@
 // notes (a helper without health access gets none of it, the server keeps it under the health key); the doctor's report; the Day page
 // and the milestone sheet leading to it; the Guide's health checks.   node tests/health.test.js
 const assert = require('assert');
-/* global Growth, openSheet, openRecord, reportBlocks, describe, saveProfile, dkey, G, usUnits */
+/* global Growth, openSheet, openRecord, reportBlocks, describe, saveProfile, dkey, G, usUnits, viewDay, startOfDay */
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
@@ -100,6 +100,15 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.deepEqual(vac, [['6-in-1 (diphtheria, tetanus, whooping cough, polio, Hib, hepatitis B)', 2], ['Hepatitis A and typhoid', 1]], 'by vaccine, oldest dose first');
       assert(/Unwell/.test(await P.textContent('.visits')) && /Antibiotics for a week/.test(await P.textContent('.visits')));
       await P.click('.vaccines .vdose'); assert.equal(await sheet(), 'Edit vaccine', 'a dose opens to change it'); await P.click('#cancel');
+      // the way back is easy to find: a bar at the top with a big "Back to Guide" and "Today", which stays there while the page scrolls
+      const bar = await P.evaluate(() => { const e = document.querySelector('.backbar'), b = document.querySelector('[data-recback]'), r = b.getBoundingClientRect();
+        return { pos: getComputedStyle(e).position, text: b.textContent.replace(/\s+/g, ' ').trim(), h: Math.round(r.height), w: Math.round(r.width), home: (document.querySelector('[data-home]') || {}).textContent }; });
+      assert.deepEqual([bar.pos, /^‹\s*Back to Guide$/.test(bar.text), bar.h >= 44, bar.w >= 160, /Today/.test(bar.home)], ['sticky', true, true, true, true], JSON.stringify(bar));
+      await P.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await P.waitForTimeout(100);
+      const seen = await P.evaluate(() => { const r = document.querySelector('.backbar').getBoundingClientRect(); return { top: Math.round(r.top), scrolled: window.scrollY > 100 }; });
+      assert(seen.scrolled && seen.top >= 0 && seen.top <= 12, `the bar stays at the top of the screen when scrolled: ${JSON.stringify(seen)}`);
+      await P.click('[data-home]'); assert.deepEqual(await P.evaluate(() => [tab, viewDay === startOfDay(Date.now())]), ['day', true], '"Today" goes to today\'s Day page');
+      await P.evaluate(() => { tab = 'guide'; render(); }); await P.click('#view [data-record]');
       await P.click('[data-recback]'); assert.equal(await P.evaluate(() => tab), 'guide', 'back to the Guide');
       await P.evaluate(() => { tab = 'more'; render(); }); await P.click('.kidrow [data-record]'); await P.click('[data-recback]'); assert.equal(await P.evaluate(() => tab), 'more', 'back to More');
       await P.evaluate(() => { tab = 'stats'; render(); }); assert(await P.$('#view [data-record]'), 'and from Stats');
