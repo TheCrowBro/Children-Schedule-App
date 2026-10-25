@@ -4,7 +4,7 @@
 const Store = { st: { ok: true, err: '', quarantined: false, recovered: false, onChange: null }, init: async () => {}, load: async () => demoDb(), save() {}, whenSaved: async () => {}, peek: async () => null, backup() {}, quarantine: () => [], usingIndexedDB: false };
 const Native = { is: false, onBack() {}, onUrl() {}, launchUrl() {}, saveFile: () => Promise.reject(new Error('cancelled')), storeUrl: () => null, openExternal() {}, version: async () => '' };
 const Auth = { id: 'demo', signedIn: false, configured: false, init: async () => {} };
-const Sync = { setMyDetails: async () => {}, can: () => true, linked: () => false, isParent: () => true, nameOf: () => '', schedule() {}, pushBaby() {}, onChange: null, onSessionLost: null };
+const Sync = { st: { people: [{ display_name: 'Mum', is_you: true }, { display_name: 'Dad' }, { display_name: 'Grandpa Joe' }] }, setMyDetails: async () => {}, can: () => true, linked: () => false, isParent: () => true, nameOf: () => '', schedule() {}, pushBaby() {}, onChange: null, onSessionLost: null };
 const Cloud = { init: async () => {}, autoBackup() {}, handleOAuthUrl() {} };
 const Lock = { init: async () => {}, onChange: null };
 const Acct = {
@@ -129,15 +129,16 @@ function demoTreeTap(key) {
     <div class="row" style="margin-top:16px"><button class="btn" data-close>Close</button>${w.kind === 'parent' ? '' : '<button class="btn d" id="dmRemove">Remove from the tree</button>'}</div>`);
   if ($('#dmRemove')) $('#dmRemove').onclick = () => { FamilyTree.remove(t, w.p.id); DEMO_TREE.tree = FamilyTree.clean(t); close(); render(); };
 }
-const DEMO_FAMILIES = [['Your family', 'Ella, Leo, Mia, Sam', 'Parent'], ["Sarah's family", 'Ava, Jack', 'Family member'], ["Tom's family", 'Noah', 'Family member']];
+const DEMO_FAMILIES = [['Your family', 'Lily, Ella, Leo, Mia, Sam', 'Parent'], ["Sarah's family", 'Ava, Jack', 'Family member'], ["Tom's family", 'Noah', 'Family member']];
 window.confirm = () => true; window.alert = () => {};
 function demoDb() {
   const h = 3600e3, DAYMS = 864e5, t0 = new Date().setHours(0, 0, 0, 0);
-  const kids = [{ id: 'c1', name: 'Leo', birth: '', sex: 'boy', color: '', formula: 'Similac 360 Total Care' }, { id: 'k2', name: 'Mia', birth: '', sex: 'girl', color: '' }, { id: 'k3', name: 'Sam', birth: '', sex: 'boy', color: '' }, { id: 'k4', name: 'Ella', birth: '', sex: 'girl', color: '' }];
+  const kids = [{ id: 'c1', name: 'Leo', birth: '', sex: 'boy', color: '', formula: 'Similac 360 Total Care' }, { id: 'k2', name: 'Mia', birth: '', sex: 'girl', color: '' }, { id: 'k3', name: 'Sam', birth: '', sex: 'boy', color: '' }, { id: 'k4', name: 'Ella', birth: '', sex: 'girl', color: '' }, { id: 'k5', name: 'Lily', birth: '', sex: 'girl', color: '' }];
   const ks = Kids.clean(kids), day0 = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const born = new Date(t0); born.setMonth(born.getMonth() - 2); const iso = day0(born);
   ks.slice(0, 3).forEach(k => { k.birth = iso; });
   const ella = ks[3], eb = new Date(t0); eb.setFullYear(eb.getFullYear() - 3); eb.setMonth(eb.getMonth() - 2); ella.birth = day0(eb);   // the triplets' big sister, a preschooler
+  const lily = ks[4], lb = new Date(t0); lb.setFullYear(lb.getFullYear() - 8); lb.setMonth(lb.getMonth() - 5); lily.birth = day0(lb);   // and the eldest, at school
   const events = [], FORMULA = { c1: 'Similac 360 Total Care', k2: 'Enfamil NeuroPro' }; let n = 0;   // (Mia's usual formula is learned from her feeds)
   const add = (type, ts, data, kid, extra = {}) => { if (ts > Date.now()) return; events.push({ id: 'd' + (n++), type, ts, data, note: '', updated: Date.now(), child: kid.id, ...extra }); };
   for (let day = 6; day >= 0; day--) {
@@ -162,12 +163,33 @@ function demoDb() {
     add('sleep', b + 13 * h, {}, ella, { end: b + 14.5 * h }); add('sleep', b - 4.5 * h, {}, ella, { end: b + 6.75 * h });
     add('play', b + 10.5 * h, { activity: 'Play', min: 30 }, ella);
   }
+  // four weeks of school days: Ella at preschool (Grandpa Joe picks up on Wednesdays), Lily at school, with homework, reading and
+  // swimming on Tuesdays; a weekend at home
+  for (let day = 27; day >= 0; day--) {
+    const b = t0 - day * DAYMS, wd = new Date(b).getDay(), school = wd >= 1 && wd <= 5;
+    if (school) {
+      add('care', b + 8.67 * h, { place: 'Preschool', who: 'Dad', plan: wd === 3 ? 'Grandpa Joe' : 'Mum', at: 15 * 60 + 15 }, ella);
+      add('pickup', b + (15.25 + (day % 3) * 0.05) * h, { place: 'Preschool', who: wd === 3 ? 'Grandpa Joe' : 'Mum' }, ella);
+      add('care', b + 8.5 * h, { place: 'School', who: 'Dad' }, lily);
+      add('pickup', b + (wd === 4 ? 17.5 : 15.5) * h, { place: wd === 4 ? 'After-school club' : 'School', who: wd === 3 ? 'Grandpa Joe' : 'Mum' }, lily);
+      add('study', b + 16.5 * h, { kind: 'Homework', subject: ['Spelling', 'Maths', 'Reading log', 'Maths', 'Project'][wd - 1], min: 20 + (day % 3) * 5 }, lily);
+    }
+    if (wd === 2) add('play', b + 17 * h, { activity: 'Swimming', min: 45 }, lily);
+    if (wd === 6) add('play', b + 10 * h, { activity: 'Sport', min: 60 }, lily);
+    if (day < 7) {
+      add('meal', b + 7.25 * h, { meal: 'Breakfast', foods: ['Oats', 'Banana'], amount: 'All of it' }, lily); add('meal', b + 18 * h, { meal: 'Dinner', foods: ['Fish', 'Potato', 'Peas'], amount: day % 3 ? 'Most' : 'All of it' }, lily);
+      add('sleep', b - 4.25 * h, {}, lily, { end: b + 7 * h });
+    }
+    add('study', b + 19.5 * h, { kind: 'Reading', min: 15, pages: 12 + (day % 9) }, lily);
+  }
   const at = (d, x) => { const t = new Date(d); t.setHours(x, 0, 0, 0); return t.getTime(); }, plus = (d, m, dd = 0) => { const t = new Date(d); t.setMonth(t.getMonth() + m); t.setDate(t.getDate() + dd); return t; };
   const moment = (kid, t, what, note = '') => events.push({ id: 'd' + (n++), type: 'moment', ts: t, data: { what }, note, updated: Date.now(), child: kid.id });
   moment(ella, at(plus(eb, 0), 9), 'Born', '3.4 kg, just before breakfast'); moment(ella, at(plus(eb, 2, 3), 10), 'First smile'); moment(ella, at(plus(eb, 11, 20), 18), 'First steps', 'Three wobbly steps to Grandpa');
   moment(ella, at(plus(eb, 12), 15), 'Birthday'); moment(ella, at(plus(eb, 31, 5), 9), 'Out of diapers in the day'); moment(ella, at(plus(eb, 36), 16), 'Birthday', 'Unicorn cake, and a nap at the party');
   moment(ella, at(new Date(t0 - 20 * DAYMS), 9), 'First day of preschool', 'Waved goodbye at the gate'); moment(ella, at(new Date(t0 - 5 * DAYMS), 17), 'Rode a tricycle');
   ks.slice(0, 3).forEach(k => { moment(k, at(born, 6), 'Born'); moment(k, at(plus(born, 0, 4), 14), 'Came home'); });
+  moment(lily, at(plus(lb, 0), 4), 'Born'); moment(lily, at(plus(lb, 60, 3), 9), 'First day of school', 'Brand-new shoes'); moment(lily, at(plus(lb, 74, 10), 19), 'Lost a first tooth', 'The tooth fairy left a coin');
+  moment(lily, at(plus(lb, 90), 11), 'Rode a bike without training wheels'); moment(lily, at(new Date(t0 - 40 * DAYMS), 16), 'Learned to swim', '25 metres, all the way');
   moment(ks[1], at(plus(born, 1, 12), 8), 'First smile', 'At Ella, of course');
   // the health record: Ella's measurements, vaccines and visits since birth, and the triplets' first ones
   const rec = (kid, t, type, data, note = '') => events.push({ id: 'd' + (n++), type, ts: t, data, note, updated: Date.now(), child: kid.id });

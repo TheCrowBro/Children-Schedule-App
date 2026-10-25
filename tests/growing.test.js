@@ -5,7 +5,7 @@
 // end-to-end encrypted; the routine, the stats, the doctor's report, travel mode, the milestone sheet when a new stage begins, and the
 // Guide's toddler topics, milestones to 5 and notes for the school and teenage years.   node tests/growing.test.js
 const assert = require('assert');
-/* global Stages, G, mealAt, describe, stageOf, saveProfile, openSheet, openQuick, openMoment, reportBlocks, dkey, Routine, Sync, momentsOf */
+/* global Stages, G, mealAt, describe, stageOf, saveProfile, openSheet, openQuick, openMoment, reportBlocks, dkey, Routine, Sync, momentsOf, removeEvent */
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
@@ -65,21 +65,21 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.deepEqual(b.labels.slice(0, 2), ['Feed', 'Diaper']); assert.deepEqual(await P.evaluate(() => G.legend()), ['Feeding', 'Diapers', 'Sleep & night wakings', 'Vomit', 'Play', 'Health & meds']);
       await P.evaluate(() => { G.age(0, 2, 3); G.page(kids()[0].id); });
       b = await P.evaluate(() => G.buttons());
-      assert.deepEqual(b.shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'med']); assert.equal(b.more, 'wake play vomit');
+      assert.deepEqual(b.shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'care']); assert.equal(b.more, 'med wake play vomit');
       assert.deepEqual(b.labels.slice(0, 4), ['Meal', 'Milk', 'Diaper', 'Potty'], 'a feed is Milk from a year old');
       assert(/· 2 years 3 months$/.test(await P.textContent('.datenav .d small')), 'how old, in years and months');
       assert.deepEqual((await P.evaluate(() => G.legend())).slice(0, 2), ['Meals & milk', 'Diapers & potty']);
       assert(await P.$('#view .quick [data-addmore] svg[data-n=more]'), 'More has its icon');
       await P.click('#view [data-addmore]'); assert.equal(await sheet(), 'More to log');
-      assert.deepEqual(await P.$$eval('#sheet [data-more]', x => x.map(e => e.dataset.more)), ['wake', 'play', 'vomit']);
+      assert.deepEqual(await P.$$eval('#sheet [data-more]', x => x.map(e => e.dataset.more)), ['med', 'wake', 'play', 'vomit']);
       await P.click('#sheet [data-more=play]'); assert.equal(await sheet(), 'Add play', 'each opens its own sheet'); await P.click('#cancel');
       await P.evaluate(() => { G.age(0, 3, 4); G.page(kids()[0].id); });
       b = await P.evaluate(() => G.buttons());
-      assert.deepEqual(b.shown, ['meal', 'potty', 'sleep', 'play', 'health', 'med', 'wake']); assert.equal(b.more, 'vomit diaper feed');
+      assert.deepEqual(b.shown, ['meal', 'potty', 'sleep', 'care', 'play', 'health', 'med']); assert.equal(b.more, 'wake vomit diaper feed');
       assert.deepEqual((await P.evaluate(() => G.legend())).slice(0, 2), ['Meals', 'Diapers & potty']);
       await P.evaluate(() => { G.age(0, 7, 2); G.page(kids()[0].id); });
       b = await P.evaluate(() => G.buttons());
-      assert.deepEqual(b.shown, ['meal', 'sleep', 'play', 'health', 'med', 'wake', 'vomit']); assert.equal(b.more, 'potty diaper feed');
+      assert.deepEqual(b.shown, ['meal', 'care', 'sleep', 'play', 'study', 'health', 'med']); assert.equal(b.more, 'wake vomit potty diaper feed');
       assert.deepEqual((await P.evaluate(() => G.legend())).slice(0, 2), ['Meals', 'Potty']);
       assert(/· 7 years$/.test(await P.textContent('.datenav .d small')));
     });
@@ -90,10 +90,10 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await P.evaluate(() => { G.age(0, 0, 1); render(); }); assert(/^Newborn · [45] weeks$/.test(await P.textContent('.kidrow .kstage')));
     });
 
-    await step('what the family has been logging lately moves up: three plays in two weeks give a toddler\'s Play a button, and Meds goes behind More', async () => {
+    await step('what the family has been logging lately moves up: three plays in two weeks give a toddler\'s Play a button, and Drop-off goes behind More', async () => {
       await P.evaluate(id => { G.age(0, 2, 3); [1, 3, 5].forEach(d => G.ev('play', G.at(d, 10), { activity: 'Play', min: 20 }, id)); save(); G.page(id); }, leo);
       const b = await P.evaluate(() => G.buttons());
-      assert.deepEqual(b.shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'play']); assert.equal(b.more, 'med wake vomit');
+      assert.deepEqual(b.shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'play']); assert.equal(b.more, 'care med wake vomit');
       await P.evaluate(() => { db.events = db.events.filter(e => e.type !== 'play'); save(); render(); });
     });
 
@@ -223,7 +223,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.deepEqual(after.n, ['Ella', 'Mia'], 'saved for each child ticked'); assert.equal(after.ella, 'school');
       assert.equal(after.mia, 'newborn', '(a newborn\'s stage is not moved by it: only from the age school can start)');
       await P.evaluate(() => G.page(kids()[2].id)); assert.deepEqual((await P.evaluate(() => G.legend())).slice(0, 2), ['Meals', 'Potty']);
-      await P.evaluate(() => { db.events = db.events.filter(e => !(e.type === 'moment' && e.child === kids()[1].id)); save(); });
+      await P.evaluate(() => { db.events.filter(e => e.type === 'moment' && e.child === kids()[1].id).forEach(removeEvent); save(); });   // (deleted as the app does, in case it was sent already)
     });
 
     await step('the All page with a baby and older children: buttons for all of them, the groups named for both', async () => {

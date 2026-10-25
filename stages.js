@@ -61,12 +61,13 @@ const Stages = (() => {
 
   // The Day page's buttons at each stage, most useful first. Up to eight fit; when there are more, the first seven are shown (with
   // any the family has used lately moved up) and the rest are behind More.
+  // (daycare, preschool or school: a drop-off, from 3 months old; homework from the school years)
   const DAY = {
     newborn: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med'],
-    baby: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med'],
-    toddler: ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'med', 'wake', 'play', 'vomit'],
-    preschool: ['meal', 'potty', 'sleep', 'play', 'health', 'med', 'wake', 'vomit', 'diaper', 'feed'],
-    school: ['meal', 'sleep', 'play', 'health', 'med', 'wake', 'vomit', 'potty', 'diaper', 'feed'],
+    baby: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'care'],
+    toddler: ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'care', 'med', 'wake', 'play', 'vomit'],
+    preschool: ['meal', 'potty', 'sleep', 'care', 'play', 'health', 'med', 'wake', 'vomit', 'diaper', 'feed'],
+    school: ['meal', 'care', 'sleep', 'play', 'study', 'health', 'med', 'wake', 'vomit', 'potty', 'diaper', 'feed'],
   };
   DAY.teen = DAY.grown = DAY.school;
   /** The buttons for the stages `ids` (several children: everything any of them needs, each at its best place). `used` counts each
@@ -105,5 +106,9 @@ const Stages = (() => {
   /** Ideas for a child at stage `id`: the birthday, the stage's own, then the next stage's (children are often early). */
   const ideas = id => [...new Set([N_('Birthday'), ...(MOMENTS[id] || []), ...(MOMENTS[IDS[at(id) + 1]] || [])])];
 
-  return { LIST, IDS, schoolAge, months, of, from, byId, age, DAY, buttons, MOMENTS, ALL_MOMENTS, SCHOOL_DAY, known, ideas };
+  // Where a child goes when they are dropped off, by stage (the first is the usual one). Saved in English, shown in each phone's language.
+  const CARE = [N_('Daycare'), N_('Preschool'), N_('School'), N_('Childminder'), N_('Grandparents'), N_('After-school club'), N_('Babysitter'), N_('Friend\'s house')];
+  const carePlace = id => (from(id, 'school') ? 'School' : id === 'preschool' ? 'Preschool' : 'Daycare');
+
+  return { LIST, IDS, schoolAge, months, of, from, byId, age, DAY, buttons, MOMENTS, ALL_MOMENTS, SCHOOL_DAY, known, ideas, CARE, carePlace };
 })();

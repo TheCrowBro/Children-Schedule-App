@@ -203,6 +203,30 @@ const unmarked = (page, data) => page.evaluate(data => {
       await P.evaluate(() => { kids()[1].sex = ''; saveProfile(); openRecord(kids()[1].id); }); await look('health record, boy or girl not set');
       await P.evaluate(() => { tab = 'more'; render(); }); await openAll(); await look('more, with units and the health record');
       await P.evaluate(() => { tab = 'stats'; render(); }); await look('stats, with the health record');
+      // daycare and school: a school child's day (at the after-school club now), the drop-off, the pick-up and homework sheets, the
+      // pick-up from the banner, a school child's activity; their routine (the school week), stats, Guide and month, and the note when
+      // school age starts
+      await P.evaluate(() => {
+        const k = kids()[1], add = (type, ts, data) => db.events.push({ id: 's' + type + ts, type, ts, data, note: '', updated: stamp(), by: Auth.id, child: k.id });
+        const t = new Date(); t.setFullYear(t.getFullYear() - 8); t.setDate(t.getDate() - 20); k.birth = dkey(t.getTime()); (db.meta.ms || (db.meta.ms = {}))[k.id] = 999; db.meta.stageSeen = {}; saveProfile();
+        for (let d = 27; d >= 1; d--) {
+          const b = addDays(startOfDay(Date.now()), -d), wd = new Date(b).getDay();
+          if (wd >= 1 && wd <= 5) { add('care', b + 8.5 * 3600e3, { place: 'School', who: 'Dad', plan: 'Gran', at: 930 }); add('pickup', b + 15.5 * 3600e3, { place: 'School', who: 'Gran' }); add('study', b + 16.5 * 3600e3, { kind: 'Homework', subject: 'Maths', min: 20 }); }
+          if (wd === 2) add('play', b + 17 * 3600e3, { activity: 'Swimming', min: 45 });
+          add('study', b + 19.5 * 3600e3, { kind: 'Reading', min: 15, pages: 10 }); add('meal', b + 18 * 3600e3, { meal: 'Dinner', foods: ['Rice'] });
+        }
+        add('care', Date.now() - 3600e3, { place: 'After-school club', who: 'Mum', plan: 'Gran', at: 1050 });   // (there now)
+        save(); setKid(k.id); tab = 'day'; viewDay = startOfDay(Date.now()); render();
+      });
+      await openAll(); await look('a school child\'s day, at the after-school club now');
+      for (const type of ['care', 'pickup', 'study']) {
+        await sheet(t => openSheet(t), 'new ' + type, type);
+        await sheet(t => openSheet(null, db.events.find(e => e.type === t && e.child === kids()[1].id)), 'edit ' + type, type);
+      }
+      await sheet(() => openSheet('play'), 'a school child\'s activity');
+      await sheet(() => document.querySelector('#sleepBanner [data-pickup]').click(), 'the pick-up from the banner');
+      for (const t of ['routine', 'stats', 'guide', 'month']) { await P.evaluate(x => { tab = x; render(); }, t); await openAll(); await look('a school child\'s ' + t); }
+      await P.evaluate(() => { viewDay = addDays(startOfDay(Date.now()), -1); tab = 'month'; render(); }); await openAll(); await look('a day in the month with school');
       // every screen's tour, step by step
       for (const t of ['day', 'routine', 'month', 'stats', 'guide', 'health', 'family', 'more']) {
         await P.evaluate(x => { tab = x; render(); startTour(); }, t);

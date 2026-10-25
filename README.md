@@ -19,6 +19,15 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   allergies flagged), and how much was eaten; each meal of the day keeps its own time in the routine
 - **Potty training**: pee, poo, both, nothing yet or stayed dry; on the potty, the toilet or an accident; and whether they asked to go.
   Stats show the potty and the accidents per day
+- **Daycare and school** (from 3 months old; the Day page's Drop-off): where the child was dropped off (the usual place for the age,
+  daycare, preschool or school, or the last one used: a childminder's, the grandparents', an after-school club, or one typed in), who
+  dropped them off, and who will pick them up and when ("Grandpa picks up at 3:15 PM"). While the child is there, a banner says where
+  and who is coming, and whoever picks them up taps **Picked up**: the pick-up is an entry of their own, so a grandparent who may not
+  change other people's entries can log it too. The stay lights up the clock's outer track; a day can be logged afterwards in one go;
+  Stats show the days there and the time there
+- **Homework and activities** (the school years): homework, reading and practising, with the subject, the minutes and the pages read;
+  a school child's play is an activity (sport, swimming, dance, music, games, a club). When a child reaches school age, a note on the
+  Day page says what changes
 - **Health record** (for every age, from the Guide, Stats or More → Children): **growth** (weight, length or height, head size, and
   BMI from 2 years) compared with the CDC growth charts: the percentile for the child's age and sex as it is typed, the latest
   measurements, and a chart of the child's own line over the 3rd, 15th, 50th, 85th and 97th percentile lines (birth to 3 years, then 2
@@ -48,7 +57,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   on most of the last 7 days (and on at least 3) is part of the routine, with what it usually is (how long, how much, which medicine and
   dose). Nothing is set by hand and nothing is stored: it's worked out from the log every time, so it moves when the baby's day does.
   Today's times are ticked off as they're logged, and the next one is shown on top. Diapers, night wakings, vomiting and health notes are
-  left out: they don't keep to a clock
+  left out: they don't keep to a clock. Daycare, school, homework, and lessons and clubs keep to the days of the week instead: they are
+  worked out for each day of the week over the last 4 weeks (school at 8:30, Mon – Fri; swimming on Tuesdays), come back on those days
+  only, and the other days' times are listed under the day's
 - **Report for the doctor** (Stats → PDF): a clean PDF to hand over or email: the child's age, allergies, pediatrician and usual
   formula, the parents' questions for the doctor, then the last 7, 14, 30 or 90 days at a glance (feeds, diapers, sleep, night wakings,
   vomiting, the highest temperature, symptoms, medicines, foods tried), day by day, health notes and medicines, and optionally every
@@ -63,7 +74,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   "Mark an allergy" on a meal tapped on the clock, which fills in its foods and date). It's kept in the child's profile, end-to-end
   encrypted, and seen by everyone sharing the log: the first date is marked on the calendar like a trip, the Day tab shows the child's
   allergies at the top, the foods list flags them, logging one warns straight away, and the doctor's report lists them
-- **Guide tab**: for toddlers and preschoolers, potty training, picky eating, tantrums, sleep, teeth and the dentist, screens and car
+- **Guide tab**: for school children, sleep, screens and staying safe online, homework and reading, friends and bullying, food and staying
+  active, teeth, bedwetting, worries and feelings, puberty, head lice and safety out and about come first (for a preschooler, after the
+  milestones, as what comes next). For toddlers and preschoolers, potty training, picky eating, tantrums, sleep, teeth and the dentist, screens and car
   seats come first; milestones go on to 30 months and 3, 4 and 5 years, and after that "Right now" says what the school or teenage years
   are about. Common newborn worries (blue hands, belly bulge, clicking hips, jaundice, cord, spit-up, poop colours, fever…) with when to call,
   **over-the-counter medicines** (a drop-down by kind: what's considered safe from what age, with US and UK ages where they differ; the
@@ -162,8 +175,8 @@ Little Log grows with the child in phases. Each finished phase is saved as a ver
 |---|---|---|---|
 | 1 | 1 to 5 | Stages by age, meals, milk from a cup, potty training, big moments, toddler topics and milestones to 5 | done |
 | 2 | every age | A health record: vaccines, checkups, the dentist and other visits, weight, height and head size against the CDC growth charts, and all of it in the doctor's report | done |
-| 3 | 3 to 12 | Daycare, preschool and school: drop-off and pick-up (who has the child today), the school calendar, activities, homework and reading | next |
-| 4 | 12 to 18 | The teenage years: a family calendar, privacy and the teenager's own say, and at 18 handing the record over, when Little Log's work is done | |
+| 3 | 3 months to 12 | Daycare, preschool and school: drop-off and pick-up (who has the child today), the school week in the routine, activities, homework and reading, the Guide for school children | done |
+| 4 | 12 to 18 | The teenage years: a family calendar (school holidays too), privacy and the teenager's own say, and at 18 handing the record over, when Little Log's work is done | next |
 
 ## Build and test
 ```bash

@@ -15,7 +15,7 @@
 const E2EE = (() => {
   const enc = new TextEncoder(), dec = new TextDecoder(), S = crypto.subtle;
   const ECDH = { name: 'ECDH', namedCurve: 'P-256' };
-  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg', 'meal', 'potty', 'moment', 'vaccine', 'visit', 'growth'];
+  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg', 'meal', 'potty', 'moment', 'vaccine', 'visit', 'growth', 'care', 'pickup', 'study'];
   // health notes, medicines and the health record (vaccines, doctor visits, measurements) are kept under the HEALTH key
   const SENSITIVE = ['health', 'med', 'vaccine', 'visit', 'growth'];
   const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // exactly 32 symbols = 5 bits each
@@ -183,6 +183,9 @@ const E2EE = (() => {
       case 'vaccine': s('name', 60); b('own'); n('dose'); s('place', 80); s('batch', 40); break;
       case 'visit': s('kind', 30); s('who', 80); s('why', 120); break;
       case 'growth': n('weight'); n('height'); n('head'); break;
+      case 'care': s('place', 40); b('own'); s('who', 60); s('plan', 60); if (Number.isInteger(d.at) && d.at >= 0 && d.at < 1440) o.at = d.at; break;
+      case 'pickup': s('place', 40); b('own'); s('who', 60); break;
+      case 'study': s('kind', 20); s('subject', 60); n('min'); n('pages'); break;
       case 'diaper': b('pee'); b('poo'); b('rash'); s('color', 20); break;
       case 'wake': n('min'); s('why', 30); break;
       case 'vomit': s('amount', 20); b('projectile'); break;

@@ -30,8 +30,8 @@ const Travel = (() => {
   // The colours of a travel day's entries: the same six groups in their own set, visibly different from the home colours and checked the
   // same way (colour-blind separation of neighbouring rings, 3:1 or more on both clock faces, and on the dark cards for the dark steps).
   const PALETTE = {
-    light: { sleep: '#12648f', feed: '#8b5f18', diaper: '#089772', vomit: '#116b1a', play: '#6032bb', health: '#e64887', poo: '#5c4033' },
-    dark: { sleep: '#0a7fa9', feed: '#9b611b', diaper: '#41a986', vomit: '#3f7e10', play: '#7359db', health: '#de4d8e', poo: '#e6c9a8' },
+    light: { sleep: '#12648f', feed: '#8b5f18', diaper: '#089772', vomit: '#116b1a', play: '#6032bb', health: '#e64887', poo: '#5c4033', care: '#4d6178' },
+    dark: { sleep: '#0a7fa9', feed: '#9b611b', diaper: '#41a986', vomit: '#3f7e10', play: '#7359db', health: '#de4d8e', poo: '#e6c9a8', care: '#8fa3bd' },
   };
   const ACCENT = { light: '#0f6f78', dark: '#4fb3bd' };   // the trip card and the journey along the clock's outer track
 

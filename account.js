@@ -752,7 +752,7 @@ const Acct = (() => {
       ${invite ? inviteHtml() : ''}
       ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Open invites')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(roleName(i.role))}<br><small>${esc(left(i.expires_at))}</small></span>
         <span class="btns"><button class="btn" data-showinv="${esc(i.code)}" style="padding:6px 10px">${__h('Show')}</button><button class="btn d" data-rescind="${esc(i.code)}" style="padding:6px 10px">${__h('Rescind')}</button></span></div>`).join('')}` : ''}</div>
-    <h2>${__h('Activity')}</h2><div class="card"><div class="stat"><span>${__h('Who added, changed or deleted what, and who joined or left.')}<br><small>${__h('Only parents can see this.')}</small></span><button class="btn" id="actBtn" style="padding:6px 12px">${__h('View')}</button></div></div>` : ''}
+    <h2>${__h('Activity log')}</h2><div class="card"><div class="stat"><span>${__h('Who added, changed or deleted what, and who joined or left.')}<br><small>${__h('Only parents can see this.')}</small></span><button class="btn" id="actBtn" style="padding:6px 12px">${__h('View')}</button></div></div>` : ''}
     ${encCard}
     <div class="card"><button class="btn d" id="leave" style="width:100%">${__h('Leave this log')}</button></div>`;
   }
@@ -916,7 +916,7 @@ const Acct = (() => {
     return ACT[l.action] ? ACT[l.action](x) : l.action;
   };
   async function showActivity() {
-    const close = showSheet(`<h3>${__h('Activity')}</h3><div id="actList"><div class="empty">${__h('Loading…')}</div></div><div class="row" style="margin-top:12px"><button class="btn" id="actMore" hidden>${__h('Older')}</button><button class="btn" id="actClose">${__h('Close')}</button></div>`);
+    const close = showSheet(`<h3>${__h('Activity log')}</h3><div id="actList"><div class="empty">${__h('Loading…')}</div></div><div class="row" style="margin-top:12px"><button class="btn" id="actMore" hidden>${__h('Older')}</button><button class="btn" id="actClose">${__h('Close')}</button></div>`);
     $('#actClose').onclick = close;
     let before = null, any = false;
     const load = async () => {

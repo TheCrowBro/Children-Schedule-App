@@ -5,9 +5,12 @@
    child when their routine changes. Diapers, the potty, night wakings, vomiting and health notes are left out: they don't keep to a
    clock.
    The routine's day runs from morning to night: from 6 AM to 6 the next morning, so the hours after midnight come last, with the
-   evening before them. */
+   evening before them.
+   Daycare, school, homework, and lessons and clubs (sport, swimming, dance, music) keep to the days of the week instead: their times are worked out for each day of the week over the
+   last 4 weeks (a time that came back on that day in at least 3 of them), the days with the same time make one slot (school at 8:40,
+   Monday to Friday), and a slot comes back on its own days only. */
 const Routine = (() => {
-  const WINDOW = 45, DAYS = 7, MIN_DAYS = 3, MIN = 60000, DAY_START = 6 * 60;
+  const WINDOW = 45, DAYS = 7, MIN_DAYS = 3, MIN = 60000, DAY_START = 6 * 60, WEEKS = 4;
   const dayStart = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
   const back = (t, n) => { const d = new Date(t); d.setDate(d.getDate() - n); return d.getTime(); };
   const minutesOf = t => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes(); };
@@ -31,8 +34,12 @@ const Routine = (() => {
     if (e.type === 'sleep') return 'sleep';
     if (e.type === 'play') return 'play:' + (d.activity || 'Play');
     if (e.type === 'med') { const n = String(d.name || '').trim().toLowerCase().replace(/\s+/g, ' '); return n ? 'med:' + n : null; }
+    if (e.type === 'care' || e.type === 'pickup') return `${e.type}:${d.own ? '~' : ''}${d.place || 'Daycare'}`;   // (each place's drop-off and pick-up)
+    if (e.type === 'study') return 'study:' + (d.kind || 'Homework');
     return null;
   }
+  /** Whether a routine keeps to the days of the week (daycare, school, homework, and lessons and clubs) rather than to every day. */
+  const weekly = key => /^(care|pickup|study):/.test(key) || /^play:(Sport|Swimming|Dance|Music|Club or group)$/.test(key);
 
   /** The window of `win` minutes that holds the most days: [{ o, m }] with one time per day (the one nearest the middle). */
   function bestWindow(occ, win) {
@@ -59,6 +66,8 @@ const Routine = (() => {
     if (key === 'solids' || type === 'meal') { const c = new Map(); for (const f of es.flatMap(e => d(e).foods || [])) c.set(f, (c.get(f) || 0) + 1); slot.foods = [...c].sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]); }
     if (key === 'solids') slot.kind = 'solids';
     if (type === 'meal') slot.meal = key.slice(5);
+    if (type === 'care' || type === 'pickup') { const d0 = d(es[es.length - 1]); slot.place = d0.place || 'Daycare'; if (d0.own) slot.own = true; }
+    if (type === 'study') { slot.kind = key.slice(6); const m = es.map(e => +d(e).min).filter(x => x > 0); if (m.length) slot.minutes = Math.round(median(m)); }
     else if (type === 'feed') {
       const bottles = es.filter(e => d(e).kind === 'bottle' || d(e).kind === 'cup');   // (a cup of milk is measured like a bottle)
       slot.kind = bottles.length * 2 > es.length ? 'bottle' : 'breast';   // what it usually is
@@ -79,7 +88,7 @@ const Routine = (() => {
     const logged = new Set(recent.map(e => dayStart(e.ts))).size, need = Math.max(MIN_DAYS, Math.floor(logged / 2) + 1);
     if (logged < MIN_DAYS) return { slots: [], logged, need, enough: false };
     const groups = new Map();
-    for (const e of recent) { const k = keyOf(e); if (k) { if (!groups.has(k)) groups.set(k, []); groups.get(k).push({ e, day: dayStart(e.ts), m: minutesOf(e.ts) }); } }
+    for (const e of recent) { const k = keyOf(e); if (k && !weekly(k)) { if (!groups.has(k)) groups.set(k, []); groups.get(k).push({ e, day: dayStart(e.ts), m: minutesOf(e.ts) }); } }
     const slots = [];
     for (const [key, occ] of groups) {
       let left = occ;
@@ -90,7 +99,33 @@ const Routine = (() => {
         const used = new Set(best.picked.map(x => x.o)); left = left.filter(o => !used.has(o));
       }
     }
+    slots.push(...byWeekday(events, now, window));
     return { slots: slots.sort((a, b) => inDay(a.at) - inDay(b.at) || a.key.localeCompare(b.key)), logged, need, enough: true };
+  }
+
+  /** The slots that keep to the days of the week (see the top): each with `weekdays` (0 is Sunday) and how many times it came back. */
+  function byWeekday(events, now, window) {
+    const today = dayStart(now), from = back(today, WEEKS * 7), by = new Map();
+    for (const e of events) {
+      const k = e.ts >= from && e.ts < today ? keyOf(e) : null;
+      if (!k || !weekly(k)) continue;
+      const w = new Date(e.ts).getDay(), days = by.get(k) || new Map(); by.set(k, days);
+      if (!days.has(w)) days.set(w, []);
+      days.get(w).push({ e, day: dayStart(e.ts), m: minutesOf(e.ts) });
+    }
+    const out = [];
+    for (const [key, days] of by) {
+      const found = [];
+      for (const [w, occ] of days) { const best = bestWindow(occ, window); if (best.picked.length >= MIN_DAYS) found.push({ w, picked: best.picked, at: median(best.picked.map(x => x.m)) }); }
+      // the days at about the same time make one slot; a day at another time (a late start on Wednesdays) a slot of its own
+      found.sort((a, b) => a.at - b.at);
+      let cur = null;
+      for (const f of found) {
+        if (cur && f.at - cur.at <= window) { cur.days.push(f.w); cur.picked.push(...f.picked); }
+        else { cur = { days: [f.w], picked: [...f.picked], at: f.at }; out.push([key, cur]); }
+      }
+    }
+    return out.map(([key, g]) => ({ ...slotOf(key, g.picked, g.picked.length), weekdays: g.days.sort((a, b) => a - b) }));
   }
 
   /** How each slot is going in the routine's day that `now` falls in (6 AM to 6 AM): { state: 'done' (with the entry), 'now', 'later'
@@ -98,7 +133,8 @@ const Routine = (() => {
       come (that day, or else the first of the next day: `tomorrow`). */
   function today(slots, events, now = Date.now(), { window = WINDOW } = {}) {
     const d0 = dayOf(now), mine = events.filter(e => e.ts >= back(d0, 1) && e.ts < back(d0, -2));
-    const out = slots.map(s => ({ slot: s, at: timeIn(d0, s.at), state: 'later', entry: null }));
+    const on = d => s => !s.weekdays || s.weekdays.includes(new Date(d).getDay());   // (school days only, for the slots that keep to them)
+    const out = slots.filter(on(d0)).map(s => ({ slot: s, at: timeIn(d0, s.at), state: 'later', entry: null }));
     const taken = new Set();
     for (const o of [...out].sort((a, b) => a.at - b.at)) {
       let best = null;
@@ -108,11 +144,11 @@ const Routine = (() => {
       else if (now > o.at) o.state = 'past';
     }
     const ahead = out.filter(o => o.state === 'now' || o.state === 'later').sort((a, b) => a.at - b.at)[0];
-    const first = [...out].sort((a, b) => a.at - b.at)[0];
-    const at = first && timeIn(back(d0, -1), first.slot.at);
-    const next = ahead ? { ...ahead, tomorrow: false } : first ? { slot: first.slot, at, state: at - now <= window * MIN ? 'now' : 'later', entry: null, tomorrow: true } : null;
+    const d1 = back(d0, -1), first = slots.filter(on(d1)).sort((a, b) => inDay(a.at) - inDay(b.at))[0];
+    const at = first && timeIn(d1, first.at);
+    const next = ahead ? { ...ahead, tomorrow: false } : first ? { slot: first, at, state: at - now <= window * MIN ? 'now' : 'later', entry: null, tomorrow: true } : null;
     return { list: out, next };
   }
 
-  return { WINDOW, DAYS, MIN_DAYS, DAY_START, find, today, keyOf };
+  return { WINDOW, DAYS, MIN_DAYS, DAY_START, WEEKS, find, today, keyOf };
 })();
