@@ -2,6 +2,7 @@
 
 A **phone app** (Android and iOS; Windows and Mac later) for tracking a newborn's day: feeds, pee/poo, sleep, night wakings,
 vomit, play, health observations and medication, with a calendar and easy-to-read stats. Built with plain web code wrapped by Capacitor.
+To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 
 ## Features
 - **Day view**: one-tap entry buttons, tick-box chips, time defaults to now with "5 min ago" shortcuts; tap an entry to edit/delete
@@ -130,6 +131,8 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 npm install && npm run sync     # then npm run android / npm run ios / npm run apk
 npm test                        # database rules + end-to-end tests
 ```
+- **[INSTALL.md](INSTALL.md)**: installing on Android phones and iPhones, building from source, running the tests, and the saved
+  versions with how to restore one
 - **[SETUP.md](SETUP.md)**: Supabase, sign-in hardening, roles and permissions, cloud providers, privacy notes
 - **[TESTING.md](TESTING.md)**: what the automated tests prove, what they can't, and the physical-device release checklist
 - **[MOBILE.md](MOBILE.md)**: building and releasing the Android and iOS apps, store checklist
