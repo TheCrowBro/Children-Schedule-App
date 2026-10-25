@@ -68,7 +68,7 @@ const Stages = (() => {
     toddler: ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'care', 'med', 'wake', 'play', 'vomit'],
     preschool: ['meal', 'potty', 'sleep', 'care', 'play', 'health', 'med', 'wake', 'vomit', 'diaper', 'feed'],
     school: ['meal', 'care', 'sleep', 'play', 'study', 'health', 'med', 'wake', 'vomit', 'potty', 'diaper', 'feed'],
-    teen: ['meal', 'sleep', 'play', 'study', 'health', 'med', 'care', 'wake', 'vomit', 'potty', 'diaper', 'feed'],   // (teenagers get about on their own)
+    teen: ['meal', 'sleep', 'play', 'study', 'health', 'med', 'care', 'vomit'],   // (the baby days are over: no feeds, diapers, potty or night wakings; the Everyone page keeps them while a younger child needs them)
   };
   DAY.grown = DAY.teen;
   /** The buttons for the stages `ids` (several children: everything any of them needs, each at its best place). `used` counts each

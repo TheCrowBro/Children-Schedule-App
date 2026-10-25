@@ -14,7 +14,10 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   no longer needs behind **More** (anything the family has logged three times in two weeks keeps its button). The groups are named for the
   children's ages (Feeding becomes Meals, Diapers becomes Potty), the day starts "2 years 3 months", a toddler's health notes have an older
   child's symptoms (and a fever alone is no longer flagged as an emergency), and the Routine, Stats and the doctor's report count meals and
-  the potty. On the month birthday a new stage starts, the milestone sheet says what changed and offers to keep the birthday as a big moment
+  the potty. On the month birthday a new stage starts, the milestone sheet says what changed and offers to keep the birthday as a big moment.
+  From the teenage years the baby days are left out: a teenager's pages have no Feed, Diaper, Potty or Night waking buttons, no diapers or
+  potty in the legends, no formula setting, and a Guide without the solids, the baby medicines, the month-by-month milestones and the
+  newborn worries. The Everyone page keeps all of it while a younger child is in the family
 - **Meals**: breakfast, lunch, dinner or a snack (guessed from the time), the foods (from the same list as a baby's first foods, with
   allergies flagged), and how much was eaten; each meal of the day keeps its own time in the routine
 - **Potty training**: pee, poo, both, nothing yet or stayed dry; on the potty, the toilet or an accident; and whether they asked to go.

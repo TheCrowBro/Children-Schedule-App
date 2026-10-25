@@ -704,9 +704,15 @@ function tickHands() {
   svg.querySelectorAll('.hand').forEach(el => el.setAttribute('transform', `rotate(${h[el.dataset.hand].toFixed(2)} ${svg.dataset.cx} ${svg.dataset.cy})`));
 }
 setInterval(tickHands, 20000);
+/** The groups that belong on this page: those with entries in `evs`, and those with something to log for the children's ages (daycare
+    and school only once a child may go; no diapers or potty on a teenager's page). The Everyone page keeps them all while a younger
+    child needs them. */
+function groupsOnPage(evs) {
+  const { shown, more } = dayButtons(), can = new Set([...shown, ...more]);
+  return GROUPS.filter(g => evs.some(e => g.types.includes(e.type)) || g.types.some(t => can.has(t)));
+}
 function clockLegend(evs) {
-  const { shown, more } = dayButtons(), can = new Set([...shown, ...more]);   // (daycare and school only once a child may go)
-  return `<div class="clegend">${GROUPS.map(g => { const n = evs.filter(e => g.types.includes(e.type)).length; if (g.id === 'care' && !n && !g.types.some(t => can.has(t))) return '';
+  return `<div class="clegend">${groupsOnPage(evs).map(g => { const n = evs.filter(e => g.types.includes(e.type)).length;
     return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))} <b>${n}</b></span>`; }).join('')}</div>`;
 }
 /** One twirl-down per group (pee and poo together, sleep and night wakings together…), each with a one-line summary. */
@@ -806,12 +812,13 @@ function monthView() {
     if (away) anyAway = true; if (al) anyAllergy = true; if (mo) anyMoment = true; if (pn) anyPlan = true;
     cells += `<button data-day="${t}" class="${t === viewDay ? 'sel' : ''} ${t === today ? 'today' : ''} ${away ? 'tripday' : ''} ${al ? 'allergyday' : ''} ${mo ? 'momentday' : ''} ${pl.length ? 'planday' : ''} ${hol ? 'holday' : ''}"${away ? ` style="${tv}"` : ''} aria-label="${esc([fmtDate(t), away && __('travelling'), al && __('first allergic reaction: {foods}', { foods: andList(al.map(x => __(x.allergy.food))) }), mo && __('big moment: {what}', { what: andList(mo) }), pn && __n('{n} on the calendar', '{n} on the calendar', pn), evs.length && __n('{n} entry', '{n} entries', evs.length)].filter(Boolean).join(', '))}">${d}${al ? '<i class="almark" aria-hidden="true">!</i>' : ''}${mo ? '<i class="mmark" aria-hidden="true">★</i>' : ''}${pn ? '<i class="pmark" aria-hidden="true">◆</i>' : ''}<span class="dots">${GROUPS.filter(g => evs.some(e => g.types.includes(e.type))).map(g => `<i class="dot" style="--c:var(--g-${g.id})"></i>`).join('')}</span></button>`;
   }
+  const inMonth = scoped().filter(e => e.ts >= first.getTime() && e.ts < new Date(y, m + 1, 1).getTime());
   return `
   <div class="datenav"><button data-month="-1" aria-label="${__h('Previous month')}">‹</button>
     <div class="d">${esc(calMonth.toLocaleDateString(I18n.locale(), { month: 'long', year: 'numeric' }))}</div>
     <button data-month="1" aria-label="${__h('Next month')}">›</button></div>
   <div class="cal">${weekLetters().map(d => `<div class="h">${esc(d)}</div>`).join('')}${cells}</div>
-  <div class="legend">${GROUPS.map(g => `<span><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))}</span>`).join('')}${anyAway ? `<span class="tripkey"><i></i>${__h('Travelling (its own colours)')}</span>` : ''}${anyPlan ? `<span class="plankey"><i>◆</i>${__h('On the calendar')}</span>` : ''}${anyAllergy ? `<span class="alkey"><i class="almark">!</i>${__h('First allergic reaction')}</span>` : ''}${anyMoment ? `<span class="mmkey"><i class="mmark">★</i>${__h('Big moment')}</span>` : ''}</div>
+  <div class="legend">${groupsOnPage(inMonth).map(g => `<span><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))}</span>`).join('')}${anyAway ? `<span class="tripkey"><i></i>${__h('Travelling (its own colours)')}</span>` : ''}${anyPlan ? `<span class="plankey"><i>◆</i>${__h('On the calendar')}</span>` : ''}${anyAllergy ? `<span class="alkey"><i class="almark">!</i>${__h('First allergic reaction')}</span>` : ''}${anyMoment ? `<span class="mmkey"><i class="mmark">★</i>${__h('Big moment')}</span>` : ''}</div>
   ${monthTrip()}
   ${Sync.can('add') ? `<button class="planbtn" data-plannew><span class="tm">🗓</span><span><b>${__h('Add to the calendar')}</b><small>${__h('Exams, appointments, matches, lessons, school holidays…')}</small></span></button>` : ''}
   ${monthDay()}
@@ -1427,29 +1434,31 @@ function guideView() {
   const newborn = `<h2>${__h('Common with newborns')}</h2>${Guide.COMMON.map(c => card('g', c)).join('')}`;
   const toddler = `<h2>${__h('Toddlers and preschoolers')}</h2>${Guide.TODDLER.map(c => card('t', c)).join('')}`;
   // the topics of the child's stage first: a toddler's, a school child's or a teenager's; and those of the next stage near the end, as
-  // what comes next (the school years for a preschooler, the teenage years from 10)
+  // what comes next (the school years for a preschooler, the teenage years from 10). A teenager's Guide leaves the baby years out: the
+  // solids, the baby medicines, the milestones and the newborn worries. With Everyone chosen they stay while a younger child is in the family.
   const school = `<h2>${__h('School age')}</h2>${Guide.SCHOOL.map(c => card('s', c)).join('')}`, schoolAge = allFrom('school');
   const teens = `<h2>${__h('Teenagers')}</h2>${Guide.TEEN.map(c => card('n', c)).join('')}`, teenAge = allFrom('teen'), k0 = kidById(viewKid()), ten = !!(k0 && k0.birth && Stages.months(k0.birth, now) >= 120);
+  const babyDays = !(curKid() === 'all' ? kids() : pageKids()).every(k => Stages.from(stageOf(k), 'teen'));
   return `${doctorHtml()}
   ${Sync.can('health') && kidById(viewKid()) ? recordButton(kidById(viewKid())) : ''}
   <p class="note emer"><b>${__h('Emergency?')}</b> ${older ? __h('Call {sos} for blue lips or face, trouble breathing, a child who is hard to wake, or a seizure.', { sos }) : __h('Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.', { sos })}</p>
   ${cur.length ? `<h2>${__h('Right now')}</h2>${cur.map(nowCard).join('')}` : ''}
   ${teenAge ? teens : schoolAge ? school : older ? toddler : ''}
-  <h2>${__h('Food')}</h2>
+  ${babyDays ? `<h2>${__h('Food')}</h2>
   <details class="gd" data-grp="gsolids" ${openGroups.has('gsolids') ? 'open' : ''}><summary><span class="gi">🥄</span><span class="gt"><b>${__h('Starting solid foods')}</b><small>${__h('From around 6 months, with the key allergens early')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
-    ${solidsGuideHtml(sos)}</details>
+    ${solidsGuideHtml(sos)}</details>` : ''}
   ${older ? '' : newborn}
-  <h2>${__h('Medicines')}</h2>
-  ${medsHtml()}
+  ${babyDays ? `<h2>${__h('Medicines')}</h2>
+  ${medsHtml()}` : ''}
   <h2>${__h('Health checks')}</h2>${Guide.CHECKS.map(c => card('h', c)).join('')}
   ${older ? '' : toddler}
-  <h2>${__h('Month by month')}</h2>
-  ${ms.map(([n, M]) => milestoneDetails(+n, M)).join('')}
+  ${babyDays ? `<h2>${__h('Month by month')}</h2>
+  ${ms.map(([n, M]) => milestoneDetails(+n, M)).join('')}` : ''}
   ${!schoolAge && allFrom('preschool') ? school : ''}${schoolAge && !teenAge && ten ? teens : ''}
-  ${older ? newborn : ''}
+  ${older && babyDays ? newborn : ''}
   <p class="note">${__h("General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.")}</p>
   ${I18n.lang() === 'en' ? '' : `<p class="note">${__h('This translation was made with the help of AI and may have mistakes. In an emergency, call {sos}. If something reads wrong, tell us: More → Language → Report a language issue.', { sos })}</p>`}
-  ${picCreditsHtml()}`;
+  ${babyDays ? picCreditsHtml() : ''}`;
 }
 /** A common worry's pictures, in a twirl-down of their own inside its card. It stays shut until someone chooses to look, and shuts again
     when the card closes or the Guide is left, so nobody comes across them by surprise. */
@@ -1982,8 +1991,8 @@ function kidsHtml() {
       ${k.birth ? `<p class="note kstage">${esc([__(Stages.byId(stageOf(k)).name), Stages.age(k.birth, Date.now())].filter(Boolean).join(' · '))}</p>` : ''}
       <label class="f">${__h('Birth date')}</label><input type="date" data-kb="${k.id}" value="${esc(k.birth)}" ${dis}>
       <label class="f">${__h('Boy or girl')}</label><div class="chips">${chip('ks-' + k.id, 'boy', __h('Boy'), k.sex === 'boy', '', true)}${chip('ks-' + k.id, 'girl', __h('Girl'), k.sex === 'girl', '', true)}${chip('ks-' + k.id, '', __h('Not set'), !k.sex, '', true)}</div>
-      <label class="f">${__h('Usual formula')}</label>${formulaPicker({ sel: `data-kfs="${k.id}" aria-label="${__h('Usual formula')}"`, txt: `data-kft="${k.id}" aria-label="${__h('Formula name')}"` }, usualFormula(k), recentFormulas([k]), dis)}
-      <p class="note" style="margin:4px 0 0">${learnedFormula(k) && learnedFormula(k) !== k.formula ? __h('Picked up from the feeds: it was given at every formula feed three days running.') : __h('When one formula is given at every formula feed three days running, it becomes the usual one.')}</p>
+      ${Stages.from(stageOf(k), 'teen') ? '' : `<label class="f">${__h('Usual formula')}</label>${formulaPicker({ sel: `data-kfs="${k.id}" aria-label="${__h('Usual formula')}"`, txt: `data-kft="${k.id}" aria-label="${__h('Formula name')}"` }, usualFormula(k), recentFormulas([k]), dis)}
+      <p class="note" style="margin:4px 0 0">${learnedFormula(k) && learnedFormula(k) !== k.formula ? __h('Picked up from the feeds: it was given at every formula feed three days running.') : __h('When one formula is given at every formula feed three days running, it becomes the usual one.')}</p>`}
       <label class="f">${__h('Allergies')}</label>${(k.allergies || []).length ? k.allergies.map(a => `<div class="stat alrow"><span>⚠️ <b>${__h(a.food)}</b><br><small>${esc([a.date && __('first reaction {date}', { date: fmtDay(a.date) }), a.note].filter(Boolean).join(' · '))}</small></span>${can ? `<button class="btn d" data-alrm="${k.id}" data-food="${esc(a.food)}" aria-label="${__h('Remove {name}', { name: __(a.food) })}" style="padding:6px 12px">✕</button>` : ''}</div>`).join('') : `<p class="note" style="margin:0">${__h('None marked.')}</p>`}
       ${can ? `<button class="btn" data-aladd="${k.id}" style="margin-top:6px">⚠️ ${__h('Mark an allergy')}</button>` : ''}
       ${Sync.can('health') ? recordButton(k) : ''}
