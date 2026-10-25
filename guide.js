@@ -155,6 +155,14 @@ const Guide = (() => {
     { id: 'screens', icon: '📖', title: N_('Screens'), body: N_('Under 18 months, no screens apart from video calls. From 18 months to 2 years, a little good content watched together. From 2 to 5, up to an hour a day of good programmes, ideally with you. Keep screens out of the bedroom and off for an hour before bed.') },
     { id: 'car', icon: '🚗', title: N_('Car seats'), body: N_('Keep your child rear-facing for as long as the seat allows: it protects the head and neck best. Then a forward-facing seat with a harness, then a booster seat until the adult seat belt fits, usually between 8 and 12 years. Check the seat\'s limits and the rules where you live.') },
   ];
+  // Health checks, for every age: what vaccines, checkups and growth charts are about (the health record keeps the child's own).
+  const CHECKS = [
+    { id: 'vaccines', icon: '💉', title: N_('Vaccines'), body: N_('Vaccines protect children from serious illnesses, and work best on time, following your country\'s schedule: your doctor, nurse or health visitor has it. A sore, red spot where the needle went in, a mild fever, or a fussy or sleepy day or two are common afterwards. Keep each dose in the health record.'),
+      call: N_('Call {sos} straight away for trouble breathing, swelling of the face or throat, or a child who is floppy or hard to wake after a vaccine. Call your doctor for a fever of 40°C (104°F) or more, crying for 3 hours or more, or anything that worries you.') },
+    { id: 'checkups', icon: '🏥', title: N_('Checkups'), body: N_('Regular checkups follow how your child grows and develops, check their hearing and eyes, and give the vaccines that are due. There are several in the first year, and they get further apart after that. In the US they are usually at 3 to 5 days, 1, 2, 4, 6, 9, 12, 15, 18, 24 and 30 months, then every year from 3; other countries have their own. The dentist every 6 months from the first tooth. Write your questions down before you go.') },
+    { id: 'growth', icon: '📏', title: N_('Growth charts'), body: N_('Each measurement is compared with children of the same age and sex. The 50th percentile is the middle: half of children are smaller and half are bigger. Anywhere from the 3rd to the 97th is usual. What matters most is that your child keeps growing along their own line. The app uses the CDC growth charts; your doctor may use another, such as the WHO\'s.'),
+      call: N_('Talk to your doctor if your child crosses two of the lines on the chart, stops growing, or loses weight.') },
+  ];
   const STAGE_NOTES = {
     school: N_('The school years: friends, learning and growing independence. Children of 6 to 12 need 9 to 12 hours of sleep and at least an hour of active play a day. A yearly checkup, the dentist every 6 months, and the vaccines on your country\'s schedule.'),
     teen: N_('The teenage years: growing fast, more independence, and big changes in body and mood. Teenagers need 8 to 10 hours of sleep and at least an hour of activity a day. A yearly checkup, the dentist every 6 months, and the vaccines due on your country\'s schedule. Talk openly, and give them more say as they grow.'),
@@ -242,5 +250,5 @@ const Guide = (() => {
   const cleanDetails = d => { d = d && typeof d === 'object' ? d : {}; return { relation: str(d.relation, 40), phone: str(d.phone, 30), work: str(d.work, 80), workPhone: str(d.workPhone, 30), notes: str(d.notes, 300) }; };
   /** A tel: link target, or '' when the text has no usable number. */
   const tel = p => { const n = String(p || '').replace(/[^\d+]/g, '').replace(/(?!^)\+/g, ''); return n.replace(/\D/g, '').length >= 3 ? 'tel:' + n : ''; };
-  return { COMMON, PICS, picSrc, credits, MILESTONES, TODDLER, STAGE_NOTES, MEDS_INTRO, MEDS, NEVER, sos, local, monthsOld, cleanDoctor, cleanDetails, tel };
+  return { COMMON, PICS, picSrc, credits, MILESTONES, TODDLER, CHECKS, STAGE_NOTES, MEDS_INTRO, MEDS, NEVER, sos, local, monthsOld, cleanDoctor, cleanDetails, tel };
 })();

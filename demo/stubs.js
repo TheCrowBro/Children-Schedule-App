@@ -169,6 +169,16 @@ function demoDb() {
   moment(ella, at(new Date(t0 - 20 * DAYMS), 9), 'First day of preschool', 'Waved goodbye at the gate'); moment(ella, at(new Date(t0 - 5 * DAYMS), 17), 'Rode a tricycle');
   ks.slice(0, 3).forEach(k => { moment(k, at(born, 6), 'Born'); moment(k, at(plus(born, 0, 4), 14), 'Came home'); });
   moment(ks[1], at(plus(born, 1, 12), 8), 'First smile', 'At Ella, of course');
+  // the health record: Ella's measurements, vaccines and visits since birth, and the triplets' first ones
+  const rec = (kid, t, type, data, note = '') => events.push({ id: 'd' + (n++), type, ts: t, data, note, updated: Date.now(), child: kid.id });
+  [[0, 3.4, 50, 34.5], [2, 5.1, 57, 38.5], [4, 6.4, 62, 40.5], [6, 7.3, 65.5, 42], [9, 8.2, 70, 43.5], [12, 9, 74, 44.8], [18, 10.4, 80.5, 46.3], [24, 11.6, 86, 47.2], [30, 12.7, 91, 47.8], [36, 13.9, 95.5, 48.4]]
+    .forEach(([m, weight, height, head]) => rec(ella, at(plus(eb, m, m ? 2 : 0), 10), 'growth', { weight, height, head }));
+  [[0, 'Hepatitis B', 1], [2, '6-in-1 (diphtheria, tetanus, whooping cough, polio, Hib, hepatitis B)', 1], [2, 'Pneumococcal (PCV)', 1], [2, 'Rotavirus', 1], [4, '6-in-1 (diphtheria, tetanus, whooping cough, polio, Hib, hepatitis B)', 2],
+    [4, 'Rotavirus', 2], [6, '6-in-1 (diphtheria, tetanus, whooping cough, polio, Hib, hepatitis B)', 3], [12, 'Measles, mumps and rubella (MMR)', 1], [12, 'Pneumococcal (PCV)', 2], [12, 'Chickenpox (varicella)', 1], [30, 'Flu', 1]]
+    .forEach(([m, name, dose]) => rec(ella, at(plus(eb, m, m ? 2 : 1), 11), 'vaccine', { name, dose, place: 'Riverside Clinic' }));
+  [[0.5, 'Checkup', 'Dr Lee', ''], [2, 'Checkup', 'Dr Lee', ''], [6, 'Checkup', 'Dr Lee', ''], [12, 'Checkup', 'Dr Lee', ''], [20, 'Unwell', 'Dr Lee', 'Ear infection'], [24, 'Checkup', 'Dr Lee', ''], [30, 'Dentist', 'Dr Okafor', 'First visit'], [36, 'Checkup', 'Dr Lee', '']]
+    .forEach(([m, kind, who, why]) => rec(ella, at(plus(eb, Math.floor(m), m % 1 ? 14 : 2), 10), 'visit', { kind, who, ...(why ? { why } : {}) }, kind === 'Unwell' ? 'Antibiotics for a week; better in two days' : ''));
+  ks.slice(0, 3).forEach((k, i) => { rec(k, at(born, 7), 'growth', { weight: [2.4, 2.6, 2.3][i], height: [45, 46.5, 44.5][i], head: [32, 32.5, 31.5][i] }); rec(k, at(born, 9), 'vaccine', { name: 'Hepatitis B', dose: 1 }); rec(k, at(plus(born, 0, 10), 10), 'visit', { kind: 'Checkup', who: 'Dr Lee' }); });
   // a car trip earlier in the week, with two stretches on the road (travel days keep their own look)
   const away = t0 - 4 * DAYMS, leg = (a, b) => ({ id: 'd' + (n++), type: 'leg', ts: away + a * h, end: away + b * h, data: { means: 'car' }, note: '', updated: Date.now() });
   events.push({ id: 'd' + (n++), type: 'trip', ts: away, end: t0 - 2 * DAYMS, data: { means: 'car' }, note: '', updated: Date.now() }, leg(9, 11.5), leg(13.5, 15.8));

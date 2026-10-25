@@ -12,7 +12,7 @@ const GROUPS = [
   { id: 'sleep', label: N_('Sleep & night wakings'), icon: '😴', types: ['sleep', 'wake'] },
   { id: 'vomit', label: N_('Vomit'), icon: '🤮', types: ['vomit'] },
   { id: 'play', label: N_('Play'), icon: '🧸', types: ['play'] },
-  { id: 'health', label: N_('Health & meds'), icon: '🩺', types: ['health', 'med'] },
+  { id: 'health', label: N_('Health & meds'), icon: '🩺', types: ['health', 'med', 'vaccine', 'visit', 'growth'] },
 ];
 const RING = ['sleep', 'feed', 'diaper', 'vomit', 'play', 'health'];
 const GCOLOR = {
@@ -34,7 +34,14 @@ const TYPES = {
   meal:   { label: N_('Meal'),     noun: N_('meal'),       icon: '🍽' },
   potty:  { label: N_('Potty'),    noun: N_('potty'),      icon: '🚽' },
   moment: { label: N_('Big moment'), noun: N_('big moment'), icon: '🌟' },
+  vaccine: { label: N_('Vaccine'), noun: N_('vaccine'), icon: '💉' },
+  visit:  { label: N_('Doctor visit'), noun: N_('doctor visit'), icon: '🏥' },
+  growth: { label: N_('Growth'), noun: N_('measurement'), icon: '📏' },
 };
+// Health notes, medicines and the health record (vaccines, doctor visits, measurements) are private: only people allowed to see health
+// notes get them, under their own key (e2ee.js keeps the same list).
+const PRIVATE = ['health', 'med', 'vaccine', 'visit', 'growth'];
+const isPrivate = t => PRIVATE.includes(t);
 for (const [t, T] of Object.entries(TYPES)) T.color = colorOf(t, GCOLOR.light);   // plain hex (light) for the few places that need one
 const INK = '#2a241c';   // the dark the type colours are mixed with, so icons and text in them stay easy to read
 // The answers below are saved in the log in English (so every phone reads them the same) and shown in each phone's language.
@@ -64,6 +71,11 @@ const mealAt = t => { const h = new Date(t).getHours() + new Date(t).getMinutes(
 // The potty: what happened (one answer), and where.
 const POTTY = [['pee', '💧 ', N_('Pee')], ['poo', '💩 ', N_('Poo')], ['both', '', N_('Pee + Poo')], ['none', '', N_('Nothing yet')], ['dry', '', N_('Stayed dry')]];
 const POTTY_WHERE = [N_('Potty'), N_('Toilet'), N_('Accident')];
+// The health record: vaccines (saved in English and shown in each phone's language; one typed in is kept as typed) and kinds of visit.
+const VACCINES = [N_('6-in-1 (diphtheria, tetanus, whooping cough, polio, Hib, hepatitis B)'), N_('Diphtheria, tetanus and whooping cough (DTaP)'), N_('Polio (IPV)'), N_('Hib'), N_('Hepatitis B'),
+  N_('Rotavirus'), N_('Pneumococcal (PCV)'), N_('MenB'), N_('MenC'), N_('MenACWY'), N_('Measles, mumps and rubella (MMR)'), N_('MMRV (with chickenpox)'), N_('Chickenpox (varicella)'),
+  N_('Hepatitis A'), N_('Flu'), N_('COVID-19'), N_('RSV'), N_('BCG (tuberculosis)'), N_('HPV'), N_('Tetanus, diphtheria and whooping cough booster (Tdap)'), N_('Typhoid'), N_('Japanese encephalitis'), N_('Yellow fever')];
+const VISITS = [N_('Checkup'), N_('Unwell'), N_('Dentist'), N_('Eyes'), N_('Hearing'), N_('Specialist'), N_('Hospital'), N_('Urgent care or ER')];
 
 // ---------- Storage ----------
 // The log lives in memory (`db`) and is persisted by store.js (IndexedDB). It is loaded once at startup, before the first render.
@@ -117,6 +129,19 @@ const toLocalInput = t => { const d = new Date(t); return `${d.getFullYear()}-${
 const fromLocalInput = v => new Date(v).getTime();
 const fmtDur = m => { m = Math.round(m); if (m < 60) return __('{m}m', { m }); const h = Math.floor(m / 60); return m % 60 ? __('{h}h {m}m', { h, m: m % 60 }) : __('{h}h', { h }); };
 const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+/** A number the way the app's language writes it (Western digits), with at most `d` decimals. */
+const fmtNum = (x, d = 1) => new Intl.NumberFormat(I18n.locale(), { maximumFractionDigits: d }).format(x);
+// Weight and length: in kg and cm, or in pounds and inches (More → Units; in North America by default). Saved in kg and cm.
+const LB = 0.45359237, IN = 2.54;
+const usUnits = () => (db.meta.units ? db.meta.units === 'us' : myRegion() === 'na');
+/** A weight (kg) in the phone's units: 12.4 kg, or 27 lb 5 oz. */
+function fmtWeight(kg) {
+  if (!usUnits()) return __('{n} kg', { n: fmtNum(kg, 2) });
+  const oz = Math.round((kg / LB) * 16);
+  return __('{lb} lb {oz} oz', { lb: Math.floor(oz / 16), oz: oz % 16 });
+}
+/** A length (cm) in the phone's units: 86.5 cm, or 34.1 in. */
+const fmtLength = cm => (usUnits() ? __('{n} in', { n: fmtNum(cm / IN, 1) }) : __('{n} cm', { n: fmtNum(cm, 1) }));
 const r1 = n => Math.round(n * 10) / 10;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, Math.max(2200, String(msg).length * 60)); }   // longer messages stay longer
 
@@ -144,6 +169,9 @@ function describeEntry(e) {
       return [d.accident ? (what ? __('Accident: {what}', { what }) : __('Accident')) : what, [!d.dry && !d.accident && __(d.where || 'Potty'), d.asked && __('asked to go')].filter(Boolean).join(' · ')];
     }
     case 'moment': return [d.own ? d.what || '' : __(d.what || 'Big moment'), ''];
+    case 'vaccine': return [d.own ? d.name || '' : __(d.name || 'Vaccine'), [d.dose && __('dose {n}', { n: d.dose }), d.place].filter(Boolean).join(' · ')];
+    case 'visit': return [__(d.kind || 'Checkup'), [d.who, d.why].filter(Boolean).join(' · ')];
+    case 'growth': return [[d.weight && fmtWeight(d.weight), d.height && fmtLength(d.height)].filter(Boolean).join(' · ') || __('Measurement'), d.head ? __('head {size}', { size: fmtLength(d.head) }) : ''];
     case 'trip': return [__('Trip {by}', { by: __(Travel.MEANS[Travel.meansOf(e)].by) }), `${fmtShort(e.ts)} – ${fmtShort(Travel.ends(e) - 1)}`];
     case 'leg': return [__(Travel.MEANS[Travel.meansOf(e)].moving), Number.isFinite(e.end) ? fmtDur((e.end - e.ts) / MIN) : __('under way')];
   }
@@ -269,7 +297,8 @@ function render() {
     kb.innerHTML = (tab === 'day' ? `<button data-kid="all" class="${curKid() === 'all' ? 'on' : ''}" aria-pressed="${curKid() === 'all'}" style="--k:#64759f"><span class="av" style="--k:#64759f">★</span>${__h('All')}</button>` : '')
       + kids().map(k => `<button data-kid="${k.id}" class="${dayKid() === k.id ? 'on' : ''}" aria-pressed="${dayKid() === k.id}" style="--k:${k.color};--kl:${Kids.mix(k.color, '#ffffff', 0.45)}">${avatar(k)}${esc(kidName(k))}</button>`).join('');
   }
-  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  if (tab === 'health' && !Sync.can('health')) tab = recordFrom;   // (access to health notes was taken away)
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (tab === 'health' ? recordFrom : tab)));
   const sleepers = kids().map(k => [k, activeSleep(k.id)]).filter(x => x[1]), bn = $('#sleepBanner');
   bn.hidden = !sleepers.length;
   if (sleepers.length) {
@@ -277,7 +306,7 @@ function render() {
     bn.querySelectorAll('[data-wake]').forEach(b => b.onclick = () => { const s = db.events.find(x => x.id === b.dataset.wake); if (!s) return; if (!Sync.can('edit', s)) return toast(__("You can't change this entry")); s.end = Date.now(); s.updated = stamp(); save(); render(); toast(__('Sleep saved')); });
     Icons.paint(bn);
   }
-  $('#view').innerHTML = { day: dayView, routine: routineView, month: monthView, stats: statsView, guide: guideView, family: Acct.familyHtml, more: moreView }[tab]();
+  $('#view').innerHTML = { day: dayView, routine: routineView, month: monthView, stats: statsView, guide: guideView, family: Acct.familyHtml, more: moreView, health: recordView }[tab]();
   bind(); Icons.paint($('#view')); Acct.updateBadge();
   if (!solidsCheck()) milestoneCheck(); autoTour();
 }
@@ -462,7 +491,10 @@ function groupSummary(g, list) {
     }
     case 'sleep': { const sl = list.filter(e => e.type === 'sleep'), w = list.length - sl.length, m = sl.reduce((a, e) => a + ((e.end || Date.now()) - e.ts) / MIN, 0); return [sl.length && `${__n('{n} sleep', '{n} sleeps', sl.length)} · ${fmtDur(m)}`, w && __n('{n} night waking', '{n} night wakings', w)].filter(Boolean).join(' · '); }
     case 'play': { const m = list.reduce((a, e) => a + (+e.data.min || 0), 0); return __n('{n} time', '{n} times', n) + (m ? ` · ${fmtDur(m)}` : ''); }
-    case 'health': { const h = list.filter(e => e.type === 'health').length; return [h && __n('{n} note', '{n} notes', h), n - h && __n('{n} medicine', '{n} medicines', n - h)].filter(Boolean).join(' · '); }
+    case 'health': {   // (and what went in the health record: vaccines, doctor visits, measurements)
+      const h = list.filter(e => e.type === 'health').length, m = list.filter(e => e.type === 'med').length, r = n - h - m;
+      return [h && __n('{n} note', '{n} notes', h), m && __n('{n} medicine', '{n} medicines', m), r && __n('{n} for the health record', '{n} for the health record', r)].filter(Boolean).join(' · ');
+    }
   }
   return __n('{n} time', '{n} times', n);
 }
@@ -483,9 +515,10 @@ function dayCounts(evs, day) {
     sleep: ['sleep', '😴', N_('Sleep'), sleeps.length ? fmtDur(mins) : 0, sleeps.length ? __n('{n} sleep', '{n} sleeps', sleeps.length) : ''], wakes: ['sleep', '🌙', N_('Night wakings'), of('wake').length, ''],
     solids: ['feed', '🥄', N_('Solids'), of('feed').length - feeds.length, ''], meals: ['feed', '🍽', N_('Meals'), of('meal').length, ''],
     potty: ['diaper', '🚽', N_('Potty'), pot.filter(e => !e.data.accident && (e.data.pee || e.data.poo)).length, oops ? __n('{n} accident', '{n} accidents', oops) : ''], vomit: ['vomit', '🤮', N_('Vomit'), of('vomit').length, ''],
-    play: ['play', '🧸', N_('Play'), play ? fmtDur(play) : of('play').length, ''], health: ['health', '🩺', N_('Health notes'), of('health').length, ''], meds: ['health', '💊', N_('Medicines'), of('med').length, ''] };
+    play: ['play', '🧸', N_('Play'), play ? fmtDur(play) : of('play').length, ''], health: ['health', '🩺', N_('Health notes'), of('health').length, ''], meds: ['health', '💊', N_('Medicines'), of('med').length, ''],
+    record: ['health', '📋', N_('Health record'), of('vaccine').length + of('visit').length + of('growth').length, ''] };
   // a baby's day starts with feeds and diapers; an older child's with meals and sleep (the rest show when there are any)
-  const order = older ? ['meals', 'sleep', 'feeds', 'potty', 'pee', 'poo', 'wakes', 'solids', 'vomit', 'play', 'health', 'meds'] : ['feeds', 'pee', 'poo', 'sleep', 'wakes', 'solids', 'meals', 'potty', 'vomit', 'play', 'health', 'meds'];
+  const order = older ? ['meals', 'sleep', 'feeds', 'potty', 'pee', 'poo', 'wakes', 'solids', 'vomit', 'play', 'health', 'meds', 'record'] : ['feeds', 'pee', 'poo', 'sleep', 'wakes', 'solids', 'meals', 'potty', 'vomit', 'play', 'health', 'meds', 'record'];
   const tiles = order.map(k => T[k]).filter((t, i) => i < (older ? 2 : 4) || t[3] || t[4]);
   return `<div class="tiles">${tiles.map(([g, ic, l, v, sub]) => `<div class="tile" style="--c:var(--g-${g})"><span class="tv">${ic} <b>${esc(v)}</b></span><span class="tl">${__h(l)}${sub ? `<small>${esc(sub)}</small>` : ''}</span></div>`).join('')}</div>`;
 }
@@ -497,7 +530,7 @@ function usedLately() {
   return n;
 }
 /** The Day page's buttons for the children's ages (stages.js), with what the family has been logging lately moved up: { shown, more }. */
-const dayButtons = () => Stages.buttons(pageKids().map(k => stageOf(k)), usedLately(), t => Sync.can('health') || (t !== 'health' && t !== 'med'));
+const dayButtons = () => Stages.buttons(pageKids().map(k => stageOf(k)), usedLately(), t => Sync.can('health') || !isPrivate(t));
 function quickButtons() {
   if (!Sync.can('add')) return '';
   const { shown, more } = dayButtons();
@@ -638,6 +671,7 @@ function statsView() {
   <div class="seg">${[7, 14, 30].map(n => `<button data-range="${n}" class="${n === statDays ? 'on' : ''}">${__hn('{n} day', '{n} days', n)}</button>`).join('')}</div>
   ${mine.length ? `<button class="btn pdfbtn" id="pdfBtn">📄 ${__h('Report for the doctor (PDF)')}</button>` : ''}
   ${kids().length > 1 ? `<h2>${esc(kidName(kidById(viewKid())))}</h2>` : ''}
+  ${Sync.can('health') ? recordButton(kidById(viewKid())) : ''}
   ${mine.length ? '' : `<div class="empty">${__h('Log a few entries and your stats will show up here.')}</div>`}
   ${lowWet ? `<div class="card alert">⚠️ ${__h('Fewer than 6 wet diapers/day on average. After the first week this can signal low intake – worth mentioning to your pediatrician.')}</div>` : ''}
   ${older ? card('🍽', N_('Meals'), [[N_('Meals per day'), per('meals')], [N_('Snacks per day'), per('snacks')], ...(sum('rated') ? [[N_('Ate most or all of it'), pct(sum('ateWell') / sum('rated'))]] : [])],
@@ -763,6 +797,23 @@ function reportBlocks(kidId, { days, every, notes }, now = Date.now()) {
       ...(meds.length ? [[__('Medicines given'), count(meds.map(e => [e.data.name || __('Medication'), e.data.dose].filter(Boolean).join(' ')))]] : []),
       ...(tried.size ? [[__('Foods tried (first time)'), [...tried.values()].map(([f, t]) => `${__(f)} (${fmtShort(t)})`).join(', ')]] : []),
     ] });
+  }
+  // the health record (for people who may see it): every measurement with its percentiles, every vaccine, and the period's visits
+  if (Sync.can('health')) {
+    const rec = t => db.events.filter(e => e.type === t && childOf(e) === kidId && e.ts < now).sort((a, b) => a.ts - b.ts);
+    const growth = rec('growth'), vaccines = rec('vaccine'), visits = rec('visit').filter(e => e.ts >= R.from), sexed = (k.sex === 'boy' || k.sex === 'girl') && k.birth;
+    const withPct = (kind, e, v, text) => { const p = sexed && Growth.percentile(kind, k.sex, ageMonths(k, e.ts), v); return p ? `${text} (${pctText(p.pct)})` : text; };
+    if (growth.length) {
+      blocks.push({ h: 2, text: __('Growth') }, { table: { cols: [{ w: 1.6 }, { w: 1.6 }, { w: 2.6 }, { w: 2.6 }, { w: 2.4 }], head: [__('Date'), __('Age'), __('Weight'), __('Length or height'), __('Head')],
+        rows: growth.slice(-16).map(e => [fmtShort(e.ts), k.birth ? Stages.age(k.birth, e.ts) : '', e.data.weight ? withPct('weight', e, e.data.weight, fmtWeight(e.data.weight)) : '–',
+          e.data.height ? withPct('height', e, e.data.height, fmtLength(e.data.height)) : '–', e.data.head ? withPct('head', e, e.data.head, fmtLength(e.data.head)) : '–']) } });
+      if (sexed) blocks.push({ p: __('Percentiles from the CDC growth charts.'), muted: true, size: 8 });
+    }
+    // (the dose goes with the vaccine's name: in many languages the word for a medicine's dose is an amount, not a dose number)
+    if (vaccines.length) blocks.push({ h: 2, text: __('Vaccines') }, { table: { cols: [{ w: 5 }, { w: 2 }, { w: 3 }], head: [__('Vaccine'), __('Date'), __('Where')],
+      rows: vaccines.map(e => [[describe(e)[0], e.data.dose && __('dose {n}', { n: e.data.dose })].filter(Boolean).join(' · '), fmtShort(e.ts), [e.data.place, e.data.batch].filter(Boolean).join(' · ')]) } });
+    if (visits.length) blocks.push({ h: 2, text: __('Doctor visits') }, { table: { cols: [{ w: 1.6 }, { w: 2 }, { w: 2.4 }, { w: 4 }], head: [__('Date'), __('Visit'), __('Who'), __('Notes')],
+      rows: visits.map(e => [fmtShort(e.ts), __(e.data.kind || 'Checkup'), e.data.who || '', [e.data.why, e.note].filter(Boolean).join(' · ')]) } });
   }
   // the columns of the table: a baby's always; an older child's meals and potty, and only what was logged in the period
   const C = (head, w, v, on = true, align = 'center') => ({ head, w, v, on, align });
@@ -901,6 +952,106 @@ function allergyDays(ids) {
   return m;
 }
 
+// ---------- Health record ----------
+// Each child's vaccines, doctor and dentist visits and measurements, for any age: entries kept like health notes (only people allowed
+// to see health notes get them, under the health key). Measurements are compared with the CDC growth charts (growth.js): the
+// percentile for the child's age and sex, and a chart with the 3rd, 15th, 50th, 85th and 97th percentile lines.
+const lbOz = kg => { const oz = Math.round((kg / LB) * 160) / 10, lb = Math.floor(oz / 16); return [lb, Math.round((oz - lb * 16) * 10) / 10]; };
+const fmtIn = (cm, us) => Math.round((us ? cm / IN : cm) * 10) / 10;
+/** A child's age in months (with the part of a month) at the time `ts`. */
+const ageMonths = (k, ts) => (ts - new Date(k.birth + 'T00:00').getTime()) / (30.4375 * DAY);
+const bmiOf = g => (g && g.weight && g.height ? g.weight / (g.height / 100) ** 2 : 0);
+const GROWTH = [['weight', N_('Weight')], ['height', N_('Length or height')], ['head', N_('Head')], ['bmi', N_('BMI')]];
+/** A percentile in words: "55th percentile" (other languages: their own way of saying it). */
+function pctText(p) {
+  const n = Math.min(99, Math.max(1, Math.round(p)));
+  if (I18n.lang() === 'en') return `${n}${{ one: 'st', two: 'nd', few: 'rd' }[new Intl.PluralRules('en', { type: 'ordinal' }).select(n)] || 'th'} percentile`;
+  return __('percentile {n}', { n });
+}
+/** Where a measurement falls on the growth charts, in words, or why it can't be said. */
+function growthNote(k, ts, g) {
+  if (!k.birth) return __('Add the birth date in More → Children to compare with the growth charts.');
+  if (k.sex !== 'boy' && k.sex !== 'girl') return __('Set boy or girl in More → Children to compare with the growth charts.');
+  const m = ageMonths(k, ts), parts = [];
+  for (const [kind, label] of GROWTH) { const x = kind === 'bmi' ? bmiOf(g) : g[kind], p = x && Growth.percentile(kind, k.sex, m, x); if (p) parts.push(`${__(label)}: ${pctText(p.pct)}`); }
+  return parts.join(' · ');
+}
+let recordFrom = 'guide', growthKind = 'weight';
+/** Open a child's health record (from the Guide, More, a sheet…); its back button goes back there. */
+function openRecord(id, from = tab) {
+  if (!Sync.can('health')) return toast(__("You don't have access to health notes"));
+  if (id && kidById(id)) setKid(id);
+  if (from !== 'health') recordFrom = from;
+  $('#sheet').hidden = $('#sheetBack').hidden = true; tab = 'health'; render(); window.scrollTo(0, 0);
+}
+/** A measurement chart: the child's points over the CDC percentile lines, for their age (birth to 3 years, or 2 to 20). */
+function growthChart(k, kind, list) {
+  const us = usUnits(), val = e => (kind === 'bmi' ? bmiOf(e.data) : +e.data[kind] || 0), conv = v => (kind === 'weight' ? (us ? v / LB : v) : kind === 'bmi' ? v : us ? v / IN : v);
+  const unit = kind === 'weight' ? (us ? __('lb') : __('kg')) : kind === 'bmi' ? __('kg/m²') : us ? __('in') : __('cm');
+  const now = ageMonths(k, Date.now()), small = kind === 'head' || (kind !== 'bmi' && now <= 36);
+  const x0 = small ? 0 : 24, x1 = small ? Math.min(36, Math.max(12, Math.ceil((now + 3) / 6) * 6)) : Math.min(240, Math.max(60, Math.ceil((now + 6) / 12) * 12));   // (a baby's chart: the first year)
+  const pts = list.map(e => [ageMonths(k, e.ts), val(e)]).filter(([m, v]) => v > 0 && m >= x0 - 0.01 && m <= x1).sort((a, b) => a[0] - b[0]);
+  const sexed = k.sex === 'boy' || k.sex === 'girl', lines = sexed ? Growth.curves(kind, k.sex, x0, x1, [3, 15, 50, 85, 97], small ? 0.5 : 3) : [];
+  const ys = [...lines.flatMap(c => c.pts.map(p => conv(p[1]))), ...pts.map(p => conv(p[1]))];
+  if (!ys.length) return '';
+  const W = 320, H = 220, L = 34, R = 24, T = 24, B = 26, lo0 = Math.min(...ys), hi0 = Math.max(...ys), pad = (hi0 - lo0) * 0.06 || 1;
+  const step = niceMax((hi0 - lo0 + 2 * pad) / 4), lo = Math.floor((lo0 - pad) / step) * step, hi = Math.ceil((hi0 + pad) / step) * step;
+  const X = m => L + ((m - x0) / (x1 - x0)) * (W - L - R), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B), f1 = n => n.toFixed(1);
+  let g = '';
+  for (let v = lo; v <= hi + 1e-9; v += step) g += `<path class="grid" d="M${L} ${f1(Y(v))}H${W - R}"/><text class="ax" x="${L - 4}" y="${f1(Y(v) + 3)}" text-anchor="end">${esc(fmtNum(v, 1))}</text>`;
+  const years = !small, ticks = []; for (let m = x0; m <= x1 + 1e-9; m += small ? 6 : (x1 - x0 > 120 ? 24 : 12)) ticks.push(m);
+  for (const m of ticks) g += `<path class="grid v" d="M${f1(X(m))} ${T}V${H - B}"/><text class="ax" x="${f1(X(m))}" y="${H - B + 13}" text-anchor="middle">${esc(fmtNum(years ? m / 12 : m, 0))}</text>`;
+  g += `<text class="ax unit" x="${L - 4}" y="${T - 4}" text-anchor="end">${esc(unit)}</text><text class="ax" x="${W - R}" y="${H - 3}" text-anchor="end">${years ? __h('Age (years)') : __h('Age (months)')}</text>`;
+  const path = ps => ps.map((p, i) => `${i ? 'L' : 'M'}${f1(X(p[0]))} ${f1(Y(conv(p[1])))}`).join('');
+  if (lines.length) {
+    const outer = [...lines[0].pts, ...[...lines[4].pts].reverse()];
+    g += `<path class="band" d="${path(outer)}Z"/>` + lines.map(c => `<path class="pline${c.p === 50 ? ' mid' : ''}" d="${path(c.pts)}"/><text class="plab" x="${W - R + 3}" y="${f1(Y(conv(c.pts[c.pts.length - 1][1])) + 3)}">${c.p}</text>`).join('');
+  }
+  if (pts.length) g += `<path class="kline" d="${path(pts)}" style="stroke:${k.color}"/>` + pts.map(p => `<circle class="kdot" cx="${f1(X(p[0]))}" cy="${f1(Y(conv(p[1])))}" r="3.6" style="fill:${k.color}"/>`).join('');
+  const last = pts[pts.length - 1], lp = last && sexed && Growth.percentile(kind, k.sex, last[0], last[1]);
+  const label = [__(GROWTH.find(x => x[0] === kind)[1]), last && `${fmtNum(conv(last[1]), kind === 'weight' && !us ? 2 : 1)} ${unit}`, lp && pctText(lp.pct)].filter(Boolean).join(', ');
+  return `<svg class="chart gchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${g}</svg>`;
+}
+/** The health record page of the child shown: who they are, growth, vaccines, doctor visits. */
+function recordView() {
+  const k = kidById(viewKid()), name = kidName(k), us = usUnits(), mine = db.events.filter(e => childOf(e) === k.id);
+  const of = t => mine.filter(e => e.type === t).sort((a, b) => b.ts - a.ts), growth = of('growth'), vaccines = of('vaccine'), visits = of('visit'), add = Sync.can('add');
+  const back = { day: N_('Day'), routine: N_('Routine'), month: N_('Month'), stats: N_('Stats'), guide: N_('Guide'), family: N_('Family'), more: N_('More') }[recordFrom] || N_('Guide');
+  const born = k.birth ? new Date(k.birth + 'T00:00').toLocaleDateString(I18n.locale(), { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const al = (k.allergies || []).map(a => __(a.food));
+  const head = `<div class="card rechead" style="--k:${k.color}">${avatar(k, 'lg')}<span><b>${__h("{name}'s health record", { name })}</b><small>${esc([born && __('Born {date}', { date: born }), k.birth && Stages.age(k.birth, Date.now()), k.sex === 'boy' ? __('Boy') : k.sex === 'girl' ? __('Girl') : ''].filter(Boolean).join(' · '))}</small>${al.length ? `<small class="allergyline">⚠️ ${__h('Allergies: {foods}', { foods: al.join(', ') })}</small>` : ''}</span></div>`;
+  // growth: the latest of each measurement with its percentile, a chart per kind, and every measurement in a table
+  const latest = GROWTH.map(([kind, label]) => { const e = growth.find(x => (kind === 'bmi' ? bmiOf(x.data) && ageMonths(k, x.ts) >= 24 : x.data[kind])); if (!e) return '';   // (BMI from 2 years old)
+    const v = kind === 'bmi' ? bmiOf(e.data) : e.data[kind];
+    const p = (k.sex === 'boy' || k.sex === 'girl') && k.birth && Growth.percentile(kind, k.sex, ageMonths(k, e.ts), v);
+    return `<div class="stat"><span>${__h(label)}<br><small>${esc(fmtShort(e.ts))}</small></span><b>${esc(kind === 'weight' ? fmtWeight(v) : kind === 'bmi' ? fmtNum(v, 1) : fmtLength(v))}${p ? `<small>${esc(pctText(p.pct))}</small>` : ''}</b></div>`; }).join('');
+  const kinds = GROWTH.map(x => x[0]).filter(kind => growth.some(e => (kind === 'bmi' ? bmiOf(e.data) && ageMonths(k, e.ts) >= 24 : e.data[kind])));
+  if (!kinds.includes(growthKind)) growthKind = kinds[0] || 'weight';
+  const table = growth.length ? `<details class="tbl"><summary>${__h('Every measurement')}<span class="chev" aria-hidden="true">›</span></summary><div class="tw"><table><thead><tr><th>${__h('Date')}</th><th>${__h('Weight')}</th><th>${__h('Length or height')}</th><th>${__h('Head')}</th></tr></thead><tbody>
+    ${growth.map(e => `<tr data-edit="${e.id}"><td>${esc(fmtShort(e.ts))}</td><td>${e.data.weight ? esc(fmtWeight(e.data.weight)) : '–'}</td><td>${e.data.height ? esc(fmtLength(e.data.height)) : '–'}</td><td>${e.data.head ? esc(fmtLength(e.data.head)) : '–'}</td></tr>`).join('')}</tbody></table></div></details>` : '';
+  const growthHtml = `<div class="card recgrowth">${latest || `<p class="note">${__h('No measurements yet. Add one after each checkup, or whenever you weigh and measure at home.')}</p>`}
+    ${kinds.length > 1 ? `<div class="seg mini gkinds">${kinds.map(x => `<button data-gkind="${x}" class="${x === growthKind ? 'on' : ''}" aria-pressed="${x === growthKind}">${__h(GROWTH.find(g => g[0] === x)[1])}</button>`).join('')}</div>` : ''}
+    ${growth.length ? growthChart(k, growthKind, growth) : ''}
+    ${growth.length ? `<p class="note">${(k.sex === 'boy' || k.sex === 'girl') && k.birth ? __h('The lines are the 3rd, 15th, 50th, 85th and 97th percentiles of the CDC growth charts. Your doctor may use another chart, such as the WHO\'s.') : esc(growthNote(k, Date.now(), {}))}</p>` : ''}
+    ${table}${add ? `<button class="btn" data-add="growth">📏 ${__h('Add a measurement')}</button>` : ''}</div>`;
+  // vaccines: by vaccine, each dose with its date
+  const byName = new Map(); for (const e of [...vaccines].reverse()) { const n = describe(e)[0]; if (!byName.has(n)) byName.set(n, []); byName.get(n).push(e); }
+  const vacHtml = `<div class="card vaccines">${byName.size ? [...byName].map(([n, es]) => `<div class="vrow"><b>💉 ${esc(n)}</b>${es.map(e => `<button class="vdose" data-edit="${e.id}">${esc([e.data.dose && __('dose {n}', { n: e.data.dose }), fmtDay(dkey(e.ts)), e.data.place].filter(Boolean).join(' · '))}</button>`).join('')}</div>`).join('')
+    : `<p class="note">${__h('No vaccines saved yet. Your vaccination card or your doctor has the dates.')}</p>`}${add ? `<button class="btn" data-add="vaccine">💉 ${__h('Add a vaccine')}</button>` : ''}</div>`;
+  const visHtml = `<div class="card visits">${visits.length ? visits.map(e => { const [a, b] = describe(e); return `<button class="vrow vvisit" data-edit="${e.id}"><b>🏥 ${esc(a)}</b><small>${esc([fmtDay(dkey(e.ts)), b].filter(Boolean).join(' · '))}</small>${e.note ? `<small class="mn">“${esc(e.note)}”</small>` : ''}</button>`; }).join('')
+    : `<p class="note">${__h('No visits saved yet: checkups, the dentist, eye and hearing tests, and the times your child was seen when unwell.')}</p>`}${add ? `<button class="btn" data-add="visit">🏥 ${__h('Add a visit')}</button>` : ''}</div>`;
+  return `<button class="backbtn" data-recback>‹ ${__h(back)}</button>${head}
+    <h2>${__h('Growth')}</h2>${growthHtml}<h2>${__h('Vaccines')}</h2>${vacHtml}<h2>${__h('Doctor visits')}</h2>${visHtml}
+    <button class="btn pdfbtn" id="pdfBtn">📄 ${__h('Report for the doctor (PDF)')}</button>
+    <p class="note">${__h('Only people who may see health notes see the health record. Like everything in the log, it is end-to-end encrypted.')}</p>`;
+}
+/** The button to a child's health record (the Guide, More → Children). */
+function recordButton(k) {
+  const mine = db.events.filter(e => childOf(e) === k.id), n = t => mine.filter(e => e.type === t).length;
+  const sum = [n('vaccine') && __n('{n} vaccine', '{n} vaccines', n('vaccine')), n('visit') && __n('{n} visit', '{n} visits', n('visit')), n('growth') && __n('{n} measurement', '{n} measurements', n('growth'))].filter(Boolean).join(' · ');
+  return `<button class="docbtn recbtn" data-record="${k.id}"><span class="di">📋</span><span><b>${kids().length > 1 ? __h("{name}'s health record", { name: kidName(k) }) : __h('Health record')}</b><small>${sum ? esc(sum) : __h('Vaccines, doctor visits and growth')}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
+}
+
 // ---------- Big moments ----------
 // The firsts and the days to remember (the first smile, the first steps, the first day of school) are entries of their own, shared and
 // end-to-end encrypted like the rest of the log. They show at the top of their day, with a star on the calendar, and in the Month tab's
@@ -1000,6 +1151,7 @@ function guideView() {
   const newborn = `<h2>${__h('Common with newborns')}</h2>${Guide.COMMON.map(c => card('g', c)).join('')}`;
   const toddler = `<h2>${__h('Toddlers and preschoolers')}</h2>${Guide.TODDLER.map(c => card('t', c)).join('')}`;
   return `${doctorHtml()}
+  ${Sync.can('health') && kidById(viewKid()) ? recordButton(kidById(viewKid())) : ''}
   <p class="note emer"><b>${__h('Emergency?')}</b> ${older ? __h('Call {sos} for blue lips or face, trouble breathing, a child who is hard to wake, or a seizure.', { sos }) : __h('Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.', { sos })}</p>
   ${cur.length ? `<h2>${__h('Right now')}</h2>${cur.map(nowCard).join('')}` : ''}
   ${older ? toddler : ''}
@@ -1009,6 +1161,7 @@ function guideView() {
   ${older ? '' : newborn}
   <h2>${__h('Medicines')}</h2>
   ${medsHtml()}
+  <h2>${__h('Health checks')}</h2>${Guide.CHECKS.map(c => card('h', c)).join('')}
   ${older ? '' : toddler}
   <h2>${__h('Month by month')}</h2>
   ${ms.map(([n, M]) => milestoneDetails(+n, M)).join('')}
@@ -1097,7 +1250,7 @@ function showInList(id) {
 }
 /** A small sheet for things that aren't entries (pediatrician, milestones). */
 function popup(html) {
-  const S = $('#sheet'), back = $('#sheetBack'); S.innerHTML = html; S.onchange = null; Icons.paint(S); S.hidden = back.hidden = false;
+  const S = $('#sheet'), back = $('#sheetBack'); S.innerHTML = html; S.onchange = S.oninput = null; Icons.paint(S); S.hidden = back.hidden = false;
   const close = () => { S.hidden = back.hidden = true; }; back.onclick = close; S.querySelectorAll('[data-close]').forEach(b => b.onclick = close); return close;
 }
 function openDoctor(edit) {
@@ -1137,9 +1290,11 @@ function milestoneCheck() {
   popup(`<h3>🌟 ${who.length > 1 ? __h('{names} are {age} old', { names: andList(names), age }) : __h('{name} is {age} old', { name: names[0], age })}</h3><p class="note">${m >= 24 ? __h("Every child is different; this is what's common around now.") : __h("Every baby is different; this is what's common around now.")}</p>
     ${grow ? `<p class="grow">🌿 ${__h(grow, { name: andList(names) })}</p>` : ''}${milestoneBody(M)}
     ${m % 12 === 0 && Sync.can('add') ? `<button class="btn" id="msMoment" style="width:100%;margin-top:12px">🌟 ${__h('Save the birthday as a big moment')}</button>` : ''}
+    ${M.visit && Sync.can('add') && Sync.can('health') ? `<button class="btn" id="msVisit" style="width:100%;margin-top:8px">🏥 ${__h('Save the checkup in the health record')}</button>` : ''}
     <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button><button class="btn p" id="msGuide">${__h('More in the Guide')}</button></div>`);
   $('#msGuide').onclick = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; tab = 'guide'; render(); window.scrollTo(0, 0); };
   if ($('#msMoment')) $('#msMoment').onclick = () => openMoment(null, { kid: who[0].id, what: 'Birthday', day: Math.min(day.getTime(), Date.now()) });
+  if ($('#msVisit')) $('#msVisit').onclick = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; setKid(who[0].id); openSheet('visit', null, { kind: 'Checkup' }); };
 }
 
 // ---------- Formula ----------
@@ -1234,13 +1389,13 @@ function travelQuick() {
   const label = { feed: young ? N_('Feed') : N_('Milk'), diaper: N_('Diaper'), sleep: N_('Asleep'), vomit: young ? N_('Spit-up') : N_('Vomit'), meal: N_('Meal'), potty: N_('Potty') };
   const babyRest = ['wake', 'play', 'health', 'med'], usual = rest.length && rest.every(t => babyRest.includes(t)) && rest.includes('wake') && rest.includes('play');
   const what = usual ? (rest.includes('health') ? __h('More: play, night waking, health and medicine') : __h('More: play, night waking'))
-    : __h('More: {list}', { list: andList(rest.slice(0, 4).map(t => __(TYPES[t].noun))) + (rest.length > 4 ? '…' : '') });
+    : __h('More: {list}', { list: rest.slice(0, 4).map(t => __(tLabel(t))).join(' · ') + (rest.length > 4 ? ' …' : '') });
   return `<div class="quick tq">${big.map(k => `<button data-qadd="${k}" style="--cw:${Kids.rgba(P[groupOf(k).id], 0.3)}"><b>${TYPES[k].icon}</b>${__h(label[k])}</button>`).join('')}</div>
     ${rest.length ? `<button class="qmore" data-qmore="${rest.join(' ')}">${what}</button>` : ''}`;
 }
 /** The rest of what there is to log, a tap away (the Day page's More, and travel mode's). */
 function openMoreTypes(types = travelTypes().rest) {
-  types = types.filter(k => TYPES[k] && (Sync.can('health') || (k !== 'health' && k !== 'med')));
+  types = types.filter(k => TYPES[k] && (Sync.can('health') || !isPrivate(k)));
   const close = popup(`<h3>${__h('More to log')}</h3><div class="quick">${types.map(k => `<button data-more="${k}" style="--cw:${Kids.rgba(TYPES[k].color, 0.3)}"><b>${TYPES[k].icon}</b>${__h(tLabel(k))}</button>`).join('')}</div>
     <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Close')}</button></div>`);
   $('#sheet').querySelectorAll('[data-more]').forEach(b => b.onclick = () => { close(); openSheet(b.dataset.more); });
@@ -1450,6 +1605,13 @@ const TOURS = {
     { sel: 'details[data-grp=omenu]', title: N_('Medicines'), why: N_('Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.') },
     { sel: '#view details.gd[data-grp^=m]', title: N_('Month by month'), why: N_('Milestones for every month. A reminder pops up on each month birthday.') },
   ],
+  health: [
+    { sel: '.rechead', title: N_('The health record'), why: N_('Vaccines, doctor visits and growth for each child, from birth to 18, kept private to the people who may see health notes.') },
+    { sel: '#view svg.gchart', title: N_('Growth charts'), why: N_('Each measurement against the CDC growth charts, with the 3rd, 15th, 50th, 85th and 97th percentile lines. Following their own line matters more than the number.') },
+    { sel: '#view .vaccines', title: N_('Vaccines'), why: N_('Every dose with its date, by vaccine. Tap one to change it.') },
+    { sel: '#view .visits', title: N_('Doctor visits'), why: N_('Checkups, the dentist, eye and hearing tests, and the times your child was seen when unwell.') },
+    { sel: '#pdfBtn', title: N_('For the doctor'), why: N_('The report for the doctor has the health record in it too.') },
+  ],
   family: [
     { sel: '.ftreeimg', title: N_('Family tree'), why: N_('Your children\'s family tree: their parents, grandparents and great-grandparents, aunts, uncles and cousins. It grows as people are added. Tap someone for their details, or a child for their day; a parent adds people with the +.') },
     { sel: '#famAdd', title: N_('Add a family'), why: N_('Looking after someone else\'s children? Scan the QR code one of their parents shows you. Once they approve it, their family is on this page: in your family tree if you are family, or with the families you help with.') },
@@ -1501,6 +1663,7 @@ function kidsHtml() {
       <p class="note" style="margin:4px 0 0">${learnedFormula(k) && learnedFormula(k) !== k.formula ? __h('Picked up from the feeds: it was given at every formula feed three days running.') : __h('When one formula is given at every formula feed three days running, it becomes the usual one.')}</p>
       <label class="f">${__h('Allergies')}</label>${(k.allergies || []).length ? k.allergies.map(a => `<div class="stat alrow"><span>⚠️ <b>${__h(a.food)}</b><br><small>${esc([a.date && __('first reaction {date}', { date: fmtDay(a.date) }), a.note].filter(Boolean).join(' · '))}</small></span>${can ? `<button class="btn d" data-alrm="${k.id}" data-food="${esc(a.food)}" aria-label="${__h('Remove {name}', { name: __(a.food) })}" style="padding:6px 12px">✕</button>` : ''}</div>`).join('') : `<p class="note" style="margin:0">${__h('None marked.')}</p>`}
       ${can ? `<button class="btn" data-aladd="${k.id}" style="margin-top:6px">⚠️ ${__h('Mark an allergy')}</button>` : ''}
+      ${Sync.can('health') ? recordButton(k) : ''}
       <label class="f">${__h('Colour')}</label><div class="swatches" role="radiogroup" aria-label="${__h('Colour')}">${Kids.swatches(k.sex).map(c => `<button type="button" class="sw ${c === k.color ? 'on' : ''}" data-kc="${k.id}" data-c="${c}" style="--k:${c}" role="radio" aria-checked="${c === k.color}" aria-label="${c}" ${dis}>${c === k.color ? '✓' : ''}</button>`).join('')}</div>
       ${can && ks.length > 1 ? `<button class="btn d" data-krm="${k.id}" style="margin-top:12px">${__h('Remove {name}', { name: kidName(k) })}</button>` : ''}</div>`).join('')}
     ${can && ks.length < Kids.MAX ? `<button class="btn" id="kAdd" style="width:100%;margin-top:6px">+ ${__h('Add a child')}</button>` : ''}</div>`;
@@ -1540,7 +1703,7 @@ const Report = {
 };
 let lastScreen = 'day';   // the screen before More, where a language problem was probably seen
 function openLanguageReport() {
-  const screens = [['day', N_('Day')], ['routine', N_('Routine')], ['month', N_('Month')], ['stats', N_('Stats')], ['guide', N_('Guide')], ['family', N_('Family')], ['more', N_('More')], ['signin', N_('Signing in')], ['other', N_('Somewhere else')]];
+  const screens = [['day', N_('Day')], ['routine', N_('Routine')], ['month', N_('Month')], ['stats', N_('Stats')], ['guide', N_('Guide')], ['health', N_('Health record')], ['family', N_('Family')], ['more', N_('More')], ['signin', N_('Signing in')], ['other', N_('Somewhere else')]];
   const close = popup(`<h3>🌐 ${__h('Report a language issue')}</h3>
     <p class="note">${__h('Words that are wrong, hard to understand, or not translated: tell the Little Log team.')}</p>
     <label class="f" for="lrLang">${__h('Language')}</label><select id="lrLang" class="fsel">${I18n.LANGS.map(l => `<option value="${l.id}" lang="${l.id}"${l.id === I18n.lang() ? ' selected' : ''}>${esc(I18n.label(l.id))}</option>`).join('')}</select>
@@ -1576,10 +1739,17 @@ function appearanceHtml() {
     <p class="note">${m === 'sun' ? sun + ' ' + (s.zone ? __h("Estimated for the {zone} time zone; your location isn't used.", { zone: s.zone }) : __h("Estimated from your time zone; your location isn't used."))
       : m === 'system' ? __h("Follows your phone's light or dark setting.") : __h('Switching plays a little sunrise or sunset.')}</p></div>`;
 }
+/** Weight and length in kg and cm, or in pounds and inches (kept on this phone). */
+function unitsHtml() {
+  const cur = usUnits() ? 'us' : 'metric';
+  return `<div class="card"><b>📏 ${__h('Units')}</b><div class="chips" style="margin-top:10px">${chip('units', 'metric', __h('kg and cm'), cur === 'metric', '', true)}${chip('units', 'us', __h('pounds and inches'), cur === 'us', '', true)}</div>
+    <p class="note">${__h('For weight, length and height in the health record. Kept on this phone.')}</p></div>`;
+}
 function moreView() {
   return languageHtml() + Acct.accountHtml() + `
   ${kidsHtml()}
   ${regionHtml()}
+  ${unitsHtml()}
   ${artHtml()}
   ${appearanceHtml()}
   ${Acct.cloudHtml()}
@@ -1625,6 +1795,9 @@ function bind() {
   document.querySelectorAll('[data-qmore]').forEach(b => b.onclick = () => openMoreTypes(b.dataset.qmore.split(' ')));
   document.querySelectorAll('[data-addmore]').forEach(b => b.onclick = () => openMoreTypes(b.dataset.addmore.split(' ')));
   document.querySelectorAll('[data-momentnew]').forEach(b => b.onclick = () => openMoment(null, { day: viewDay }));
+  document.querySelectorAll('[data-record]').forEach(b => b.onclick = () => openRecord(b.dataset.record));
+  document.querySelectorAll('[data-recback]').forEach(b => b.onclick = () => { tab = recordFrom; render(); window.scrollTo(0, 0); });
+  document.querySelectorAll('[data-gkind]').forEach(b => b.onclick = () => { growthKind = b.dataset.gkind; render(); });
   document.querySelectorAll('[data-moment]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.moment); if (ev) Sync.can('edit', ev) ? openMoment(ev) : momentInfo(ev); });
   document.querySelectorAll('[data-tripnew]').forEach(b => b.onclick = () => openTrip(null));
   document.querySelectorAll('[data-tripplan]').forEach(b => b.onclick = () => openTrip(null, +b.dataset.tripplan));
@@ -1643,6 +1816,7 @@ function bindMore() {
   $('#appUpdate').onclick = updateApp;
   Native.version().then(v => { const el = $('#appVer'); if (v && el) el.textContent = __('Version {version}', { version: v }) + ' · '; });
   document.querySelectorAll('[name=themeMode]').forEach(r => r.onchange = () => { if (r.checked) { Theme.set(r.value); render(); } });
+  document.querySelectorAll('[name=units]').forEach(r => r.onchange = () => { if (r.checked) { db.meta.units = r.value; Store.save(db); render(); } });
   $('#regionSel').onchange = e => { if (e.target.value) db.meta.region = e.target.value; else delete db.meta.region; Store.save(db); render(); toast(__('Where you are: {region}', { region: __(Formulas.name(myRegion())) })); };
   $('#langSel').onchange = e => setLanguage(e.target.value);
   if ($('#langReport')) $('#langReport').onclick = openLanguageReport;
@@ -1717,7 +1891,7 @@ function openSheet(type, ev, pre) {
   const editing = !!ev;
   type = ev ? ev.type : type;
   if (editing ? !Sync.can('edit', ev) : !Sync.can('add')) return toast(__("You don't have permission to do that"));
-  if ((type === 'health' || type === 'med') && !Sync.can('health')) return toast(__("You don't have access to health notes"));
+  if (isPrivate(type) && !Sync.can('health')) return toast(__("You don't have access to health notes"));
   const d = (ev && ev.data) || pre || {}, T = TYPES[type];
   // New entries default to now, or to noon of the viewed day when browsing past days.
   const defTs = ev ? ev.ts : (viewDay === startOfDay(Date.now()) ? Date.now() : viewDay + 12 * 60 * MIN);
@@ -1751,12 +1925,32 @@ function openSheet(type, ev, pre) {
     <div id="pWhere">${L(N_('Where?'))}${radios('where', POTTY_WHERE, d.accident ? 'Accident' : d.where || 'Potty')}</div>
     <div class="chips" style="margin-top:12px">${chip('asked', 1, __h('Asked to go'), d.asked)}</div>`;
   }
+  if (type === 'vaccine') {
+    const cur = d.own ? '__other' : d.name || '';
+    body = `${L(N_('Which vaccine?'))}<select id="vname" class="fsel" aria-label="${__h('Which vaccine?')}"><option value=""${cur ? '' : ' selected'}>${__h('Choose a vaccine')}</option>${VACCINES.map(v => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${__h(v)}</option>`).join('')}<option value="__other"${cur === '__other' ? ' selected' : ''}>${__h('Another vaccine')}</option></select>
+      <input id="vother" type="text" maxlength="60" value="${esc(d.own ? d.name : '')}" placeholder="${__h('Name of the vaccine')}" aria-label="${__h('Name of the vaccine')}"${cur === '__other' ? '' : ' hidden'}>
+      ${L(N_('Dose (if you know it)'))}<div class="chips">${[1, 2, 3, 4, 5].map(i => chip('vdose', i, String(i), +d.dose === i, '', true)).join('')}</div>
+      ${L(N_('Where (optional)'))}<input id="vplace" type="text" maxlength="80" value="${esc(d.place || '')}" placeholder="${__h('e.g. the clinic')}">
+      ${L(N_('Batch number (optional)'))}<input id="vbatch" type="text" maxlength="40" value="${esc(d.batch || '')}">`;
+  }
+  if (type === 'visit') body = `${L(N_('What kind of visit?'))}${radios('vkind', VISITS, d.kind || 'Checkup')}
+    ${L(N_('Who (optional)'))}<input id="vwho" type="text" maxlength="80" value="${esc(ev ? d.who || '' : (db.baby.doctor || {}).name || '')}" placeholder="${__h('e.g. Dr Patel')}">
+    ${L(N_('Why (optional)'))}<input id="vwhy" type="text" maxlength="120" value="${esc(d.why || '')}" placeholder="${__h('e.g. an ear infection')}">`;
+  if (type === 'growth') {
+    const us = usUnits(), k = kidById(ev ? childOf(ev) : viewKid()) || forKids[0], head = d.head || !k || !k.birth || Stages.months(k.birth, defTs) < 36, [lb, oz] = d.weight ? lbOz(d.weight) : ['', ''];
+    body = `${us ? `${L(N_('Weight'))}<div class="row2"><label class="unitin">${num('gwlb', lb, '')}<span>${__h('lb')}</span></label><label class="unitin">${num('gwoz', oz, '', 0.1)}<span>${__h('oz')}</span></label></div>` : `${L(N_('Weight (kg)'))}${num('gw', d.weight, N_('e.g. 9.5'), 0.01)}`}
+      ${L(us ? N_('Length or height (in)') : N_('Length or height (cm)'))}${num('gh', d.height ? fmtIn(d.height, us) : '', us ? N_('e.g. 30.5') : N_('e.g. 76.5'), 0.1)}
+      <div id="gHead"${head ? '' : ' hidden'}>${L(us ? N_('Head (in)') : N_('Head (cm)')) + num('gc', d.head ? fmtIn(d.head, us) : '', N_('optional'), 0.1)}</div>
+      <p class="note gpct" id="gpct" aria-live="polite"></p>`;
+  }
+  if (type === 'health') body += `<div class="recadd"><p class="note">${__h('A vaccine, a doctor visit or a measurement? They go in the health record:')}</p><div class="chips">${['vaccine', 'visit', 'growth'].map(t => `<button type="button" class="chip" data-switch="${t}"><span>${TYPES[t].icon} ${__h(TYPES[t].label)}</span></button>`).join('')}</div></div>`;
   if (type === 'med') body = `${L(N_('Medicine / vitamin'))}<input id="mname" type="text" value="${esc(d.name || '')}" placeholder="${__h('e.g. Vitamin D')}">${L(N_('Dose'))}<input id="mdose" type="text" value="${esc(d.dose || '')}" placeholder="${__h('e.g. 1 ml')}">`;
 
-  // Who is it for? Only asked when the log has more than one child. New entries can be logged for several at once (e.g. all three fed together).
-  const multi = kids().length > 1, here = ev ? childOf(ev) : dayKid();
-  const forHtml = !multi ? '' : `<label class="f">${editing ? __h('For') : __h('For (tick everyone it applies to)')}</label><div class="chips kidchips">${kids().map(k =>
-    `<label class="chip kidchip" style="--k:${k.color}"><input type="${editing ? 'radio' : 'checkbox'}" name="kid" value="${k.id}" ${k.id === here ? 'checked' : ''}><span>${avatar(k)}${esc(kidName(k))}</span></label>`).join('')}</div>`;
+  // Who is it for? Only asked when the log has more than one child. New entries can be logged for several at once (e.g. all three fed together),
+  // except a measurement: that is one child's (the one whose health record is open).
+  const multi = kids().length > 1, one = editing || type === 'growth', here = ev ? childOf(ev) : type === 'growth' ? viewKid() : dayKid();
+  const forHtml = !multi ? '' : `<label class="f">${one ? __h('For') : __h('For (tick everyone it applies to)')}</label><div class="chips kidchips">${kids().map(k =>
+    `<label class="chip kidchip" style="--k:${k.color}"><input type="${one ? 'radio' : 'checkbox'}" name="kid" value="${k.id}" ${k.id === here ? 'checked' : ''}><span>${avatar(k)}${esc(kidName(k))}</span></label>`).join('')}</div>`;
   $('#sheet').innerHTML = `<h3>${T.icon} ${editing ? __h('Edit {what}', { what: __(noun) }) : __h('Add {what}', { what: __(noun) })}</h3>
     ${forHtml}
     ${L(type === 'sleep' ? N_('Fell asleep at') : N_('Time'))}<input id="ts" type="datetime-local" value="${toLocalInput(defTs)}">
@@ -1768,10 +1962,23 @@ function openSheet(type, ev, pre) {
 
   const S = $('#sheet'), checked = n => S.querySelector(`[name=${n}]:checked`);
   bindFormulaPickers(S);
+  /** The child a measurement is for (the one ticked), and the measurement as typed, in kg and cm (from pounds and ounces, and inches). */
+  const growthKid = () => (multi ? kidById((S.querySelector('[name=kid]:checked') || {}).value) : kids()[0]);
+  const readGrowth = () => {
+    const v = id => { const el = $(id), x = el && el.value !== '' ? +el.value : NaN; return Number.isFinite(x) && x > 0 ? x : 0; }, us = usUnits(), o = {};
+    const w = us ? (v('#gwlb') + v('#gwoz') / 16) * LB : v('#gw'), h = v('#gh') * (us ? IN : 1), c = $('#gHead').hidden ? 0 : v('#gc') * (us ? IN : 1);
+    if (w) o.weight = Math.round(w * 1000) / 1000; if (h) o.height = Math.round(h * 10) / 10; if (c) o.head = Math.round(c * 10) / 10;
+    return o;
+  };
   const val = n => { const c = checked(n); return c ? c.value : ''; };
   const sync = () => {
     if (S.querySelector('.fsum')) S.querySelector('.fsum').textContent = [...S.querySelectorAll('[name=food]:checked')].map(c => __(c.value)).join(', ');
     if (type === 'potty') $('#pWhere').hidden = val('pwhat') === 'dry';
+    if (type === 'vaccine') $('#vother').hidden = $('#vname').value !== '__other';
+    if (type === 'growth') {   // (head size until 3 years old, the age of the charts)
+      const k = growthKid(), at = fromLocalInput($('#ts').value) || defTs; $('#gHead').hidden = !(d.head || !k || !k.birth || Stages.months(k.birth, at) < 36);
+      $('#gpct').textContent = k ? growthNote(k, at, readGrowth()) : '';
+    }
     if (type === 'feed' && $('#fBreast')) {
       const kind = val('kind'), b = kind === 'bottle' || kind === 'cup'; $('#fBreast').hidden = kind !== 'breast'; $('#fBottle').hidden = !b; $('#fSolids').hidden = kind !== 'solids'; $('#fFormula').hidden = val('milk') !== 'Formula';
       $('#formula').hidden = $('#formulaSel').value !== '__other';
@@ -1783,6 +1990,8 @@ function openSheet(type, ev, pre) {
   };
   S.onchange = e => { if (e && e.target && (e.target.id === 'formulaSel' || e.target.id === 'formula')) S.dataset.formulaPicked = '1'; sync(); };
   delete S.dataset.formulaPicked; sync();
+  S.oninput = type === 'growth' ? sync : null;   // (a measurement: the percentiles as the numbers are typed)
+  S.querySelectorAll('[data-switch]').forEach(b => b.onclick = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; openSheet(b.dataset.switch); });
   S.querySelectorAll('[data-ago]').forEach(b => b.onclick = () => { $('#ts').value = toLocalInput(Date.now() - b.dataset.ago * MIN); });
   if ($('#foodAdd')) $('#foodAdd').onclick = () => { const v = $('#foodOther').value.trim().slice(0, 60); if (!v) return; $('#foodOther').value = ''; $('#foodTyped').insertAdjacentHTML('beforeend', chip('food', v, esc(v), true)); sync(); };
   const en = S.querySelector('[data-endnow]'); if (en) en.onclick = () => { $('#end').value = toLocalInput(Date.now()); };
@@ -1813,6 +2022,20 @@ function openSheet(type, ev, pre) {
     }
     if (type === 'med') { data = { name: $('#mname').value.trim(), dose: $('#mdose').value.trim() }; if (!data.name) return toast(__('Enter a name')); }
     if (type === 'meal') data = { meal: val('meal') || mealAt(ts), foods: [...S.querySelectorAll('[name=food]:checked')].map(c => c.value), ...(val('amount') ? { amount: val('amount') } : {}) };
+    if (type === 'vaccine') {
+      const sel = $('#vname').value, own = $('#vother').value.trim().slice(0, 60), name = sel === '__other' ? own : sel, txt = id => $(id).value.trim();
+      if (!name) return toast(__('Choose the vaccine'));
+      data = { name, ...(sel === '__other' && !VACCINES.includes(own) ? { own: true } : {}), ...(val('vdose') ? { dose: +val('vdose') } : {}), ...(txt('#vplace') ? { place: txt('#vplace').slice(0, 80) } : {}), ...(txt('#vbatch') ? { batch: txt('#vbatch').slice(0, 40) } : {}) };
+    }
+    if (type === 'visit') { const who = $('#vwho').value.trim().slice(0, 80), why = $('#vwhy').value.trim().slice(0, 120); data = { kind: val('vkind') || 'Checkup', ...(who ? { who } : {}), ...(why ? { why } : {}) }; }
+    if (type === 'growth') {
+      data = readGrowth();
+      if (!data.weight && !data.height && !data.head) return toast(__('Enter at least one measurement'));
+      // a typo (102 for 10.2) or the wrong units: far outside what the growth charts know for the age, or not a child's size at all
+      const k = growthKid(), m = k && k.birth ? ageMonths(k, ts) : -1, sexed = k && (k.sex === 'boy' || k.sex === 'girl') && m >= 0;
+      const far = sexed && ['weight', 'height', 'head'].some(kind => { const p = data[kind] && Growth.percentile(kind, k.sex, m, data[kind]); return p && Math.abs(p.z) > 5; });
+      if (far || (data.weight && (data.weight < 0.3 || data.weight > 250)) || (data.height && (data.height < 20 || data.height > 250)) || (data.head && (data.head < 20 || data.head > 70))) return toast(__("That doesn't look right: check the numbers and the units"));
+    }
     if (type === 'potty') {
       const w = val('pwhat') || 'none', where = val('where') || 'Potty';
       data = { pee: w === 'pee' || w === 'both', poo: w === 'poo' || w === 'both', ...(w === 'dry' ? { dry: true } : where === 'Accident' ? { accident: true } : { where }), ...(checked('asked') ? { asked: true } : {}) };
@@ -1862,6 +2085,7 @@ Native.onUrl(async url => {
 Native.onBack(() => {
   if (Tour.active()) { Tour.end(false); return true; }
   if (!$('#sheet').hidden) { $('#sheetBack').click(); return true; }
+  if (tab === 'health') { tab = recordFrom; render(); return true; }
   if (tab !== 'day') { tab = 'day'; render(); return true; }
   return false;
 });

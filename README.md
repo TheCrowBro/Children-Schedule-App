@@ -19,6 +19,15 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   allergies flagged), and how much was eaten; each meal of the day keeps its own time in the routine
 - **Potty training**: pee, poo, both, nothing yet or stayed dry; on the potty, the toilet or an accident; and whether they asked to go.
   Stats show the potty and the accidents per day
+- **Health record** (for every age, from the Guide, Stats or More → Children): **growth** (weight, length or height, head size, and
+  BMI from 2 years) compared with the CDC growth charts: the percentile for the child's age and sex as it is typed, the latest
+  measurements, and a chart of the child's own line over the 3rd, 15th, 50th, 85th and 97th percentile lines (birth to 3 years, then 2
+  to 20); a number far outside the charts for the age (a typo, or the wrong units) is caught. **Vaccines** from a list or typed in, with
+  the dose, where and the batch number, grouped by vaccine; **doctor visits** (checkups, unwell, the dentist, eyes, hearing, a
+  specialist, hospital, urgent care) with who and why. In kg and cm, or pounds and inches (More → Units; North America by default).
+  It's kept private like health notes: only people who may see health notes get it, under the health key. The doctor's report
+  includes it, the health note sheet leads to it, the milestone sheet offers to save the checkup in it, and the Guide explains
+  vaccines, checkups and growth chart percentiles
 - **Big moments**: the firsts and the days to remember, with ideas for every age from "Born" and "First smile" to "First day of school" and
   "Passed the driving test", or in your own words, with a note. A first can be saved only once (a birthday every year), for one child or
   several. They show at the top of their day, with a star on the calendar, in the Month tab's journal (in chapters for each stage of
@@ -152,8 +161,8 @@ Little Log grows with the child in phases. Each finished phase is saved as a ver
 | Phase | Ages | What it adds | |
 |---|---|---|---|
 | 1 | 1 to 5 | Stages by age, meals, milk from a cup, potty training, big moments, toddler topics and milestones to 5 | done |
-| 2 | every age | A health record: vaccines on your country's schedule, checkups, the dentist, height and weight with growth charts, and the doctor's report as a health summary at any age | next |
-| 3 | 3 to 12 | Daycare, preschool and school: drop-off and pick-up (who has the child today), the school calendar, activities, homework and reading | |
+| 2 | every age | A health record: vaccines, checkups, the dentist and other visits, weight, height and head size against the CDC growth charts, and all of it in the doctor's report | done |
+| 3 | 3 to 12 | Daycare, preschool and school: drop-off and pick-up (who has the child today), the school calendar, activities, homework and reading | next |
 | 4 | 12 to 18 | The teenage years: a family calendar, privacy and the teenager's own say, and at 18 handing the record over, when Little Log's work is done | |
 
 ## Build and test

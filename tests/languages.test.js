@@ -2,7 +2,7 @@
 // and sound, choosing a language changes the whole app (right to left for Arabic, Hebrew, Persian and Urdu), and language problems
 // can be reported without the app ever knowing where the reports go.   node tests/languages.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global saveProfile, Report, fmtDate, milestoneCheck, openEntryInfo, openAllergy, openDoctorReport, doctorPdf, solidsCheck, Foods, dkey, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg, dayButtons, openMoment, momentInfo */
+/* global saveProfile, Report, fmtDate, milestoneCheck, openEntryInfo, openAllergy, openDoctorReport, doctorPdf, solidsCheck, Foods, dkey, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg, dayButtons, openMoment, momentInfo, openRecord, growthKind:writable */
 const { setup } = require('./lib/harness');
 const Cat = require('../scripts/i18n.js');
 
@@ -80,7 +80,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       ...Guide.MEDS.flatMap(c => c.items.flatMap(i => (i.brands || '').split(' · '))), ...Object.values(Guide.PICS).flat().map(p => p.by), 'CC BY-SA 3.0', 'CC BY-SA 4.0', 'CC0 1.0',
       'Dropbox', 'OneDrive', 'Google Drive', 'Google', 'Apple', 'iPhone', 'Android', 'Face ID', 'Google Authenticator', 'Microsoft Authenticator', 'Authy', '1Password',
       ...I18n.LANGS.map(l => l.name), Theme.todaySun().zone || '',
-      ...db.events.flatMap(e => [e.note, e.data && e.data.name, e.data && e.data.dose, e.data && e.data.formula, e.data && e.data.own && e.data.what, ...((e.data && e.data.foods) || []).filter(f => !Foods.known(f))]),
+      ...db.events.flatMap(e => [e.note, e.data && e.data.name, e.data && e.data.dose, e.data && e.data.formula, e.data && e.data.own && e.data.what, e.data && e.data.own && e.data.name, e.data && e.data.place, e.data && e.data.batch, e.data && e.data.who, e.data && e.data.why, ...((e.data && e.data.foods) || []).filter(f => !Foods.known(f))]),
       ...kids().flatMap(k => (k.allergies || []).flatMap(a => [a.note, Foods.known(a.food) ? '' : a.food])), window.qNotes || '']);   // (what people type in is shown as typed)
     const found = [];
     const look = async (what, page = P, extra = []) => { for (const [t, where] of await unmarked(page, [...(await data()), ...extra])) found.push(`${what}: ${t}\n      at ${where}`); };
@@ -182,8 +182,29 @@ const unmarked = (page, data) => page.evaluate(data => {
       await sheet(() => { const k = kids()[1], d = new Date(); d.setFullYear(d.getFullYear() - 1); d.setDate(d.getDate() - 2); k.birth = dkey(d.getTime()); saveProfile(); db.meta.ms = { [kids()[0].id]: 999 }; Tour.mark('day'); tab = 'day'; render(); }, 'milestone, a new stage');
       await sheet(() => { tab = 'family'; render(); document.querySelector(`.ftreesvg [data-tk="k:${kids()[1].id}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true })); }, 'a child with big moments, tapped on the family tree');
       await P.evaluate(() => { const k = kids()[1], d = new Date(); d.setFullYear(d.getFullYear() - 2); d.setMonth(d.getMonth() - 3); d.setDate(d.getDate() - 3); k.birth = dkey(d.getTime()); db.meta.ms[k.id] = 999; saveProfile(); tab = 'day'; render(); });
+      // the health record: its page (growth with a chart, vaccines, visits), in kg and cm and in pounds and inches; its sheets; Units in More
+      await P.evaluate(() => {
+        const k = kids()[1], t = startOfDay(Date.now()), add = (type, ts, data, note = '') => db.events.push({ id: 'r' + type + ts, type, ts, data, note, updated: stamp(), by: Auth.id, child: k.id });
+        k.sex = 'girl'; saveProfile(); add('growth', addDays(t, -300), { weight: 7.9, height: 68, head: 44 }); add('growth', addDays(t, -30), { weight: 11.5, height: 84, head: 47 });
+        add('vaccine', addDays(t, -200), { name: 'Measles, mumps and rubella (MMR)', dose: 1, place: 'Riverside Clinic', batch: 'AB1' }); add('vaccine', addDays(t, -100), { name: 'Hepatitis A and typhoid', own: true });
+        add('visit', addDays(t, -50), { kind: 'Unwell', who: 'Dr Lee', why: 'Ear infection' }, 'Antibiotics'); save(); setKid(k.id); tab = 'guide'; render();
+      });
+      await openAll(); await look('guide, with the health record');
+      await P.evaluate(() => openRecord(kids()[1].id)); await openAll(); await look('health record');
+      for (const g of ['height', 'head', 'bmi']) { await P.evaluate(x => { growthKind = x; render(); }, g); await look('health record, ' + g); }
+      await P.evaluate(() => { db.meta.units = 'us'; growthKind = 'weight'; render(); }); await openAll(); await look('health record, pounds and inches');
+      for (const type of ['growth', 'vaccine', 'visit']) {
+        await sheet(t => openSheet(t), 'new ' + type, type);
+        await sheet(t => openSheet(null, db.events.find(e => e.type === t && e.child === kids()[1].id)), 'edit ' + type, type);
+      }
+      await P.evaluate(() => { delete db.meta.units; openSheet('growth'); }); await P.fill('#gw', '11.2'); await P.fill('#gh', '85'); await look('a measurement, with its percentiles');
+      await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; });
+      await sheet(() => { tab = 'day'; render(); openSheet('health'); }, 'a health note, with the way to the health record');
+      await P.evaluate(() => { kids()[1].sex = ''; saveProfile(); openRecord(kids()[1].id); }); await look('health record, boy or girl not set');
+      await P.evaluate(() => { tab = 'more'; render(); }); await openAll(); await look('more, with units and the health record');
+      await P.evaluate(() => { tab = 'stats'; render(); }); await look('stats, with the health record');
       // every screen's tour, step by step
-      for (const t of ['day', 'routine', 'month', 'stats', 'guide', 'family', 'more']) {
+      for (const t of ['day', 'routine', 'month', 'stats', 'guide', 'health', 'family', 'more']) {
         await P.evaluate(x => { tab = x; render(); startTour(); }, t);
         for (let i = 0; i < 15 && (await P.$('.tour-tip')); i++) { await look('tour of ' + t); await P.click('.tt-next'); }
       }

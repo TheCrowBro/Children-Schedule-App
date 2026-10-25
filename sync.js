@@ -83,7 +83,7 @@ const Sync = (() => {
     if (!rows.length) return 0;
     const n = merge(await decode(rows)); if (!Object.keys(db.meta.stash || {}).length) delete db.meta.stash; return n;
   }
-  const isSens = type => type === 'health' || type === 'med';
+  const isSens = E2EE.isSensitive;
   async function encodeRows(b) {
     const cut = Math.max(Date.now(), db.meta.hlc || 0), since = db.meta.pushedAt || 0, rows = [];
     for (const e of db.events) if (e.updated > since && e.updated <= cut) { const x = await E2EE.encryptEntry(b, e); rows.push({ id: e.id, ...x, updated: e.updated, deleted: false }); }

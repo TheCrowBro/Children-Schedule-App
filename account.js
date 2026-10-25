@@ -36,15 +36,17 @@ const Acct = (() => {
       <div class="roles">${ROLES.map(([k, n, d]) => `<label class="role"><input type="radio" name="${prefix}role" value="${k}" ${k === role ? 'checked' : ''}><span><b>${__h(n)}</b><small>${__h(d)}</small></span></label>`).join('')}</div>
       <label class="f">${__h('What they can do')}</label><div class="chips">${PERM_KEYS.map(([k, l]) => chip(prefix + 'perm', k, __h(l), !!p[k])).join('')}</div></div>`;
   }
-  /** Wires the role buttons to the check boxes: picking a role loads its defaults and locks what that role may never have. */
-  function bindAccess(root, prefix) {
+  /** Wires the role buttons to the check boxes: picking a role loads its defaults and locks what that role may never have. `changed`
+      hears each choice (so a page drawn again keeps them). */
+  function bindAccess(root, prefix, changed = () => {}) {
     const roles = [...root.querySelectorAll(`[name=${prefix}role]`)], perms = [...root.querySelectorAll(`[name=${prefix}perm]`)];
+    const read = () => ({ role: roles.find(r => r.checked).value, perms: Object.fromEntries(perms.map(el => [el.value, el.checked])) });
     const apply = reset => {
       const role = roles.find(r => r.checked).value, pre = PRESET(role), lock = LOCKED(role);
       perms.forEach(el => { if (reset || lock.includes(el.value)) el.checked = !!pre[el.value]; el.disabled = lock.includes(el.value); });
     };
-    roles.forEach(r => r.onchange = () => apply(true)); apply(false);
-    return () => ({ role: roles.find(r => r.checked).value, perms: Object.fromEntries(perms.map(el => [el.value, el.checked])) });
+    roles.forEach(r => r.onchange = () => { apply(true); changed(read()); }); perms.forEach(el => el.onchange = () => changed(read())); apply(false);
+    return read;
   }
 
   // ---- helpers ------------------------------------------------------------------------------
@@ -700,7 +702,11 @@ const Acct = (() => {
   const famLabel = () => (Sync.st.memberships.length > 1 ? famName(Sync.st.memberships.find(m => m.id === db.meta.babyId)) : '');
 
   let membersLoadedFor = null;
+  // The invite form's role and boxes as last set: the page is drawn again when the family's people and tree arrive (and every 15 s
+  // while a request waits), and that must not undo what the parent was choosing.
+  let invForm = null, invFormFor = null;
   function familyHtml() {
+    if (invFormFor !== db.meta.babyId) { invForm = null; invFormFor = db.meta.babyId; }   // (another family: its own form)
     if (!Auth.configured || !db.meta.babyId) return `<div class="card"><b>${__h('Family sharing is off')}</b><p class="note">${Auth.configured ? __h('Create a baby log to share it.') : __h("Account service isn't configured (see {file}), so this device keeps its own private log.", { file: 'SETUP.md' })}</p></div>`;
     const s = Sync.st, parent = Sync.isParent();
     if (Date.now() - (F.treeAt || 0) > 30000) refreshTree();
@@ -741,7 +747,7 @@ const Acct = (() => {
     ${people}
     ${parent ? `<h2>${__h('Invite someone')}</h2><div class="card" id="invCard">
       <p class="note" style="margin-top:0">${__h('Invites work once and last 2 hours. After they scan it, you approve them.')}</p>
-      ${accessFormHtml('inv', 'caregiver')}
+      ${accessFormHtml('inv', invForm ? invForm.role : 'caregiver', invForm && invForm.perms)}
       <button class="btn p" id="mkInvite" style="width:100%;margin-top:12px">${__h('Create invite QR code')}</button>
       ${invite ? inviteHtml() : ''}
       ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Open invites')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(roleName(i.role))}<br><small>${esc(left(i.expires_at))}</small></span>
@@ -797,7 +803,7 @@ const Acct = (() => {
       try { await Sync.removeMember(Auth.id); membersLoadedFor = null; render(); } catch (e) { toast(err(e)); }
     };
     if (!Sync.isParent()) return;
-    const read = bindAccess(el('invCard'), 'inv');
+    const read = bindAccess(el('invCard'), 'inv', a => { invForm = a; });
     el('mkInvite').onclick = async () => {
       const a = read();
       try { const { code, secret } = await Sync.createInvite(a.role, a.perms); invite = { code, role: a.role, secret, url: Sync.inviteUrl(code, secret) }; render(); } catch (e) { toast(err(e)); }
@@ -964,7 +970,7 @@ const Acct = (() => {
     if (d.events.length > 200000) throw new Error(N_('That backup is too large'));
     if (!Sync.can('add')) throw new Error(N_('You do not have permission to add entries'));
     const rows = d.events.filter(e => e && typeof e.id === 'string' && (TYPES[e.type] || Travel.isTravel(e.type)) && Number.isFinite(+e.ts))
-      .filter(e => Sync.can('health') || (e.type !== 'health' && e.type !== 'med'))
+      .filter(e => Sync.can('health') || !isPrivate(e.type))
       .map(e => ({ ...e, ts: +e.ts, end: e.end == null ? null : +e.end, updated: +e.updated || 0, deleted: false, by: Auth.id || e.by }));
     const n = Sync.merge(rows, true);
     if (d.baby && !db.baby.name && !db.baby.kids.some(k => k.name)) { const kids = Kids.clean(d.baby.kids, String(d.baby.name || ''), String(d.baby.birth || '')); db.baby = { name: kids[0].name, birth: kids[0].birth, kids }; }

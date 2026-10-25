@@ -10,6 +10,7 @@ Each saved version is a git tag, and a backup zip holds the same version ready t
 |---|---|---|---|
 | 1.0.0 | `v1.0.0` | 25 October 2026 | The newborn tracker: feeds, sleep, diapers, solids and allergies, the routine, the day clock, travel, the doctor's report, several children and families, the watercolour family tree, 32 languages. Saved before the app grows with the child up to 18. |
 | 1.1.0 | `v1.1.0` | 25 October 2026 | Growing up, phase 1: stages from newborn to 18, the Day page by age (meals, milk from a cup, potty training, the rest behind More), big moments, the Guide's toddler topics and milestones to 5. A phone still on 1.0.0 skips meals, the potty and big moments; once it is updated it fetches them. Going back to 1.0.0 needs nothing on the server. |
+| 1.2.0 | `v1.2.0` | 25 October 2026 | Growing up, phase 2: a health record for every age, private like health notes: vaccines, doctor and dentist visits, and weight, height and head size against the CDC growth charts (percentiles, and a chart with the percentile lines), in kg and cm or pounds and inches; in the doctor's report; the Guide's health checks. A phone still on 1.1.0 skips the health record; once it is updated it fetches it. Going back to 1.1.0 needs nothing on the server. |
 
 Android shows the version without its last number: 1.1.0 as "1.1". All the phones in a family should run the same version.
 

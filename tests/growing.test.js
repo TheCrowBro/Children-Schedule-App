@@ -287,7 +287,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('travel mode for a toddler: big buttons for a meal, milk, a diaper and sleep; a one-tap potty and a quick meal', async () => {
       await P.evaluate(id => { G.ev('trip', startOfDay(Date.now()), { means: 'car' }, undefined, { child: undefined, end: startOfDay(Date.now()) + 2 * 864e5 }); save(); G.page(id); }, leo);
       assert.deepEqual(await P.$$eval('#view [data-qadd]', x => x.map(b => b.dataset.qadd)), ['meal', 'feed', 'diaper', 'sleep']);
-      assert(/More: potty/.test(await P.textContent('#view .qmore')));
+      assert(/More: Potty/.test(await P.textContent('#view .qmore')));
       await P.evaluate(() => openQuick('potty')); await P.click('#sheet [name=qpot][value=accident]'); await H.sleep(200);
       assert.deepEqual(await P.evaluate(() => db.events.filter(e => e.type === 'potty').pop().data), { pee: false, poo: false, accident: true });
       await P.click('#view [data-qadd=meal]'); await P.click('#sheet [name=qeat][value=Some]'); await P.click('#qSave');
@@ -312,14 +312,14 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('the Guide grows too: toddler topics first, milestones to 5, then what the school and teenage years are about', async () => {
       const heads = () => P.$$eval('#view h2', x => x.map(h => h.textContent.trim()));
       await P.evaluate(id => G.page(id, 'guide'), leo);
-      assert.deepEqual(await heads(), ['Right now', 'Toddlers and preschoolers', 'Food', 'Medicines', 'Month by month', 'Common with newborns']);
+      assert.deepEqual(await heads(), ['Right now', 'Toddlers and preschoolers', 'Food', 'Medicines', 'Health checks', 'Month by month', 'Common with newborns']);
       assert.deepEqual(await P.$$eval('#view details.gd[data-grp^=t] .gt b', x => x.map(b => b.textContent)), ['Potty training', 'Picky eating', 'Tantrums', 'Toddler sleep', 'Teeth and the dentist', 'Screens', 'Car seats']);
       assert(/Leo is 2 years 3 months old/.test(await P.textContent('.nowcard')) && /Around 2 years/.test(await P.textContent('.nowcard')));
       const ms = await P.$$eval('#view details.gd[data-grp^=m] .gt b', x => x.map(b => b.textContent)); for (const m of ['30 months', '3 years', '4 years', '5 years']) assert(ms.includes(m), m);
       await P.evaluate(() => { G.age(0, 8, 1); G.page(kids()[0].id, 'guide'); }); assert(/The school years/.test(await P.textContent('.nowcard')));
       await P.evaluate(() => { G.age(0, 13, 1); G.page(kids()[0].id, 'guide'); }); assert(/The teenage years/.test(await P.textContent('.nowcard')));
       await P.evaluate(() => { G.age(0, 0, 2); G.page(kids()[0].id, 'guide'); });
-      assert.deepEqual(await heads(), ['Right now', 'Food', 'Common with newborns', 'Medicines', 'Toddlers and preschoolers', 'Month by month'], 'a baby\'s Guide starts with the baby topics');
+      assert.deepEqual(await heads(), ['Right now', 'Food', 'Common with newborns', 'Medicines', 'Health checks', 'Toddlers and preschoolers', 'Month by month'], 'a baby\'s Guide starts with the baby topics');
     });
 
     if (process.env.DEBUG) console.log('page errors:', P.errs, 'dialogs:', P.dialogs);

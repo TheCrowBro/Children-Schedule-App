@@ -15,7 +15,9 @@
 const E2EE = (() => {
   const enc = new TextEncoder(), dec = new TextDecoder(), S = crypto.subtle;
   const ECDH = { name: 'ECDH', namedCurve: 'P-256' };
-  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg', 'meal', 'potty', 'moment'];
+  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg', 'meal', 'potty', 'moment', 'vaccine', 'visit', 'growth'];
+  // health notes, medicines and the health record (vaccines, doctor visits, measurements) are kept under the HEALTH key
+  const SENSITIVE = ['health', 'med', 'vaccine', 'visit', 'growth'];
   const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // exactly 32 symbols = 5 bits each
 
   // ---- encoding helpers ---------------------------------------------------------------------
@@ -165,7 +167,7 @@ const E2EE = (() => {
   }
 
   // ---- entries & profile ---------------------------------------------------------------------------
-  const isSensitive = type => type === 'health' || type === 'med';
+  const isSensitive = type => SENSITIVE.includes(type);
   // Whatever a (possibly buggy or hostile) writer put inside an entry, only known fields of the right type reach the screens.
   const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
   const num = v => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(v, 1e6)) : undefined);
@@ -178,6 +180,9 @@ const E2EE = (() => {
       case 'meal': s('meal', 20); if (Array.isArray(d.foods)) o.foods = d.foods.filter(x => typeof x === 'string' && x.trim()).slice(0, 30).map(x => x.slice(0, 60)); s('amount', 30); break;
       case 'potty': b('pee'); b('poo'); b('dry'); b('accident'); b('asked'); s('where', 20); break;
       case 'moment': s('what', 80); b('own'); break;
+      case 'vaccine': s('name', 60); b('own'); n('dose'); s('place', 80); s('batch', 40); break;
+      case 'visit': s('kind', 30); s('who', 80); s('why', 120); break;
+      case 'growth': n('weight'); n('height'); n('head'); break;
       case 'diaper': b('pee'); b('poo'); b('rash'); s('color', 20); break;
       case 'wake': n('min'); s('why', 30); break;
       case 'vomit': s('amount', 20); b('projectile'); break;
@@ -385,7 +390,7 @@ const E2EE = (() => {
     load, ensureDevice, refresh, createLog, makeGrant, unlockWithRecovery, grantForRequest, approveDevice, healthGrants, rotate, replaceRecovery,
     encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile, sealDetails, openDetails, sealTree, openTree,
     /** The kinds of entry this version of the app knows (an older one skips the newer kinds). */
-    KINDS: TYPES.join(' '),
+    KINDS: TYPES.join(' '), SENSITIVE, isSensitive,
     uuid, newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,
     fingerprint, securityCode, forget, wipeUser,
     get device() { return dev; },
