@@ -115,6 +115,20 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert((await J.evaluate(() => Sync.activity().then(r => r.map(l => l.action)))).includes('tree_changed'), 'in the activity log');
     });
 
+    await step('the tree is the kind most common where the family comes from (by where the phone is), unless a parent picks another, for everyone', async () => {
+      await J.evaluate(() => { db.meta.region = 'anz'; tab = 'family'; render(); });
+      assert(/Eucalyptus · Australia & New Zealand/.test(await J.textContent('.ftreeimg .fkind')), 'a eucalyptus in Australia');
+      await J.evaluate(() => { db.meta.region = 'na'; render(); });
+      assert(/Red maple · North America/.test(await J.textContent('.ftreeimg .fkind')), 'a red maple in North America');
+      await J.click('#ftKind'); await J.waitForSelector('#ftKindSave');
+      assert.equal(await J.$$eval('#sheet input[name=ftKind]', x => x.length), 12, 'automatic, or any of the eleven');
+      await J.click('#sheet input[name=ftKind][value=banyan]'); await J.click('#ftKindSave');
+      await J.waitForFunction(() => /Banyan · South Asia/.test(document.querySelector('.ftreeimg .fkind').textContent));
+      assert.equal(await J.evaluate(() => Sync.st.tree.species), 'banyan');
+      assert(!/banyan/i.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
+      assert(await J.evaluate(() => !!document.querySelector('.ftpaint #ftwash') && getComputedStyle(document.querySelector('.ftreesvg')).position === 'absolute'), 'a watercolour, with everyone over it');
+    });
+
     await step('tapping the sister on the tree offers her family; opening it shows her children and her log; what is logged there reaches her phone', async () => {
       await tap(await keyOf('Sarah'));
       assert(/Sarah/.test(await J.textContent('#sheet h3')) && /Aunt or uncle · Jo's side/.test(await J.textContent('#sheet')));
@@ -201,6 +215,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       // the children's tree: Gran (family) sees it, the same, but adds no one; a medical assistant is not family: no tree, and the server won't hand it over
       await G.evaluate(() => { tab = 'family'; render(); }); await G.waitForFunction(() => [...document.querySelectorAll('.ftreesvg [data-tk]')].some(x => /^Rose Miller/.test(x.getAttribute('aria-label'))));
       assert.equal((await pic(G)).filter(n => n.key.startsWith('+')).length, 0, 'no buds for her');
+      assert(/Banyan/.test(await G.textContent('.ftreeimg .fkind')) && !(await G.$('#ftKind')), 'the tree the parents chose, and no changing it');
       await A.evaluate(() => { tab = 'family'; render(); }); await A.waitForSelector('#syncNow');
       assert.equal(await A.$('.ftreeimg'), null, 'no tree for a medical assistant');
       assert(/no access/.test(await A.evaluate(() => Sync.loadTree().then(() => 'handed over', e => e.message))));

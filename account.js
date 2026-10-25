@@ -456,6 +456,13 @@ const Acct = (() => {
   const KIN = { parent: N_('Parent'), gp: N_('Grandparent'), ggp: N_('Great-grandparent'), sib: N_('Aunt or uncle'), partner: N_('Aunt or uncle'), cousin: N_('Cousin') };
   const ADDS = { parent: N_("Add the children's other parent"), gp: N_('Add a grandparent'), ggp: N_('Add a great-grandparent'), sib: N_('Add an aunt or uncle'), partner: N_('Add a partner'), cousin: N_('Add a cousin') };
   const WHOSE = { gp: N_("{name}'s parent"), ggp: N_("{name}'s parent"), sib: N_("{name}'s brother or sister"), partner: N_("{name}'s partner"), cousin: N_("{name}'s child") };
+  // the kinds of tree, and where each is the most common one: the tree is the one where the family comes from (a parent can change it)
+  const TREES = { oak: [N_('English oak'), N_('UK & Ireland')], maple: [N_('Red maple'), N_('North America')], beech: [N_('European beech'), N_('Central Europe')],
+    birch: [N_('Silver birch'), N_('Northern and Eastern Europe')], olive: [N_('Olive tree'), N_('The Mediterranean and the Middle East')], eucalyptus: [N_('Eucalyptus'), N_('Australia & New Zealand')],
+    cherry: [N_('Cherry blossom'), N_('East Asia')], banyan: [N_('Banyan'), N_('South Asia')], mango: [N_('Mango tree'), N_('Southeast Asia')], acacia: [N_('Umbrella acacia'), N_('Africa')], jacaranda: [N_('Jacaranda'), N_('Latin America')] };
+  const timeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } };
+  const autoTree = () => FamilyTree.speciesFor(myRegion(), I18n.lang(), timeZone());
+  const swatch = k => { const c = FamilyTree.look(k); return `<i class="ftsw" style="background:${c.crown};border-color:${c.bark}" aria-hidden="true"></i>`; };
   /** Until a parent adds anyone: the children's parents, as the log knows them. */
   const startTree = () => FamilyTree.clean({ parents: Sync.st.people.filter(p => p.role === 'parent').slice(0, 2).map(p => ({ id: 'u' + p.user_id.replace(/-/g, '').slice(0, 12), name: p.display_name, user: p.user_id })) });
   const shownTree = () => (Sync.st.tree !== undefined ? Sync.st.tree : db.meta.tree) || startTree();
@@ -507,7 +514,7 @@ const Acct = (() => {
       <button class="btn" id="famAdd" style="width:100%;margin-top:10px">+ ${__h('Add a family')}</button>`;
     if (!RELATIVES.includes(db.meta.role)) return `<div class="card">${add}</div>`;   // (caregivers and the like help the family; its tree is for the family)
     if (T.for !== db.meta.babyId) { T.for = db.meta.babyId; T.scroll = null; }
-    const t = shownTree(), edit = Sync.isParent(), { model, acts } = treeModel(t, edit);
+    const t = shownTree(), edit = Sync.isParent(), { model, acts } = treeModel(t, edit), kind = t.species || autoTree();
     const seen = treeSeen(), now = Date.now();
     let order = 0;
     model.sprout = key => {   // (the time each new part started growing is kept, so a render while it grows carries on)
@@ -515,14 +522,29 @@ const Acct = (() => {
       if (now - T.grow[key] > 1000) { delete T.grow[key]; return null; }
       return T.grow[key] - now;
     };
-    const { svg, keys, width, center } = FamilyTree.draw(model);
+    const { html, keys, width, center } = FamilyTree.draw({ ...model, species: kind, dark: Theme.isDark() });
     Object.assign(T, { acts, width, center });
     const all = new Set([...(seen || []), ...keys]);
     if (!seen || all.size > seen.size) { T.seen = all; try { localStorage.setItem(SEEN, JSON.stringify([...all].slice(-500))); } catch (e) { /* storage blocked: it grows in again next time */ } }
     const bare = !t.parents.some(p => p.gp.length || p.sibs.length);
-    return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftreeimg"><div class="ftreewrap">${svg.replace('<svg ', `<svg style="width:max(100%, ${Math.round(width * 0.9)}px)" `)}</div>
-      <div class="ftfoot">${bare ? `<p class="note fhint">${edit ? __h('Tap a + to add grandparents, great-grandparents, aunts, uncles and cousins.') : __h('A parent can add grandparents, aunts, uncles and cousins.')}</p>` : ''}
+    return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftreeimg"><div class="ftreewrap">${html}</div>
+      <div class="ftfoot"><p class="note fkind">${swatch(kind)}${__h(TREES[kind][0])} · ${__h(TREES[kind][1])}${edit ? ` <button class="btn ftchange" id="ftKind">${__h('Change tree')}</button>` : ''}</p>
+      ${bare ? `<p class="note fhint">${edit ? __h('Tap a + to add grandparents, great-grandparents, aunts, uncles and cousins.') : __h('A parent can add grandparents, aunts, uncles and cousins.')}</p>` : ''}
       ${add}</div></div>`;
+  }
+  /** The kind of tree (parents): the one that grows most where the family comes from, or the automatic one for where the phone is. */
+  function pickTree() {
+    const t = shownTree(), cur = t.species || '', auto = autoTree();
+    const close = showSheet(`<h3>🌳 ${__h("Your family's tree")}</h3><p class="note" style="margin-top:0">${__h('Pick the tree that grows most where your family comes from. Everyone in the family sees it.')}</p>
+      <div class="chips ftkinds">${chip('ftKind', '', `${swatch(auto)}${__h('Automatic: {tree}', { tree: __(TREES[auto][0]) })}`, !cur, '', true)}${FamilyTree.KINDS.map(k => chip('ftKind', k, `${swatch(k)}${__h(TREES[k][0])} <small>${__h(TREES[k][1])}</small>`, cur === k, '', true)).join('')}</div>
+      <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="ftKindSave">${__h('Save')}</button></div>`);
+    $('#sheet [data-close]').onclick = close;
+    $('#ftKindSave').onclick = async () => {
+      const v = (document.querySelector('#sheet [name=ftKind]:checked') || {}).value || '';
+      if (v === cur) return close();
+      try { await Sync.loadPeople().catch(() => {}); await Sync.editTree(tr => { if (v) tr.species = v; else delete tr.species; }, startTree()); close(); toast(__('Saved')); render(); }
+      catch (e) { toast(err(e)); }
+    };
   }
   /** Someone on the tree: who they are to the children, what the children call them, their contact details when they share this log;
       a parent edits them here, and adds an aunt or uncle's partner and children. */
@@ -747,13 +769,14 @@ const Acct = (() => {
       try { await Sync.removePhone(b.dataset.rmphone); F.myPhones = await Sync.myDevices(); render(); toast(__('Phone removed')); } catch (e) { toast(err(e)); }
     });
     el('famAdd').onclick = addFamily;
-    const pic = document.querySelector('.ftreesvg'), wrap = pic && pic.parentElement;   // a tap on the tree: someone on it, or a bud to add someone
+    const pic = document.querySelector('.ftreesvg'), wrap = pic && pic.closest('.ftreewrap');   // a tap on the tree: someone on it, or a bud to add someone
     if (pic) {
       pic.onclick = e => { const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act(); };
       // a tree wider than the screen scrolls sideways: it opens at the trunk, and stays where it was scrolled to
       wrap.scrollLeft = T.scroll != null ? T.scroll : Math.max(0, (T.center * pic.clientWidth) / T.width - wrap.clientWidth / 2);
       wrap.onscroll = () => { T.scroll = wrap.scrollLeft; };
     }
+    if (el('ftKind')) el('ftKind').onclick = pickTree;
     document.querySelectorAll('[data-cancelreq]').forEach(b => b.onclick = async () => { try { await Sync.cancelRequest(b.dataset.cancelreq); render(); } catch (e) { toast(err(e)); } });
     document.querySelectorAll('[data-famopen]').forEach(b => b.onclick = () => openFamily(b.dataset.famopen, b));
     clearInterval(F.treeTimer);   // while one of your requests waits, look every 15 s for the approval

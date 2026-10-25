@@ -67,15 +67,21 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 - **Health checklist** (blue hands/feet, clicking hips, belly bulge, jaundice…) with "call your doctor" prompts
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters*, *Medical assistants* and *Friends*; per-person check boxes for exactly what
   they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**. Parents get a private **activity log** of who did what.
-- **Family tree** (Family tab): the children's family tree, drawn like a storybook tree. The children sit on the grass at the foot of
+- **Family tree** (Family tab): the children's family tree, painted as a soft watercolour (washes with pigment edges, paper grain) of
+  the tree most common where the family comes from: an English oak (UK & Ireland), a red maple (North America), a European beech, a
+  silver birch, an olive tree, a eucalyptus (Australia & New Zealand), cherry blossom (East Asia), a banyan with its hanging roots
+  (South Asia), a mango tree, an umbrella acacia (Africa) or a jacaranda (Latin America), each with its own bark, crown, leaves and
+  ground, two birds of that place on its branches and its own leaves (or petals) drifting down. It follows the app's language and the
+  region in More (and the time zone), and a parent can choose another for the whole family (**Change tree**). The children sit on the grass at the foot of
   the trunk; their parents, a couple joined by a heart, where it forks; each parent's brothers and sisters (the aunts and uncles) with
   their partners beside them, and their children (the cousins) on the grass below; the grandparents grow above each parent, and the
   great-grandparents at the top of the crown, as far as it goes (an extended tree can come later). A parent adds people by tapping the
   round **+** buds where someone is missing: a name, what the children call them ("Nana", "Grandpa Joe") and, for someone who has died,
   *In loving memory* (a little star). Someone already in Little Log can be picked instead of typed, and an aunt or uncle picked from
   their own family log brings their partner and children along (as cousins, in their own colours, to open). The trunk thickens and the
-  crown spreads as the family grows, and whoever is new since the phone last showed it sprouts in; the crown sways, the sun turns, a
-  bird hops and a butterfly flutters (all of it still with *Reduce Motion*). A tree wider than the screen scrolls sideways. Tap someone
+  crown spreads as the family grows, and whoever is new since the phone last showed it sprouts in; the birds hop and look about and
+  the leaves drift down (all of it still with *Reduce Motion*; at night there's a moon and stars). The painting is a layer of its own,
+  painted once, so the little movements stay smooth. A tree wider than the screen scrolls sideways. Tap someone
   for who they are to the children and, when they share the log, their phone and work details; tap a child for their day. The tree is
   end-to-end encrypted like the rest of the log, kept by the parents (only they change it; each change is in the activity log) and
   shown only to the children's relatives (parents and family members), never to caregivers, babysitters, medical assistants or

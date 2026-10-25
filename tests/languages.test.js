@@ -137,6 +137,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       await sheet(() => { tab = 'family'; render(); document.querySelector('.ftreesvg [data-tk="p:gran0001"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); }, 'someone on the family tree');
       await sheet(() => { tab = 'family'; render(); document.querySelector('.ftreesvg [data-tk="p:gran0001"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); document.querySelector('#tcEdit').click(); }, 'changing someone on the family tree');
       await P.evaluate(() => { tab = 'family'; render(); }); await look('family, with a family tree');
+      await sheet(() => { tab = 'family'; render(); document.querySelector('#ftKind').click(); }, 'choosing the kind of tree');
       await sheet(() => { const k = kids()[1], d = new Date(); d.setMonth(d.getMonth() - 6); d.setDate(d.getDate() - 2); k.birth = dkey(d.getTime()); delete db.meta.solids; Tour.mark('day'); solidsCheck(); }, 'time for solid foods');
       // the PDF for the doctor: every line written on its pages
       const pdfText = await P.evaluate(async () => { window.qNotes = 'Is her sleep normal?'; const r = await doctorPdf(kids()[0].id, { days: 14, every: true, notes: window.qNotes }); return r.text.flat(); });

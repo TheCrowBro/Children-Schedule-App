@@ -389,60 +389,44 @@ details.fgrp{margin:6px 10px}details.fgrp .chips,details.fgrp .note,details.food
 .almark{position:absolute;top:2px;inset-inline-end:3px;width:13px;height:13px;border-radius:50%;background:var(--health-ink);color:#fff;font:700 9px/13px system-ui,sans-serif;font-style:normal;text-align:center}
 .legend .alkey .almark{position:static;display:inline-block;width:13px;height:13px;background:var(--health-ink);margin-inline-end:4px;vertical-align:middle}
 .alcard{border-inline-start:6px solid var(--health-ink)}
-/* the family tree: a storybook tree of the children's family (ftree.js) */
-.ftreeimg{padding:0;overflow:hidden;background:linear-gradient(180deg,var(--ft-sky) 0%,var(--card) 70%)}
+/* the family tree: a soft watercolour of the children's family tree (ftree.js): a still painting, and over it everyone, the birds
+   and the falling leaves */
+.ftreeimg{padding:0;overflow:hidden;background:#fbf8f1}:root[data-mode="dark"] .ftreeimg{background:#21252c}
 .ftfoot{padding:0 14px 12px}
 .ftreewrap{direction:ltr;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}.ftreewrap::-webkit-scrollbar{display:none}   /* (the drawing is mirrored itself for right-to-left) */
-:root{--ft-sky:#eef5fb;--ft-bark:#9b7558;--ft-bark-dk:#76553e;--ft-leaf:#b5d99c;--ft-leaf2:#9fcb85;--ft-leaf-dk:#6fa85a;--ft-hill:#c4e2a9;--ft-hill-far:#dcefcb;--ft-heart:#e8798f}
-:root[data-mode="dark"]{--ft-sky:#1f2430;--ft-bark:#b08d6e;--ft-bark-dk:#8a6b52;--ft-leaf:#4f7a45;--ft-leaf2:#5f8f53;--ft-leaf-dk:#7fb069;--ft-hill:#3c5a35;--ft-hill-far:#2f4a2b;--ft-heart:#e0708a}
-.ftreesvg{display:block;height:auto;margin:0 auto;overflow:visible;-webkit-user-select:none;user-select:none}
-.ftreesvg .sun circle{fill:#ffd166}.ftreesvg .sun .rays path{stroke:#f4b942;stroke-width:2.4;stroke-linecap:round}.ftreesvg .sun .eye{fill:#9c6a12}.ftreesvg .sun .smile{fill:none;stroke:#9c6a12;stroke-width:1.4;stroke-linecap:round}
-.ftreesvg .moon{display:none}.ftreesvg .moon path{fill:#f3e7b5}
-:root[data-mode="dark"] .ftreesvg .sun{display:none}:root[data-mode="dark"] .ftreesvg .moon{display:inline}
-.ftreesvg .cloud path{fill:#fff;opacity:.9}:root[data-mode="dark"] .ftreesvg .cloud path{fill:#8d97a8;opacity:.3}
-.ftreesvg .hill ellipse{fill:var(--ft-hill)}.ftreesvg .hill .far{fill:var(--ft-hill-far)}
-.ftreesvg .flower .stem,.ftreesvg .tuft{fill:none;stroke:var(--ft-leaf-dk);stroke-width:1.6;stroke-linecap:round}
-.ftreesvg .flower circle{fill:#f6a5b9}.ftreesvg .flower.f1 circle{fill:#fbd46d}.ftreesvg .flower.f2 circle{fill:#b9a8f2}.ftreesvg .flower .mid{fill:#fff3c4}
-.ftreesvg .crown ellipse,.ftreesvg .crown circle{fill:var(--ft-leaf);opacity:.42}
-.ftreesvg .trunk{fill:var(--ft-bark);stroke:var(--ft-bark-dk);stroke-width:1.2}
-.ftreesvg .root,.ftreesvg .limb,.ftreesvg .branch,.ftreesvg .twig{fill:none;stroke:var(--ft-bark);stroke-linecap:round}.ftreesvg .root{stroke-width:4}
-.ftreesvg .knot{fill:var(--ft-bark-dk)}.ftreesvg .carve{fill:none;stroke:var(--ft-bark-dk);stroke-width:1.3}
-.ftreesvg .vine{fill:none;stroke:var(--ft-leaf-dk);stroke-width:2.2;stroke-linecap:round;stroke-dasharray:1 5}
-.ftreesvg .lf{fill:var(--ft-leaf-dk)}.ftreesvg .leaves .lf{fill:var(--ft-leaf2)}.ftreesvg .ftlf2{fill:var(--ft-leaf-dk);opacity:.55}
-.ftreesvg .fall{opacity:0;animation:ftfall 11s ease-in infinite}.ftreesvg .fall.f1{animation-delay:5.5s}.ftreesvg .fall .lf{fill:var(--ft-leaf2)}
-.ftreesvg .heart{fill:var(--ft-heart);stroke:var(--card);stroke-width:1.5}.ftreesvg .heart.faint{fill:none;stroke:var(--ft-heart);stroke-dasharray:2 2;opacity:.7}
-.ftreesvg .bird .body{fill:#e9846b}.ftreesvg .bird .tail,.ftreesvg .bird .wing{fill:#c4644d}.ftreesvg .bird .beak{fill:#f2b33d}.ftreesvg .bird .eye{fill:#2d2620}.ftreesvg .bird .leg{stroke:#76553e;stroke-width:1.2}
-.ftreesvg .butterfly .wings ellipse{fill:#f4a6c0}.ftreesvg .butterfly .wings .lower{fill:#c9a7f0}.ftreesvg .butterfly .bod{fill:#6b4f3a}.ftreesvg .butterfly .feel{fill:none;stroke:#6b4f3a;stroke-width:.9}
-.ftreesvg text{font:600 10.5px system-ui,-apple-system,sans-serif;fill:var(--ink);text-anchor:middle;pointer-events:none;unicode-bidi:plaintext}
-.ftreesvg .ftl{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}
+.ftstage{position:relative}
+.ftpaint{display:block;width:100%;height:auto}.ftpaint .wash{mix-blend-mode:multiply}:root[data-mode="dark"] .ftpaint .wash{mix-blend-mode:normal}
+.ftreesvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;-webkit-user-select:none;user-select:none;will-change:transform;--ft-ink:#4a4337;--ft-paper:#fbf8f1}
+.ftreesvg.dark{--ft-ink:#efe9de;--ft-paper:#21252c}
+.ftreesvg text{font:600 10.5px system-ui,-apple-system,sans-serif;fill:var(--ft-ink);text-anchor:middle;pointer-events:none;unicode-bidi:plaintext}
+.ftreesvg .ftl{paint-order:stroke;stroke:var(--ft-paper);stroke-width:3.5px;stroke-linejoin:round}
 .ftreesvg .fti{font:700 14px var(--serif)}.ftreesvg .small .fti{font-size:12px}.ftreesvg .small .ftl{font-size:9.5px}
 .ftreesvg .hit{fill:transparent;stroke:none}
 .ftreesvg [role=button]{cursor:pointer;outline:none}
-.ftreesvg .tnode .disc{fill:var(--card);stroke:var(--ft-bark);stroke-width:2}
-.ftreesvg .tnode.kid .disc{stroke:#fff;stroke-width:2.5}.ftreesvg .tnode.kid .fti{fill:#fff}
-.ftreesvg .tnode .curl{fill:none;stroke:var(--ft-leaf-dk);stroke-width:1.6;stroke-linecap:round}
-.ftreesvg .tnode.gone .disc{fill:var(--bg);stroke-dasharray:3 2}.ftreesvg .star{fill:#e9b949}
-.ftreesvg .tbud .disc{fill:var(--card);fill-opacity:.6;stroke:var(--ft-leaf-dk);stroke-width:1.8;stroke-dasharray:3 3}.ftreesvg .tbud .plus{stroke:var(--ft-leaf-dk);stroke-width:2.2;stroke-linecap:round}
+.ftreesvg .tnode .disc{fill:var(--ft-paper);fill-opacity:.94}
+.ftreesvg .tnode .ring{fill:none;stroke-width:1.8;opacity:.75}
+.ftreesvg .tnode .bleed{opacity:.3}
+.ftreesvg .tnode.kid .disc{fill-opacity:.82}.ftreesvg .tnode.kid .fti{fill:#fff}.ftreesvg .tnode.kid .ring{stroke-width:1.4;opacity:.55}
+.ftreesvg .tnode.gone .disc{fill-opacity:.7}.ftreesvg .tnode.gone .ring{stroke-dasharray:3 2}.ftreesvg .star{fill:#e9b949}
+.ftreesvg .tbud .disc{fill:var(--ft-paper);fill-opacity:.55;stroke:#7fa86a;stroke-width:1.8;stroke-dasharray:3 3}.ftreesvg .tbud .plus{stroke:#6f9a5c;stroke-width:2.2;stroke-linecap:round}
 .ftreesvg .tbud .ftl{fill:var(--mute);font-weight:500;font-size:9.5px}
+.ftreesvg .heart{fill:#e58aa0;opacity:.88}.ftreesvg .heart.faint{fill:none;stroke:#e58aa0;stroke-dasharray:2 2;opacity:.7}
 .ftreesvg [role=button]:focus-visible .disc{stroke:var(--brand);stroke-width:3.5}
-.ftreesvg [role=button]:active .disc{stroke:var(--brand)}
-/* gently alive: the crown sways, the sun turns, a cloud drifts, the bird hops, the butterfly flutters; whoever is new sprouts in */
-.ftreesvg .crown{transform-box:view-box;animation:ftsway 7s ease-in-out infinite}
-.ftreesvg .rays{transform-box:fill-box;transform-origin:center;animation:ftspin 40s linear infinite}
-.ftreesvg .cloud{animation:ftcloud 16s ease-in-out infinite alternate}
-.ftreesvg .bird{animation:fthop 5s ease-in-out infinite}
-.ftreesvg .butterfly{animation:ftdrift 9s ease-in-out infinite}.ftreesvg .butterfly .wings{transform-box:fill-box;transform-origin:center;animation:ftflap .45s ease-in-out infinite}
+.ftreesvg [role=button]:active .disc{stroke:var(--brand);stroke-width:2.5}
+/* gently alive: the birds hop and look about, leaves drift down; whoever is new sprouts in */
+.ftreesvg .ftbird{opacity:.94;transform-box:fill-box;transform-origin:50% 100%;animation:fthop 6s ease-in-out infinite}
+.ftreesvg .ftbird.b1{animation-duration:7.5s;animation-delay:-2.5s}.ftreesvg .ftbird.b2{animation-duration:8.5s;animation-delay:-5s}
+.ftreesvg .fallen{pointer-events:none}.ftreesvg .ftfall{opacity:0;transform-box:view-box;animation:ftfall var(--fdur,11s) ease-in var(--fd,0s) infinite}
 .ftreesvg .sprout{animation:ftsprout .6s cubic-bezier(.3,1.45,.6,1) both;animation-delay:var(--d,0ms);transform-box:fill-box;transform-origin:center}
-@keyframes ftsway{0%,100%{transform:rotate(-.5deg)}50%{transform:rotate(.5deg)}}
-@keyframes ftspin{to{transform:rotate(360deg)}}
-@keyframes ftcloud{to{transform:translateX(-28px)}}
-@keyframes fthop{0%,78%,100%{transform:translateY(0)}83%{transform:translateY(-4px)}88%{transform:translateY(0)}93%{transform:translateY(-2px)}}
-@keyframes ftdrift{0%,100%{transform:translate(0,0)}25%{transform:translate(-14px,-10px)}50%{transform:translate(-26px,-2px)}75%{transform:translate(-10px,6px)}}
-@keyframes ftflap{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.3)}}
-@keyframes ftfall{0%{opacity:0;transform:translate(0,0) rotate(0)}8%{opacity:.9}30%{transform:translate(14px,40px) rotate(40deg)}55%{transform:translate(-6px,80px) rotate(-20deg)}75%{opacity:.8}100%{opacity:0;transform:translate(10px,130px) rotate(60deg)}}
+@keyframes fthop{0%,70%,100%{transform:translateY(0) rotate(0)}74%{transform:translateY(-4px) rotate(-6deg)}78%{transform:translateY(0) rotate(0)}86%{transform:rotate(7deg)}92%{transform:rotate(0)}}
+@keyframes ftfall{0%{opacity:0;transform:translate(0,0) rotate(0)}8%{opacity:.95}30%{transform:translate(14px,46px) rotate(50deg)}55%{transform:translate(-8px,96px) rotate(-25deg)}80%{opacity:.85}100%{opacity:0;transform:translate(12px,150px) rotate(70deg)}}
 @keyframes ftsprout{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
-@media(prefers-reduced-motion:reduce){.ftreesvg .crown,.ftreesvg .rays,.ftreesvg .cloud,.ftreesvg .bird,.ftreesvg .butterfly,.ftreesvg .butterfly .wings,.ftreesvg .sprout{animation:none}.ftreesvg .fall{display:none}}
+@media(prefers-reduced-motion:reduce){.ftreesvg .ftbird,.ftreesvg .sprout{animation:none}.ftreesvg .fallen{display:none}}
 .ftreeimg .fhint{margin-top:2px;text-align:center}
+.ftreeimg .fkind{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 6px;margin:6px 0 0;text-align:center}
+.ftreeimg .ftchange{padding:4px 12px;font-size:13px;min-height:0}
+.ftsw{display:inline-block;width:14px;height:14px;border-radius:50%;border:3px solid;border-top-width:2px;vertical-align:-2px;margin-inline-end:6px;flex:none}
+.ftkinds .chip span{display:inline-flex;align-items:center;gap:2px}.ftkinds small{color:var(--mute);margin-inline-start:4px}
 .ftreeimg .fam.pending{margin:10px 0 0;padding:10px 12px;border:1px dashed var(--line);border-radius:14px;background:var(--bg)}
 .kidhead{display:flex;align-items:center;gap:10px}
 details.famlist .fbranches{margin:0 14px 14px;margin-inline-start:26px}details.famlist .fpeople{margin-top:6px}

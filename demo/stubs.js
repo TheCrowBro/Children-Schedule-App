@@ -32,10 +32,13 @@ const Acct = {
       if (now - T.grow[key] > 1000) { delete T.grow[key]; return null; }
       return T.grow[key] - now;
     };
-    const { svg, keys, width, center } = FamilyTree.draw({ ...demoTreeModel(), sprout });
+    const kind = T.kind || FamilyTree.speciesFor(myRegion(), I18n.lang(), Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+    const { html, keys, width, center } = FamilyTree.draw({ ...demoTreeModel(), sprout, species: kind, dark: Theme.isDark() });
     T.seen = new Set([...(T.seen || []), ...keys]); T.width = width; T.center = center;
-    const tree = `<h2>🌳 Family tree</h2><div class="card ftreeimg"><div class="ftreewrap">${svg.replace('<svg ', `<svg style="width:max(100%, ${Math.round(width * 0.9)}px)" `)}</div>
-      <div class="ftfoot"><p class="note fhint">Tap someone to see who they are, or a child for their day. Parents add grandparents, great-grandparents, aunts, uncles and cousins with the +: try it, and watch the tree grow.</p>
+    const sw = k => { const c = FamilyTree.look(k); return `<i class="ftsw" style="background:${c.crown};border-color:${c.bark}" aria-hidden="true"></i>`; };
+    const tree = `<h2>🌳 Family tree</h2><div class="card ftreeimg"><div class="ftreewrap">${html}</div>
+      <div class="ftfoot"><p class="note fkind">${sw(kind)}${DEMO_TREES[kind][0]} · ${DEMO_TREES[kind][1]} <button class="btn ftchange" id="demoKind">Change tree</button></p>
+      <p class="note fhint">The tree is the one most common where your family comes from. Tap someone to see who they are, or a child for their day. Parents add grandparents, great-grandparents, aunts, uncles and cousins with the +: try it, and watch the tree grow.</p>
       <button class="btn" data-demoopen style="width:100%;margin-top:10px">+ Add a family</button></div></div>`;
     const list = `<details class="gd famlist" data-grp="famlist" ${openGroups.has('famlist') ? 'open' : ''}><summary><span class="gi">🌳</span><span class="gt"><b>Families and relatives</b><small>Your family, Sarah's family and Tom's family</small></span><span class="chev" aria-hidden="true">›</span></summary><ul class="fbranches">
       <li class="fam on" data-fam="own"><div class="fhead"><span><b>Your family</b><br><small>Parent</small></span><small class="fshow">Showing</small></div><div class="fkids">${kids().map(k => kid(k.name, k.color)).join('')}</div>
@@ -46,7 +49,8 @@ const Acct = {
       <li class="fam"><div class="fhead"><span><b>Tom's family</b><br><small>Family member</small></span><button class="btn" data-demoopen>Open</button></div><div class="fkids">${kid('Noah', '#2f8f83')}</div><p class="note fkin">Family: Tom and Priya</p></li></ul></details>`;
     setTimeout(() => {
       document.querySelectorAll('[data-demoopen]').forEach(b => b.onclick = () => toast('In the real app, this opens that family (or adds one)'));
-      const pic = document.querySelector('.ftreesvg'), wrap = pic && pic.parentElement;
+      const pic = document.querySelector('.ftreesvg'), wrap = pic && pic.closest('.ftreewrap');
+      const kb = $('#demoKind'); if (kb) kb.onclick = demoPickTree;
       if (pic) {
         pic.onclick = e => { const n = e.target.closest('[data-tk]'); if (n) demoTreeTap(n.dataset.tk); };
         wrap.scrollLeft = T.scroll != null ? T.scroll : Math.max(0, (T.center * pic.clientWidth) / T.width - wrap.clientWidth / 2); wrap.onscroll = () => { T.scroll = wrap.scrollLeft; };
@@ -68,6 +72,19 @@ const DEMO_TREE = { seen: null, grow: {}, scroll: null, tree: FamilyTree.clean({
     sibs: [{ id: 'sarah001', name: 'Sarah', call: 'Auntie Sarah', partner: { id: 'ben00001', name: 'Ben' }, kids: [{ id: 'ava00001', name: 'Ava' }, { id: 'jack0001', name: 'Jack' }] }] },
   { id: 'dad00001', name: 'Dad', gp: [{ id: 'gran0001', name: 'Gran', gp: [] }, { id: 'grandad1', name: 'Grandad', gp: [] }],
     sibs: [{ id: 'tom00001', name: 'Tom', call: 'Uncle Tom', partner: { id: 'priya001', name: 'Priya' }, kids: [{ id: 'noah0001', name: 'Noah' }] }] }] }) };
+const DEMO_TREES = { oak: ['English oak', 'UK & Ireland'], maple: ['Red maple', 'North America'], beech: ['European beech', 'Central Europe'], birch: ['Silver birch', 'Northern and Eastern Europe'],
+  olive: ['Olive tree', 'The Mediterranean and the Middle East'], eucalyptus: ['Eucalyptus', 'Australia & New Zealand'], cherry: ['Cherry blossom', 'East Asia'], banyan: ['Banyan', 'South Asia'],
+  mango: ['Mango tree', 'Southeast Asia'], acacia: ['Umbrella acacia', 'Africa'], jacaranda: ['Jacaranda', 'Latin America'] };
+/** Try each kind of tree (in the app a parent picks it for the whole family). */
+function demoPickTree() {
+  const S = $('#sheet'), B = $('#sheetBack'), close = () => { S.hidden = B.hidden = true; }, cur = DEMO_TREE.kind || '';
+  const sw = k => { const c = FamilyTree.look(k); return `<i class="ftsw" style="background:${c.crown};border-color:${c.bark}" aria-hidden="true"></i>`; };
+  S.innerHTML = `<h3>🌳 Your family's tree</h3><p class="note" style="margin-top:0">Pick the tree that grows most where your family comes from. Everyone in the family sees it.</p>
+    <div class="chips ftkinds"><label class="chip"><input type="radio" name="dmKind" value=""${cur ? '' : ' checked'}><span>Automatic (for where you are)</span></label>${FamilyTree.KINDS.map(k => `<label class="chip"><input type="radio" name="dmKind" value="${k}"${cur === k ? ' checked' : ''}><span>${sw(k)}${DEMO_TREES[k][0]} <small>${DEMO_TREES[k][1]}</small></span></label>`).join('')}</div>
+    <div class="row" style="margin-top:14px"><button class="btn" data-close>Cancel</button><button class="btn p" id="dmKindSave">Show it</button></div>`;
+  S.hidden = B.hidden = false; B.onclick = close; S.querySelector('[data-close]').onclick = close;
+  $('#dmKindSave').onclick = () => { DEMO_TREE.kind = (S.querySelector('[name=dmKind]:checked') || {}).value || ''; DEMO_TREE.scroll = null; close(); render(); };
+}
 const DEMO_KIN = { parent: 'Parent', gp: 'Grandparent', ggp: 'Great-grandparent', sib: 'Aunt or uncle', partner: 'Aunt or uncle', cousin: 'Cousin' };
 const DEMO_ADDS = { parent: "Add the children's other parent", gp: 'Add a grandparent', ggp: 'Add a great-grandparent', sib: 'Add an aunt or uncle', partner: 'Add a partner', cousin: 'Add a cousin' };
 const COUSIN_COLOURS = ['#c2577a', '#3f78b5', '#2f8f83', '#8a5cc2', '#c98a3d'];
