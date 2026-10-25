@@ -1444,10 +1444,6 @@
   "one": "Badiliko {n} bado halijatumwa: litatumwa utakapofungua familia hii.",
   "other": "Mabadiliko {n} bado hayajatumwa: yatatumwa utakapofungua familia hii."
  },
- "1j1dg3b": {
-  "one": "Ombi {n} linasubiri idhini yako (chini)",
-  "other": "Maombi {n} yanasubiri idhini yako (chini)"
- },
  "1efd4xo": "Wewe",
  "1b0i0ln": "Inabadilisha…",
  "1p7x3j8": "Sasa inaonyeshwa: {family}",
@@ -1477,5 +1473,19 @@
  "15d4rna": "Ungependa kumwondoa {name} kwenye orodha ya Kumbukumbu? Maelezo yake yatafutwa.",
  "arar4a": "{actor} amemweka {person} kwenye kumbukumbu",
  "17n774r": "Unawatunza watoto wa mtu mwingine? Changanua msimbo wa QR ambao mmoja wa wazazi wao anakuonyesha. Wakiidhinisha, familia yao itaonekana kwenye ukurasa huu: kwenye mti wako wa familia kama wewe ni wa familia, au kwenye “Familia unazosaidia”.",
- "195vm2m": "Unawatunza watoto wa mtu mwingine? Mwombe mmoja wa wazazi wao afungue kichupo cha Familia → Alika mtu kwenye Little Log yake, achague unachoruhusiwa kufanya, kisha akuonyeshe msimbo wa QR. Uchanganue hapa. Wakiidhinisha, familia yao itaonekana hapa: kwenye mti wako wa familia kama wewe ni wa familia, au kwenye “Familia unazosaidia”. Unaweza kubadilisha familia wakati wowote."
+ "195vm2m": "Unawatunza watoto wa mtu mwingine? Mwombe mmoja wa wazazi wao afungue kichupo cha Familia → Alika mtu kwenye Little Log yake, achague unachoruhusiwa kufanya, kisha akuonyeshe msimbo wa QR. Uchanganue hapa. Wakiidhinisha, familia yao itaonekana hapa: kwenye mti wako wa familia kama wewe ni wa familia, au kwenye “Familia unazosaidia”. Unaweza kubadilisha familia wakati wowote.",
+ "ymkivl": "Wewe, familia yako na familia za ndugu zako, zimechorwa kama mti unaokua kadiri watu wanavyojiunga. Gusa mtu ili kuona maelezo yake, mtoto ili kuona siku yake, au familia ili kuhamia huko.",
+ "1dv359l": "Familia na ndugu",
+ "1xzrjrm": {
+  "one": "mwaka {n}",
+  "other": "miaka {n}"
+ },
+ "vtzopg": "{family}, inaonyeshwa",
+ "thlxlz": "Fungua {family}",
+ "5dqw62": "Kwa sasa ni wewe tu. Mti unakua unapojiunga na daftari la familia yako au la ndugu.",
+ "wo8v8p": "Onyesha siku ya {name}",
+ "1d71jrf": {
+  "one": "Ombi {n} linasubiri idhini yako",
+  "other": "Maombi {n} yanasubiri idhini yako"
+ }
 }

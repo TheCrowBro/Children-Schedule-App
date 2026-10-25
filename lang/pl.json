@@ -1492,12 +1492,6 @@
   "many": "{n} zmian jeszcze niewysłanych: zostaną wysłane, gdy otworzysz tę rodzinę.",
   "other": "{n} zmiany jeszcze niewysłane: zostaną wysłane, gdy otworzysz tę rodzinę."
  },
- "1j1dg3b": {
-  "one": "{n} prośba czeka na Twoje zatwierdzenie (poniżej)",
-  "few": "{n} prośby czekają na Twoje zatwierdzenie (poniżej)",
-  "many": "{n} próśb czeka na Twoje zatwierdzenie (poniżej)",
-  "other": "{n} prośby czeka na Twoje zatwierdzenie (poniżej)"
- },
  "1efd4xo": "Ty",
  "1b0i0ln": "Przełączanie…",
  "1p7x3j8": "Teraz wyświetlane: {family}",
@@ -1529,5 +1523,23 @@
  "15d4rna": "Usunąć osobę {name} z archiwum? Jej dane zostaną usunięte.",
  "arar4a": "{actor}: przeniesiono do archiwum osobę {person}",
  "17n774r": "Opiekujesz się cudzymi dziećmi? Zeskanuj kod QR, który pokaże Ci jedno z rodziców. Po zatwierdzeniu ich rodzina pojawi się na tej stronie: w Twoim drzewie rodzinnym, jeśli należysz do rodziny, a w przeciwnym razie w sekcji „Rodziny, którym pomagasz”.",
- "195vm2m": "Opiekujesz się cudzymi dziećmi? Poproś jedno z rodziców, żeby w aplikacji Little Log otworzyło kartę Rodzina → Zaproś kogoś, wybrało, co możesz robić, i pokazało Ci kod QR. Zeskanuj go tutaj. Po zatwierdzeniu ich rodzina pojawi się tutaj: w Twoim drzewie rodzinnym, jeśli należysz do rodziny, a w przeciwnym razie w sekcji „Rodziny, którym pomagasz”. W każdej chwili możesz przełączać się między rodzinami."
+ "195vm2m": "Opiekujesz się cudzymi dziećmi? Poproś jedno z rodziców, żeby w aplikacji Little Log otworzyło kartę Rodzina → Zaproś kogoś, wybrało, co możesz robić, i pokazało Ci kod QR. Zeskanuj go tutaj. Po zatwierdzeniu ich rodzina pojawi się tutaj: w Twoim drzewie rodzinnym, jeśli należysz do rodziny, a w przeciwnym razie w sekcji „Rodziny, którym pomagasz”. W każdej chwili możesz przełączać się między rodzinami.",
+ "ymkivl": "Ty, Twoja rodzina i rodziny Twoich bliskich na rysunku drzewa, które rośnie, gdy dołączają kolejne osoby. Dotknij osoby, aby zobaczyć jej dane, dziecka, aby zobaczyć jego dzień, albo rodziny, aby się na nią przełączyć.",
+ "1dv359l": "Rodziny i bliscy",
+ "1xzrjrm": {
+  "one": "{n} rok",
+  "few": "{n} lata",
+  "many": "{n} lat",
+  "other": "{n} roku"
+ },
+ "vtzopg": "{family}, wyświetlane",
+ "thlxlz": "Otwórz „{family}”",
+ "5dqw62": "Na razie jesteś tu tylko Ty. Drzewo rośnie, gdy dołączasz do dziennika swojej rodziny lub kogoś z bliskich.",
+ "wo8v8p": "Pokaż dzień dziecka {name}",
+ "1d71jrf": {
+  "one": "{n} prośba czeka na Twoje zatwierdzenie",
+  "few": "{n} prośby czekają na Twoje zatwierdzenie",
+  "many": "{n} próśb czeka na Twoje zatwierdzenie",
+  "other": "{n} prośby czeka na Twoje zatwierdzenie"
+ }
 }

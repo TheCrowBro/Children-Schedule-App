@@ -417,7 +417,6 @@
   "Add a family": "Button and sheet title in the family tree: join another family's log (for example to look after a sister's children) by scanning an invite from one of its parents.",
   "You're in: {family}": "Short message when a request to join another family was approved; {family} is its name in the family tree.",
   "{n} change not sent yet: it goes when you open this family.": "In the family tree, on a family kept on the phone that has changes made offline that have not reached the server yet.",
-  "{n} waiting for your approval (below)": "In the family tree, on the family shown: how many people asked to join it; their requests are further down the page.",
   "Switching…": "On a button while the app switches to another family's log.",
   "Now showing {family}": "Short message after switching to another family's log.",
   "Could not switch: {reason}": "Short message when switching to another family's log failed; {reason} says why.",
@@ -441,6 +440,14 @@
   "No details were added.": "On a retired helper's card, when they never added contact details.",
   "Remove from the list": "Button on a retired helper's card: delete the note about them from the Retired list.",
   "Remove {name} from the Retired list? Their details are deleted.": "Question before deleting the note about a retired helper.",
-  "{actor} retired {person}": "A line of the activity log: a parent retired a helper."
+  "{actor} retired {person}": "A line of the activity log: a parent retired a helper.",
+  "You, your family and your relatives' families, drawn as a tree that grows as people join. Tap someone for their details, a child for their day, or a family to switch to it.": "Tour of the Family tab, first step: the picture of the family tree (you at the foot of the trunk, each family a cluster of round leaves on a branch, children in their colours). 'Switch to it' = show that family's log in the app.",
+  "Families and relatives": "Title of the twirl-down (fold-out) list under the family tree picture: every family log you are family in, with its children and relatives. Also a tour step title.",
+  "{n} year": "A child's age on the family tree, in whole years (from two years old). Like '{n} month' and '{n} week'.",
+  "{family}, showing": "Read aloud by screen readers for a family on the family tree picture: the family whose log the app shows now. {family} is its name, e.g. \"Sarah's family\".",
+  "Open {family}": "Button (and screen-reader label on the family tree picture): show that family's log in the app. {family} is its name, e.g. \"Sarah's family\".",
+  "Just you for now. It grows when you join your own family's log or a relative's.": "Under the family tree picture when it is only you (a seedling): you are in no family log as a parent or family member yet, e.g. only as a babysitter. 'It' = the tree.",
+  "Show {name}'s day": "Button on a child's card, opened by tapping the child on the family tree: show that child's Day page (switching to their family first). {name} is the child's name.",
+  "{n} waiting for your approval": "Under the title of the families list (folded up): how many people asked to join one of the families you are a parent in; their requests are inside the list."
  }
 }

@@ -389,9 +389,33 @@ details.fgrp{margin:6px 10px}details.fgrp .chips,details.fgrp .note,details.food
 .almark{position:absolute;top:2px;inset-inline-end:3px;width:13px;height:13px;border-radius:50%;background:var(--health-ink);color:#fff;font:700 9px/13px system-ui,sans-serif;font-style:normal;text-align:center}
 .legend .alkey .almark{position:static;display:inline-block;width:13px;height:13px;background:var(--health-ink);margin-inline-end:4px;vertical-align:middle}
 .alcard{border-inline-start:6px solid var(--health-ink)}
-/* the family tree: you, and each family log you are in */
-.ftree .froot{display:flex;align-items:center;gap:10px}.ftree .froot .av{background:var(--brand);color:var(--on-brand)}
-.fbranches{list-style:none;margin:8px 0 0 15px;padding:0;border-inline-start:2px solid var(--line)}
+/* the family tree: a picture of you and the families you are family in (ftree.js), that grows as people join */
+.ftreeimg{padding:10px 8px;background:radial-gradient(80% 60% at 50% 40%,var(--wash3),transparent 80%),var(--card)}
+.ftreesvg{display:block;width:100%;max-width:440px;height:auto;margin:0 auto;overflow:visible;--bark:#9b7a5c;--leaf:#9fc08e;--leaf-on:#78a866;--leaf-a:.36;-webkit-user-select:none;user-select:none}
+:root[data-mode="dark"] .ftreesvg{--bark:#a88a6c;--leaf:#5d7f50;--leaf-on:#77a265;--leaf-a:.42}
+.ftreesvg .bark path{fill:none;stroke:var(--bark);stroke-linecap:round}.ftreesvg .root{opacity:.75}
+.ftreesvg .canopy ellipse{fill:var(--leaf);opacity:var(--leaf-a)}.ftreesvg .canopy.on ellipse{fill:var(--leaf-on);opacity:.5}.ftreesvg .canopy.seed ellipse{fill:var(--leaf-on);opacity:.9}
+.ftreesvg text{font:600 11px system-ui,-apple-system,sans-serif;fill:var(--ink);text-anchor:middle;pointer-events:none;unicode-bidi:plaintext}
+.ftreesvg .tfname{font:700 13px var(--serif)}.ftreesvg .tfname.sm{font-size:11px}
+.ftreesvg .hit{fill:transparent;stroke:none}
+.ftreesvg [role=button]{cursor:pointer;outline:none}
+.ftreesvg .tnode circle:not(.hit){fill:var(--card);stroke:var(--bark);stroke-width:2}
+.ftreesvg .tnode.kid circle:not(.hit){stroke:var(--card);stroke-width:2.5}.ftreesvg .tnode.kid .fti{fill:#fff}
+.ftreesvg .tnode.me circle:not(.hit){fill:var(--brand);stroke:var(--card);stroke-width:3}.ftreesvg .tnode.me .fti{fill:var(--on-brand);font-size:17px}
+.ftreesvg .fti{font:700 14px var(--serif)}
+.ftreesvg .ftl{font-size:10.5px;font-weight:500;fill:var(--mute)}.ftreesvg .ftl.me{font-size:12px;font-weight:700;fill:var(--ink)}
+.ftreesvg [role=button]:focus-visible circle:not(.hit),.ftreesvg .tfam:focus-visible .hit{stroke:var(--brand);stroke-width:3.5}
+.ftreesvg [role=button]:active circle:not(.hit){stroke:var(--brand)}
+/* whoever is new grows in: a person or a family sprouts, a branch draws out from the trunk */
+.ftreesvg .sprout{animation:ftsprout .6s cubic-bezier(.3,1.45,.6,1) both;animation-delay:var(--d,0ms);transform-box:fill-box;transform-origin:center}
+.ftreesvg path.sprout{stroke-dasharray:1;animation-name:ftbranch;animation-duration:.7s;animation-timing-function:ease-out}
+@keyframes ftsprout{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes ftbranch{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.ftreesvg .sprout{animation:none}.ftreesvg path.sprout{stroke-dasharray:none}}
+.ftreeimg .fam.pending{margin:10px 0 0;padding:10px 12px;border:1px dashed var(--line);border-radius:14px;background:var(--bg)}
+.kidhead{display:flex;align-items:center;gap:10px}
+details.famlist .fbranches{margin:0 14px 14px;margin-inline-start:26px}details.famlist .fpeople{margin-top:6px}
+.fbranches{list-style:none;margin:8px 0 0;margin-inline-start:15px;padding:0;border-inline-start:2px solid var(--line)}
 .fbranches .fam{position:relative;margin:10px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:14px;margin-inline-start:16px;background:var(--bg)}
 .fbranches .fam::before{content:'';position:absolute;inset-inline-start:-18px;top:22px;width:16px;border-top:2px solid var(--line)}
 .fbranches .fam.on{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset}

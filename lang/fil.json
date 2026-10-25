@@ -1444,10 +1444,6 @@
   "one": "{n} pagbabago na hindi pa naipapadala: ipapadala ito kapag binuksan mo ang pamilyang ito.",
   "other": "{n} pagbabago na hindi pa naipapadala: ipapadala ang mga ito kapag binuksan mo ang pamilyang ito."
  },
- "1j1dg3b": {
-  "one": "{n} request ang naghihintay ng pag-apruba mo (sa ibaba)",
-  "other": "{n} request ang naghihintay ng pag-apruba mo (sa ibaba)"
- },
  "1efd4xo": "Ikaw",
  "1b0i0ln": "Lumilipat…",
  "1p7x3j8": "Ipinapakita na: {family}",
@@ -1477,5 +1473,19 @@
  "15d4rna": "Alisin si {name} sa listahang Naka-archive? Mabubura ang mga detalye niya.",
  "arar4a": "Ini-archive ni {actor} si {person}",
  "17n774r": "Nag-aalaga ka ba ng anak ng iba? I-scan ang QR code na ipapakita sa iyo ng isa sa mga magulang nila. Kapag inaprubahan nila, makikita ang pamilya nila sa pahinang ito: sa puno ng pamilya mo kung kapamilya ka, o sa “Mga pamilyang tinutulungan mo”.",
- "195vm2m": "Nag-aalaga ka ba ng anak ng iba? Hilingin sa isa sa mga magulang nila na buksan ang tab na Pamilya → Mag-imbita ng tao sa Little Log nila, piliin kung ano ang puwede mong gawin, at ipakita sa iyo ang QR code. I-scan ito rito. Kapag inaprubahan nila, makikita rito ang pamilya nila: sa puno ng pamilya mo kung kapamilya ka, o sa “Mga pamilyang tinutulungan mo”. Puwede kang lumipat sa pagitan ng mga pamilya anumang oras."
+ "195vm2m": "Nag-aalaga ka ba ng anak ng iba? Hilingin sa isa sa mga magulang nila na buksan ang tab na Pamilya → Mag-imbita ng tao sa Little Log nila, piliin kung ano ang puwede mong gawin, at ipakita sa iyo ang QR code. I-scan ito rito. Kapag inaprubahan nila, makikita rito ang pamilya nila: sa puno ng pamilya mo kung kapamilya ka, o sa “Mga pamilyang tinutulungan mo”. Puwede kang lumipat sa pagitan ng mga pamilya anumang oras.",
+ "ymkivl": "Ikaw, ang pamilya mo, at ang mga pamilya ng mga kamag-anak mo, na iginuhit bilang punong lumalaki habang may sumasali. I-tap ang isang tao para sa detalye niya, ang isang bata para sa araw niya, o ang isang pamilya para lumipat doon.",
+ "1dv359l": "Mga pamilya at kamag-anak",
+ "1xzrjrm": {
+  "one": "{n} taon",
+  "other": "{n} na taon"
+ },
+ "vtzopg": "{family}, ipinapakita",
+ "thlxlz": "Buksan ang {family}",
+ "5dqw62": "Ikaw pa lang sa ngayon. Lalaki ang puno kapag sumali ka sa talaan ng sarili mong pamilya o ng isang kamag-anak.",
+ "wo8v8p": "Tingnan ang araw ni {name}",
+ "1d71jrf": {
+  "one": "{n} request ang naghihintay ng pag-apruba mo",
+  "other": "{n} request ang naghihintay ng pag-apruba mo"
+ }
 }

@@ -1468,11 +1468,6 @@
   "many": "{n} cambios aún sin enviar: se enviarán cuando abras esta familia.",
   "other": "{n} cambios aún sin enviar: se enviarán cuando abras esta familia."
  },
- "1j1dg3b": {
-  "one": "{n} solicitud esperando tu aprobación (abajo)",
-  "many": "{n} solicitudes esperando tu aprobación (abajo)",
-  "other": "{n} solicitudes esperando tu aprobación (abajo)"
- },
  "1efd4xo": "Tú",
  "1b0i0ln": "Cambiando…",
  "1p7x3j8": "Ahora ves: {family}",
@@ -1503,5 +1498,21 @@
  "15d4rna": "¿Quitar a {name} del archivo? Se borrarán sus datos.",
  "arar4a": "{actor} archivó a {person}",
  "17n774r": "¿Cuidas a los hijos de otra persona? Escanea el código QR que te muestre su padre o su madre. Cuando te apruebe, su familia aparecerá en esta página: en tu árbol familiar si eres de la familia, o en «Familias a las que ayudas».",
- "195vm2m": "¿Cuidas a los hijos de otra persona? Pide a su padre o a su madre que abra la pestaña Familia → Invitar a alguien en su Little Log, elija lo que podrás hacer y te muestre el código QR. Escanéalo aquí. Cuando te apruebe, su familia aparecerá aquí: en tu árbol familiar si eres de la familia, o en «Familias a las que ayudas». Puedes cambiar de familia cuando quieras."
+ "195vm2m": "¿Cuidas a los hijos de otra persona? Pide a su padre o a su madre que abra la pestaña Familia → Invitar a alguien en su Little Log, elija lo que podrás hacer y te muestre el código QR. Escanéalo aquí. Cuando te apruebe, su familia aparecerá aquí: en tu árbol familiar si eres de la familia, o en «Familias a las que ayudas». Puedes cambiar de familia cuando quieras.",
+ "ymkivl": "Un árbol contigo, tu familia y las familias de tus parientes, que crece a medida que se une gente. Toca a una persona para ver sus datos, a un niño o una niña para ver su día, o una familia para pasarte a ella.",
+ "1dv359l": "Familias y parientes",
+ "1xzrjrm": {
+  "one": "{n} año",
+  "many": "{n} años",
+  "other": "{n} años"
+ },
+ "vtzopg": "{family}, registro abierto",
+ "thlxlz": "Abrir {family}",
+ "5dqw62": "Por ahora solo estás tú. El árbol crece cuando te unes al registro de tu familia o al de tus parientes.",
+ "wo8v8p": "Ver el día de {name}",
+ "1d71jrf": {
+  "one": "{n} solicitud esperando tu aprobación",
+  "many": "{n} solicitudes esperando tu aprobación",
+  "other": "{n} solicitudes esperando tu aprobación"
+ }
 }

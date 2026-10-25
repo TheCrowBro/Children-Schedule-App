@@ -1444,10 +1444,6 @@
   "one": "{n} değişiklik henüz gönderilmedi: bu aileyi açtığınızda gönderilecek.",
   "other": "{n} değişiklik henüz gönderilmedi: bu aileyi açtığınızda gönderilecek."
  },
- "1j1dg3b": {
-  "one": "{n} istek onayınızı bekliyor (aşağıda)",
-  "other": "{n} istek onayınızı bekliyor (aşağıda)"
- },
  "1efd4xo": "Siz",
  "1b0i0ln": "Geçiş yapılıyor…",
  "1p7x3j8": "Gösteriliyor: {family}",
@@ -1477,5 +1473,19 @@
  "15d4rna": "{name} arşivden kaldırılsın mı? Bilgileri silinir.",
  "arar4a": "{actor}, {person} adlı kişiyi arşivledi",
  "17n774r": "Başkasının çocuklarına mı bakıyorsunuz? Ebeveynlerinden birinin gösterdiği QR kodunu tarayın. Onaylandığında aileleri bu sayfada görünür: aileden biriyseniz aile ağacınızda, değilseniz “Yardım ettiğiniz aileler” bölümünde.",
- "195vm2m": "Başkasının çocuklarına mı bakıyorsunuz? Ebeveynlerinden birinden, Little Log uygulamasında Aile sekmesi → Birini davet et bölümünü açmasını, neler yapabileceğinizi seçmesini ve size QR kodunu göstermesini isteyin. Kodu burada tarayın. Onaylandığında aileleri burada görünür: aileden biriyseniz aile ağacınızda, değilseniz “Yardım ettiğiniz aileler” bölümünde. İstediğiniz zaman aileler arasında geçiş yapabilirsiniz."
+ "195vm2m": "Başkasının çocuklarına mı bakıyorsunuz? Ebeveynlerinden birinden, Little Log uygulamasında Aile sekmesi → Birini davet et bölümünü açmasını, neler yapabileceğinizi seçmesini ve size QR kodunu göstermesini isteyin. Kodu burada tarayın. Onaylandığında aileleri burada görünür: aileden biriyseniz aile ağacınızda, değilseniz “Yardım ettiğiniz aileler” bölümünde. İstediğiniz zaman aileler arasında geçiş yapabilirsiniz.",
+ "ymkivl": "Siz, aileniz ve akrabalarınızın aileleri; insanlar katıldıkça büyüyen bir ağaç olarak çizilir. Bilgilerini görmek için bir kişiye, gününü görmek için bir çocuğa, geçiş yapmak için bir aileye dokunun.",
+ "1dv359l": "Aileler ve akrabalar",
+ "1xzrjrm": {
+  "one": "{n} yaş",
+  "other": "{n} yaş"
+ },
+ "vtzopg": "{family}, gösteriliyor",
+ "thlxlz": "“{family}” günlüğünü aç",
+ "5dqw62": "Şimdilik sadece siz varsınız. Kendi ailenizin ya da bir akrabanızın günlüğüne katıldığınızda ağaç büyür.",
+ "wo8v8p": "{name} için günü göster",
+ "1d71jrf": {
+  "one": "{n} istek onayınızı bekliyor",
+  "other": "{n} istek onayınızı bekliyor"
+ }
 }

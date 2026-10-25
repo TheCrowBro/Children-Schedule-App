@@ -1468,11 +1468,6 @@
   "many": "{n} modifications pas encore envoyées : elles le seront quand vous ouvrirez cette famille.",
   "other": "{n} modifications pas encore envoyées : elles le seront quand vous ouvrirez cette famille."
  },
- "1j1dg3b": {
-  "one": "{n} demande en attente de votre validation (ci-dessous)",
-  "many": "{n} demandes en attente de votre validation (ci-dessous)",
-  "other": "{n} demandes en attente de votre validation (ci-dessous)"
- },
  "1efd4xo": "Vous",
  "1b0i0ln": "Changement…",
  "1p7x3j8": "Journal affiché : {family}",
@@ -1503,5 +1498,21 @@
  "15d4rna": "Retirer {name} des archives ? Ses informations seront supprimées.",
  "arar4a": "{actor} a archivé {person}",
  "17n774r": "Vous vous occupez des enfants de quelqu'un d'autre ? Scannez le code QR que l'un de leurs parents vous montre. Une fois la demande validée, leur famille apparaît sur cette page : dans votre arbre familial si vous faites partie de la famille, sinon dans « Familles que vous aidez ».",
- "195vm2m": "Vous vous occupez des enfants de quelqu'un d'autre ? Demandez à l'un de leurs parents d'ouvrir l'onglet Famille → Inviter quelqu'un dans son Little Log, de choisir ce que vous pourrez faire et de vous montrer le code QR. Scannez-le ici. Une fois la demande validée, leur famille apparaît ici : dans votre arbre familial si vous faites partie de la famille, sinon dans « Familles que vous aidez ». Vous pouvez passer d'une famille à l'autre à tout moment."
+ "195vm2m": "Vous vous occupez des enfants de quelqu'un d'autre ? Demandez à l'un de leurs parents d'ouvrir l'onglet Famille → Inviter quelqu'un dans son Little Log, de choisir ce que vous pourrez faire et de vous montrer le code QR. Scannez-le ici. Une fois la demande validée, leur famille apparaît ici : dans votre arbre familial si vous faites partie de la famille, sinon dans « Familles que vous aidez ». Vous pouvez passer d'une famille à l'autre à tout moment.",
+ "ymkivl": "Votre famille et celles de vos proches, avec vous au pied de l'arbre ; il grandit à mesure que des personnes vous rejoignent. Touchez une personne pour voir ses informations, un enfant pour voir sa page Jour, ou une famille pour y passer.",
+ "1dv359l": "Familles et proches",
+ "1xzrjrm": {
+  "one": "{n} an",
+  "many": "{n} ans",
+  "other": "{n} ans"
+ },
+ "vtzopg": "{family}, journal affiché",
+ "thlxlz": "Ouvrir {family}",
+ "5dqw62": "Pour l'instant, il n'y a que vous. L'arbre grandit quand vous rejoignez le journal de votre famille ou celui de vos proches.",
+ "wo8v8p": "Voir la page Jour de {name}",
+ "1d71jrf": {
+  "one": "{n} demande en attente de votre validation",
+  "many": "{n} demandes en attente de votre validation",
+  "other": "{n} demandes en attente de votre validation"
+ }
 }

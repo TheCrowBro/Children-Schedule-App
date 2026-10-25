@@ -296,7 +296,7 @@ const server = http.createServer((req, res) => {
   await step('a parent can change someone\'s access later; health notes disappear when that permission is removed', async () => {
     await goTab(A, 'day'); await A.click('[data-add=health]'); await A.click('input[value="Rash"]'); await A.click('#save'); await A.waitForFunction(() => !db.events.some(e => e.updated > db.meta.pushedAt));
     await goTab(C, 'day'); await syncNow(C); assert(await C.isVisible('[data-add=health]'), 'health button visible while permitted'); assert(await C.evaluate(() => db.events.some(e => e.type === 'health')));
-    await goTab(A, 'family'); await A.waitForSelector('[data-person]'); await A.evaluate(() => Sync.loadPeople());
+    await goTab(A, 'family'); await A.waitForSelector('#helpers [data-person]'); await A.evaluate(() => Sync.loadPeople());
     const nanId = (await q(`select user_id from members where email='nan@x.com'`))[0].user_id;
     await A.click(`[data-person="${nanId}"]`); await A.waitForSelector('#pSave');
     await A.click('input[name=pperm][value=view_health]:checked'); await A.click('#pSave'); await A.waitForFunction(() => document.querySelector('#sheet').hidden);

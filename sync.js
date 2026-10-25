@@ -268,11 +268,11 @@ const Sync = (() => {
     st.familyRequests = out; return out;
   }
   /** The relatives in each family log (its parents and family members, not you), to name it in the family tree ("Sarah's family") and
-      show who is in it, where this person may see who has which role: { id: [{ name, role }] }. */
+      show who is in it, where this person may see who has which role: { id: [{ id, name, role }] }. */
   async function loadFamilyPeople() {
     const out = {};
     for (const m of st.memberships) {
-      try { out[m.id] = list(await Auth.rpc('list_people', { p_baby: m.id })).filter(p => (p.role === 'parent' || p.role === 'family') && !p.is_you).map(p => ({ name: p.display_name, role: p.role })); } catch (e) { /* named after the children instead */ }
+      try { out[m.id] = list(await Auth.rpc('list_people', { p_baby: m.id })).filter(p => (p.role === 'parent' || p.role === 'family') && !p.is_you).map(p => ({ id: p.user_id, name: p.display_name, role: p.role })); } catch (e) { /* named after the children instead */ }
     }
     st.familyPeople = out; return out;
   }

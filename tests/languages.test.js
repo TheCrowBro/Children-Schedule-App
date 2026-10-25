@@ -129,6 +129,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       await sheet(() => openEntryInfo(db.events.find(e => e.data && e.data.kind === 'solids').id), 'an entry tapped on the clock');
       await sheet(() => openAllergy(kids()[0].id, { foods: ['Peanut', 'Kiwi'], date: dkey(Date.now()) }), 'mark an allergy');
       await sheet(() => openDoctorReport(), 'report for the doctor');
+      await sheet(() => { tab = 'family'; render(); document.querySelector('.ftreesvg [data-tk^="k:"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); }, 'a child tapped on the family tree');
       await sheet(() => { const k = kids()[1], d = new Date(); d.setMonth(d.getMonth() - 6); d.setDate(d.getDate() - 2); k.birth = dkey(d.getTime()); delete db.meta.solids; Tour.mark('day'); solidsCheck(); }, 'time for solid foods');
       // the PDF for the doctor: every line written on its pages
       const pdfText = await P.evaluate(async () => { window.qNotes = 'Is her sleep normal?'; const r = await doctorPdf(kids()[0].id, { days: 14, every: true, notes: window.qNotes }); return r.text.flat(); });

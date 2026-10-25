@@ -1444,10 +1444,6 @@
   "one": "{n} wijziging nog niet verstuurd: die wordt verstuurd zodra je dit gezin opent.",
   "other": "{n} wijzigingen nog niet verstuurd: die worden verstuurd zodra je dit gezin opent."
  },
- "1j1dg3b": {
-  "one": "{n} verzoek wacht op jouw goedkeuring (hieronder)",
-  "other": "{n} verzoeken wachten op jouw goedkeuring (hieronder)"
- },
  "1efd4xo": "Jij",
  "1b0i0ln": "Wisselen…",
  "1p7x3j8": "Nu open: {family}",
@@ -1477,5 +1473,19 @@
  "15d4rna": "{name} van de lijst Gearchiveerd verwijderen? De gegevens worden gewist.",
  "arar4a": "{actor} heeft {person} gearchiveerd",
  "17n774r": "Pas je op de kinderen van iemand anders? Scan de QR-code die een van de ouders je laat zien. Na hun goedkeuring staat hun gezin op deze pagina: in je familieboom als je familie bent, anders bij ‘Gezinnen waar je helpt’.",
- "195vm2m": "Pas je op de kinderen van iemand anders? Vraag een van de ouders om in de app Little Log het tabblad Gezin → Iemand uitnodigen te openen, te kiezen wat jij mag doen en je de QR-code te laten zien. Scan die hier. Na hun goedkeuring verschijnt hun gezin hier: in je familieboom als je familie bent, anders bij ‘Gezinnen waar je helpt’. Je kunt altijd wisselen tussen gezinnen."
+ "195vm2m": "Pas je op de kinderen van iemand anders? Vraag een van de ouders om in de app Little Log het tabblad Gezin → Iemand uitnodigen te openen, te kiezen wat jij mag doen en je de QR-code te laten zien. Scan die hier. Na hun goedkeuring verschijnt hun gezin hier: in je familieboom als je familie bent, anders bij ‘Gezinnen waar je helpt’. Je kunt altijd wisselen tussen gezinnen.",
+ "ymkivl": "Jij, je gezin en de gezinnen van je familieleden, getekend als een boom die groeit als er mensen bij komen. Tik op iemand voor de gegevens, op een kind voor de dag van dat kind, of op een gezin om ernaar te wisselen.",
+ "1dv359l": "Gezinnen en familie",
+ "1xzrjrm": {
+  "one": "{n} jaar",
+  "other": "{n} jaar"
+ },
+ "vtzopg": "{family}, nu open",
+ "thlxlz": "{family} openen",
+ "5dqw62": "Voorlopig alleen jij. De boom groeit zodra je meedoet met het logboek van je eigen gezin of van familie.",
+ "wo8v8p": "Dag van {name} tonen",
+ "1d71jrf": {
+  "one": "{n} verzoek wacht op jouw goedkeuring",
+  "other": "{n} verzoeken wachten op jouw goedkeuring"
+ }
 }

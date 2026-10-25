@@ -68,14 +68,18 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters*, *Medical assistants* and *Friends*; per-person check boxes for exactly what
   they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**. Parents get a private **activity log** of who did what.
 - **Family tree** (Family tab): for someone in more than one family, such as a parent who also looks after a sister's children and now
-  and then a brother-in-law's. It shows you and your relatives' families (the ones you're a parent or family member in): yours, and the
-  others named after their parents ("Sarah's family"), each with its children, its relatives ("Family: Sarah and Ben") and your role
-  there. Families you look after as a caregiver, babysitter, medical assistant or friend are listed apart, under **Families you help
+  and then a brother-in-law's. It's drawn as a picture of a tree that grows as people join: you at the foot of the trunk, your own
+  family as its crown, and each relative's family on a branch of its own, with its grown-ups and children as round leaves (the
+  children in their own colours). The trunk gets taller and thicker as the family grows, and whoever is new since the phone last
+  showed it sprouts in. Tap a person for their details, a child for their day (in their family), or a family to switch to it. Below
+  it, the twirl-down **Families and relatives**, where the family list was, lists your relatives' families (the ones you're a parent
+  or family member in): yours, and the others named after their parents ("Sarah's family"), each with its children, its relatives
+  ("Family: Sarah and Ben", or everyone in the family shown, to tap) and your role there. Families you look after as a caregiver, babysitter, medical assistant or friend are listed apart, under **Families you help
   with** (named after the children when you may not see who the parents are). **Add a family** scans an invite from one of its parents,
-  who approves it; your request waits on the tree until then. Requests to join any family you're a parent in wait on the tree too, to
-  approve without leaving the family you're looking at. Switch with **Open**, or
+  who approves it; your request waits under the tree until then. Requests to join any family you're a parent in wait in the families
+  list (it opens by itself for a new one), to approve without leaving the family you're looking at. Switch with **Open**, or
   from the family's name at the top of every screen: each family is kept whole on the phone, so switching is instant, works offline
-  and loses nothing (a change made offline goes when that family is next open, and the tree says it's waiting). Leaving a family, or
+  and loses nothing (a change made offline goes when that family is next open, and the families list says it's waiting). Leaving a family, or
   being removed from it, takes it off the phone; signing out clears them all, after a warning if anything hasn't synced
 - **Caregivers and helpers**: in the family shown, its family (parents and family members) and its caregivers, babysitters, medical
   assistants and friends are two lists; tap anyone for their details (phone with a Call button, work, notes). A parent can **Retire** a

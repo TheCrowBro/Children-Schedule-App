@@ -336,6 +336,7 @@ const Acct = (() => {
 
   async function wipeLocal() {
     await Sync.dropKept();   // (the other family logs kept on the phone too)
+    forgetTree();
     db = { baby: { name: '', birth: '', kids: Kids.clean([]) }, events: [], deleted: [], meta: {} };
     save(true); tab = 'day'; invite = null; F.loaded = false; F.verified = false; F.enrollRequested = F.enrollForCreate = false; M.enroll = null;
     Sync.st.people = []; Sync.st.requests = []; Sync.st.invites = []; Sync.st.memberships = []; Sync.st.myRequests = []; Lock.reset();
@@ -429,25 +430,122 @@ const Acct = (() => {
     if (had && now.length) toast(__("You're in: {family}", { family: famName(now[0]) }));
     if (tab === 'family') render();
   }
-  function treeHtml() {
-    const s = Sync.st, mine = s.myRequests.filter(r => r.status === 'pending'), me = s.people.find(p => p.is_you);
+  // the picture (ftree.js): whoever this phone has not shown on it before sprouts in (all of it, the first time), remembered on the phone
+  const T = { seen: undefined, grow: {}, acts: {} }, SEEN = 'll.treeSeen';
+  function treeSeen() {
+    if (T.seen === undefined) { try { const a = JSON.parse(localStorage.getItem(SEEN) || 'null'); T.seen = Array.isArray(a) ? new Set(a) : null; } catch (e) { T.seen = null; } }
+    return T.seen;
+  }
+  const forgetTree = () => { T.seen = undefined; T.grow = {}; T.acts = {}; try { localStorage.removeItem(SEEN); } catch (e) { /* nothing kept */ } };
+  /** The family logs you are family in (offline before they were loaded: the one shown). */
+  const kinFams = () => (Sync.st.memberships.length ? Sync.st.memberships : db.meta.babyId ? [{ id: db.meta.babyId, role: db.meta.role }] : []).filter(m => RELATIVES.includes(m.role));
+  /** The relatives in family log `m`, not you: its grown-ups on the tree. */
+  const kinOf = m => (m.id === db.meta.babyId
+    ? Sync.st.people.filter(p => RELATIVES.includes(p.role) && !p.is_you).map(p => ({ id: p.user_id, name: p.display_name || __('Member'), role: p.role }))
+    : (Sync.st.familyPeople[m.id] || []).map(p => ({ id: p.id, name: p.name || __('Member'), role: p.role })));
+  const firstOf = n => ([...String(n || '').trim()][0] || '?').toUpperCase();
+  /** A child's age on the tree: in weeks, then months, then years. */
+  function kidAge(k, now = Date.now()) {
+    const mo = Guide.monthsOld(k.birth, now);
+    if (mo < 0) return '';
+    if (mo < 1) return __n('{n} week', '{n} weeks', Math.max(0, Math.floor((now - new Date(k.birth + 'T00:00').getTime()) / DAY / 7)));
+    return mo < 24 ? __n('{n} month', '{n} months', mo) : __n('{n} year', '{n} years', Math.floor(mo / 12));
+  }
+  /** The tree as a picture of you and the families you are family in, with what each part does when tapped. */
+  function treePicHtml() {
+    const s = Sync.st, me = s.people.find(p => p.is_you), fams = kinFams(), mine = s.myRequests.filter(r => r.status === 'pending');
+    const crown = fams.find(m => m.role === 'parent') || fams.find(m => m.id === db.meta.babyId) || fams[0];
+    const seen = treeSeen(), now = Date.now(), acts = { me: async () => { if (!Sync.st.people.some(p => p.is_you)) await Sync.loadPeople().catch(() => {}); viewPerson(Auth.id); } };   // (your own card: your details, to fill in)
+    let order = 0;
+    const sprout = key => {   // (the time each new part started growing is kept, so a render while it grows carries on)
+      if (T.grow[key] == null) { if (seen && seen.has(key)) return null; T.grow[key] = now + Math.min(order++ * 80, 2000); }
+      if (now - T.grow[key] > 1000) { delete T.grow[key]; return null; }
+      return T.grow[key] - now;
+    };
+    const families = fams.map(m => {
+      const on = m.id === db.meta.babyId, name = famName(m), names = famKidNames(m);
+      acts['f:' + m.id] = () => (on ? showFamList(m.id) : openFamily(m.id));
+      return { key: 'f:' + m.id, name, on, crown: m === crown, title: on ? __('{family}, showing', { family: name }) : __('Open {family}', { family: name }),
+        adults: kinOf(m).map(p => {
+          const key = `p:${m.id}:${p.id}`; acts[key] = () => (on ? viewPerson(p.id) : relativeCard(m, p));
+          return { key, initial: firstOf(p.name), label: p.name, title: `${p.name} · ${roleName(p.role)}` };
+        }),
+        kids: famKids(m).map((k, i) => {
+          const key = `k:${m.id}:${k.id}`, age = kidAge(k, now); acts[key] = () => kidCard(m, k, names[i]);
+          return { key, initial: firstOf(names[i]), label: names[i], title: age ? `${names[i]} · ${age}` : names[i], color: k.color };
+        }) };
+    });
+    const myName = (me && me.display_name) || '';
+    const { svg, keys } = FamilyTree.draw({ title: __('Family tree'), rtl: I18n.rtl(), sprout, families,
+      me: { key: 'me', initial: firstOf(myName || Auth.email), label: __('You'), title: myName ? `${__('You')} · ${myName}` : __('You') } });
+    T.acts = acts;
+    const all = new Set([...(seen || []), ...keys]);
+    if (!seen || all.size > seen.size) { T.seen = all; try { localStorage.setItem(SEEN, JSON.stringify([...all].slice(-500))); } catch (e) { /* storage blocked: it grows in again next time */ } }
+    return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftreeimg">${svg}
+      ${fams.length ? '' : `<p class="note" style="text-align:center">${__h("Just you for now. It grows when you join your own family's log or a relative's.")}</p>`}
+      ${mine.map(r => `<div class="fam pending"><div class="fhead"><span>⏳ ${__h('Request sent')}<br><small>${__h('Waiting for a parent to approve')}</small></span><button class="btn d" data-cancelreq="${esc(r.id)}">${__h('Cancel')}</button></div></div>`).join('')}
+      <button class="btn" id="famAdd" style="width:100%;margin-top:10px">+ ${__h('Add a family')}</button></div>`;
+  }
+  /** A relative in another family log, tapped on the tree: open that family to see their details. */
+  function relativeCard(m, p) {
+    const fam = famName(m);
+    const close = showSheet(`<h3>${esc(p.name)}</h3><p class="note" style="margin-top:0">${esc(roleName(p.role))} · ${esc(fam)}</p>
+      <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button><button class="btn p" id="tcOpen">${__h('Open {family}', { family: fam })}</button></div>`);
+    $('#sheet [data-close]').onclick = close;
+    $('#tcOpen').onclick = () => { close(); openFamily(m.id); };
+  }
+  /** A child tapped on the tree: their age and allergies, and their day (their family is opened first). */
+  function kidCard(m, k, name) {
+    const fam = famName(m), al = (k.allergies || []).map(a => __(a.food));
+    const close = showSheet(`<h3 class="kidhead"><span class="av lg" style="--k:${esc(k.color)}">${esc(firstOf(name))}</span>${esc(name)}</h3>
+      <p class="note" style="margin-top:0">${[kidAge(k), fam].filter(Boolean).map(esc).join(' · ')}</p>
+      ${al.length ? `<p class="note allergyline">⚠️ ${__h('Allergies: {foods}', { foods: al.join(', ') })}</p>` : ''}
+      <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button><button class="btn p" id="tcDay">${__h("Show {name}'s day", { name })}</button></div>`);
+    $('#sheet [data-close]').onclick = close;
+    $('#tcDay').onclick = async () => {
+      close();
+      if (m.id !== db.meta.babyId && !(await openFamily(m.id))) return;
+      setKid(k.id); tab = 'day'; viewDay = startOfDay(Date.now()); render(); window.scrollTo(0, 0);
+    };
+  }
+  /** The families list below, opened at family `id`. */
+  function showFamList(id) {
+    const d = document.querySelector('details[data-grp=famlist]'); if (!d) return;
+    d.open = true; openGroups.add('famlist');
+    (d.querySelector(`[data-fam="${CSS.escape(id)}"]`) || d).scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  /** Every family you are family in: its children and relatives (the family shown: everyone in it, to tap), switching, and the
+      requests to join one you are a parent in. A twirl-down in place of the family list; it opens by itself when a new request
+      waits in it. */
+  function famListHtml(person, roles) {
+    const s = Sync.st, fams = kinFams();
+    if (!fams.length) return '';
+    const waitingIn = fams.reduce((n, m) => n + (m.id === db.meta.babyId ? 0 : (s.familyRequests[m.id] || []).length), 0);
+    if (waitingIn > (F.waitSeen || 0)) openGroups.add('famlist');
+    F.waitSeen = waitingIn;
     const branch = m => {
-      const on = m.id === db.meta.babyId, name = famName(m), reqs = on ? [] : s.familyRequests[m.id] || [], waiting = on && Sync.isParent() ? s.requests.length : 0, kept = F.keptUnsent[m.id] || 0;
-      const kin = on ? s.people.filter(p => RELATIVES.includes(p.role) && !p.is_you).map(p => p.display_name) : (s.familyPeople[m.id] || []).map(p => p.name);
+      const on = m.id === db.meta.babyId, name = famName(m), reqs = on ? [] : s.familyRequests[m.id] || [], kept = F.keptUnsent[m.id] || 0, kin = kinOf(m);
       return `<li class="fam${on ? ' on' : ''}" data-fam="${esc(m.id)}">
         <div class="fhead"><span><b>${esc(name)}</b><br><small>${esc(roleName(m.role))}</small></span>${on ? `<small class="fshow">${__h('Showing')}</small>` : `<button class="btn" data-famopen="${esc(m.id)}">${__h('Open')}</button>`}</div>
         <div class="fkids">${famKids(m).map((k, i) => `<span class="fkid">${avatar(k)}${esc(famKidNames(m)[i])}</span>`).join('')}</div>
-        ${RELATIVES.includes(m.role) && kin.length ? `<p class="note fkin">${__h('Family: {names}', { names: andList(kin) })}</p>` : ''}
+        ${on && roles ? `<div class="fpeople">${s.people.filter(p => RELATIVES.includes(p.role)).map(person).join('')}</div>` : kin.length ? `<p class="note fkin">${__h('Family: {names}', { names: andList(kin.map(p => p.name)) })}</p>` : ''}
         ${kept ? `<p class="note">⏳ ${__hn('{n} change not sent yet: it goes when you open this family.', '{n} changes not sent yet: they go when you open this family.', kept)}</p>` : ''}
-        ${waiting ? `<p class="note fwait">📨 ${__hn('{n} waiting for your approval (below)', '{n} waiting for your approval (below)', waiting)}</p>` : ''}
         ${reqs.map(r => reqCard(r, name)).join('')}</li>`;
     };
-    return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftree">
-      <div class="froot"><span class="av lg">${esc(((me && me.display_name) || Auth.email || '?').trim().charAt(0).toUpperCase())}</span><span><b>${__h('You')}</b>${me && me.display_name ? `<br><small>${esc(me.display_name)}</small>` : ''}</span></div>
-      <ul class="fbranches">${s.memberships.filter(m => RELATIVES.includes(m.role)).map(branch).join('')}
-        ${mine.map(r => `<li class="fam pending"><div class="fhead"><span>⏳ ${__h('Request sent')}<br><small>${__h('Waiting for a parent to approve')}</small></span><button class="btn d" data-cancelreq="${esc(r.id)}">${__h('Cancel')}</button></div></li>`).join('')}</ul>
-      <button class="btn" id="famAdd" style="width:100%;margin-top:10px">+ ${__h('Add a family')}</button></div>
-      ${s.memberships.some(m => HELPERS.includes(m.role)) ? `<h2>${__h('Families you help with')}</h2><div class="card fhelp"><ul class="fbranches flat">${s.memberships.filter(m => HELPERS.includes(m.role)).map(branch).join('')}</ul></div>` : ''}`;
+    const sub = waitingIn ? '📨 ' + __n('{n} waiting for your approval', '{n} waiting for your approval', waitingIn) : andList(fams.map(famName));
+    return `<details class="gd famlist" data-grp="famlist" ${openGroups.has('famlist') ? 'open' : ''}><summary><span class="gi">🌳</span><span class="gt"><b>${__h('Families and relatives')}</b><small>${esc(sub)}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+      <ul class="fbranches">${fams.map(branch).join('')}</ul></details>`;
+  }
+  /** The families you help with (caregiver, babysitter, medical assistant, friend): not part of the tree. */
+  function helpFamsHtml() {
+    const ms = Sync.st.memberships.filter(m => HELPERS.includes(m.role));
+    return ms.length ? `<h2>${__h('Families you help with')}</h2><div class="card fhelp"><ul class="fbranches flat">${ms.map(m => {
+      const on = m.id === db.meta.babyId, kept = F.keptUnsent[m.id] || 0;
+      return `<li class="fam${on ? ' on' : ''}" data-fam="${esc(m.id)}">
+        <div class="fhead"><span><b>${esc(famName(m))}</b><br><small>${esc(roleName(m.role))}</small></span>${on ? `<small class="fshow">${__h('Showing')}</small>` : `<button class="btn" data-famopen="${esc(m.id)}">${__h('Open')}</button>`}</div>
+        <div class="fkids">${famKids(m).map((k, i) => `<span class="fkid">${avatar(k)}${esc(famKidNames(m)[i])}</span>`).join('')}</div>
+        ${kept ? `<p class="note">⏳ ${__hn('{n} change not sent yet: it goes when you open this family.', '{n} changes not sent yet: they go when you open this family.', kept)}</p>` : ''}</li>`;
+    }).join('')}</ul></div>` : '';
   }
   /** Join another family's log: scan the QR code one of its parents shows you (or type its code); they approve the request. */
   function addFamily() {
@@ -460,14 +558,15 @@ const Acct = (() => {
     $('#afScan').onclick = () => { close(); scan(); };
     $('#afJoin').onclick = () => { const c = parseJoin($('#afCode').value); if (!c) return toast(__('Invite codes are 10 letters/numbers')); close(); joinWith(c); };
   }
-  /** Show another family log (from the tree or the switcher at the top). */
+  /** Show another family log (from the tree or the switcher at the top). Resolves true once it shows. */
   async function openFamily(id, btn) {
-    const m = Sync.st.memberships.find(x => x.id === id); if (!m || Sync.switching) return;
+    const m = Sync.st.memberships.find(x => x.id === id); if (!m || Sync.switching) return false;
     if (btn) { btn.disabled = true; btn.textContent = __('Switching…'); }
+    let ok = false;
     try {
-      if (await Sync.choose(id)) { membersLoadedFor = null; F.treeAt = 0; viewDay = startOfDay(Date.now()); toast(__('Now showing {family}', { family: famName(m) })); }
+      if ((ok = await Sync.choose(id))) { membersLoadedFor = null; F.treeAt = 0; viewDay = startOfDay(Date.now()); toast(__('Now showing {family}', { family: famName(m) })); }
     } catch (e) { toast(__('Could not switch: {reason}', { reason: err(e) })); }
-    render();
+    render(); return ok;
   }
   /** The switcher at the top of the screen, for someone in more than one family log. */
   function familySwitcher() {
@@ -490,14 +589,17 @@ const Acct = (() => {
     if (membersLoadedFor !== db.meta.babyId) { membersLoadedFor = db.meta.babyId; Promise.all([Sync.loadPeople(), Sync.loadRetired(), parent ? Sync.loadAdmin() : null, Sync.loadDevices(), Sync.myDevices().then(r => { F.myPhones = r; }), Sync.securityCode().then(c => { F.secCode = c; })]).then(() => { if (tab === 'family') render(); }).catch(() => {}); }
     const person = m => `<div class="stat"><button class="pbtn" data-pview="${esc(m.user_id)}"><span>${esc(m.display_name || __('Member'))}${m.is_you ? ` <small>${__h('(you)')}</small>` : ''}<br><small>${m.role ? esc(roleName(m.role)) : ''}${m.info && m.info.relation ? ' · ' + esc(m.info.relation) : ''}${m.email && m.role ? ' · ' + esc(m.email) : ''}</small></span><span class="chev" aria-hidden="true">›</span></button>
       ${parent && !m.is_you ? `<span class="btns"><button class="btn" data-person="${esc(m.user_id)}" style="padding:6px 12px">${__h('Edit')}</button>${HELPERS.includes(m.role) ? `<button class="btn" data-retire="${esc(m.user_id)}" style="padding:6px 12px">${__h('Retire')}</button>` : ''}</span>` : ''}</div>`;
-    // with roles shown (people allowed to see the family list): relatives, then the people who help, each list on its own
-    const roles = s.people.some(m => m.role), kin = s.people.filter(m => !roles || RELATIVES.includes(m.role)), help = roles ? s.people.filter(m => HELPERS.includes(m.role)) : [];
+    // with roles shown (people allowed to see the family list): the relatives are in the families twirl-down (in a family you help
+    // with, on a list of their own), then the people who help, each list on its own
+    const roles = s.people.some(m => m.role), help = roles ? s.people.filter(m => HELPERS.includes(m.role)) : [];
+    const kinHere = kinFams().some(m => m.id === db.meta.babyId);   // (you are family in the log shown)
     const retired = s.retired.length ? `<details class="more retired"><summary>${__hn('Retired ({n})', 'Retired ({n})', s.retired.length)}<span class="chev" aria-hidden="true">›</span></summary>
       ${s.retired.map(r => `<div class="stat"><button class="pbtn" data-rview="${esc(r.id)}"><span>${esc(r.display_name)}<br><small>${esc(roleName(r.role))} · ${esc(retiredLine(r))}</small></span><span class="chev" aria-hidden="true">›</span></button></div>`).join('')}</details>` : '';
-    const people = !s.people.length ? `<h2>${__h('People with access')}</h2><div class="card"><div class="note">${__h('Loading…')}</div></div>`
-      : roles ? `<h2>${__h('Family')}</h2><div class="card">${kin.map(person).join('')}</div>
+    const people = `${famListHtml(person, roles && kinHere)}${helpFamsHtml()}
+      ${!s.people.length ? `<h2>${__h('People with access')}</h2><div class="card"><div class="note">${__h('Loading…')}</div></div>`
+        : roles ? `${kinHere ? '' : `<h2>${__h('Family')}</h2><div class="card">${s.people.filter(m => RELATIVES.includes(m.role)).map(person).join('')}</div>`}
         <h2>${__h('Caregivers and helpers')}</h2><div class="card" id="helpers">${help.map(person).join('') || `<p class="note" style="margin:0">${__h('No caregivers, babysitters or medical assistants yet. A parent invites them below.')}</p>`}${retired}</div>`
-      : `<h2>${__h('People with access')}</h2><div class="card">${s.people.map(person).join('')}</div>`;
+        : `<h2>${__h('People with access')}</h2><div class="card">${s.people.map(person).join('')}</div>`}`;
     const reqs = parent && s.requests.length ? `<h2>${__h('Waiting for your approval')}</h2>${s.requests.map(r => reqCard(r)).join('')}` : '';
     const phones = E2EE.hasKeys(db.meta.babyId) ? Sync.pendingPhones() : [];
     const phonesCard = phones.length ? `<h2>${__h('Phones waiting for access')}</h2>${phones.map(d => `<div class="card"><b>${esc(d.person)}</b> · ${esc(phoneName(d.device_name))}
@@ -512,7 +614,7 @@ const Acct = (() => {
       <div class="stat"><span>${__h('My phones')}<br><small>${__h("Remove a lost phone: its keys are deleted and the log's keys are changed")}</small></span></div>
       ${F.myPhones.map(d => `<div class="stat"><span>${esc(phoneName(d.name))}${d.id === thisId ? ` <small>${__h('(this phone)')}</small>` : ''}<br><small>${__h('added {date}', { date: new Date(d.created_at).toLocaleDateString(I18n.locale()) })}</small></span>${d.id === thisId ? '' : `<button class="btn d" data-rmphone="${esc(d.id)}" style="padding:6px 12px">${__h('Remove')}</button>`}</div>`).join('')}
       ${parent ? `<div class="row"><button class="btn" id="newRec">${__h('Create a new recovery code')}</button></div>` : ''}</div>`;
-    return `${treeHtml()}
+    return `${treePicHtml()}
     <div class="card"><b>${db.baby.name ? __h("{name}'s shared log", { name: db.baby.name }) : __h("Baby's shared log")}</b>
       <div class="stat"><span>${esc(syncLine())}${s.err && s.state === 'error' ? `<br><small>${esc(__(s.err))}</small>` : ''}</span><button class="btn" id="syncNow" style="padding:6px 12px">${__h('Sync now')}</button></div>
       ${s.denied ? `<div class="note" style="margin-top:6px">⚠️ ${__hn('{n} change was not allowed with your access and was undone.', '{n} changes were not allowed with your access and were undone.', s.denied)}</div>` : ''}
@@ -551,6 +653,8 @@ const Acct = (() => {
       try { await Sync.removePhone(b.dataset.rmphone); F.myPhones = await Sync.myDevices(); render(); toast(__('Phone removed')); } catch (e) { toast(err(e)); }
     });
     el('famAdd').onclick = addFamily;
+    const pic = document.querySelector('.ftreesvg');   // a tap on the tree: a person, a child or a family
+    if (pic) pic.onclick = e => { const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act(); };
     document.querySelectorAll('[data-cancelreq]').forEach(b => b.onclick = async () => { try { await Sync.cancelRequest(b.dataset.cancelreq); render(); } catch (e) { toast(err(e)); } });
     document.querySelectorAll('[data-famopen]').forEach(b => b.onclick = () => openFamily(b.dataset.famopen, b));
     clearInterval(F.treeTimer);   // while one of your requests waits, look every 15 s for the approval

@@ -1468,11 +1468,6 @@
   "many": "{n} modifiche non ancora inviate: partiranno quando aprirai questa famiglia.",
   "other": "{n} modifiche non ancora inviate: partiranno quando aprirai questa famiglia."
  },
- "1j1dg3b": {
-  "one": "{n} richiesta in attesa della tua approvazione (qui sotto)",
-  "many": "{n} richieste in attesa della tua approvazione (qui sotto)",
-  "other": "{n} richieste in attesa della tua approvazione (qui sotto)"
- },
  "1efd4xo": "Tu",
  "1b0i0ln": "Cambio in corso…",
  "1p7x3j8": "Ora vedi: {family}",
@@ -1503,5 +1498,21 @@
  "15d4rna": "Togliere {name} dall'archivio? I suoi dati verranno eliminati.",
  "arar4a": "{actor} ha archiviato {person}",
  "17n774r": "Ti occupi dei figli di qualcun altro? Scansiona il codice QR che ti mostra uno dei genitori. Dopo l'approvazione, la loro famiglia compare in questa pagina: nel tuo albero di famiglia se fai parte della famiglia, altrimenti in “Famiglie che aiuti”.",
- "195vm2m": "Ti occupi dei figli di qualcun altro? Chiedi a uno dei genitori di aprire la scheda Famiglia → Invita qualcuno nel suo Little Log, di scegliere cosa potrai fare e di mostrarti il codice QR. Scansionalo qui. Dopo l'approvazione, la loro famiglia compare qui: nel tuo albero di famiglia se fai parte della famiglia, altrimenti in “Famiglie che aiuti”. Puoi passare da una famiglia all'altra in qualsiasi momento."
+ "195vm2m": "Ti occupi dei figli di qualcun altro? Chiedi a uno dei genitori di aprire la scheda Famiglia → Invita qualcuno nel suo Little Log, di scegliere cosa potrai fare e di mostrarti il codice QR. Scansionalo qui. Dopo l'approvazione, la loro famiglia compare qui: nel tuo albero di famiglia se fai parte della famiglia, altrimenti in “Famiglie che aiuti”. Puoi passare da una famiglia all'altra in qualsiasi momento.",
+ "ymkivl": "Un albero con te, la tua famiglia e le famiglie dei tuoi parenti, che cresce man mano che si aggiungono persone. Tocca una persona per vederne i dati, un bambino o una bambina per vedere il suo giorno, o una famiglia per passarci.",
+ "1dv359l": "Famiglie e parenti",
+ "1xzrjrm": {
+  "one": "{n} anno",
+  "many": "{n} anni",
+  "other": "{n} anni"
+ },
+ "vtzopg": "{family}, diario aperto",
+ "thlxlz": "Apri {family}",
+ "5dqw62": "Per ora ci sei solo tu. L'albero cresce quando ti unisci al diario della tua famiglia o a quello dei tuoi parenti.",
+ "wo8v8p": "Mostra il giorno di {name}",
+ "1d71jrf": {
+  "one": "{n} richiesta in attesa della tua approvazione",
+  "many": "{n} richieste in attesa della tua approvazione",
+  "other": "{n} richieste in attesa della tua approvazione"
+ }
 }

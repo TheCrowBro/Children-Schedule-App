@@ -9,12 +9,13 @@ const Tour = (() => {
   const mark = id => { try { const s = read(); s[id] = 1; localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* storage blocked: it may show again */ } };
   const seen = id => !!read()[id];
   const shown = el => !!el && el.getClientRects().length > 0;
+  const find = sel => [...document.querySelectorAll(sel)].find(shown) || null;   // (the first one on the screen: not one folded away in a twirl-down)
   let cur = null;
 
   /** Put the box around the step's button and the card above or below it, clear of the screen edges. */
   function place() {
     if (!cur) return;
-    const el = document.querySelector(cur.steps[cur.i].sel); if (!shown(el)) return;
+    const el = find(cur.steps[cur.i].sel); if (!el) return;
     const r = el.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight, pad = 6;
     const x = Math.max(4, r.left - pad), y = Math.max(4, r.top - pad), w = Math.min(vw - 4, r.right + pad) - x, h = Math.min(vh - 4, r.bottom + pad) - y;
     Object.assign(cur.box.style, { left: x + 'px', top: y + 'px', width: Math.max(0, w) + 'px', height: Math.max(0, h) + 'px' });
@@ -23,11 +24,11 @@ const Tour = (() => {
   }
   function go(i) {
     const { steps } = cur;
-    while (i >= 0 && i < steps.length && !shown(document.querySelector(steps[i].sel))) i += i >= cur.i ? 1 : -1;   // skip what isn't on this screen
+    while (i >= 0 && i < steps.length && !find(steps[i].sel)) i += i >= cur.i ? 1 : -1;   // skip what isn't on this screen
     if (i < 0) i = cur.i;
     if (i >= steps.length) return end(true);
     cur.i = i;
-    const s = steps[i], el = document.querySelector(s.sel), tall = el.getBoundingClientRect().height > window.innerHeight * 0.5;
+    const s = steps[i], el = find(s.sel), tall = el.getBoundingClientRect().height > window.innerHeight * 0.5;
     el.scrollIntoView({ block: tall ? 'start' : 'center' });
     cur.tip.querySelector('.tt-n').textContent = __('{n} of {total}', { n: i + 1, total: steps.length });
     cur.tip.querySelector('#tourT').textContent = s.title;
@@ -51,7 +52,7 @@ const Tour = (() => {
       skipped. False when there is nothing to show. */
   function start(steps, onEnd) {
     if (cur) end(false);
-    steps = steps.filter(s => shown(document.querySelector(s.sel)));
+    steps = steps.filter(s => find(s.sel));
     if (!steps.length) return false;
     const root = document.createElement('div');
     root.className = 'tour'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'tourT'); root.setAttribute('aria-describedby', 'tourW');

@@ -1420,9 +1420,6 @@
  "11didv": {
   "other": "{n} perubahan belum terkirim: akan terkirim saat Anda membuka keluarga ini."
  },
- "1j1dg3b": {
-  "other": "{n} permintaan menunggu persetujuan Anda (di bawah)"
- },
  "1efd4xo": "Anda",
  "1b0i0ln": "Beralih…",
  "1p7x3j8": "Sekarang ditampilkan: {family}",
@@ -1451,5 +1448,17 @@
  "15d4rna": "Hapus {name} dari daftar Diarsipkan? Detailnya akan dihapus.",
  "arar4a": "{actor} mengarsipkan {person}",
  "17n774r": "Mengasuh anak orang lain? Pindai kode QR yang ditunjukkan salah satu orang tuanya. Setelah disetujui, keluarga mereka tampil di halaman ini: di pohon keluarga Anda jika Anda anggota keluarga, atau di “Keluarga yang Anda bantu”.",
- "195vm2m": "Mengasuh anak orang lain? Minta salah satu orang tuanya membuka tab Keluarga → Undang seseorang di Little Log miliknya, memilih apa saja yang boleh Anda lakukan, lalu menunjukkan kode QR kepada Anda. Pindai di sini. Setelah disetujui, keluarga mereka tampil di sini: di pohon keluarga Anda jika Anda anggota keluarga, atau di “Keluarga yang Anda bantu”. Anda bisa beralih antarkeluarga kapan saja."
+ "195vm2m": "Mengasuh anak orang lain? Minta salah satu orang tuanya membuka tab Keluarga → Undang seseorang di Little Log miliknya, memilih apa saja yang boleh Anda lakukan, lalu menunjukkan kode QR kepada Anda. Pindai di sini. Setelah disetujui, keluarga mereka tampil di sini: di pohon keluarga Anda jika Anda anggota keluarga, atau di “Keluarga yang Anda bantu”. Anda bisa beralih antarkeluarga kapan saja.",
+ "ymkivl": "Anda, keluarga Anda, dan keluarga kerabat Anda, digambar sebagai pohon yang tumbuh seiring bertambahnya orang yang bergabung. Ketuk seseorang untuk melihat detailnya, anak untuk melihat harinya, atau keluarga untuk beralih ke sana.",
+ "1dv359l": "Keluarga dan kerabat",
+ "1xzrjrm": {
+  "other": "{n} tahun"
+ },
+ "vtzopg": "{family}, ditampilkan",
+ "thlxlz": "Buka {family}",
+ "5dqw62": "Untuk sekarang baru Anda. Pohonnya tumbuh saat Anda bergabung ke jurnal keluarga Anda sendiri atau keluarga kerabat.",
+ "wo8v8p": "Lihat hari {name}",
+ "1d71jrf": {
+  "other": "{n} permintaan menunggu persetujuan Anda"
+ }
 }
