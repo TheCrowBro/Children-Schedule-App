@@ -189,7 +189,7 @@
   "Every detail": "Tour step title: the groups of entries below the clock.",
   "Everything else": "Tour step title: the tabs at the bottom.",
   "The journey": "Tour step title: the buttons for the parts of a journey.",
-  "The rest": "Tour step title: the less common kinds of entry, one more tap away.",
+  "The rest": "Tour step title, twice: the \"More\" button among the Day page's logging buttons (the kinds of entry that didn't fit), and in travel mode the row with the rest of the buttons.",
   "{n} of {total}": "Tour progress: step {n} of {total}.",
   "Next": "Tour: go to the next step.",
   "Back": "Tour: go to the previous step.",
@@ -720,6 +720,21 @@
   "Spots and acne": "A topic of the Guide.",
   "Food, body image and sport": "A topic of the Guide.",
   "Driving and getting about": "A topic of the Guide.",
-  "Growing independence": "A topic of the Guide."
+  "Growing independence": "A topic of the Guide.",
+  "Back to {screen}": "The big back button at the top of the health record page. {screen} is the name of the tab it was opened from (Guide, Stats, More…).",
+  "Whose log": "Tour step title: the family switcher in the header, for someone who looks after children in more than one family.",
+  "Worth mentioning": "Tour step title (Stats): a card shown in red because there is something to tell the doctor.",
+  "Which chart": "Tour step title (health record): the buttons that choose which growth chart to show (weight, height, head, BMI).",
+  "Starting over": "Tour step title (More): the \"Delete all entries\" button.",
+  "Growing up": "Tour step title (Day page): the note that appears when a child reaches a new stage (school age, the teenage years).",
+  "All the way to 18": "Tour step title (Day page): the card shown once a child is 18, with their book and their record.",
+  "Roman or plain numbers": "Tour step title: the switch between Roman numerals (XII) and plain numbers (12) on the clock.",
+  "What the colours mean": "Tour step title: the legend under the day clock (a colour per kind of entry, with today's counts).",
+  "What the marks mean": "Tour step title: the legend under the month calendar (colours and the marks for travel days, big moments, allergies and the calendar).",
+  "Other months": "Tour step title: the arrows that move the month calendar back and forward.",
+  "At daycare or school": "Tour step title: the banner at the top while a child is at daycare, preschool or school.",
+  "Drop-off and pick-up": "Tour step title: the Drop-off button on the Day page (logging a drop-off, and who picks the child up).",
+  "Dots show what was logged each day. Days away travelling are outlined, a star marks a big moment, and ◆ something on the calendar.": "Tour step (Month tab). Keep the ◆ sign: it is the mark used on the calendar days.",
+  "This page is a step away from the rest: tap here to go back to where you came from, or \"Today\" for today's page. The tabs below work as always.": "Tour step (health record): the bar at the top with the big back button and the \"Today\" button (use your word for Today, the same as the Day page's)."
  }
 }
