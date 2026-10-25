@@ -646,7 +646,7 @@ const pickFormula = async (page, scope, name) => {
       assert.equal(await G.$('.tour'), null, '"Done" ends it');
       assert.equal(await G.evaluate(() => localStorage.getItem('ll.tours')), '{"day":1}');
       await G.waitForSelector('#msGuide', { timeout: 3000 }); await G.click('#sheet [data-close]');   // and then it shows
-      for (const [t, first] of [['month', 'The month'], ['stats', 'How far back'], ['guide', 'Your pediatrician'], ['family', 'Your shared log'], ['more', 'Your children']]) {
+      for (const [t, first] of [['month', 'The month'], ['stats', 'How far back'], ['guide', 'Your pediatrician'], ['family', 'Family tree'], ['more', 'Your children']]) {
         await G.click(`[data-tab=${t}]`); await G.waitForTimeout(700); assert.equal(await G.$('.tour'), null, `${t}: not by itself`);
         await G.click('#helpBtn'); await G.waitForSelector('.tour-tip'); assert.equal((await at()).t, first, t);
         await G.keyboard.press('Escape'); assert.equal(await G.$('.tour'), null, 'Escape closes it');

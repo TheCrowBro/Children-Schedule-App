@@ -167,7 +167,12 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       // today's feed is logged; a routine time stays "next" until 45 minutes after it (the nap at 1 PM, the bath at 6:30 PM), then tomorrow's feed
       const expected = await P.evaluate(() => { const d = new Date(), m = d.getHours() * 60 + d.getMinutes(); return m < 6 * 60 ? 'Feed' : m <= 13 * 60 + 45 ? 'Nap' : m <= 19 * 60 + 15 ? 'Bath' : 'Feed'; });   // (before 6 AM it is still yesterday's routine, all done)
       assert(next.includes('Next in the routine') && next.includes(expected), next);
-      await P.evaluate(() => { const k = db.baby.kids[0].id; db.events.push({ id: 'bath-today', type: 'play', ts: T.at(0, 18, 40), data: { activity: 'Bath', min: 10 }, note: '', by: Auth.id, child: k, updated: stamp() }); save(); render(); });
+      // (before 6 AM the routine's day is still yesterday's: then yesterday evening's bath is the one to tick, so the seeded one makes way)
+      await P.evaluate(() => {
+        const k = db.baby.kids[0].id, d = new Date().getHours() < 6 ? 1 : 0;
+        if (d) db.events = db.events.filter(e => !(e.type === 'play' && e.ts >= T.at(1, 0) && e.ts < T.at(0, 0)));
+        db.events.push({ id: 'bath-today', type: 'play', ts: T.at(d, 18, 40), data: { activity: 'Bath', min: 10 }, note: '', by: Auth.id, child: k, updated: stamp() }); save(); render();
+      });
       assert(/✓ 6:40 PM/.test(await P.textContent('.rslot[data-slot="play:Bath"]')), 'ticked as soon as it is logged');
     });
 
