@@ -1456,5 +1456,31 @@
  "wo8v8p": "Xem ngày của {name}",
  "1d71jrf": {
   "other": "{n} yêu cầu đang chờ bạn duyệt"
- }
+ },
+ "1xef50z": "Cây gia đình của các con bạn: bố mẹ, ông bà và các cụ, cô dì chú bác và anh chị em họ. Cây lớn dần khi có thêm người. Chạm vào một người để xem thông tin, hoặc vào một bé để xem ngày của bé; bố mẹ thêm người bằng dấu +.",
+ "1tokbz9": "Ông/bà",
+ "sq9igh": "Cụ ông/cụ bà",
+ "f0ykv1": "Cô dì chú bác",
+ "run5pg": "Anh chị em họ",
+ "121kudm": "Thêm bố hoặc mẹ còn lại của các bé",
+ "1lb68bp": "Thêm ông hoặc bà",
+ "rlmdv5": "Thêm cụ ông hoặc cụ bà",
+ "1a8s2o1": "Thêm cô, dì, chú hoặc bác",
+ "ds7zo9": "Thêm bạn đời",
+ "1awlcbo": "Thêm anh chị em họ",
+ "1c9xzwy": "Bố/mẹ của {name}",
+ "19mgvfv": "Anh chị em của {name}",
+ "5i9k38": "Bạn đời của {name}",
+ "1kp5w5s": "Con của {name}",
+ "281oz2": "Chạm vào dấu + để thêm ông bà, các cụ, cô dì chú bác và anh chị em họ.",
+ "ymv5n0": "Bố mẹ có thể thêm ông bà, cô dì chú bác và anh chị em họ.",
+ "oeaavd": "Bên {name}",
+ "mfh82d": "Cách các bé gọi",
+ "ffwx2w": "Tưởng nhớ",
+ "gqu694": "Đã dùng Little Log",
+ "jw6dsg": "VD: Bà nội, Ông ngoại",
+ "157u7bc": "Gỡ khỏi cây",
+ "9ztoc9": "Gỡ {name} khỏi cây gia đình? Những người được thêm qua người này cũng sẽ bị gỡ.",
+ "3pjyx9": "{actor} đã thay đổi cây gia đình",
+ "cglt21": "Cây gia đình vừa có thay đổi: vui lòng thử lại"
 }

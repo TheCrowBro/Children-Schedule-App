@@ -1453,8 +1453,34 @@
   "other": "{n} tahun"
  },
  "thlxlz": "Buka {family}",
- "wo8v8p": "Lihat hari {name}",
+ "wo8v8p": "Tampilkan hari {name}",
  "1d71jrf": {
   "other": "{n} permintaan menunggu persetujuan Anda"
- }
+ },
+ "1xef50z": "Pohon keluarga anak-anak Anda: orang tua, kakek-nenek dan buyut, paman, bibi, serta sepupu mereka. Pohonnya tumbuh seiring bertambahnya orang. Ketuk seseorang untuk melihat detailnya, atau seorang anak untuk melihat harinya; orang tua menambahkan orang dengan +.",
+ "1tokbz9": "Kakek/nenek",
+ "sq9igh": "Buyut",
+ "f0ykv1": "Paman/bibi",
+ "run5pg": "Sepupu",
+ "121kudm": "Tambah orang tua lain dari anak-anak",
+ "1lb68bp": "Tambah kakek atau nenek",
+ "rlmdv5": "Tambah buyut",
+ "1a8s2o1": "Tambah paman atau bibi",
+ "ds7zo9": "Tambah pasangan",
+ "1awlcbo": "Tambah sepupu",
+ "1c9xzwy": "Orang tua {name}",
+ "19mgvfv": "Saudara kandung {name}",
+ "5i9k38": "Pasangan {name}",
+ "1kp5w5s": "Anak {name}",
+ "281oz2": "Ketuk + untuk menambahkan kakek-nenek, buyut, paman, bibi, dan sepupu.",
+ "ymv5n0": "Orang tua bisa menambahkan kakek-nenek, paman, bibi, dan sepupu.",
+ "oeaavd": "Dari pihak {name}",
+ "mfh82d": "Panggilan dari anak-anak",
+ "ffwx2w": "Selalu dikenang",
+ "gqu694": "Sudah di Little Log",
+ "jw6dsg": "mis. Oma, Kakek Budi",
+ "157u7bc": "Hapus dari pohon",
+ "9ztoc9": "Hapus {name} dari pohon keluarga? Semua yang ditambahkan melalui orang ini ikut terhapus.",
+ "3pjyx9": "{actor} mengubah pohon keluarga",
+ "cglt21": "Pohon keluarga baru saja berubah: silakan coba lagi"
 }

@@ -96,6 +96,13 @@ const FamilyTree = (() => {
   const CELL = 62, KCELL = 54, GCELL = 50, GAP = 16, RA = 17, RK = 15, RG = 14, KPR = 6, CPR = 4;
   const x = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const cut = (s, n) => { const a = [...String(s)]; return a.length > n ? a.slice(0, n - 1).join('') + '…' : a.join(''); };
+  /** A long label on two lines, broken at the space or slash nearest its middle. */
+  function lines(s, n) {
+    const a = [...String(s)]; if (a.length <= n) return [s];
+    let at = -1; a.forEach((c, i) => { if (/[\s/・、]/.test(c) && (at < 0 || Math.abs(i - a.length / 2) < Math.abs(at - a.length / 2))) at = i; });
+    if (at < 0) return [cut(s, n + 4)];
+    return [cut(a.slice(0, at + (a[at] === '/' ? 1 : 0)).join('').trim(), n + 4), cut(a.slice(at + 1).join('').trim(), n + 4)];
+  }
   const rowsOf = (xs, per) => { const out = []; for (let i = 0; i < xs.length; i += per) out.push(xs.slice(i, i + per)); return out; };
   const spread = (n, cell, cx) => Array.from({ length: n }, (_, i) => cx + (i - (n - 1) / 2) * cell);
   const r1 = v => Math.round(v * 10) / 10;
@@ -270,7 +277,7 @@ const FamilyTree = (() => {
     const budNode = n => {
       const px = X(n.x), py = r1(yOf(n)), r = n.r, b = n.bud;
       return `<g class="tbud${n.small ? ' small' : ''}" role="button" tabindex="0" data-tk="${x(b.key)}" aria-label="${x(b.title)}"><circle class="hit" cx="${px}" cy="${r1(py + 6)}" r="${r + 10}"/>`
-        + `<circle class="disc" cx="${px}" cy="${py}" r="${r - 1}"/><path class="plus" d="M${px - 5} ${py}h10M${px} ${py - 5}v10"/>${n.small ? '' : `<text x="${px}" y="${r1(py + r + 12)}" class="ftl">${x(cut(b.label, 16))}</text>`}</g>`;
+        + `<circle class="disc" cx="${px}" cy="${py}" r="${r - 1}"/><path class="plus" d="M${px - 5} ${py}h10M${px} ${py - 5}v10"/>${n.small ? '' : `<text x="${px}" y="${r1(py + r + 12)}" class="ftl">${lines(b.label, 11).map((l, i) => `<tspan x="${px}" dy="${i ? 10.5 : 0}">${x(l)}</tspan>`).join('')}</text>`}</g>`;
     };
     out.push(`<g class="people">${nodes.filter(n => n.bud).map(budNode).join('')}${nodes.filter(n => n.n).map(person).join('')}</g>`);
     return { svg: `<svg class="ftreesvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="group" aria-label="${x(m.title || '')}">${out.join('')}</svg>`, keys, width: W, height: H, center: cx0 };

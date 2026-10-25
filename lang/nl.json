@@ -1473,7 +1473,7 @@
  "arar4a": "{actor} heeft {person} gearchiveerd",
  "17n774r": "Pas je op de kinderen van iemand anders? Scan de QR-code die een van de ouders je laat zien. Na hun goedkeuring staat hun gezin op deze pagina: in je familieboom als je familie bent, anders bij ‘Gezinnen waar je helpt’.",
  "195vm2m": "Pas je op de kinderen van iemand anders? Vraag een van de ouders om in de app Little Log het tabblad Gezin → Iemand uitnodigen te openen, te kiezen wat jij mag doen en je de QR-code te laten zien. Scan die hier. Na hun goedkeuring verschijnt hun gezin hier: in je familieboom als je familie bent, anders bij ‘Gezinnen waar je helpt’. Je kunt altijd wisselen tussen gezinnen.",
- "1dv359l": "Gezinnen en familie",
+ "1dv359l": "Gezinnen en familieleden",
  "1xzrjrm": {
   "one": "{n} jaar",
   "other": "{n} jaar"
@@ -1483,5 +1483,31 @@
  "1d71jrf": {
   "one": "{n} verzoek wacht op jouw goedkeuring",
   "other": "{n} verzoeken wachten op jouw goedkeuring"
- }
+ },
+ "1xef50z": "De familieboom van je kinderen: hun ouders, grootouders en overgrootouders, tantes, ooms, neven en nichten. Hij groeit als er mensen bijkomen. Tik op iemand voor de gegevens, of op een kind om de dag te bekijken; een ouder voegt mensen toe met de +.",
+ "1tokbz9": "Grootouder",
+ "sq9igh": "Overgrootouder",
+ "f0ykv1": "Tante of oom",
+ "run5pg": "Neef of nicht",
+ "121kudm": "De andere ouder van de kinderen toevoegen",
+ "1lb68bp": "Grootouder toevoegen",
+ "rlmdv5": "Overgrootouder toevoegen",
+ "1a8s2o1": "Tante of oom toevoegen",
+ "ds7zo9": "Partner toevoegen",
+ "1awlcbo": "Neef of nicht toevoegen",
+ "1c9xzwy": "Ouder van {name}",
+ "19mgvfv": "Broer of zus van {name}",
+ "5i9k38": "Partner van {name}",
+ "1kp5w5s": "Kind van {name}",
+ "281oz2": "Tik op een + om grootouders, overgrootouders, tantes, ooms, neven en nichten toe te voegen.",
+ "ymv5n0": "Een ouder kan grootouders, tantes, ooms, neven en nichten toevoegen.",
+ "oeaavd": "Kant van {name}",
+ "mfh82d": "Zo zeggen de kinderen",
+ "ffwx2w": "In liefdevolle herinnering",
+ "gqu694": "Al op Little Log",
+ "jw6dsg": "bijv. Oma, Opa Jan",
+ "157u7bc": "Uit de boom verwijderen",
+ "9ztoc9": "{name} uit de familieboom verwijderen? Iedereen die via deze persoon is toegevoegd, wordt ook verwijderd.",
+ "3pjyx9": "{actor} heeft de familieboom gewijzigd",
+ "cglt21": "De familieboom is intussen gewijzigd: probeer het opnieuw"
 }

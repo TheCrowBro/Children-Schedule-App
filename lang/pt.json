@@ -1505,10 +1505,36 @@
   "other": "{n} anos"
  },
  "thlxlz": "Abrir {family}",
- "wo8v8p": "Ver o dia de {name}",
+ "wo8v8p": "Mostrar o dia de {name}",
  "1d71jrf": {
   "one": "{n} pedido aguardando sua aprovação",
   "many": "{n} pedidos aguardando sua aprovação",
   "other": "{n} pedidos aguardando sua aprovação"
- }
+ },
+ "1xef50z": "A árvore da família dos seus filhos: pais, avós e bisavós, tios e primos. Ela cresce conforme as pessoas são adicionadas. Toque em alguém para ver os dados ou numa criança para ver o dia dela; um dos pais adiciona pessoas com o +.",
+ "1tokbz9": "Avô/avó",
+ "sq9igh": "Bisavô/bisavó",
+ "f0ykv1": "Tio/tia",
+ "run5pg": "Primo/prima",
+ "121kudm": "Adicionar o outro pai ou mãe das crianças",
+ "1lb68bp": "Adicionar avô ou avó",
+ "rlmdv5": "Adicionar bisavô ou bisavó",
+ "1a8s2o1": "Adicionar tio ou tia",
+ "ds7zo9": "Adicionar companheiro/a",
+ "1awlcbo": "Adicionar primo ou prima",
+ "1c9xzwy": "Pai ou mãe de {name}",
+ "19mgvfv": "Irmão ou irmã de {name}",
+ "5i9k38": "Companheiro/a de {name}",
+ "1kp5w5s": "Filho ou filha de {name}",
+ "281oz2": "Toque em um + para adicionar avós, bisavós, tios e primos.",
+ "ymv5n0": "Um dos pais pode adicionar avós, tios e primos.",
+ "oeaavd": "Por parte de {name}",
+ "mfh82d": "Como as crianças chamam",
+ "ffwx2w": "Sempre no coração",
+ "gqu694": "Já no Little Log",
+ "jw6dsg": "ex.: Vovó, Vovô Zé",
+ "157u7bc": "Remover da árvore",
+ "9ztoc9": "Remover {name} da árvore da família? Quem foi adicionado por meio dessa pessoa também sai.",
+ "3pjyx9": "{actor} alterou a árvore da família",
+ "cglt21": "A árvore da família mudou nesse meio-tempo: tente de novo"
 }

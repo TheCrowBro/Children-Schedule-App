@@ -1483,5 +1483,31 @@
  "1d71jrf": {
   "one": "Ombi {n} linasubiri idhini yako",
   "other": "Maombi {n} yanasubiri idhini yako"
- }
+ },
+ "1xef50z": "Mti wa familia wa watoto wako: wazazi wao, babu na bibi, wazazi wa babu na bibi, shangazi, wajomba na binamu. Unakua kadiri watu wanavyoongezwa. Gusa mtu ili kuona maelezo yake, au mtoto ili kuona siku yake; mzazi huongeza watu kwa kutumia +.",
+ "1tokbz9": "Babu/bibi",
+ "sq9igh": "Mzazi wa babu/bibi",
+ "f0ykv1": "Shangazi/mjomba",
+ "run5pg": "Binamu",
+ "121kudm": "Ongeza mzazi mwingine wa watoto",
+ "1lb68bp": "Ongeza babu au bibi",
+ "rlmdv5": "Ongeza mzazi wa babu au bibi",
+ "1a8s2o1": "Ongeza shangazi au mjomba",
+ "ds7zo9": "Ongeza mwenzi",
+ "1awlcbo": "Ongeza binamu",
+ "1c9xzwy": "Mzazi wa {name}",
+ "19mgvfv": "Ndugu wa {name}",
+ "5i9k38": "Mwenzi wa {name}",
+ "1kp5w5s": "Mtoto wa {name}",
+ "281oz2": "Gusa + ili kuongeza babu na bibi, wazazi wao, shangazi, wajomba na binamu.",
+ "ymv5n0": "Mzazi anaweza kuongeza babu na bibi, shangazi, wajomba na binamu.",
+ "oeaavd": "Upande wa {name}",
+ "mfh82d": "Jinsi watoto wanavyomwita",
+ "ffwx2w": "Kwa kumbukumbu ya upendo",
+ "gqu694": "Tayari wanatumia Little Log",
+ "jw6dsg": "mf. Bibi, Babu Juma",
+ "157u7bc": "Ondoa kwenye mti",
+ "9ztoc9": "Umwondoe {name} kwenye mti wa familia? Kila aliyeongezwa kupitia yeye ataondolewa pia.",
+ "3pjyx9": "{actor} alibadilisha mti wa familia",
+ "cglt21": "Mti wa familia ulibadilika wakati huo: tafadhali jaribu tena"
 }

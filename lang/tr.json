@@ -1483,5 +1483,31 @@
  "1d71jrf": {
   "one": "{n} istek onayınızı bekliyor",
   "other": "{n} istek onayınızı bekliyor"
- }
+ },
+ "1xef50z": "Çocuklarınızın aile ağacı: ebeveynleri, büyükanne ve büyükbabaları, büyük büyükanne ve büyükbabaları, teyze, hala, amca, dayıları ve kuzenleri. Kişiler eklendikçe büyür. Bilgilerini görmek için birine, gününü görmek için bir çocuğa dokunun; bir ebeveyn + ile kişi ekler.",
+ "1tokbz9": "Büyük ebeveyn",
+ "sq9igh": "Büyük büyük ebeveyn",
+ "f0ykv1": "Ebeveyn kardeşi",
+ "run5pg": "Kuzen",
+ "121kudm": "Çocukların diğer ebeveynini ekle",
+ "1lb68bp": "Büyükanne ya da büyükbaba ekle",
+ "rlmdv5": "Büyük büyükanne ya da büyük büyükbaba ekle",
+ "1a8s2o1": "Teyze, hala, amca ya da dayı ekle",
+ "ds7zo9": "Eş ekle",
+ "1awlcbo": "Kuzen ekle",
+ "1c9xzwy": "Kimin ebeveyni: {name}",
+ "19mgvfv": "Kimin kardeşi: {name}",
+ "5i9k38": "Kimin eşi: {name}",
+ "1kp5w5s": "Kimin çocuğu: {name}",
+ "281oz2": "Bir + işaretine dokunarak büyükanne ve büyükbabaları, büyük büyükanne ve büyükbabaları, teyze, hala, amca, dayıları ve kuzenleri ekleyin.",
+ "ymv5n0": "Bir ebeveyn büyükanne ve büyükbabaları, teyze, hala, amca, dayıları ve kuzenleri ekleyebilir.",
+ "oeaavd": "{name} tarafı",
+ "mfh82d": "Çocukların ona dediği ad",
+ "ffwx2w": "Sevgiyle anıyoruz",
+ "gqu694": "Zaten Little Log'da",
+ "jw6dsg": "ör. Anneanne, Ali Dede",
+ "157u7bc": "Ağaçtan kaldır",
+ "9ztoc9": "{name} aile ağacından kaldırılsın mı? Bu kişi üzerinden eklenen herkes de kaldırılır.",
+ "3pjyx9": "{actor} aile ağacını değiştirdi",
+ "cglt21": "Aile ağacı bu arada değişti: tekrar deneyin"
 }

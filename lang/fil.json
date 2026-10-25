@@ -1479,9 +1479,35 @@
   "other": "{n} na taon"
  },
  "thlxlz": "Buksan ang {family}",
- "wo8v8p": "Tingnan ang araw ni {name}",
+ "wo8v8p": "Ipakita ang araw ni {name}",
  "1d71jrf": {
   "one": "{n} request ang naghihintay ng pag-apruba mo",
   "other": "{n} request ang naghihintay ng pag-apruba mo"
- }
+ },
+ "1xef50z": "Ang puno ng pamilya ng mga anak mo: ang mga magulang, lolo at lola, lolo at lola sa tuhod, tito, tita, at pinsan nila. Lumalago ito habang may nadadagdag. I-tap ang isang tao para makita ang detalye niya, o ang isang bata para makita ang araw niya; nagdadagdag ng tao ang magulang gamit ang +.",
+ "1tokbz9": "Lolo/lola",
+ "sq9igh": "Lolo/lola sa tuhod",
+ "f0ykv1": "Tito/tita",
+ "run5pg": "Pinsan",
+ "121kudm": "Idagdag ang isa pang magulang ng mga bata",
+ "1lb68bp": "Magdagdag ng lolo o lola",
+ "rlmdv5": "Magdagdag ng lolo o lola sa tuhod",
+ "1a8s2o1": "Magdagdag ng tito o tita",
+ "ds7zo9": "Magdagdag ng asawa",
+ "1awlcbo": "Magdagdag ng pinsan",
+ "1c9xzwy": "Magulang ni {name}",
+ "19mgvfv": "Kapatid ni {name}",
+ "5i9k38": "Asawa ni {name}",
+ "1kp5w5s": "Anak ni {name}",
+ "281oz2": "I-tap ang isang + para magdagdag ng lolo at lola, lolo at lola sa tuhod, tito, tita, at pinsan.",
+ "ymv5n0": "Puwedeng magdagdag ang magulang ng lolo at lola, tito, tita, at pinsan.",
+ "oeaavd": "Panig ni {name}",
+ "mfh82d": "Tawag ng mga bata",
+ "ffwx2w": "Sa mapagmahal na alaala",
+ "gqu694": "Nasa Little Log na",
+ "jw6dsg": "hal. Lola, Lolo Pepe",
+ "157u7bc": "Alisin sa puno",
+ "9ztoc9": "Alisin si {name} sa puno ng pamilya? Aalisin din ang lahat ng idinagdag sa pamamagitan niya.",
+ "3pjyx9": "Binago ni {actor} ang puno ng pamilya",
+ "cglt21": "Nagbago ang puno ng pamilya habang ginagawa mo ito: subukan ulit"
 }

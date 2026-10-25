@@ -1483,5 +1483,31 @@
  "1d71jrf": {
   "one": "{n} Anfrage wartet auf deine Freigabe",
   "other": "{n} Anfragen warten auf deine Freigabe"
- }
+ },
+ "1xef50z": "Der Familienbaum deiner Kinder: ihre Eltern, Großeltern und Urgroßeltern, Tanten, Onkel, Cousins und Cousinen. Er wächst mit jeder Person, die hinzukommt. Tippe auf eine Person, um ihre Angaben zu sehen, oder auf ein Kind, um seinen Tag zu öffnen; ein Elternteil fügt mit dem + Leute hinzu.",
+ "1tokbz9": "Großelternteil",
+ "sq9igh": "Urgroßelternteil",
+ "f0ykv1": "Tante oder Onkel",
+ "run5pg": "Cousin/Cousine",
+ "121kudm": "Den anderen Elternteil der Kinder hinzufügen",
+ "1lb68bp": "Großelternteil hinzufügen",
+ "rlmdv5": "Urgroßelternteil hinzufügen",
+ "1a8s2o1": "Tante oder Onkel hinzufügen",
+ "ds7zo9": "Partner:in hinzufügen",
+ "1awlcbo": "Cousin oder Cousine hinzufügen",
+ "1c9xzwy": "Elternteil von {name}",
+ "19mgvfv": "Bruder oder Schwester von {name}",
+ "5i9k38": "Partner:in von {name}",
+ "1kp5w5s": "Kind von {name}",
+ "281oz2": "Tippe auf ein +, um Großeltern, Urgroßeltern, Tanten, Onkel, Cousins und Cousinen hinzuzufügen.",
+ "ymv5n0": "Ein Elternteil kann Großeltern, Tanten, Onkel, Cousins und Cousinen hinzufügen.",
+ "oeaavd": "Seite von {name}",
+ "mfh82d": "So sagen die Kinder",
+ "ffwx2w": "In liebevoller Erinnerung",
+ "gqu694": "Schon bei Little Log",
+ "jw6dsg": "z. B. Oma, Opa Hans",
+ "157u7bc": "Aus dem Baum entfernen",
+ "9ztoc9": "{name} aus dem Familienbaum entfernen? Alle, die über diese Person hinzugefügt wurden, werden ebenfalls entfernt.",
+ "3pjyx9": "{actor} hat den Familienbaum geändert",
+ "cglt21": "Der Familienbaum hat sich inzwischen geändert: Versuch es bitte noch einmal"
 }

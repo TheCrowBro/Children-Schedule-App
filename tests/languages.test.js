@@ -29,11 +29,12 @@ const unmarked = (page, data) => page.evaluate(data => {
   const seen = el => el.checkVisibility ? el.checkVisibility() : el.getClientRects().length > 0;
   const where = el => el.outerHTML.replace(/\s+/g, ' ').slice(0, 140);
   const skip = el => el.closest('#langSel, #langMini, #lrLang, script, style, title, .code, input[type=hidden]');
-  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), whole = new Set();
   for (let n; (n = w.nextNode());) {
-    const el = n.parentElement; if (!el || !n.textContent.trim() || skip(el)) continue;
+    let el = n.parentElement, t = n.textContent; if (!el || !t.trim() || skip(el)) continue;
+    if (el.tagName === 'tspan') { el = el.closest('text'); if (whole.has(el)) continue; whole.add(el); t = el.textContent; }   // (a label on two lines is one text)
     if (el.tagName === 'OPTION' ? !seen(el.closest('select')) : !seen(el)) continue;
-    check(n.textContent, where(el));
+    check(t, where(el));
   }
   for (const el of document.querySelectorAll('[aria-label], [placeholder], [title], img[alt]')) {
     if (skip(el) || (!seen(el) && !el.closest('svg.clock'))) continue;
