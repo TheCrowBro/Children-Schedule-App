@@ -10,16 +10,36 @@ const Lock = { init: async () => {}, onChange: null };
 const Acct = {
   gate: () => null, init: async () => {}, syncLine: () => 'Demo: tap around, nothing here is saved', accountHtml: () => '', cloudHtml: () => '', bindMoreAccount() {}, bindFamily() {},
   updateBadge() {}, applyBackup() {}, receiveJoin() {}, refreshAuth() {}, sessionLost() {},
+  // the family tree, as it looks for someone who also looks after a sister's and a brother-in-law's children (switching needs the real app)
+  famLabel: () => 'Your family',
+  familySwitcher() {
+    const S = $('#sheet'), B = $('#sheetBack');
+    S.innerHTML = `<h3>🌳 Switch family</h3>${DEMO_FAMILIES.map(([name, who, role], i) => `<button class="card fampick${i ? '' : ' on'}" data-demofam="${i}"><span><b>${name}</b><br><small>${who} · ${role}</small></span>${i ? '' : '<small class="fshow">Showing</small>'}</button>`).join('')}
+      <p class="note">In the real app this switches the whole app to that family: its children, entries and routine. Each family stays on the phone, so it's instant and works offline.</p>
+      <div class="row"><button class="btn" data-close>Close</button></div>`;
+    Icons.paint(S); S.hidden = B.hidden = false;
+    const close = () => { S.hidden = B.hidden = true; }; B.onclick = close; S.querySelector('[data-close]').onclick = close;
+    S.querySelectorAll('[data-demofam]').forEach(b => b.onclick = () => { close(); if (+b.dataset.demofam) toast('In the real app, this opens that family'); });
+  },
   familyHtml: () => {
     const person = (name, role, d) => `<details class="gd"><summary><span class="gt"><b>${name}</b><small>${role}</small></span><span class="chev" aria-hidden="true">›</span></summary>
       ${d.map(([l, v]) => `<div class="stat" style="margin:0 14px"><span>${l}<br><b class="sel">${v}</b></span></div>`).join('')}<p></p></details>`;
-    return `<div class="card"><b>👨‍👩‍👧 Your family log</b><p class="note">In the real app parents invite people with a QR code (valid for two hours, one use) and approve each request. Tap a person to see the details they added. Everything is end-to-end encrypted.</p></div>
+    const kid = (n, c) => `<span class="fkid"><span class="av" style="--k:${c}">${n[0]}</span>${n}</span>`;
+    const tree = `<h2>🌳 Family tree</h2><div class="card ftree"><div class="froot"><span class="av lg">M</span><span><b>You</b><br><small>Mum</small></span></div><ul class="fbranches">
+      <li class="fam on"><div class="fhead"><span><b>Your family</b><br><small>Parent</small></span><small class="fshow">Showing</small></div><div class="fkids">${kids().map(k => kid(k.name, k.color)).join('')}</div></li>
+      <li class="fam"><div class="fhead"><span><b>Sarah's family</b><br><small>Caregiver</small></span><button class="btn" data-demoopen>Open</button></div><div class="fkids">${kid('Ava', '#c2577a')}${kid('Jack', '#3f78b5')}</div></li>
+      <li class="fam"><div class="fhead"><span><b>Tom's family</b><br><small>Babysitter</small></span><button class="btn" data-demoopen>Open</button></div><div class="fkids">${kid('Noah', '#2f8f83')}</div></li></ul>
+      <button class="btn" data-demoopen style="width:100%;margin-top:10px">+ Add a family</button>
+      <p class="note">Looking after a sister's or a brother-in-law's children? One of their parents shows you an invite QR code and approves you, and their family joins your tree.</p></div>`;
+    setTimeout(() => document.querySelectorAll('[data-demoopen]').forEach(b => b.onclick = () => toast('In the real app, this opens that family (or adds one)')));
+    return `${tree}<div class="card"><b>👨‍👩‍👧 Your family log</b><p class="note">In the real app parents invite people with a QR code (valid for two hours, one use) and approve each request. Tap a person to see the details they added. Everything is end-to-end encrypted.</p></div>
     ${person('Mum (you)', 'Parent', [['Relationship', 'Mum'], ['Phone', '(555) 010-1234'], ['Place of work', 'Lakeside Library']])}
     ${person('Dad', 'Parent', [['Relationship', 'Dad'], ['Phone', '(555) 010-4444'], ['Place of work', 'Riverside Fire Station'], ['Work phone', '(555) 010-5555']])}
     ${person('Gran', 'Family member: adds entries, changes her own', [['Relationship', 'Grandma'], ['Phone', '(555) 010-7777'], ['Notes', 'Has a car seat in her car']])}
     ${person('Jess', 'Babysitter: adds entries, no health notes', [['Relationship', 'Babysitter'], ['Phone', '(555) 010-8888']])}`;
   },
 };
+const DEMO_FAMILIES = [['Your family', 'Leo, Mia, Sam', 'Parent'], ["Sarah's family", 'Ava, Jack', 'Caregiver'], ["Tom's family", 'Noah', 'Babysitter']];
 window.confirm = () => true; window.alert = () => {};
 function demoDb() {
   const h = 3600e3, DAYMS = 864e5, t0 = new Date().setHours(0, 0, 0, 0);

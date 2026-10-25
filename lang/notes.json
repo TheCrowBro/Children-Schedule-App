@@ -295,7 +295,6 @@
   "Rescind": "Button: cancel an invite.",
   "View": "Button: open the activity log.",
   "Showing": "Shown next to the child whose log is open.",
-  "Switch baby": "Heading: open the log of another child you have access to.",
   "Relationship": "Field: how this person is related to the child (grandparent, nanny …).",
   "Place of work": "Field: where this person works (to reach them).",
   "Work phone": "Field: the person's work phone number.",
@@ -410,6 +409,20 @@
   "Choose the food": "Message: no food was chosen in the allergy form.",
   "Remove {food} from {name}'s allergies?": "{food} is a food, {name} a child's name.",
   "Log a first food": "Button: open the feed form to log a first solid food.",
-  "Foods tried (first time)": "PDF report: each food given so far, with the day it was first given."
+  "Foods tried (first time)": "PDF report: each food given so far, with the day it was first given.",
+  "Family tree": "Heading in the Family tab: every family log the person is in (their own, and the children they look after, e.g. a sister's), drawn as a small tree. Also the button that opens it and a tour step.",
+  "Your family": "In the family tree: the family log this person is a parent in.",
+  "{names}'s family": "In the family tree: another family, named after its parents, e.g. \"Sarah's family\" or \"Sarah and Tom's family\" ({names} is one name or a list of names).",
+  "You": "The root of the family tree: the person using the phone.",
+  "Add a family": "Button and sheet title in the family tree: join another family's log (for example to look after a sister's children) by scanning an invite from one of its parents.",
+  "You're in: {family}": "Short message when a request to join another family was approved; {family} is its name in the family tree.",
+  "{n} change not sent yet: it goes when you open this family.": "In the family tree, on a family kept on the phone that has changes made offline that have not reached the server yet.",
+  "{n} waiting for your approval (below)": "In the family tree, on the family shown: how many people asked to join it; their requests are further down the page.",
+  "Switching…": "On a button while the app switches to another family's log.",
+  "Now showing {family}": "Short message after switching to another family's log.",
+  "Could not switch: {reason}": "Short message when switching to another family's log failed; {reason} says why.",
+  "Switch family": "Title of the sheet (and the spoken label of the button at the top of the screen) for choosing which family's log is shown.",
+  "Open": "Button in the family tree: show this family's log.",
+  "asked to join {family} as **{role}**": "Under a request to join another of the parent's family logs; {family} is its name in the family tree, {role} a role such as Caregiver."
  }
 }

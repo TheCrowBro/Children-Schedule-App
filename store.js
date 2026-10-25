@@ -5,7 +5,9 @@
    - A rolling backup copy is kept (at most hourly), and a corrupt main copy is quarantined, not silently discarded:
      the app then starts from the backup, and anything else is re-downloaded from the family log.
    - If saving ever fails (disk full, storage blocked), `Store.st.ok` turns false so the UI can say so loudly.
-   - Falls back to localStorage where IndexedDB is unavailable, and imports the pre-IndexedDB localStorage copy once. */
+   - Falls back to localStorage where IndexedDB is unavailable, and imports the pre-IndexedDB localStorage copy once.
+   - Someone in more than one family log (a parent who also looks after a sister's children) has one shown at a time; each of the
+     others is kept whole under a key of its own ("family.<id>"), unsent changes and all, until it is shown again. */
 const Store = (() => {
   const DB_NAME = 'littlelog', OS = 'kv', LEGACY = 'littlelog.v1', BACKUP_EVERY = 3600e3;
   const st = { ok: true, err: '', quarantined: false, recovered: false, onChange: null };
@@ -65,5 +67,24 @@ const Store = (() => {
   const backup = async () => (idb ? get('db.bak') : null);
   const quarantine = async () => (idb ? tx('readonly', s => s.getAllKeys()).then(ks => ks.filter(k => String(k).startsWith('corrupt.'))) : []);
 
-  return { st, init, load, save, whenSaved, peek, backup, quarantine, get usingIndexedDB() { return !!idb; } };
+  // ---- the family logs that are not the one shown ----
+  const FAM = 'family.', lsKey = id => `${LEGACY}.${FAM}${id}`;
+  /** Keep family log `id` on the phone while another one is shown. Throws if it can't be written (then nothing should change). */
+  async function park(id, data) { if (idb) await put(FAM + id, data); else localStorage.setItem(lsKey(id), JSON.stringify(data)); }
+  /** The kept copy of family log `id`, or null. */
+  async function unpark(id) {
+    let d = null;
+    try { d = idb ? await get(FAM + id) : JSON.parse(localStorage.getItem(lsKey(id)) || 'null'); } catch (e) { d = null; }
+    return valid(d) ? d : null;
+  }
+  /** Delete the kept copy of family log `id` (once it is shown again, or when this person is no longer in it). */
+  async function drop(id) { try { if (idb) await tx('readwrite', s => s.delete(FAM + id)); else localStorage.removeItem(lsKey(id)); } catch (e) { /* already gone */ } }
+  /** The ids of the family logs kept on the phone besides the one shown. */
+  async function parkedIds() {
+    if (idb) { try { return (await tx('readonly', s => s.getAllKeys())).map(String).filter(k => k.startsWith(FAM)).map(k => k.slice(FAM.length)); } catch (e) { return []; } }
+    const out = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(lsKey(''))) out.push(k.slice(lsKey('').length)); }
+    return out;
+  }
+
+  return { st, init, load, save, whenSaved, peek, backup, quarantine, park, unpark, drop, parkedIds, get usingIndexedDB() { return !!idb; } };
 })();

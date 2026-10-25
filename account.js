@@ -3,7 +3,8 @@
 const Acct = (() => {
   const CFG = window.LL_CONFIG || {};
   const L = { step: 'email', email: '', busy: false, err: '', captcha: '', fails: 0 };          // sign-in form
-  const F = { loaded: false, loading: false, verified: false, enrollRequested: false, enrollForCreate: false, fp: '', recoveryCode: null, myPhones: [], secCode: '' };   // auth state after sign-in
+  const F = { loaded: false, loading: false, verified: false, enrollRequested: false, enrollForCreate: false, fp: '', recoveryCode: null, myPhones: [], secCode: '',   // auth state after sign-in
+    treeAt: 0, treeTimer: null, keptUnsent: {} };   // (the family tree: when it was last brought up to date, and changes not sent yet in the families kept on the phone)
   const M = { enroll: null, busy: false, err: '' };                                              // two-step verification
   const O = { busy: false, err: '', name: '', birth: '', sex: '', mine: '', create: null };               // onboarding
   let invite = null, pendingJoin = null, waitTimer = null;
@@ -88,7 +89,7 @@ const Acct = (() => {
       const d = await E2EE.ensureDevice().catch(() => E2EE.device); if (d) F.fp = await E2EE.fingerprint(d.pub);   // this phone's key, so it can be approved
       await Sync.loadMemberships(); await Sync.loadMyRequests().catch(() => {});
       const ms = Sync.st.memberships;
-      if (ms.length) Sync.choose((ms.find(m => m.id === db.meta.babyId) || ms[0]).id);
+      if (ms.length) await Sync.choose((ms.find(m => m.id === db.meta.babyId) || ms[0]).id);
       else if (db.meta.babyId && Sync.st.state !== 'offline') { Sync.run(true); }
     } catch (e) { if (!Auth.signedIn) { await sessionLost(); return; } F.verified = Auth.aal === 'aal2'; }          // offline: trust the session we already have
     F.loading = false; F.loaded = true;
@@ -330,6 +331,7 @@ const Acct = (() => {
   }
 
   async function wipeLocal() {
+    await Sync.dropKept();   // (the other family logs kept on the phone too)
     db = { baby: { name: '', birth: '', kids: Kids.clean([]) }, events: [], deleted: [], meta: {} };
     save(true); tab = 'day'; invite = null; F.loaded = false; F.verified = false; F.enrollRequested = F.enrollForCreate = false; M.enroll = null;
     Sync.st.people = []; Sync.st.requests = []; Sync.st.invites = []; Sync.st.memberships = []; Sync.st.myRequests = []; Lock.reset();
@@ -338,7 +340,8 @@ const Acct = (() => {
   async function sessionLost() { await wipeLocal(); L.step = 'email'; L.err = N_('You were signed out. Please sign in again.'); render(); }
   async function signOut(everywhere) {
     if (Sync.linked() && !everywhere) await Sync.run(true);
-    if (Sync.linked() && Sync.st.state !== 'ok' && !confirm(__('Some changes have not synced yet and would be lost. Sign out anyway?'))) return;
+    const kept = Object.values(await Sync.unsentKept()).reduce((a, n) => a + n, 0);   // (and in the other families kept on the phone)
+    if (Sync.linked() && (Sync.st.state !== 'ok' || kept) && !confirm(__('Some changes have not synced yet and would be lost. Sign out anyway?'))) return;
     if (!confirm(everywhere ? __('Sign out of Little Log on ALL your devices? You will need to sign in again everywhere.') : __("Sign out? This clears the baby log from this device (it stays safe, encrypted, in the cloud). Your encryption keys stay in the phone's secure storage so you can sign back in."))) return;
     try { await Auth.signOut(everywhere); } catch (e) { return toast(everywhere ? __('Could not reach the server – try again when online') : err(e)); }
     await wipeLocal(); render();
@@ -389,18 +392,98 @@ const Acct = (() => {
     const base = s.state === 'syncing' ? '⏳ ' + __('Syncing…') : s.state === 'ok' ? '✅ ' + __('Synced {when}', { when: ago(s.at) }) : s.state === 'offline' ? '📴 ' + __('Offline – will sync when connected') : s.state === 'error' ? '⚠️ ' + __('Sync problem') : __('Not synced yet');
     return base + (Sync.isParent() ? '' : ` · ${roleName(db.meta.role)}`);
   }
+  /** A request to join a family log, to approve or deny (`family`: its name, when it is not the log shown). */
+  function reqCard(r, family) {
+    return `<div class="card"><b>${esc(r.display_name || r.email)}</b><br><small class="note">${esc(r.email)} · ${family ? __h('asked to join {family} as **{role}**', { family, role: roleName(r.role) }) : __h('asked to join as **{role}**', { role: roleName(r.role) })}</small>
+      ${r.qrVerified ? `<div class="note" style="margin-top:6px">✅ ${__h('Verified: they scanned your QR code, so this is really their phone.')}</div>`
+        : `<div class="note" style="margin-top:6px">⚠️ ${__h('They did not use your QR code. Ask them to read out the security code their phone shows while it waits, and check it matches:')}</div><div class="code mono">${esc(r.fingerprint)}</div><div class="chips">${chip('vchk', r.id, __h('It matches'), false)}</div>`}
+      <p class="note">${__h("Approving shares the log's encryption keys with their phone.")}</p>
+      <div class="row"><button class="btn p" data-approve="${esc(r.id)}">${__h('Approve')}</button><button class="btn d" data-deny="${esc(r.id)}">${__h('Deny')}</button></div></div>`;
+  }
+
+  // ---- the family tree: you, and each family log you are in -----------------------------------------
+  /** What a family log is called: "Your family" (the one you are a parent in), after its parents ("Sarah's family") where you may
+      see who they are, or else after its children. */
+  function famName(m) {
+    if (!m) return '';
+    if (m.role === 'parent' && Sync.st.memberships.filter(x => x.role === 'parent').length < 2) return __('Your family');
+    const ps = Sync.st.familyParents[m.id] || [];
+    if (ps.length) return __("{names}'s family", { names: andList(ps) });
+    return andList(famKidNames(m));
+  }
+  const famKids = m => (m.id === db.meta.babyId ? kids() : Kids.clean(m.kids, m.name, m.birth));
+  const famKidNames = m => famKids(m).map((k, i) => k.name || __('Baby {n}', { n: i + 1 }));
+  /** Bring the tree up to date (new families, requests waiting, names): when the Family tab opens, and every 15 s while one of your requests waits. */
+  async function refreshTree() {
+    F.treeAt = Date.now();
+    F.keptUnsent = await Sync.unsentKept().catch(() => ({}));   // (from the phone: known offline too)
+    if (tab === 'family') render();
+    const had = Sync.st.memberships.map(m => m.id).join();
+    try { await Promise.all([Sync.loadMemberships(), Sync.loadMyRequests()]); } catch (e) { return; }   // (offline: the tree as the phone knows it)
+    await Promise.all([Sync.loadFamilyParents(), Sync.loadFamilyRequests()]);
+    const now = Sync.st.memberships.filter(m => !had.split(',').includes(m.id));
+    if (had && now.length) toast(__("You're in: {family}", { family: famName(now[0]) }));
+    if (tab === 'family') render();
+  }
+  function treeHtml() {
+    const s = Sync.st, mine = s.myRequests.filter(r => r.status === 'pending'), me = s.people.find(p => p.is_you);
+    const branch = m => {
+      const on = m.id === db.meta.babyId, name = famName(m), reqs = on ? [] : s.familyRequests[m.id] || [], waiting = on && Sync.isParent() ? s.requests.length : 0, kept = F.keptUnsent[m.id] || 0;
+      return `<li class="fam${on ? ' on' : ''}" data-fam="${esc(m.id)}">
+        <div class="fhead"><span><b>${esc(name)}</b><br><small>${esc(roleName(m.role))}</small></span>${on ? `<small class="fshow">${__h('Showing')}</small>` : `<button class="btn" data-famopen="${esc(m.id)}">${__h('Open')}</button>`}</div>
+        <div class="fkids">${famKids(m).map((k, i) => `<span class="fkid">${avatar(k)}${esc(famKidNames(m)[i])}</span>`).join('')}</div>
+        ${kept ? `<p class="note">⏳ ${__hn('{n} change not sent yet: it goes when you open this family.', '{n} changes not sent yet: they go when you open this family.', kept)}</p>` : ''}
+        ${waiting ? `<p class="note fwait">📨 ${__hn('{n} waiting for your approval (below)', '{n} waiting for your approval (below)', waiting)}</p>` : ''}
+        ${reqs.map(r => reqCard(r, name)).join('')}</li>`;
+    };
+    return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftree">
+      <div class="froot"><span class="av lg">${esc(((me && me.display_name) || Auth.email || '?').trim().charAt(0).toUpperCase())}</span><span><b>${__h('You')}</b>${me && me.display_name ? `<br><small>${esc(me.display_name)}</small>` : ''}</span></div>
+      <ul class="fbranches">${s.memberships.map(branch).join('')}
+        ${mine.map(r => `<li class="fam pending"><div class="fhead"><span>⏳ ${__h('Request sent')}<br><small>${__h('Waiting for a parent to approve')}</small></span><button class="btn d" data-cancelreq="${esc(r.id)}">${__h('Cancel')}</button></div></li>`).join('')}</ul>
+      <button class="btn" id="famAdd" style="width:100%;margin-top:10px">+ ${__h('Add a family')}</button></div>`;
+  }
+  /** Join another family's log: scan the QR code one of its parents shows you (or type its code); they approve the request. */
+  function addFamily() {
+    const close = showSheet(`<h3>🌳 ${__h('Add a family')}</h3>
+      <p class="note">${__h("Looking after someone else's children? Ask one of their parents to open Family → Invite someone in their Little Log, choose what you may do, and show you the QR code. Scan it here. Once they approve, their family joins your tree, and you can switch between families at any time.")}</p>
+      <div class="row"><button class="btn p" id="afScan" style="flex:1">📷 ${__h('Scan QR code')}</button></div>
+      <label class="f" for="afCode">${__h('Or enter a code')}</label><div class="row"><input id="afCode" type="text" maxlength="10" autocapitalize="characters" placeholder="ABCDE12345" style="flex:2"><button class="btn" id="afJoin">${__h('Send request')}</button></div>
+      <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Close')}</button></div>`);
+    $('#sheet [data-close]').onclick = close;
+    $('#afScan').onclick = () => { close(); scan(); };
+    $('#afJoin').onclick = () => { const c = parseJoin($('#afCode').value); if (!c) return toast(__('Invite codes are 10 letters/numbers')); close(); joinWith(c); };
+  }
+  /** Show another family log (from the tree or the switcher at the top). */
+  async function openFamily(id, btn) {
+    const m = Sync.st.memberships.find(x => x.id === id); if (!m || Sync.switching) return;
+    if (btn) { btn.disabled = true; btn.textContent = __('Switching…'); }
+    try {
+      if (await Sync.choose(id)) { membersLoadedFor = null; F.treeAt = 0; viewDay = startOfDay(Date.now()); toast(__('Now showing {family}', { family: famName(m) })); }
+    } catch (e) { toast(__('Could not switch: {reason}', { reason: err(e) })); }
+    render();
+  }
+  /** The switcher at the top of the screen, for someone in more than one family log. */
+  function familySwitcher() {
+    const ms = Sync.st.memberships;
+    const close = showSheet(`<h3>🌳 ${__h('Switch family')}</h3>
+      ${ms.map(m => `<button class="card fampick${m.id === db.meta.babyId ? ' on' : ''}" data-fampick="${esc(m.id)}"><span><b>${esc(famName(m))}</b><br><small>${esc(famKidNames(m).join(', '))} · ${esc(roleName(m.role))}</small></span>${m.id === db.meta.babyId ? `<small class="fshow">${__h('Showing')}</small>` : ''}</button>`).join('')}
+      <div class="row" style="margin-top:6px"><button class="btn" data-close>${__h('Close')}</button><button class="btn" id="fpTree">🌳 ${__h('Family tree')}</button></div>`);
+    $('#sheet [data-close]').onclick = close;
+    $('#fpTree').onclick = () => { close(); tab = 'family'; render(); };
+    document.querySelectorAll('[data-fampick]').forEach(b => b.onclick = () => { if (b.dataset.fampick === db.meta.babyId) return close(); close(); openFamily(b.dataset.fampick); });
+  }
+  /** The name on the switcher button at the top: shown once there is more than one family log. */
+  const famLabel = () => (Sync.st.memberships.length > 1 ? famName(Sync.st.memberships.find(m => m.id === db.meta.babyId)) : '');
+
   let membersLoadedFor = null;
   function familyHtml() {
     if (!Auth.configured || !db.meta.babyId) return `<div class="card"><b>${__h('Family sharing is off')}</b><p class="note">${Auth.configured ? __h('Create a baby log to share it.') : __h("Account service isn't configured (see {file}), so this device keeps its own private log.", { file: 'SETUP.md' })}</p></div>`;
     const s = Sync.st, parent = Sync.isParent();
+    if (Date.now() - (F.treeAt || 0) > 30000) refreshTree();
     if (membersLoadedFor !== db.meta.babyId) { membersLoadedFor = db.meta.babyId; Promise.all([Sync.loadPeople(), parent ? Sync.loadAdmin() : null, Sync.loadDevices(), Sync.myDevices().then(r => { F.myPhones = r; }), Sync.securityCode().then(c => { F.secCode = c; })]).then(() => { if (tab === 'family') render(); }).catch(() => {}); }
     const people = s.people.map(m => `<div class="stat"><button class="pbtn" data-pview="${esc(m.user_id)}"><span>${esc(m.display_name || __('Member'))}${m.is_you ? ` <small>${__h('(you)')}</small>` : ''}<br><small>${m.role ? esc(roleName(m.role)) : ''}${m.info && m.info.relation ? ' · ' + esc(m.info.relation) : ''}${m.email && m.role ? ' · ' + esc(m.email) : ''}</small></span><span class="chev" aria-hidden="true">›</span></button>
       ${parent && !m.is_you ? `<button class="btn" data-person="${esc(m.user_id)}" style="padding:6px 12px">${__h('Edit')}</button>` : ''}</div>`).join('') || `<div class="note">${__h('Loading…')}</div>`;
-    const reqs = parent && s.requests.length ? `<h2>${__h('Waiting for your approval')}</h2>${s.requests.map(r => `<div class="card"><b>${esc(r.display_name || r.email)}</b><br><small class="note">${esc(r.email)} · ${__h('asked to join as **{role}**', { role: roleName(r.role) })}</small>
-      ${r.qrVerified ? `<div class="note" style="margin-top:6px">✅ ${__h('Verified: they scanned your QR code, so this is really their phone.')}</div>`
-        : `<div class="note" style="margin-top:6px">⚠️ ${__h('They did not use your QR code. Ask them to read out the security code their phone shows while it waits, and check it matches:')}</div><div class="code mono">${esc(r.fingerprint)}</div><div class="chips">${chip('vchk', r.id, __h('It matches'), false)}</div>`}
-      <p class="note">${__h("Approving shares the log's encryption keys with their phone.")}</p>
-      <div class="row"><button class="btn p" data-approve="${esc(r.id)}">${__h('Approve')}</button><button class="btn d" data-deny="${esc(r.id)}">${__h('Deny')}</button></div></div>`).join('')}` : '';
+    const reqs = parent && s.requests.length ? `<h2>${__h('Waiting for your approval')}</h2>${s.requests.map(r => reqCard(r)).join('')}` : '';
     const phones = E2EE.hasKeys(db.meta.babyId) ? Sync.pendingPhones() : [];
     const phonesCard = phones.length ? `<h2>${__h('Phones waiting for access')}</h2>${phones.map(d => `<div class="card"><b>${esc(d.person)}</b> · ${esc(phoneName(d.device_name))}
       <div class="note">${__h('Their phone shows a security code. Check it matches:')}</div><div class="code mono">${esc(d.fingerprint)}</div><div class="chips">${chip('vchkp', d.grantee, __h('It matches'), false)}</div>
@@ -414,8 +497,7 @@ const Acct = (() => {
       <div class="stat"><span>${__h('My phones')}<br><small>${__h("Remove a lost phone: its keys are deleted and the log's keys are changed")}</small></span></div>
       ${F.myPhones.map(d => `<div class="stat"><span>${esc(phoneName(d.name))}${d.id === thisId ? ` <small>${__h('(this phone)')}</small>` : ''}<br><small>${__h('added {date}', { date: new Date(d.created_at).toLocaleDateString(I18n.locale()) })}</small></span>${d.id === thisId ? '' : `<button class="btn d" data-rmphone="${esc(d.id)}" style="padding:6px 12px">${__h('Remove')}</button>`}</div>`).join('')}
       ${parent ? `<div class="row"><button class="btn" id="newRec">${__h('Create a new recovery code')}</button></div>` : ''}</div>`;
-    const mineReq = s.myRequests.filter(r => r.status === 'pending');
-    return `
+    return `${treeHtml()}
     <div class="card"><b>${db.baby.name ? __h("{name}'s shared log", { name: db.baby.name }) : __h("Baby's shared log")}</b>
       <div class="stat"><span>${esc(syncLine())}${s.err && s.state === 'error' ? `<br><small>${esc(__(s.err))}</small>` : ''}</span><button class="btn" id="syncNow" style="padding:6px 12px">${__h('Sync now')}</button></div>
       ${s.denied ? `<div class="note" style="margin-top:6px">⚠️ ${__hn('{n} change was not allowed with your access and was undone.', '{n} changes were not allowed with your access and were undone.', s.denied)}</div>` : ''}
@@ -430,11 +512,6 @@ const Acct = (() => {
       ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Open invites')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(roleName(i.role))}<br><small>${esc(left(i.expires_at))}</small></span>
         <span class="btns"><button class="btn" data-showinv="${esc(i.code)}" style="padding:6px 10px">${__h('Show')}</button><button class="btn d" data-rescind="${esc(i.code)}" style="padding:6px 10px">${__h('Rescind')}</button></span></div>`).join('')}` : ''}</div>
     <h2>${__h('Activity')}</h2><div class="card"><div class="stat"><span>${__h('Who added, changed or deleted what, and who joined or left.')}<br><small>${__h('Only parents can see this.')}</small></span><button class="btn" id="actBtn" style="padding:6px 12px">${__h('View')}</button></div></div>` : ''}
-    <h2>${__h('Join another log')}</h2><div class="card">
-      ${mineReq.length ? mineReq.map(r => `<div class="stat"><span>⏳ ${__h('Request sent')}<br><small>${__h('Waiting for a parent to approve')}</small></span><button class="btn d" data-cancelreq="${esc(r.id)}" style="padding:6px 12px">${__h('Cancel')}</button></div>`).join('') : ''}
-      <div class="row"><button class="btn" id="fScan">📷 ${__h('Scan QR code')}</button></div>
-      <label class="f" style="display:block;margin:10px 0 4px;color:var(--mute);font-size:13px">${__h('Or enter a code')}</label><div class="row"><input id="fCode" type="text" maxlength="10" autocapitalize="characters" placeholder="ABCDE12345" style="flex:2"><button class="btn" id="fJoin">${__h('Send request')}</button></div></div>
-    ${s.memberships.length > 1 ? `<h2>${__h('Switch baby')}</h2><div class="card">${s.memberships.map(m => `<div class="stat"><span>${esc(m.name || __('Baby'))}<br><small>${esc(roleName(m.role))}</small></span>${m.id === db.meta.babyId ? `<small>${__h('Showing')}</small>` : `<button class="btn" data-sw="${esc(m.id)}" style="padding:6px 12px">${__h('Show')}</button>`}</div>`).join('')}</div>` : ''}
     ${encCard}
     <div class="card"><button class="btn d" id="leave" style="width:100%">${__h('Leave this log')}</button></div>`;
   }
@@ -456,10 +533,20 @@ const Acct = (() => {
       if (!confirm(__('Remove this phone? Its keys are deleted and the log changes to new keys, so it can read nothing new.'))) return;
       try { await Sync.removePhone(b.dataset.rmphone); F.myPhones = await Sync.myDevices(); render(); toast(__('Phone removed')); } catch (e) { toast(err(e)); }
     });
-    el('fScan').onclick = scan;
-    el('fJoin').onclick = () => { const c = parseJoin(el('fCode').value); c ? joinWith(c) : toast(__('Invite codes are 10 letters/numbers')); };
+    el('famAdd').onclick = addFamily;
     document.querySelectorAll('[data-cancelreq]').forEach(b => b.onclick = async () => { try { await Sync.cancelRequest(b.dataset.cancelreq); render(); } catch (e) { toast(err(e)); } });
-    document.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => { if (confirm(__("Switch this device to that baby's log?"))) { Sync.choose(b.dataset.sw); membersLoadedFor = null; tab = 'day'; render(); } });
+    document.querySelectorAll('[data-famopen]').forEach(b => b.onclick = () => openFamily(b.dataset.famopen, b));
+    clearInterval(F.treeTimer);   // while one of your requests waits, look every 15 s for the approval
+    if (Sync.st.myRequests.some(r => r.status === 'pending')) F.treeTimer = setInterval(() => { if (tab !== 'family') return clearInterval(F.treeTimer); refreshTree(); }, 15000);
+    // requests to join any family you are a parent in (the tree shows those of the families not shown)
+    const anyReq = id => Sync.st.requests.find(x => x.id === id) || Object.values(Sync.st.familyRequests).flat().find(x => x.id === id);
+    const checked = (name, v) => { const c = document.querySelector(`input[name=${name}][value="${v}"]`); return !!(c && c.checked); };
+    document.querySelectorAll('[data-approve]').forEach(b => b.onclick = async () => {
+      const r = anyReq(b.dataset.approve); if (!r) return;
+      if (!r.qrVerified && !checked('vchk', r.id)) return toast(__('Compare the security code with their phone, then tick "It matches"'));
+      try { await Sync.decide(r, true, { manualOk: checked('vchk', r.id) }); toast(__('Approved')); render(); } catch (e) { toast(err(e)); render(); }
+    });
+    document.querySelectorAll('[data-deny]').forEach(b => b.onclick = async () => { const r = anyReq(b.dataset.deny); if (!r || !confirm(__('Deny this request?'))) return; try { await Sync.decide(r, false); render(); } catch (e) { toast(err(e)); render(); } });
     el('leave').onclick = async () => {
       if (!confirm(__('Leave this log? You will lose access unless invited again.'))) return;
       try { await Sync.removeMember(Auth.id); membersLoadedFor = null; render(); } catch (e) { toast(err(e)); }
@@ -476,13 +563,6 @@ const Acct = (() => {
       if (!confirm(__('Rescind this invite? The code stops working immediately.'))) return;
       try { await Sync.rescind(b.dataset.rescind); if (invite && invite.code === b.dataset.rescind) invite = null; render(); } catch (e) { toast(err(e)); }
     });
-    const checked = (name, v) => { const c = document.querySelector(`input[name=${name}][value="${v}"]`); return !!(c && c.checked); };
-    document.querySelectorAll('[data-approve]').forEach(b => b.onclick = async () => {
-      const r = Sync.st.requests.find(x => x.id === b.dataset.approve); if (!r) return;
-      if (!r.qrVerified && !checked('vchk', r.id)) return toast(__('Compare the security code with their phone, then tick "It matches"'));
-      try { await Sync.decide(r, true, { manualOk: checked('vchk', r.id) }); toast(__('Approved')); render(); } catch (e) { toast(err(e)); render(); }
-    });
-    document.querySelectorAll('[data-deny]').forEach(b => b.onclick = async () => { const r = Sync.st.requests.find(x => x.id === b.dataset.deny); if (!r || !confirm(__('Deny this request?'))) return; try { await Sync.decide(r, false); render(); } catch (e) { toast(err(e)); render(); } });
     document.querySelectorAll('[data-approvephone]').forEach(b => b.onclick = async () => {
       const d = Sync.st.devices.find(x => x.grantee === b.dataset.approvephone); if (!d) return;
       if (!checked('vchkp', d.grantee)) return toast(__('Compare the security code with that phone, then tick "It matches"'));
@@ -646,5 +726,5 @@ const Acct = (() => {
   /** Called by app.js after each render/sync to keep the Family tab badge current. */
   function updateBadge() { const b = $('#famBadge'); if (!b) return; const n = Sync.isParent() ? Sync.st.requests.length : 0; b.hidden = !n || tab === 'family'; b.textContent = n; }
 
-  return { init, gate, familyHtml, bindFamily, accountHtml, cloudHtml, bindMoreAccount, applyBackup, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, parseJoin, sessionLost };
+  return { init, gate, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, cloudHtml, bindMoreAccount, applyBackup, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, parseJoin, sessionLost };
 })();

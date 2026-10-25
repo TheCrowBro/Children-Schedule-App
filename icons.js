@@ -46,6 +46,7 @@ const Icons = (() => {
     globe:   ['<circle cx="16" cy="16" r="11.500"/>', '<circle cx="16" cy="16" r="11.500"/><path d="M4.500 16h23M16 4.500c3.200 3.200 4.800 7 4.800 11.500S19.200 24.300 16 27.500C12.800 24.300 11.200 20.500 11.200 16S12.800 7.700 16 4.500z"/>'],
     pin:     ['<path d="M16 28.500s-8.500-8.400-8.500-14.700a8.500 8.500 0 0 1 17 0c0 6.300-8.500 14.700-8.500 14.700z"/>', '<path d="M16 28.500s-8.500-8.400-8.500-14.700a8.500 8.500 0 0 1 17 0c0 6.300-8.500 14.700-8.500 14.700z"/><circle cx="16" cy="13.800" r="3.200"/>'],
     help:    ['<circle cx="16" cy="16" r="11.500"/>', '<circle cx="16" cy="16" r="11.500"/><path d="M12.500 12.700a3.600 3.600 0 1 1 5.100 3.200c-1 .5-1.600 1.300-1.600 2.400v.7M16 22.300h.01"/>'],
+    tree:    ['<circle cx="16" cy="11.500" r="7.500"/><circle cx="9.500" cy="16.500" r="5"/><circle cx="22.500" cy="16.500" r="5"/>', '<path d="M16 28v-9M16 22.500l-3.500-3M16 21l3-2.500M9.500 21.500a5 5 0 0 1-.9-9.700 7.500 7.500 0 0 1 14.800 0 5 5 0 0 1-.9 9.700z"/>'],
     doc:     ['<path d="M8 4.500h11l6 6v17H8z"/>', '<path d="M8 4.500h11l6 6v17H8zM19 4.500v6h6M12 15.500h9M12 19.500h9M12 23.500h5.500"/>'],
     spoon:   ['<ellipse cx="10.500" cy="10.500" rx="5.300" ry="7.300" transform="rotate(-45 10.500 10.500)"/><path d="M15.900 14.100L27.400 25.600a1.300 1.300 0 0 1-1.800 1.800L14.100 15.900z"/>', '<ellipse cx="10.500" cy="10.500" rx="5.300" ry="7.300" transform="rotate(-45 10.500 10.500)"/><path d="M15.900 14.100L27.400 25.600a1.300 1.300 0 0 1-1.800 1.800L14.100 15.900M7.300 10c.4-1.400 1.300-2.400 2.600-3"/>'],
   };
@@ -53,7 +54,7 @@ const Icons = (() => {
   const MAP = { '🍼': 'feed', '💧': 'diaper', '😴': 'sleep', '🌙': 'wake', '🤮': 'vomit', '🧸': 'play', '🩺': 'health', '💊': 'med', '💩': 'poo',
     '📅': 'day', '🗓': 'month', '📊': 'stats', '👨‍👩‍👧': 'family', '⚙': 'more', '🔒': 'lock', '🔐': 'lock', '🔑': 'key', '📷': 'camera', '🔗': 'link',
     '👶': 'baby', '📨': 'mail', '⚠': 'warn', '✅': 'check', '⏳': 'clock', '📴': 'offline', '☁': 'cloud', '📞': 'phone', '📖': 'guide', '🌟': 'star', '🎨': 'palette', '🌗': 'theme',
-    '🌿': 'leaf', '☀': 'day', '🚗': 'car', '✈': 'plane', '🚆': 'train', '🚢': 'ship', '🧳': 'trip', '❓': 'help', '📍': 'pin', '🌐': 'globe', '⏰': 'clock', '📄': 'doc', '🥄': 'spoon' };
+    '🌿': 'leaf', '☀': 'day', '🚗': 'car', '✈': 'plane', '🚆': 'train', '🚢': 'ship', '🧳': 'trip', '❓': 'help', '📍': 'pin', '🌐': 'globe', '⏰': 'clock', '📄': 'doc', '🥄': 'spoon', '🌳': 'tree' };
   const RE = new RegExp(Object.keys(MAP).sort((a, b) => b.length - a.length).join('|') + '(?:\\uFE0F)?', 'gu');
   const bare = s => s.replace(/️/g, '');
   /** The icon as an SVG string. `size` is in px (default: 1.15em, so it sits in text). */

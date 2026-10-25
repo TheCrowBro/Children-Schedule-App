@@ -67,6 +67,14 @@ vomit, play, health observations and medication, with a calendar and easy-to-rea
 - **Health checklist** (blue hands/feet, clicking hips, belly bulge, jaundice…) with "call your doctor" prompts
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters* and *Friends*; per-person check boxes for exactly what
   they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**. Parents get a private **activity log** of who did what.
+- **Family tree** (Family tab): for someone in more than one family, such as a parent who also looks after a sister's children and now
+  and then a brother-in-law's. It shows you and every family you're in: yours, and the others named after their parents ("Sarah's
+  family", or after the children where you may not see who the parents are), each with its children and your role there. **Add a
+  family** scans an invite from one of its parents, who approves it; your request waits on the tree until then. Requests to join any
+  family you're a parent in wait on the tree too, to approve without leaving the family you're looking at. Switch with **Open**, or
+  from the family's name at the top of every screen: each family is kept whole on the phone, so switching is instant, works offline
+  and loses nothing (a change made offline goes when that family is next open, and the tree says it's waiting). Leaving a family, or
+  being removed from it, takes it off the phone; signing out clears them all, after a warning if anything hasn't synced
 - **Locked-down accounts**: email one-time code + security check (CAPTCHA), **two-step verification** (required for parents), Face ID / fingerprint
   **app lock**, secrets in the **Keychain / Keystore**, "sign out everywhere", in-app account deletion
 - **End-to-end encryption**: the server can't read the baby's name, entries, notes or health data. Phones hold the keys (Keychain / Keystore); a recovery code

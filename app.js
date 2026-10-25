@@ -199,11 +199,14 @@ function render() {
   const g = Acct.gate();
   document.body.classList.toggle('gated', !!g); $('#helpBtn').hidden = !!g;
   if (g) {
-    $('#sleepBanner').hidden = true; $('#syncLine').textContent = ''; $('#kidBar').hidden = true; $('#av').hidden = true; $('#view').innerHTML = g.html + langMini(); g.bind(); Icons.paint($('#view'));
+    $('#sleepBanner').hidden = true; $('#syncLine').textContent = ''; $('#kidBar').hidden = true; $('#av').hidden = true; $('#famSw').hidden = true; $('#view').innerHTML = g.html + langMini(); g.bind(); Icons.paint($('#view'));
     $('#langMini').onchange = e => setLanguage(e.target.value); lastScreen = 'signin';
     return;
   }
   syncLine();
+  // which family log is shown, for someone in more than one (yours, a sister's children you look after …): tap to switch
+  const fam = Acct.famLabel(), fs = $('#famSw'); fs.hidden = !fam;
+  if (fam) { fs.innerHTML = `🌳 ${esc(fam)}<span class="chev" aria-hidden="true">›</span>`; fs.setAttribute('aria-label', __('Switch family') + ': ' + fam); fs.onclick = Acct.familySwitcher; Icons.paint(fs); }
   // one tab per child (plus "Everyone" on the Day tab)
   const kb = $('#kidBar'); kb.hidden = !multi;
   if (multi) {
@@ -1231,12 +1234,13 @@ const TOURS = {
     { sel: '#view details.gd[data-grp^=m]', title: N_('Month by month'), why: N_('Milestones for every month. A reminder pops up on each month birthday.') },
   ],
   family: [
+    { sel: '.ftree', title: N_('Family tree'), why: N_('Every family you are in: yours, and the children you look after. Open one to switch; requests to join a family you are a parent in wait here for you.') },
     { sel: '#syncNow', title: N_('Your shared log'), why: N_('When this phone last synced. Tap to sync now.') },
     { sel: '#view .pbtn', title: N_('People'), why: N_('Everyone with access and their role. Tap a person for their contact details.') },
     { sel: '#invCard', title: N_('Invite someone'), why: N_('Make a one-time QR code. You approve them before they see anything.') },
     { sel: '#actBtn', title: N_('Activity'), why: N_('Who added, changed or deleted what. Only parents see this.') },
     { sel: '#view .code.mono', title: N_('Security code'), why: N_('Everyone sharing the log sees the same code: a quick check that only your family has the keys.') },
-    { sel: '#fScan', title: N_('Join another log'), why: N_('Scan the QR code from someone else\'s log to ask to join it.') },
+    { sel: '#famAdd', title: N_('Add a family'), why: N_('Looking after someone else\'s children? Scan the QR code one of their parents shows you. They approve it, and their family joins your tree.') },
     { sel: '#view .card', title: N_('Family sharing'), why: N_('Sign in to share the log with family and caregivers, end-to-end encrypted.') },
   ],
   more: [

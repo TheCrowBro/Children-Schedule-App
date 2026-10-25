@@ -5,9 +5,12 @@
    server's push_events(), which enforces each person's role and permissions. Conflicts: newest `updated` timestamp wins.
    Relies on the globals `db` and `save()` from app.js (read lazily, at call time). */
 const Sync = (() => {
-  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [] };
+  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyParents: {} };
   const PAGE = 500, OVERLAP_MS = 5000;
   let busy = false, busyAt = 0, again = false, timer = null, started = false, peopleAt = 0, failures = 0, retryAt = 0;
+  let flight = Promise.resolve(), switching = false;   // (the sync under way, and a switch to another family log)
+  // What belongs to one family log; the rest of db.meta belongs to the phone (language, clock face, region, the sync clock …)
+  const OWN = ['role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'art', 'solids', 'ms', 'kid'];
 
   const enabled = () => Auth.configured && Auth.signedIn;
   const linked = () => enabled() && !!db.meta.babyId;
@@ -86,6 +89,8 @@ const Sync = (() => {
   }
 
   function reset() { db.events = []; db.deleted = []; db.meta.pulledAt = ''; db.meta.pushedAt = 0; }
+  /** How many changes in `d` (the log shown, or the kept copy of another) have not reached the server yet. */
+  function unsent(d = db) { const m = d.meta || {}, since = m.pushedAt || 0, n = xs => (xs || []).filter(e => e.updated > since).length; return n(d.events) + n(d.deleted) + (m.babyDirty ? 1 : 0); }
 
   // ---- remote operations -------------------------------------------------------------------
   async function pullBaby() {
@@ -166,12 +171,12 @@ const Sync = (() => {
 
   /** `manual` (a button, an edit, coming back online) ignores the backoff that follows failures. */
   async function run(manual) {
-    if (!linked()) return;
+    if (!linked() || switching) return;
     if (manual !== true && Date.now() < retryAt) return;
     if (db.meta.role === 'parent' && Auth.aal !== 'aal2') { st.needMfa = true; st.state = 'error'; st.err = N_('Two-step verification is required'); return notify(); }
     if (busy && Date.now() - busyAt < 120000) { again = true; return; }   // (a sync stuck for 2 minutes is treated as dead)
     busy = true; busyAt = Date.now(); st.state = 'syncing'; notify();
-    let changed = 0;
+    let changed = 0, done; flight = new Promise(r => { done = r; });
     try {
       if (await pullBaby()) {
         if (st.rotateNeeded && db.meta.role === 'parent' && Auth.aal === 'aal2') { await E2EE.rotate(db.meta.babyId, db.baby); st.rotateNeeded = false; }
@@ -187,7 +192,7 @@ const Sync = (() => {
       st.err = e.message; failures++; retryAt = Date.now() + Math.min(300000, 5000 * 2 ** failures);   // 10s, 20s, 40s … up to 5 minutes
       if (!Auth.signedIn && Sync.onSessionLost) { busy = false; Sync.onSessionLost(); }
     } finally {
-      busy = false; save(true);
+      busy = false; save(true); done();
       notify(changed > 0);
       if (again) { again = false; schedule(1500); }
     }
@@ -211,7 +216,7 @@ const Sync = (() => {
   }
   async function loadAdmin() {   // parents only
     const [reqs, inv] = await Promise.all([Auth.rpc('list_requests', { p_baby: db.meta.babyId }), Auth.rpc('list_invites', { p_baby: db.meta.babyId })]);
-    for (const r of reqs) { r.qrVerified = await E2EE.verifyRequest(r); r.fingerprint = r.device_pub ? await E2EE.fingerprint(r.device_pub) : ''; }
+    for (const r of reqs) { r.baby_id = db.meta.babyId; r.qrVerified = await E2EE.verifyRequest(r); r.fingerprint = r.device_pub ? await E2EE.fingerprint(r.device_pub) : ''; }
     st.requests = reqs; st.invites = inv;
   }
   /** Phones of people in this log (parents see everyone's) and whether they hold keys yet. Phones without keys are waiting for approval. */
@@ -240,10 +245,33 @@ const Sync = (() => {
   /** `req` is a row from list_requests. Approving shares the log's encryption keys with the person's phone, so the parent must have
       verified it really is their phone (QR proof, or {manualOk:true} after comparing security codes). */
   const decide = async (req, approve, opts = {}) => {
-    const grant = approve ? await E2EE.grantForRequest(db.meta.babyId, req, opts) : null;
+    const b = req.baby_id || db.meta.babyId;   // (a request to join another of this parent's family logs is decided from the family tree)
+    const grant = approve ? await E2EE.grantForRequest(b, req, opts) : null;
     await Auth.rpc('decide_request', { p_id: req.id, p_approve: approve, p_role: null, p_perms: null, p_grant: grant });
-    await Promise.all([loadAdmin(), loadPeople(), loadDevices().catch(() => {})]);
+    if (b === db.meta.babyId) await Promise.all([loadAdmin(), loadPeople(), loadDevices().catch(() => {})]);
+    else await loadFamilyRequests();
   };
+  /** Requests to join the other family logs this person is a parent in (the log shown has its own, in st.requests): { id: [...] }. */
+  async function loadFamilyRequests() {
+    const out = {};
+    for (const m of st.memberships) {
+      if (m.role !== 'parent' || m.id === db.meta.babyId) continue;
+      try {
+        const reqs = list(await Auth.rpc('list_requests', { p_baby: m.id }));
+        for (const r of reqs) { r.baby_id = m.id; r.qrVerified = await E2EE.verifyRequest(r); r.fingerprint = r.device_pub ? await E2EE.fingerprint(r.device_pub) : ''; }
+        if (reqs.length) out[m.id] = reqs;
+      } catch (e) { /* offline, or this sign-in has no two-step verification yet: shown next time */ }
+    }
+    st.familyRequests = out; return out;
+  }
+  /** The parents of each family log, to name it in the family tree ("Sarah's family"), where this person may see who has which role. */
+  async function loadFamilyParents() {
+    const out = {};
+    for (const m of st.memberships) {
+      try { out[m.id] = list(await Auth.rpc('list_people', { p_baby: m.id })).filter(p => p.role === 'parent' && !p.is_you).map(p => p.display_name); } catch (e) { /* named after the children instead */ }
+    }
+    st.familyParents = out; return out;
+  }
   async function setMember(user, role, perms) {
     // Someone newly allowed to see health notes needs the health key for each of their phones.
     const p = st.people.find(x => x.user_id === user), had = !!p && (p.role === 'parent' || !!(p.perms && p.perms.view_health));
@@ -268,20 +296,59 @@ const Sync = (() => {
     st.memberships = [];
     for (const r of rows) {
       const b = profiles.find(x => x.id === r.baby_id); let p = null;
-      if (b && b.profile) { await E2EE.load(r.baby_id); p = await E2EE.decryptProfile(r.baby_id, b.profile, b.epoch); }
+      if (b && b.profile) {
+        await E2EE.load(r.baby_id);
+        if (!E2EE.hasKeys(r.baby_id) || E2EE.epoch(r.baby_id) < b.epoch) await fetchKeys(r);
+        p = await E2EE.decryptProfile(r.baby_id, b.profile, b.epoch);
+      }
       st.memberships.push({ id: r.baby_id, role: r.role, perms: r.perms || {}, name: p ? p.name : '', birth: p ? p.birth : '', kids: p ? p.kids : null });
     }
+    for (const id of await Store.parkedIds()) if (!st.memberships.some(m => m.id === id)) await Store.drop(id);   // (no longer in it: nothing of it stays on the phone)
     return st.memberships;
   }
-  async function loadMyRequests() { st.myRequests = await Auth.rpc('my_requests'); return st.myRequests; }
-  /** Make `id` the baby shown on this device. Clears the local cache when switching to a different baby. */
-  function choose(id) {
-    const m = st.memberships.find(x => x.id === id);
-    if (!m) return;
-    if (db.meta.babyId !== id) { reset(); db.meta.babyDirty = false; db.meta.stash = undefined; db.meta.unverified = false; st.people = []; st.devices = []; st.needsAccess = false; peopleAt = 0; }
-    db.meta.babyId = id; db.meta.role = m.role; db.meta.perms = m.perms; if (m.name || m.kids) db.baby = { name: m.name, birth: m.birth, kids: Kids.clean(m.kids, m.name, m.birth) };
-    save(true); run();
+  /** The keys of a family log this phone was just approved for (or that changed keys), fetched outside its own sync so the family
+      tree can show its children. Joined with a typed code instead of the QR code, the security code still has to be compared: that is
+      noted, and asked for when the family is first opened. */
+  async function fetchKeys(r) {
+    if (r.baby_id === db.meta.babyId) return;   // (the log shown gets its keys in its own sync)
+    const flags = {};
+    try { await E2EE.refresh(r.baby_id, flags, { health: r.role === 'parent' || !!(r.perms && r.perms.view_health) }); } catch (e) { return; }   // (any problem shows when it is opened)
+    if (flags.unverified) { (db.meta.unverifiedIn || (db.meta.unverifiedIn = {}))[r.baby_id] = true; save(true); }
   }
+  async function loadMyRequests() { st.myRequests = await Auth.rpc('my_requests'); return st.myRequests; }
+  /** Make family log `id` the one shown on this phone. The one shown until now is first synced (when there is a connection), then
+      kept whole on the phone, unsent changes and all, so switching back is instant, works offline and loses nothing. Resolves true
+      once `id` is shown. */
+  async function choose(id) {
+    const m = st.memberships.find(x => x.id === id), from = db.meta.babyId;
+    if (!m || switching) return false;
+    if (from === id) {   // the same log again (after signing in): its role may have changed; its profile, unless a change of ours is waiting to go up
+      db.meta.role = m.role; db.meta.perms = m.perms;
+      if ((m.name || m.kids) && !db.meta.babyDirty) db.baby = { name: m.name, birth: m.birth, kids: Kids.clean(m.kids, m.name, m.birth) };
+      save(true); run(); return true;
+    }
+    if (from && unsent() && navigator.onLine !== false) await run(true);   // send what is waiting first, while it is the log shown
+    switching = true;
+    try {
+      await flight;   // (a sync under way finishes first)
+      // keep the log shown until now (if this person is still in it); this throws if it can't be written, and then nothing changes
+      if (from && st.memberships.some(x => x.id === from)) await Store.park(from, { events: db.events, deleted: db.deleted, baby: db.baby, meta: Object.fromEntries(OWN.filter(k => k in db.meta).map(k => [k, db.meta[k]])) });
+      const kept = await Store.unpark(id);
+      for (const k of OWN) delete db.meta[k];
+      if (kept) { db.events = kept.events; db.deleted = kept.deleted || []; db.baby = kept.baby; Object.assign(db.meta, kept.meta); }
+      else { reset(); db.baby = { name: m.name || '', birth: m.birth || '', kids: Kids.clean(m.kids, m.name, m.birth) }; }
+      if (db.meta.unverifiedIn && db.meta.unverifiedIn[id]) { db.meta.unverified = true; delete db.meta.unverifiedIn[id]; }   // (its keys came with the family tree)
+      db.meta.babyId = id; db.meta.role = m.role; db.meta.perms = m.perms;
+      st.people = []; st.devices = []; st.requests = []; st.invites = []; st.needsAccess = false; st.denied = 0; peopleAt = 0;
+      save(true); await Store.whenSaved();
+      if (kept) await Store.drop(id);   // (it is the main copy now)
+    } finally { switching = false; }
+    run(true); return true;
+  }
+  /** Changes not sent yet in the family logs kept on the phone (not the one shown): { id: count }. */
+  async function unsentKept() { const out = {}; for (const id of await Store.parkedIds()) { const d = await Store.unpark(id); if (d && unsent(d)) out[id] = unsent(d); } return out; }
+  /** Forget every family log kept on the phone (signing out). */
+  async function dropKept() { for (const id of await Store.parkedIds()) await Store.drop(id); }
   /** Creates the log with fresh encryption keys. Returns the one-time recovery code (shown to the parent once, never stored). */
   async function createBaby(name, birth, displayName, sex) {
     db.meta.recoveryAck = false; save(true);   // set first: if the app dies before the code is shown, the reminder is still there
@@ -307,7 +374,7 @@ const Sync = (() => {
   /** Check whether a pending request was approved; if so, switch to that log. */
   async function checkApproval() {
     await Promise.all([loadMyRequests(), loadMemberships()]);
-    if (!db.meta.babyId && st.memberships.length) { choose(st.memberships[0].id); return true; }
+    if (!db.meta.babyId && st.memberships.length) { await choose(st.memberships[0].id); return true; }
     return false;
   }
   const cancelRequest = async id => { await Auth.rpc('cancel_my_request', { p_id: id }); await loadMyRequests(); };
@@ -328,5 +395,5 @@ const Sync = (() => {
 
   return { st, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
     createInvite, rescind, decide, setMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
-    pendingRequest, inviteUrl, pushBaby, setMyDetails, onChange: null, onSessionLost: null };
+    pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyParents, get switching() { return switching; }, onChange: null, onSessionLost: null };
 })();
