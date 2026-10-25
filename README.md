@@ -25,6 +25,13 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   and who is coming, and whoever picks them up taps **Picked up**: the pick-up is an entry of their own, so a grandparent who may not
   change other people's entries can log it too. The stay lights up the clock's outer track; a day can be logged afterwards in one go;
   Stats show the days there and the time there
+- **The family calendar** (Month tab → Add to the calendar): exams, appointments, matches or games, lessons, school holidays and parties
+  for one child or several, on a day (with a time, or all day) or over several days. The next week's are under **Coming up** on the Day
+  page, their days are marked on the Month tab and listed on the day, and a school holiday gives the routine's school week a break.
+  Shared and end-to-end encrypted like the rest
+- **Turning 18**: on a child's 18th birthday a sheet celebrates it (once) and offers to keep it as a big moment. Their Day page then says
+  Little Log's work is done, with **their book** (a PDF: every big moment in chapters for each stage of growing up, how they grew and their
+  vaccines) and **their record as a file** (every entry, to keep or hand over). Logging goes on for anyone who wants it
 - **Homework and activities** (the school years): homework, reading and practising, with the subject, the minutes and the pages read;
   a school child's play is an activity (sport, swimming, dance, music, games, a club). When a child reaches school age, a note on the
   Day page says what changes
@@ -74,7 +81,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   "Mark an allergy" on a meal tapped on the clock, which fills in its foods and date). It's kept in the child's profile, end-to-end
   encrypted, and seen by everyone sharing the log: the first date is marked on the calendar like a trip, the Day tab shows the child's
   allergies at the top, the foods list flags them, logging one warns straight away, and the doctor's report lists them
-- **Guide tab**: for school children, sleep, screens and staying safe online, homework and reading, friends and bullying, food and staying
+- **Guide tab**: for teenagers, sleep, mental health (and what to do at once if they talk about hurting themselves), phones and life
+  online, alcohol, vaping and drugs, relationships, sex and consent, periods, spots and acne, food, body image and sport (and a knock to
+  the head), driving and growing independence come first (from 10, after the milestones, as what comes next). For school children, sleep, screens and staying safe online, homework and reading, friends and bullying, food and staying
   active, teeth, bedwetting, worries and feelings, puberty, head lice and safety out and about come first (for a preschooler, after the
   milestones, as what comes next). For toddlers and preschoolers, potty training, picky eating, tantrums, sleep, teeth and the dentist, screens and car
   seats come first; milestones go on to 30 months and 3, 4 and 5 years, and after that "Right now" says what the school or teenage years
@@ -176,7 +185,10 @@ Little Log grows with the child in phases. Each finished phase is saved as a ver
 | 1 | 1 to 5 | Stages by age, meals, milk from a cup, potty training, big moments, toddler topics and milestones to 5 | done |
 | 2 | every age | A health record: vaccines, checkups, the dentist and other visits, weight, height and head size against the CDC growth charts, and all of it in the doctor's report | done |
 | 3 | 3 months to 12 | Daycare, preschool and school: drop-off and pick-up (who has the child today), the school week in the routine, activities, homework and reading, the Guide for school children | done |
-| 4 | 12 to 18 | The teenage years: a family calendar (school holidays too), privacy and the teenager's own say, and at 18 handing the record over, when Little Log's work is done | next |
+| 4 | 12 to 18 | The teenage years: a family calendar (school holidays too), the Guide for teenagers, and at 18 their book and their record to hand over, when Little Log's work is done | done |
+
+Not there yet: entries a teenager keeps private (everyone a log is shared with sees all of it, as the encryption keys belong to the family's
+log, not to each child), and reminders for what is on the calendar.
 
 ## Build and test
 ```bash

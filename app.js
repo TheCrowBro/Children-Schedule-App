@@ -41,6 +41,7 @@ const TYPES = {
   care:   { label: N_('Drop-off'), noun: N_('drop-off'), icon: '🏫' },
   pickup: { label: N_('Pick-up'), noun: N_('pick-up'), icon: '🎒' },
   study:  { label: N_('Homework'), noun: N_('homework'), icon: '📚' },
+  plan:   { label: N_('Calendar'), noun: N_('event'), icon: '🗓' },
 };
 // Health notes, medicines and the health record (vaccines, doctor visits, measurements) are private: only people allowed to see health
 // notes get them, under their own key (e2ee.js keeps the same list).
@@ -182,6 +183,7 @@ function describeEntry(e) {
     case 'growth': return [[d.weight && fmtWeight(d.weight), d.height && fmtLength(d.height)].filter(Boolean).join(' · ') || __('Measurement'), d.head ? __('head {size}', { size: fmtLength(d.head) }) : ''];
     case 'care': { const out = pickupAfter(e); return [placeName(d), [out ? __('until {time}', { time: fmtTime(out.ts) }) : '', d.who && __('dropped off by {name}', { name: d.who }), out ? '' : planText(d)].filter(Boolean).join(' · ')]; }
     case 'pickup': return [d.place ? __('Picked up from {place}', { place: placeName(d) }) : __('Picked up'), d.who ? __('by {name}', { name: d.who }) : ''];
+    case 'plan': return [d.title || __(d.kind || 'Other'), [planWhen(e), d.title && __(d.kind || 'Other')].filter(Boolean).join(' · ')];
     case 'study': return [__(d.kind || 'Homework'), [d.subject, d.min && __('{n} min', { n: d.min }), d.pages && __n('{n} page', '{n} pages', d.pages)].filter(Boolean).join(' · ')];
     case 'trip': return [__('Trip {by}', { by: __(Travel.MEANS[Travel.meansOf(e)].by) }), `${fmtShort(e.ts)} – ${fmtShort(Travel.ends(e) - 1)}`];
     case 'leg': return [__(Travel.MEANS[Travel.meansOf(e)].moving), Number.isFinite(e.end) ? fmtDur((e.end - e.ts) / MIN) : __('under way')];
@@ -210,7 +212,7 @@ function setKid(id) { selKid = id; if (id !== 'all') lastKid = id; db.meta.kid =
 /** The child whose numbers the Month and Stats tabs show (Everyone falls back to the last child looked at). */
 function viewKid() { const k = curKid(); return k !== 'all' ? k : (kidById(lastKid) ? lastKid : kids()[0].id); }
 const dayKid = () => (tab === 'day' ? curKid() : viewKid());
-const scoped = () => { const k = dayKid(), log = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'moment'); return k === 'all' ? log : log.filter(e => childOf(e) === k); };   // (big moments are kept apart)
+const scoped = () => { const k = dayKid(), log = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'moment' && e.type !== 'plan'); return k === 'all' ? log : log.filter(e => childOf(e) === k); };   // (big moments are kept apart)
 const eventsOnDay = day => scoped().filter(e => e.ts >= day && e.ts < day + DAY).sort((a, b) => a.ts - b.ts);
 const activeSleep = id => db.events.find(e => e.type === 'sleep' && !e.end && (!id || childOf(e) === id));
 const initial = k => esc([...kidName(k)][0] || '?').toUpperCase();
@@ -275,11 +277,153 @@ const planText = d => (d.plan && Number.isInteger(d.at) ? __('{name} picks up at
 const people = () => (Sync.st && Sync.st.people) || [];
 const peopleNames = () => [...new Set(people().map(p => (p.display_name || '').trim()).filter(Boolean))].slice(0, 8);
 const myName = () => ((people().find(p => p.is_you) || {}).display_name || '').trim();
-/** When a child reaches school age: a note at the top of the Day page about what changes, until it is closed (kept on this phone). */
-function schoolNote() {
-  const seen = db.meta.stageSeen || {}, ks = pageKids().filter(k => k.birth && stageOf(k) === 'school' && seen[k.id] !== 'school');
-  return ks.length ? `<div class="card grownote"><p>🏫 ${__h('{name} is at school age: Drop-off and Homework are on the Day page, the routine learns the school week, and the Guide has topics for school children.', { name: andList(ks.map(kidName)) })}</p>
-    <button class="btn" data-stageok="${ks.map(k => k.id).join(' ')}">${__h('Close')}</button></div>` : '';
+/** When a child reaches school age or the teenage years: a note at the top of the Day page about what changes, until it is closed
+    (kept on this phone). */
+const STAGE_NOTE = { school: ['🏫', N_('{name} is at school age: Drop-off and Homework are on the Day page, the routine learns the school week, and the Guide has topics for school children.')],
+  teen: ['🌱', N_('{name} is a teenager: the Guide has topics for the teenage years, and the calendar in the Month tab keeps exams, matches, lessons and appointments.')] };
+function stageNote() {
+  const seen = db.meta.stageSeen || {}, ks = pageKids().filter(k => k.birth && STAGE_NOTE[stageOf(k)] && seen[k.id] !== stageOf(k));
+  if (!ks.length) return '';
+  const st = stageOf(ks[0]), same = ks.filter(k => stageOf(k) === st), [icon, text] = STAGE_NOTE[st];
+  return `<div class="card grownote"><p>${icon} ${__h(text, { name: andList(same.map(kidName)) })}</p><button class="btn" data-stageok="${same.map(k => k.id).join(' ')}" data-stage="${st}">${__h('Close')}</button></div>`;
+}
+
+// ---------- 18: Little Log's work is done ----------
+// When a child turns 18, a sheet celebrates it (once) and offers to keep it as a big moment; their Day page then says so, with their
+// book (a PDF of every big moment in chapters for each stage of growing up, how they grew and their vaccines) and their whole record
+// as a file to hand over. Logging goes on as before for anyone who wants it.
+/** A child's entries (not the travel ones), oldest first. */
+const entriesOf = id => db.events.filter(e => childOf(e) === id && !Travel.isTravel(e.type)).sort((a, b) => a.ts - b.ts);
+/** A name made safe for a file name. */
+const slugOf = name => name.normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'child';
+/** The years in numbers: entries, big moments, and since when. */
+function yearsText(k) {
+  const mine = entriesOf(k.id), n = mine.filter(e => e.type === 'moment').length;
+  return [__n('{n} entry', '{n} entries', mine.length), __n('{n} big moment', '{n} big moments', n), mine.length && __('since {date}', { date: fmtDay(dkey(mine[0].ts)) })].filter(Boolean).join(' · ');
+}
+function grownCard() {
+  const ks = pageKids(); if (ks.length !== 1 || stageOf(ks[0]) !== 'grown') return '';
+  const k = ks[0];
+  return `<div class="card grown"><p>🎓 ${__h("{name} is grown up, and Little Log's work is done. Everything stays here, and you can go on logging.", { name: kidName(k) })}</p><small>${esc(yearsText(k))}</small>
+    <div class="row"><button class="btn" data-book="${k.id}">📖 ${__h("{name}'s book", { name: kidName(k) })}</button><button class="btn" data-export="${k.id}">📄 ${__h('The record as a file')}</button></div></div>`;
+}
+/** On (or after) a child's 18th birthday, once: a sheet to celebrate it, with the book and a way to keep the day as a big moment. */
+function graduationCheck() {
+  if (!$('#sheet').hidden || Acct.gate() || Tour.active() || !Tour.seen('day')) return;
+  const seen = db.meta.grownSeen || (db.meta.grownSeen = {}), k = kids().find(x => x.birth && Stages.months(x.birth, Date.now()) >= 216 && !seen[x.id]);
+  if (!k) return;
+  seen[k.id] = 1; Store.save(db);
+  const name = kidName(k), day = new Date(k.birth + 'T12:00'); day.setFullYear(day.getFullYear() + 18);
+  const close = popup(`<h3>🎓 ${__h('{name} is 18', { name })}</h3><p>${__h("Little Log has grown with {name} all the way to 18. Its work is done: everything stays here, and {name}'s book keeps it all.", { name })}</p>
+    <p class="note">${esc(yearsText(k))}</p>
+    ${Sync.can('add') && !momentsOf([k.id]).some(e => e.data.what === 'Turned 18') ? `<button class="btn" id="gMoment" style="width:100%">🌟 ${__h('Save it as a big moment')}</button>` : ''}
+    <div class="row" style="margin-top:12px"><button class="btn" data-close>${__h('Close')}</button><button class="btn p" id="gBook">📖 ${__h('Make the book')}</button></div>`);
+  if ($('#gMoment')) $('#gMoment').onclick = () => openMoment(null, { kid: k.id, what: 'Turned 18', day: Math.min(day.getTime(), Date.now()) });
+  $('#gBook').onclick = () => { close(); makeBook(k.id); };
+}
+/** A child's book: their big moments in chapters for each stage of growing up, how they grew, their vaccines, and the years in numbers. */
+async function bookPdf(id) {
+  const k = kidById(id), name = kidName(k), health = Sync.can('health'), blocks = [{ h: 1, text: __("{name}'s book", { name }) }];
+  blocks.push({ kv: [[__('Born'), k.birth ? fmtDay(k.birth) : '–'], [__('In Little Log'), yearsText(k)]] });
+  let ch = '';
+  for (const e of momentsOf([k.id])) {
+    const st = stageOf(k, e.ts); if (st !== ch) { blocks.push({ h: 2, text: __(Stages.byId(st).name) }); ch = st; }
+    blocks.push({ p: [describe(e)[0], fmtDay(dkey(e.ts)), k.birth && Stages.age(k.birth, e.ts)].filter(Boolean).join(' · '), bold: true });
+    if (e.note) blocks.push({ p: e.note, muted: true });
+  }
+  if (health) {   // (how they grew: the measurement nearest each birthday; the vaccines)
+    const g = entriesOf(k.id).filter(e => e.type === 'growth'), byYear = new Map();
+    for (const e of g) { const m = k.birth ? ageMonths(k, e.ts) : -1, y = Math.round(m / 12); if (m < 0 || Math.abs(m - y * 12) > 4) continue; const cur = byYear.get(y); if (!cur || Math.abs(m - y * 12) < Math.abs(ageMonths(k, cur.ts) - y * 12)) byYear.set(y, e); }
+    if (byYear.size) blocks.push({ h: 2, text: __('Growth') }, { table: { cols: [{ w: 2 }, { w: 2 }, { w: 2.4 }, { w: 2.4 }], head: [__('Age'), __('Date'), __('Weight'), __('Length or height')],
+      rows: [...byYear].sort((a, b) => a[0] - b[0]).map(([, e]) => [Stages.age(k.birth, e.ts), fmtShort(e.ts), e.data.weight ? fmtWeight(e.data.weight) : '–', e.data.height ? fmtLength(e.data.height) : '–']) } });
+    const v = entriesOf(k.id).filter(e => e.type === 'vaccine');
+    if (v.length) blocks.push({ h: 2, text: __('Vaccines') }, { table: { cols: [{ w: 5 }, { w: 2 }], head: [__('Vaccine'), __('Date')], rows: v.map(e => [[describe(e)[0], e.data.dose && __('dose {n}', { n: e.data.dose })].filter(Boolean).join(' · '), fmtShort(e.ts)]) } });
+  }
+  blocks.push({ gap: 14 }, { p: __('Made with Little Log on {date}.', { date: fmtDay(dkey(Date.now())) }), muted: true, size: 8 });
+  const doc = await Pdf.make(blocks, { size: myRegion() === 'na' ? 'letter' : 'a4', rtl: I18n.rtl(), lang: I18n.lang() === I18n.PSEUDO ? 'en' : I18n.lang(),
+    title: __("{name}'s book", { name }), header: name, footer: (n, total) => `Little Log · ${name} · ${__('Page {n} of {total}', { n, total })}` });
+  return { ...doc, file: `little-log-${slugOf(name)}-book.pdf` };
+}
+async function makeBook(id) {
+  toast(__('Making the PDF…'));
+  try { const r = await bookPdf(id); download(r.file, r.bytes, 'application/pdf'); } catch (e) { toast(__('Could not make the PDF. Please try again.')); }
+}
+/** A child's whole record as a file (JSON), to hand over: their details and every entry this phone may see. */
+function exportRecord(id) {
+  const k = kidById(id), list = entriesOf(id).filter(e => e.type !== 'plan' && (Sync.can('health') || !isPrivate(e.type))), iso = t => new Date(t).toISOString();
+  const out = { app: 'Little Log', made: iso(Date.now()), child: { name: k.name || '', birth: k.birth || '', sex: k.sex || '', allergies: (k.allergies || []).map(a => ({ food: a.food, date: a.date || '', note: a.note || '' })) },
+    entries: list.map(e => ({ type: e.type, at: iso(e.ts), ...(Number.isFinite(e.end) ? { until: iso(e.end) } : {}), data: e.data || {}, ...(e.note ? { note: e.note } : {}) })) };
+  download(`little-log-${slugOf(kidName(k))}.json`, JSON.stringify(out, null, 1), 'application/json');
+}
+
+// ---------- The family calendar ----------
+// What is coming up: exams, appointments, matches, lessons, school holidays, parties… Entries of their own (type plan, often in the
+// future), kept off the day's list and the clock: the Day page shows the next week's, the Month tab marks their days and lists them,
+// and a school holiday gives the routine's school week a break.
+const PLAN_KINDS = [N_('Exam'), N_('Appointment'), N_('Match or game'), N_('Lesson'), N_('School holiday'), N_('Party'), N_('Other')];
+const PLAN_ICON = { Exam: '📚', Appointment: '🏥', Lesson: '📖', 'School holiday': '☀' };
+const planIcon = e => PLAN_ICON[e.data.kind] || '🗓';
+/** The end of a plan: the end of its last day. */
+const planEnd = e => (Number.isFinite(e.end) ? e.end : startOfDay(e.ts) + DAY);
+/** The plans of some children that touch the time from `t0` to `t1`, soonest first. */
+const plansIn = (ids, t0, t1) => { const set = new Set(ids); return db.events.filter(e => e.type === 'plan' && set.has(childOf(e)) && e.ts < t1 && planEnd(e) > t0).sort((a, b) => a.ts - b.ts); };
+/** Whether a child has a school holiday on the day of `t`. */
+const holidayOn = id => t => db.events.some(e => e.type === 'plan' && e.data.kind === 'School holiday' && childOf(e) === id && startOfDay(e.ts) <= t && planEnd(e) > t);
+/** When a plan is: its day and time, or its first and last days. */
+function planWhen(e) {
+  const last = planEnd(e) - 1, d = t => new Date(t).toLocaleDateString(I18n.locale(), { weekday: 'short', day: 'numeric', month: 'short' });
+  return startOfDay(last) === startOfDay(e.ts) ? [d(e.ts), !e.data.allday && fmtTime(e.ts)].filter(Boolean).join(' · ') : `${d(e.ts)} – ${d(last)}`;
+}
+/** Plans as rows: one row for the same plan made for several children, with their names. */
+function planRows(list) {
+  const seen = new Map();
+  for (const e of list) { const key = [e.data.kind, e.data.title, e.ts, e.end].join('|'); if (seen.has(key)) seen.get(key).kids.push(childOf(e)); else seen.set(key, { e, kids: [childOf(e)] }); }
+  return [...seen.values()].map(({ e, kids: ids }) => `<button class="card prow" data-plan="${e.id}"><span class="pi">${planIcon(e)}</span><span class="pb"><b>${esc(e.data.title || __(e.data.kind || 'Other'))}</b>
+    <small>${esc([planWhen(e), e.data.title && __(e.data.kind || 'Other'), kids().length > 1 && andList(ids.map(id => kidName(kidById(id))))].filter(Boolean).join(' · '))}</small></span></button>`).join('');
+}
+/** The Day page: what is on the calendar in the next week, for the children on the page. */
+function comingUp() {
+  const t0 = startOfDay(Date.now()), list = plansIn(pageKids().map(k => k.id), t0, addDays(t0, 8));
+  return list.length ? `<div class="upcoming"><h2>🗓 ${__h('Coming up')}</h2>${planRows(list)}</div>` : '';
+}
+/** The same plan made for several children (one entry each): those this person may change. */
+const planKey = e => [e.data.kind, e.data.title, e.ts, e.end].join('|');
+const planGroup = ev => db.events.filter(e => e.type === 'plan' && (e === ev || (planKey(e) === planKey(ev) && Sync.can('edit', e))));
+/** Add or change something on the calendar: what kind, what, the day (and time, or the days), and for whom (changing a plan made for
+    several children changes it for all of them, and a child unticked loses it). */
+function openPlan(ev, pre = {}) {
+  if (ev ? !Sync.can('edit', ev) : !Sync.can('add')) return toast(__("You don't have permission to do that"));
+  const group = ev ? planGroup(ev) : [], mine = new Set(group.map(childOf));
+  const d = (ev && ev.data) || {}, multi = kids().length > 1, here = dayKid() === 'all' ? kids()[0].id : dayKid(), ticked = id => (ev ? mine.has(id) : id === here);
+  const hhmm = t => { const x = new Date(t); return `${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`; };
+  const close = popup(`<h3>🗓 ${ev ? __h('Edit {what}', { what: __('event') }) : __h('Add {what}', { what: __('event') })}</h3>
+    ${multi ? `<label class="f">${__h('For (tick everyone it applies to)')}</label><div class="chips kidchips">${kids().map(k => `<label class="chip kidchip" style="--k:${k.color}"><input type="checkbox" name="pkid" value="${k.id}" ${ticked(k.id) ? 'checked' : ''}><span>${avatar(k)}${esc(kidName(k))}</span></label>`).join('')}</div>` : ''}
+    <label class="f">${__h('What kind?')}</label>${radios('pkind', PLAN_KINDS, d.kind || 'Other')}
+    <label class="f">${__h('What (optional)')}</label><input id="ptitle" type="text" maxlength="80" value="${esc(d.title || '')}" placeholder="${__h('e.g. Maths exam')}">
+    <label class="f">${__h('Day')}</label><input id="pday" type="date" value="${dkey(ev ? ev.ts : pre.day || Date.now())}">
+    <label class="f">${__h('Time (optional)')}</label><input id="ptime" type="time" value="${ev && !d.allday ? hhmm(ev.ts) : ''}">
+    <label class="f">${__h('Last day (optional, for more than one day)')}</label><input id="puntil" type="date" value="${ev && startOfDay(planEnd(ev) - 1) !== startOfDay(ev.ts) ? dkey(planEnd(ev) - 1) : ''}">
+    <label class="f">${__h('Note (optional)')}</label><textarea id="pnote" rows="2" maxlength="1000">${esc(ev ? ev.note : '')}</textarea>
+    <div class="row" style="margin-top:16px">${ev && Sync.can('delete', ev) ? `<button class="btn d" id="pdel">${__h('Delete')}</button>` : ''}<button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="psave">${__h('Save')}</button></div>`);
+  Icons.paint($('#sheet'));
+  $('#psave').onclick = () => {
+    const S = $('#sheet'), kind = (S.querySelector('[name=pkind]:checked') || {}).value || 'Other', title = $('#ptitle').value.trim().slice(0, 80), dv = $('#pday').value, tv = $('#ptime').value, uv = $('#puntil').value, isDay = v => /^\d{4}-\d\d-\d\d$/.test(v);
+    if (!isDay(dv)) return toast(__('Choose the day'));
+    const at = /^\d\d:\d\d$/.test(tv), start = new Date(`${dv}T${at ? tv : '00:00'}`).getTime(), last = isDay(uv) ? new Date(uv + 'T00:00').getTime() : 0;
+    if (last && last < startOfDay(start)) return toast(__('The last day must be after the first'));
+    const who = multi ? [...S.querySelectorAll('[name=pkid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
+    if (!who.length) return toast(__('Choose who this is for'));
+    const data = { kind, ...(title ? { title } : {}), ...(at ? {} : { allday: true }) }, end = last > startOfDay(start) ? addDays(last, 1) : undefined;
+    for (const e of group) if (!who.includes(childOf(e)) && Sync.can('delete', e)) removeEvent(e);   // (a child unticked)
+    for (const id of who) {
+      const old = group.find(e => childOf(e) === id), rec = old || { id: uid(), type: 'plan', by: Auth.id || undefined };
+      Object.assign(rec, { ts: start, data: structuredClone(data), note: $('#pnote').value.trim(), updated: stamp(), child: id });
+      if (end) rec.end = end; else delete rec.end;
+      if (!old) db.events.push(rec);
+    }
+    save(); close(); render(); toast(__('Saved'));
+  };
+  if ($('#pdel')) $('#pdel').onclick = () => { if (confirm(__('Delete this entry?'))) { group.filter(e => Sync.can('delete', e)).forEach(removeEvent); save(); close(); render(); toast(__('Deleted')); } };
 }
 /** Names to choose from for who drops off or picks up: the family's people, then the names used lately. */
 const whoNames = () => [...new Set([...peopleNames(), ...db.events.filter(e => e.type === 'care' || e.type === 'pickup').sort((a, b) => b.ts - a.ts).slice(0, 40)
@@ -389,7 +533,7 @@ function render() {
   }
   $('#view').innerHTML = { day: dayView, routine: routineView, month: monthView, stats: statsView, guide: guideView, family: Acct.familyHtml, more: moreView, health: recordView }[tab]();
   bind(); Icons.paint($('#view')); Acct.updateBadge();
-  if (!solidsCheck()) milestoneCheck(); autoTour();
+  if (!solidsCheck()) { milestoneCheck(); graduationCheck(); } autoTour();
 }
 
 /** Whoever is feeding the baby sees their allergies at the top of the day. */
@@ -407,8 +551,9 @@ function dayView() {
     <div class="d">${isToday ? __h('Today') : esc(fmtDate(viewDay))}<small>${isToday ? esc(fmtDate(viewDay)) : ''}${esc(ageText(viewDay))}</small></div>
     <button data-nav="1" aria-label="${__h('Next day')}" ${isToday ? 'disabled' : ''}>›</button></div>
   ${allergyLine()}
-  ${isToday ? schoolNote() : ''}
+  ${isToday ? stageNote() + grownCard() : ''}
   ${momentCards(viewDay)}
+  ${isToday ? comingUp() : ''}
   ${trip && isToday ? travelQuick() : quickButtons()}
   <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${(trip ? Travel.PALETTE : GCOLOR).light[g.id]}`).join(';')};--trip:${Travel.ACCENT.light}">${clockSvg(shown, viewDay)}
     <div class="clockctl">${seg('face', [['24', N_('24 h')], ['12', N_('12 h')]], twelve ? '12' : '24', N_('Clock face'))}${twelve ? seg('half', [['0', N_('AM')], ['1', N_('PM')]], String(half), N_('Half of the day')) : ''}${numsSeg()}${trip ? `<span class="artbtn tripart">${TM.icon} ${__h(Art.byId(TM.art).name)}</span>` : `<button class="artbtn" data-art>🎨 ${__h(Art.byId(artOf()).name)}</button>`}</div>
@@ -651,22 +796,24 @@ function ageText(day) {
 function monthView() {
   const y = calMonth.getFullYear(), m = calMonth.getMonth();
   const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate(), today = startOfDay(Date.now());
-  let cells = '', anyAway = false, anyAllergy = false, anyMoment = false;
-  const tv = travelVars(), firsts = allergyDays([dayKid()]), big = new Map();
+  let cells = '', anyAway = false, anyAllergy = false, anyMoment = false, anyPlan = false;
+  const tv = travelVars(), firsts = allergyDays([dayKid()]), big = new Map(), plans = plansIn(pageKids().map(k => k.id), first.getTime(), new Date(y, m + 1, 1).getTime());
   for (const e of momentsOf(pageKids().map(k => k.id))) { const key = dkey(e.ts); if (!big.has(key)) big.set(key, []); big.get(key).push(describe(e)[0]); }
   for (let i = 0; i < (first.getDay() - I18n.firstDay() + 7) % 7; i++) cells += '<button class="blank" disabled></button>';
   for (let d = 1; d <= days; d++) {
     const t = new Date(y, m, d).getTime(), evs = eventsOnDay(t), away = Travel.during(db.events, t, addDays(t, 1)), al = firsts.get(dkey(t)), mo = big.get(dkey(t));
-    if (away) anyAway = true; if (al) anyAllergy = true; if (mo) anyMoment = true;
-    cells += `<button data-day="${t}" class="${t === viewDay ? 'sel' : ''} ${t === today ? 'today' : ''} ${away ? 'tripday' : ''} ${al ? 'allergyday' : ''} ${mo ? 'momentday' : ''}"${away ? ` style="${tv}"` : ''} aria-label="${esc([fmtDate(t), away && __('travelling'), al && __('first allergic reaction: {foods}', { foods: andList(al.map(x => __(x.allergy.food))) }), mo && __('big moment: {what}', { what: andList(mo) }), evs.length && __n('{n} entry', '{n} entries', evs.length)].filter(Boolean).join(', '))}">${d}${al ? '<i class="almark" aria-hidden="true">!</i>' : ''}${mo ? '<i class="mmark" aria-hidden="true">★</i>' : ''}<span class="dots">${GROUPS.filter(g => evs.some(e => g.types.includes(e.type))).map(g => `<i class="dot" style="--c:var(--g-${g.id})"></i>`).join('')}</span></button>`;
+    const pl = plans.filter(e => e.ts < addDays(t, 1) && planEnd(e) > t), pn = new Set(pl.map(e => [e.data.kind, e.data.title, e.ts, e.end].join('|'))).size, hol = pl.some(e => e.data.kind === 'School holiday');
+    if (away) anyAway = true; if (al) anyAllergy = true; if (mo) anyMoment = true; if (pn) anyPlan = true;
+    cells += `<button data-day="${t}" class="${t === viewDay ? 'sel' : ''} ${t === today ? 'today' : ''} ${away ? 'tripday' : ''} ${al ? 'allergyday' : ''} ${mo ? 'momentday' : ''} ${pl.length ? 'planday' : ''} ${hol ? 'holday' : ''}"${away ? ` style="${tv}"` : ''} aria-label="${esc([fmtDate(t), away && __('travelling'), al && __('first allergic reaction: {foods}', { foods: andList(al.map(x => __(x.allergy.food))) }), mo && __('big moment: {what}', { what: andList(mo) }), pn && __n('{n} on the calendar', '{n} on the calendar', pn), evs.length && __n('{n} entry', '{n} entries', evs.length)].filter(Boolean).join(', '))}">${d}${al ? '<i class="almark" aria-hidden="true">!</i>' : ''}${mo ? '<i class="mmark" aria-hidden="true">★</i>' : ''}${pn ? '<i class="pmark" aria-hidden="true">◆</i>' : ''}<span class="dots">${GROUPS.filter(g => evs.some(e => g.types.includes(e.type))).map(g => `<i class="dot" style="--c:var(--g-${g.id})"></i>`).join('')}</span></button>`;
   }
   return `
   <div class="datenav"><button data-month="-1" aria-label="${__h('Previous month')}">‹</button>
     <div class="d">${esc(calMonth.toLocaleDateString(I18n.locale(), { month: 'long', year: 'numeric' }))}</div>
     <button data-month="1" aria-label="${__h('Next month')}">›</button></div>
   <div class="cal">${weekLetters().map(d => `<div class="h">${esc(d)}</div>`).join('')}${cells}</div>
-  <div class="legend">${GROUPS.map(g => `<span><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))}</span>`).join('')}${anyAway ? `<span class="tripkey"><i></i>${__h('Travelling (its own colours)')}</span>` : ''}${anyAllergy ? `<span class="alkey"><i class="almark">!</i>${__h('First allergic reaction')}</span>` : ''}${anyMoment ? `<span class="mmkey"><i class="mmark">★</i>${__h('Big moment')}</span>` : ''}</div>
+  <div class="legend">${GROUPS.map(g => `<span><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))}</span>`).join('')}${anyAway ? `<span class="tripkey"><i></i>${__h('Travelling (its own colours)')}</span>` : ''}${anyPlan ? `<span class="plankey"><i>◆</i>${__h('On the calendar')}</span>` : ''}${anyAllergy ? `<span class="alkey"><i class="almark">!</i>${__h('First allergic reaction')}</span>` : ''}${anyMoment ? `<span class="mmkey"><i class="mmark">★</i>${__h('Big moment')}</span>` : ''}</div>
   ${monthTrip()}
+  ${Sync.can('add') ? `<button class="planbtn" data-plannew><span class="tm">🗓</span><span><b>${__h('Add to the calendar')}</b><small>${__h('Exams, appointments, matches, lessons, school holidays…')}</small></span></button>` : ''}
   ${monthDay()}
   ${momentsJournal()}`;
 }
@@ -682,8 +829,10 @@ function monthTrip() {
 function monthDay() {
   const evs = eventsOnDay(viewDay), away = Travel.during(db.events, viewDay, addDays(viewDay, 1)), M = away && Travel.MEANS[Travel.meansOf(away)];
   const al = allergyDays([dayKid()]).get(dkey(viewDay)) || [];
+  const pl = plansIn(pageKids().map(k => k.id), viewDay, addDays(viewDay, 1));
   return `<h2>${esc(fmtDate(viewDay))}</h2>
   ${momentCards(viewDay)}
+  ${pl.length ? `<p class="mh">🗓 ${__h('On the calendar')}</p>${planRows(pl)}` : ''}
   ${al.map(x => `<div class="card alert alcard">⚠️ <b>${__h('First allergic reaction: {foods}', { foods: __(x.allergy.food) })}</b>${x.allergy.note ? `<br><small>${esc(x.allergy.note)}</small>` : ''}</div>`).join('')}
   <div class="${away ? 'travelday' : ''}"${away ? ` style="${travelVars()}"` : ''}>${away ? `<p class="tripnote">${M.icon} ${__h('Travelling {by}', { by: __(M.by) })}</p>` : ''}
   ${evs.length ? `${dayCounts(evs, viewDay)}<details class="more" data-grp="mAll" ${openGroups.has('mAll') ? 'open' : ''}><summary>${__h('All entries for this day')}<span class="chev" aria-hidden="true">›</span></summary>${groupedList(evs, 'm')}</details>` : `<div class="empty">${__h('No entries this day.')}</div>`}</div>
@@ -807,8 +956,8 @@ function weekdaysText(ws) {
   return ws.length === 7 ? __('every day') : andList(ws.map(day));
 }
 function routineView(now = Date.now()) {
-  const k = viewKid(), mine = db.events.filter(e => !Travel.isTravel(e.type) && childOf(e) === k);
-  const R = Routine.find(mine, now), T = Routine.today(R.slots, mine, now);
+  const k = viewKid(), mine = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'plan' && childOf(e) === k);
+  const R = Routine.find(mine, now), T = Routine.today(R.slots, mine, now, { off: holidayOn(k) });
   const clock = m => { const d = new Date(now); d.setHours(0, m, 0, 0); return fmtTime(d.getTime()); };
   const night = s => s.at >= 19 * 60 || s.at < 5 * 60;
   const name = s => (s.key === 'solids' ? __('Solids') : s.type === 'feed' ? __(tLabel('feed')) : s.type === 'meal' ? __(s.meal) : s.type === 'sleep' ? (night(s) ? __('Night sleep') : __('Nap')) : s.type === 'play' ? __(s.activity)
@@ -860,7 +1009,7 @@ function routineView(now = Date.now()) {
 let reportDays = 14;
 /** One child's entries over the last `days` days (from the first entry, if that is later), and the numbers for each day. */
 function reportData(kidId, days, now = Date.now()) {
-  const to = addDays(startOfDay(now), 1), all = db.events.filter(e => !Travel.isTravel(e.type) && childOf(e) === kidId);
+  const to = addDays(startOfDay(now), 1), all = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'plan' && childOf(e) === kidId);   // (what happened, not the calendar)
   const from = Math.max(addDays(to, -days), all.length ? startOfDay(Math.min(...all.map(e => e.ts))) : startOfDay(now));
   const evs = all.filter(e => e.ts >= from && e.ts < to).sort((a, b) => a.ts - b.ts), sleeps = all.filter(e => e.type === 'sleep'), byDay = new Map();
   for (const e of evs) { const d = startOfDay(e.ts); if (!byDay.has(d)) byDay.set(d, []); byDay.get(d).push(e); }
@@ -1271,13 +1420,15 @@ function guideView() {
     <p>${__h(c.body)}</p>${c.call ? `<p class="call">${__h(c.call, { sos })}</p>` : ''}${grp === 'g' ? picsHtml(c.id) : ''}</details>`;
   const newborn = `<h2>${__h('Common with newborns')}</h2>${Guide.COMMON.map(c => card('g', c)).join('')}`;
   const toddler = `<h2>${__h('Toddlers and preschoolers')}</h2>${Guide.TODDLER.map(c => card('t', c)).join('')}`;
-  // the school years: first for a school child (the toddler topics after them), and near the end for a preschooler, as what comes next
+  // the topics of the child's stage first: a toddler's, a school child's or a teenager's; and those of the next stage near the end, as
+  // what comes next (the school years for a preschooler, the teenage years from 10)
   const school = `<h2>${__h('School age')}</h2>${Guide.SCHOOL.map(c => card('s', c)).join('')}`, schoolAge = allFrom('school');
+  const teens = `<h2>${__h('Teenagers')}</h2>${Guide.TEEN.map(c => card('n', c)).join('')}`, teenAge = allFrom('teen'), k0 = kidById(viewKid()), ten = !!(k0 && k0.birth && Stages.months(k0.birth, now) >= 120);
   return `${doctorHtml()}
   ${Sync.can('health') && kidById(viewKid()) ? recordButton(kidById(viewKid())) : ''}
   <p class="note emer"><b>${__h('Emergency?')}</b> ${older ? __h('Call {sos} for blue lips or face, trouble breathing, a child who is hard to wake, or a seizure.', { sos }) : __h('Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.', { sos })}</p>
   ${cur.length ? `<h2>${__h('Right now')}</h2>${cur.map(nowCard).join('')}` : ''}
-  ${schoolAge ? school : ''}${older ? toddler : ''}
+  ${teenAge ? teens : schoolAge ? school : older ? toddler : ''}
   <h2>${__h('Food')}</h2>
   <details class="gd" data-grp="gsolids" ${openGroups.has('gsolids') ? 'open' : ''}><summary><span class="gi">🥄</span><span class="gt"><b>${__h('Starting solid foods')}</b><small>${__h('From around 6 months, with the key allergens early')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
     ${solidsGuideHtml(sos)}</details>
@@ -1288,7 +1439,7 @@ function guideView() {
   ${older ? '' : toddler}
   <h2>${__h('Month by month')}</h2>
   ${ms.map(([n, M]) => milestoneDetails(+n, M)).join('')}
-  ${!schoolAge && allFrom('preschool') ? school : ''}
+  ${!schoolAge && allFrom('preschool') ? school : ''}${schoolAge && !teenAge && ten ? teens : ''}
   ${older ? newborn : ''}
   <p class="note">${__h("General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.")}</p>
   ${I18n.lang() === 'en' ? '' : `<p class="note">${__h('This translation was made with the help of AI and may have mistakes. In an emergency, call {sos}. If something reads wrong, tell us: More → Language → Report a language issue.', { sos })}</p>`}
@@ -1919,7 +2070,11 @@ function bind() {
   document.querySelectorAll('[data-qmore]').forEach(b => b.onclick = () => openMoreTypes(b.dataset.qmore.split(' ')));
   document.querySelectorAll('[data-addmore]').forEach(b => b.onclick = () => openMoreTypes(b.dataset.addmore.split(' ')));
   document.querySelectorAll('[data-momentnew]').forEach(b => b.onclick = () => openMoment(null, { day: viewDay }));
-  document.querySelectorAll('[data-stageok]').forEach(b => b.onclick = () => { const m = db.meta.stageSeen || (db.meta.stageSeen = {}); for (const id of b.dataset.stageok.split(' ')) m[id] = 'school'; Store.save(db); render(); });
+  document.querySelectorAll('[data-stageok]').forEach(b => b.onclick = () => { const m = db.meta.stageSeen || (db.meta.stageSeen = {}); for (const id of b.dataset.stageok.split(' ')) m[id] = b.dataset.stage; Store.save(db); render(); });
+  document.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.plan); if (ev) openPlan(ev); });
+  document.querySelectorAll('[data-plannew]').forEach(b => b.onclick = () => openPlan(null, { day: viewDay }));
+  document.querySelectorAll('[data-book]').forEach(b => b.onclick = () => makeBook(b.dataset.book));
+  document.querySelectorAll('[data-export]').forEach(b => b.onclick = () => exportRecord(b.dataset.export));
   document.querySelectorAll('[data-record]').forEach(b => b.onclick = () => openRecord(b.dataset.record));
   document.querySelectorAll('[data-recback]').forEach(b => b.onclick = () => { tab = recordFrom; render(); window.scrollTo(0, 0); });
   document.querySelectorAll('[data-gkind]').forEach(b => b.onclick = () => { growthKind = b.dataset.gkind; render(); });

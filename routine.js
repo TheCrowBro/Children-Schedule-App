@@ -128,12 +128,14 @@ const Routine = (() => {
     return out.map(([key, g]) => ({ ...slotOf(key, g.picked, g.picked.length), weekdays: g.days.sort((a, b) => a - b) }));
   }
 
-  /** How each slot is going in the routine's day that `now` falls in (6 AM to 6 AM): { state: 'done' (with the entry), 'now', 'later'
+  /** How each slot is going in the routine's day that `now` falls in (6 AM to 6 AM), leaving out the school week on a day `off(day)`
+      says is a holiday: { state: 'done' (with the entry), 'now', 'later'
       or 'past', at (its time that day) }; each entry counts for one slot at most, the nearest. Plus `next`: the first slot still to
       come (that day, or else the first of the next day: `tomorrow`). */
-  function today(slots, events, now = Date.now(), { window = WINDOW } = {}) {
+  function today(slots, events, now = Date.now(), { window = WINDOW, off = null } = {}) {
     const d0 = dayOf(now), mine = events.filter(e => e.ts >= back(d0, 1) && e.ts < back(d0, -2));
-    const on = d => s => !s.weekdays || s.weekdays.includes(new Date(d).getDay());   // (school days only, for the slots that keep to them)
+    // (school days only, for the slots that keep to them; and none of daycare, school and homework on a day `off` says is a holiday)
+    const on = d => s => (!s.weekdays || s.weekdays.includes(new Date(d).getDay())) && !(off && /^(care|pickup|study):/.test(s.key) && off(d));
     const out = slots.filter(on(d0)).map(s => ({ slot: s, at: timeIn(d0, s.at), state: 'later', entry: null }));
     const taken = new Set();
     for (const o of [...out].sort((a, b) => a.at - b.at)) {

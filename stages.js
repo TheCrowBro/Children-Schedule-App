@@ -68,8 +68,9 @@ const Stages = (() => {
     toddler: ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'care', 'med', 'wake', 'play', 'vomit'],
     preschool: ['meal', 'potty', 'sleep', 'care', 'play', 'health', 'med', 'wake', 'vomit', 'diaper', 'feed'],
     school: ['meal', 'care', 'sleep', 'play', 'study', 'health', 'med', 'wake', 'vomit', 'potty', 'diaper', 'feed'],
+    teen: ['meal', 'sleep', 'play', 'study', 'health', 'med', 'care', 'wake', 'vomit', 'potty', 'diaper', 'feed'],   // (teenagers get about on their own)
   };
-  DAY.teen = DAY.grown = DAY.school;
+  DAY.grown = DAY.teen;
   /** The buttons for the stages `ids` (several children: everything any of them needs, each at its best place). `used` counts each
       type's entries lately; `allowed` says which types this person may log. Returns { shown, more } (lists of types). */
   function buttons(ids, used = {}, allowed = () => true) {

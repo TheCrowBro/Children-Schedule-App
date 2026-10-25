@@ -175,10 +175,10 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await P.evaluate(id => G.page(id), ella); assert.equal(await P.$('#view .grownote'), null, 'not for a preschooler');
     });
 
-    await step('the Guide: the school-age topics first for a school child, after the milestones for a preschooler, none for a toddler', async () => {
+    await step('the Guide: the school-age topics first for a school child (no toddler topics), after the milestones for a preschooler, none for a toddler', async () => {
       const heads = () => P.$$eval('#view h2', x => x.map(h => h.textContent.trim()));
       await P.evaluate(id => G.page(id, 'guide'), noah);
-      assert.deepEqual(await heads(), ['Right now', 'School age', 'Toddlers and preschoolers', 'Food', 'Medicines', 'Health checks', 'Month by month', 'Common with newborns']);
+      assert.deepEqual(await heads(), ['Right now', 'School age', 'Food', 'Medicines', 'Health checks', 'Month by month', 'Common with newborns']);
       assert.deepEqual(await P.$$eval('#view details.gd[data-grp^=s] .gt b', x => x.map(b => b.textContent)), ['Sleep for school children', 'Screens and staying safe online', 'Homework and reading', 'Friends and bullying',
         'Food and staying active', 'Teeth', 'Bedwetting', 'Worries and feelings', 'Puberty', 'Head lice', 'Out and about']);
       await P.click('details[data-grp=sworries] > summary'); assert(/take it seriously/.test(await P.textContent('details[data-grp=sworries]')));

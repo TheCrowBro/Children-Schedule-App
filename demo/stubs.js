@@ -129,16 +129,17 @@ function demoTreeTap(key) {
     <div class="row" style="margin-top:16px"><button class="btn" data-close>Close</button>${w.kind === 'parent' ? '' : '<button class="btn d" id="dmRemove">Remove from the tree</button>'}</div>`);
   if ($('#dmRemove')) $('#dmRemove').onclick = () => { FamilyTree.remove(t, w.p.id); DEMO_TREE.tree = FamilyTree.clean(t); close(); render(); };
 }
-const DEMO_FAMILIES = [['Your family', 'Lily, Ella, Leo, Mia, Sam', 'Parent'], ["Sarah's family", 'Ava, Jack', 'Family member'], ["Tom's family", 'Noah', 'Family member']];
+const DEMO_FAMILIES = [['Your family', 'Sophie, Lily, Ella, Leo, Mia, Sam', 'Parent'], ["Sarah's family", 'Ava, Jack', 'Family member'], ["Tom's family", 'Noah', 'Family member']];
 window.confirm = () => true; window.alert = () => {};
 function demoDb() {
   const h = 3600e3, DAYMS = 864e5, t0 = new Date().setHours(0, 0, 0, 0);
-  const kids = [{ id: 'c1', name: 'Leo', birth: '', sex: 'boy', color: '', formula: 'Similac 360 Total Care' }, { id: 'k2', name: 'Mia', birth: '', sex: 'girl', color: '' }, { id: 'k3', name: 'Sam', birth: '', sex: 'boy', color: '' }, { id: 'k4', name: 'Ella', birth: '', sex: 'girl', color: '' }, { id: 'k5', name: 'Lily', birth: '', sex: 'girl', color: '' }];
+  const kids = [{ id: 'c1', name: 'Leo', birth: '', sex: 'boy', color: '', formula: 'Similac 360 Total Care' }, { id: 'k2', name: 'Mia', birth: '', sex: 'girl', color: '' }, { id: 'k3', name: 'Sam', birth: '', sex: 'boy', color: '' }, { id: 'k4', name: 'Ella', birth: '', sex: 'girl', color: '' }, { id: 'k5', name: 'Lily', birth: '', sex: 'girl', color: '' }, { id: 'k6', name: 'Sophie', birth: '', sex: 'girl', color: '' }];
   const ks = Kids.clean(kids), day0 = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const born = new Date(t0); born.setMonth(born.getMonth() - 2); const iso = day0(born);
   ks.slice(0, 3).forEach(k => { k.birth = iso; });
   const ella = ks[3], eb = new Date(t0); eb.setFullYear(eb.getFullYear() - 3); eb.setMonth(eb.getMonth() - 2); ella.birth = day0(eb);   // the triplets' big sister, a preschooler
-  const lily = ks[4], lb = new Date(t0); lb.setFullYear(lb.getFullYear() - 8); lb.setMonth(lb.getMonth() - 5); lily.birth = day0(lb);   // and the eldest, at school
+  const lily = ks[4], lb = new Date(t0); lb.setFullYear(lb.getFullYear() - 8); lb.setMonth(lb.getMonth() - 5); lily.birth = day0(lb);   // at school
+  const sophie = ks[5], sb = new Date(t0); sb.setFullYear(sb.getFullYear() - 18); sb.setDate(sb.getDate() - 12); sophie.birth = day0(sb);   // and the eldest, just 18
   const events = [], FORMULA = { c1: 'Similac 360 Total Care', k2: 'Enfamil NeuroPro' }; let n = 0;   // (Mia's usual formula is learned from her feeds)
   const add = (type, ts, data, kid, extra = {}) => { if (ts > Date.now()) return; events.push({ id: 'd' + (n++), type, ts, data, note: '', updated: Date.now(), child: kid.id, ...extra }); };
   for (let day = 6; day >= 0; day--) {
@@ -201,10 +202,22 @@ function demoDb() {
   [[0.5, 'Checkup', 'Dr Lee', ''], [2, 'Checkup', 'Dr Lee', ''], [6, 'Checkup', 'Dr Lee', ''], [12, 'Checkup', 'Dr Lee', ''], [20, 'Unwell', 'Dr Lee', 'Ear infection'], [24, 'Checkup', 'Dr Lee', ''], [30, 'Dentist', 'Dr Okafor', 'First visit'], [36, 'Checkup', 'Dr Lee', '']]
     .forEach(([m, kind, who, why]) => rec(ella, at(plus(eb, Math.floor(m), m % 1 ? 14 : 2), 10), 'visit', { kind, who, ...(why ? { why } : {}) }, kind === 'Unwell' ? 'Antibiotics for a week; better in two days' : ''));
   ks.slice(0, 3).forEach((k, i) => { rec(k, at(born, 7), 'growth', { weight: [2.4, 2.6, 2.3][i], height: [45, 46.5, 44.5][i], head: [32, 32.5, 31.5][i] }); rec(k, at(born, 9), 'vaccine', { name: 'Hepatitis B', dose: 1 }); rec(k, at(plus(born, 0, 10), 10), 'visit', { kind: 'Checkup', who: 'Dr Lee' }); });
+  // Sophie's 18 years in big moments, measurements and vaccines (her book is on her Day page), and the family's calendar
+  [[0, 'Born', '3.2 kg'], [2, 'First smile'], [11, 'First steps'], [12, 'Birthday'], [30, 'First day at daycare'], [61, 'First day of school', 'Plaits and a red backpack'], [75, 'Lost a first tooth'],
+    [84, 'Rode a bike without training wheels'], [133, 'First day at secondary school'], [150, 'Braces off', 'Finally!'], [204, 'Passed the driving test', 'First time, no minors'], [215, 'Exams finished'], [216, 'Turned 18', 'Pizza and karaoke']]
+    .forEach(([m, what, note]) => moment(sophie, at(plus(sb, m, m ? 3 : 0), m ? 15 : 6), what, note || ''));
+  [[0, 3.2, 49], [12, 9.2, 74], [36, 14, 95], [72, 20.5, 116], [120, 31, 138], [168, 52, 161], [204, 58, 166]].forEach(([m, weight, height]) => rec(sophie, at(plus(sb, m, m ? 5 : 0), 11), 'growth', { weight, height }));
+  [[0, 'Hepatitis B', 1], [2, '6-in-1 (diphtheria, tetanus, whooping cough, polio, Hib, hepatitis B)', 1], [12, 'Measles, mumps and rubella (MMR)', 1], [48, 'Measles, mumps and rubella (MMR)', 2], [144, 'HPV', 1],
+    [168, 'Tetanus, diphtheria and whooping cough booster (Tdap)', 1], [192, 'MenACWY', 1]].forEach(([m, name, dose]) => rec(sophie, at(plus(sb, m, 4), 10), 'vaccine', { name, dose, place: 'Riverside Clinic' }));
+  const plan = (kid, day, h, kind, title, days = 0) => { const s0 = new Date(t0 + day * DAYMS); if (h) s0.setHours(h, 0, 0, 0);
+    events.push({ id: 'd' + (n++), type: 'plan', ts: s0.getTime(), ...(days ? { end: t0 + (day + days) * DAYMS } : {}), data: { kind, ...(title ? { title } : {}), ...(h ? {} : { allday: true }) }, note: '', updated: Date.now(), child: kid.id }); };
+  const sat = (6 - new Date(t0).getDay() + 7) % 7 || 7, mon = (8 - new Date(t0).getDay()) % 7 || 7;
+  plan(lily, sat, 10, 'Match or game', 'Swimming gala'); plan(lily, mon + 7, 0, 'School holiday', 'Half term', 5); plan(ella, mon + 7, 0, 'School holiday', 'Half term', 5);
+  plan(ella, 2, 15, 'Appointment', 'Dentist'); plan(sophie, 3, 19, 'Party', 'Leaving party'); plan(lily, 4, 16, 'Lesson', 'Piano');
   // a car trip earlier in the week, with two stretches on the road (travel days keep their own look)
   const away = t0 - 4 * DAYMS, leg = (a, b) => ({ id: 'd' + (n++), type: 'leg', ts: away + a * h, end: away + b * h, data: { means: 'car' }, note: '', updated: Date.now() });
   events.push({ id: 'd' + (n++), type: 'trip', ts: away, end: t0 - 2 * DAYMS, data: { means: 'car' }, note: '', updated: Date.now() }, leg(9, 11.5), leg(13.5, 15.8));
-  return { baby: { name: ks[0].name, birth: ks[0].birth, kids: ks }, events, deleted: [], meta: { kid: 'k2' } };
+  return { baby: { name: ks[0].name, birth: ks[0].birth, kids: ks }, events, deleted: [], meta: { kid: 'k2', grownSeen: { k6: 1 } } };
 }
 // the page's own scroll box stands in for the window on wide screens
 { const sc = () => document.getElementById('scroll'), real = window.scrollTo.bind(window);

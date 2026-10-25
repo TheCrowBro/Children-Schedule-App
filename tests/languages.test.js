@@ -2,7 +2,7 @@
 // and sound, choosing a language changes the whole app (right to left for Arabic, Hebrew, Persian and Urdu), and language problems
 // can be reported without the app ever knowing where the reports go.   node tests/languages.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global saveProfile, Report, fmtDate, milestoneCheck, openEntryInfo, openAllergy, openDoctorReport, doctorPdf, solidsCheck, Foods, dkey, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg, dayButtons, openMoment, momentInfo, openRecord, growthKind:writable */
+/* global openPlan, saveProfile, Report, fmtDate, milestoneCheck, openEntryInfo, openAllergy, openDoctorReport, doctorPdf, solidsCheck, Foods, dkey, openArtPicker, openDoctor, openLanguageReport, openMoreTypes, openQuick, openTrip, recentFormulas, startTour, toggleLeg, dayButtons, openMoment, momentInfo, openRecord, growthKind:writable */
 const { setup } = require('./lib/harness');
 const Cat = require('../scripts/i18n.js');
 
@@ -80,7 +80,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       ...Guide.MEDS.flatMap(c => c.items.flatMap(i => (i.brands || '').split(' · '))), ...Object.values(Guide.PICS).flat().map(p => p.by), 'CC BY-SA 3.0', 'CC BY-SA 4.0', 'CC0 1.0',
       'Dropbox', 'OneDrive', 'Google Drive', 'Google', 'Apple', 'iPhone', 'Android', 'Face ID', 'Google Authenticator', 'Microsoft Authenticator', 'Authy', '1Password',
       ...I18n.LANGS.map(l => l.name), Theme.todaySun().zone || '',
-      ...db.events.flatMap(e => [e.note, e.data && e.data.name, e.data && e.data.dose, e.data && e.data.formula, e.data && e.data.own && e.data.what, e.data && e.data.own && e.data.name, e.data && e.data.place, e.data && e.data.batch, e.data && e.data.who, e.data && e.data.why, ...((e.data && e.data.foods) || []).filter(f => !Foods.known(f))]),
+      ...db.events.flatMap(e => [e.note, e.data && e.data.name, e.data && e.data.dose, e.data && e.data.formula, e.data && e.data.own && e.data.what, e.data && e.data.own && e.data.name, e.data && e.data.place, e.data && e.data.batch, e.data && e.data.who, e.data && e.data.why, e.data && e.data.title, e.data && e.data.subject, ...((e.data && e.data.foods) || []).filter(f => !Foods.known(f))]),
       ...kids().flatMap(k => (k.allergies || []).flatMap(a => [a.note, Foods.known(a.food) ? '' : a.food])), window.qNotes || '']);   // (what people type in is shown as typed)
     const found = [];
     const look = async (what, page = P, extra = []) => { for (const [t, where] of await unmarked(page, [...(await data()), ...extra])) found.push(`${what}: ${t}\n      at ${where}`); };
@@ -227,6 +227,21 @@ const unmarked = (page, data) => page.evaluate(data => {
       await sheet(() => document.querySelector('#sleepBanner [data-pickup]').click(), 'the pick-up from the banner');
       for (const t of ['routine', 'stats', 'guide', 'month']) { await P.evaluate(x => { tab = x; render(); }, t); await openAll(); await look('a school child\'s ' + t); }
       await P.evaluate(() => { viewDay = addDays(startOfDay(Date.now()), -1); tab = 'month'; render(); }); await openAll(); await look('a day in the month with school');
+      // the teenage years and 18: the family calendar (coming up on the Day page, on the Month tab, its sheet), a teenager's Day page and
+      // Guide, and a child turning 18 (the sheet, the grown-up card)
+      await P.evaluate(() => {
+        const k = kids()[1], add = (ts, data, end) => db.events.push({ id: 'p' + ts, type: 'plan', ts, ...(end ? { end } : {}), data, note: '', updated: stamp(), by: Auth.id, child: k.id });
+        const d = n => addDays(startOfDay(Date.now()), n);
+        add(d(1) + 9.5 * 3600e3, { kind: 'Exam', title: 'Maths' }); add(d(2), { kind: 'School holiday', allday: true }, d(7)); add(d(3) + 17 * 3600e3, { kind: 'Match or game' });
+        const t = new Date(); t.setFullYear(t.getFullYear() - 15); k.birth = dkey(t.getTime()); db.meta.stageSeen = {}; saveProfile(); save(); setKid(k.id); tab = 'day'; viewDay = startOfDay(Date.now()); render();
+      });
+      await openAll(); await look('a teenager\'s day, with what is coming up');
+      await P.evaluate(() => { tab = 'month'; viewDay = addDays(startOfDay(Date.now()), 1); render(); }); await openAll(); await look('the month, with the calendar');
+      await sheet(() => openPlan(null), 'new event'); await sheet(() => openPlan(db.events.find(e => e.type === 'plan')), 'edit event');
+      await P.evaluate(() => { tab = 'guide'; render(); }); await openAll(); await look('a teenager\'s guide');
+      await P.evaluate(() => { const k = kids()[1], t = new Date(); t.setFullYear(t.getFullYear() - 18); t.setDate(t.getDate() - 3); k.birth = dkey(t.getTime()); delete (db.meta.grownSeen || {})[k.id]; saveProfile(); setKid(k.id); tab = 'day'; render(); });
+      await P.waitForSelector('#sheet:not([hidden])'); await look('turning 18'); await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; });
+      await openAll(); await look('a grown-up\'s day');
       // every screen's tour, step by step
       for (const t of ['day', 'routine', 'month', 'stats', 'guide', 'health', 'family', 'more']) {
         await P.evaluate(x => { tab = x; render(); startTour(); }, t);
