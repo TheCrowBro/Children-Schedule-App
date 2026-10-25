@@ -4,7 +4,7 @@ The short path from nothing to the app on a phone, and back to a saved version. 
 and sign-in), [MOBILE.md](MOBILE.md) (store releases) and [TESTING.md](TESTING.md) (the tests and the checklist for real phones).
 
 ## Saved versions
-Each saved version is a git tag. A backup zip holds the same version ready to use (§7).
+Each saved version is a git tag, and a backup zip holds the same version ready to use (§7).
 
 | Version | Tag | Saved | What it is |
 |---|---|---|---|
@@ -96,12 +96,20 @@ git fetch --tags
 git switch -c restore-1.0.0 v1.0.0    # a new branch at the saved version
 npm ci && npm run sync                # then build it as in §5
 ```
+If GitHub doesn't have the tag yet (a cloud coding session can only push its own branch, not tags), add it once from the backup zip:
+copy `LittleLog-v1.0.0.bundle` into your copy of the repository and run
+```bash
+git fetch LittleLog-v1.0.0.bundle 'refs/tags/*:refs/tags/*'
+git push origin v1.0.0
+```
 
 **From a backup zip** (`LittleLog-v1.0.0-backup.zip`):
 
 | File | What it is |
 |---|---|
+| `INSTALL.md` | this guide |
 | `LittleLog-v1.0.0-source.zip` | the source at tag `v1.0.0`, without `node_modules` (`npm ci` fetches those) |
+| `LittleLog-v1.0.0.bundle` | the whole git history up to this version, with the tag: `git clone LittleLog-v1.0.0.bundle little-log` makes a working copy without GitHub |
 | `LittleLog-v1.0.0-android-debug.apk` | the Android app, ready to install (§2) |
 | `LittleLog-v1.0.0-demo.html` | the demo (§1) |
 | `android-debug.keystore` | the debug key the `.apk` is signed with |
@@ -109,7 +117,7 @@ npm ci && npm run sync                # then build it as in §5
 
 1. Unzip it and check that nothing has changed: `sha256sum -c SHA256SUMS.txt` (on a Mac, `shasum -a 256 -c SHA256SUMS.txt`). Every
    line should say OK.
-2. Install the `.apk` (§2), open the demo in a browser, or unzip the source and build it (§5).
+2. Install the `.apk` (§2), open the demo in a browser, or unzip the source (or clone the bundle) and build it (§5).
 3. To build an `.apk` that installs over one from this backup, first put `android-debug.keystore` on the build computer as
    `~/.android/debug.keystore`, after saving the one already there.
 
