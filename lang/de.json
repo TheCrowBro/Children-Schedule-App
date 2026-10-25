@@ -1444,7 +1444,6 @@
   "one": "{n} Änderung noch nicht gesendet: sie wird gesendet, sobald du diese Familie öffnest.",
   "other": "{n} Änderungen noch nicht gesendet: sie werden gesendet, sobald du diese Familie öffnest."
  },
- "1efd4xo": "Du",
  "1b0i0ln": "Wird gewechselt…",
  "1p7x3j8": "Jetzt angezeigt: {family}",
  "1uu4057": "Wechsel fehlgeschlagen: {reason}",
@@ -1474,15 +1473,12 @@
  "arar4a": "{actor} hat {person} verabschiedet",
  "17n774r": "Du betreust die Kinder anderer Leute? Scanne den QR-Code, den dir ein Elternteil zeigt. Nach der Freigabe steht die Familie auf dieser Seite: in deinem Familienbaum, wenn du zur Familie gehörst, sonst unter „Familien, bei denen du hilfst“.",
  "195vm2m": "Du betreust die Kinder anderer Leute? Bitte ein Elternteil, in der App Little Log den Tab „Familie“ → Jemanden einladen zu öffnen, festzulegen, was du darfst, und dir den QR-Code zu zeigen. Scanne ihn hier. Nach der Freigabe erscheint die Familie hier: in deinem Familienbaum, wenn du zur Familie gehörst, sonst unter „Familien, bei denen du hilfst“. Du kannst jederzeit zwischen den Familien wechseln.",
- "ymkivl": "Du, deine Familie und die Familien deiner Verwandten, gezeichnet als Baum, der wächst, wenn neue Leute dazukommen. Tippe auf eine Person für ihre Angaben, auf ein Kind für seinen Tag oder auf eine Familie, um zu ihr zu wechseln.",
  "1dv359l": "Familien und Verwandte",
  "1xzrjrm": {
   "one": "{n} Jahr",
   "other": "{n} Jahre"
  },
- "vtzopg": "{family}, angezeigt",
  "thlxlz": "{family} öffnen",
- "5dqw62": "Bisher nur du. Der Baum wächst, sobald du dem Tagebuch deiner eigenen Familie oder dem von Verwandten beitrittst.",
  "wo8v8p": "Tag von {name} anzeigen",
  "1d71jrf": {
   "one": "{n} Anfrage wartet auf deine Freigabe",

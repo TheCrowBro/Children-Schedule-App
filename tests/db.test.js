@@ -330,6 +330,23 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       await A('select set_member($1,$2,$3,$4::jsonb)', [baby, id.C, 'caregiver', '{"edit_profile":true}']); await C('select update_baby($1,$2,2)', [baby, 'PROFILE3'.repeat(5)]);
       assert((await B('select profile from babies'))[0].profile.startsWith('PROFILE3')); await A('select set_member($1,$2,$3,$4::jsonb)', [baby, id.C, 'caregiver', '{}']);
     });
+    await t('the family tree: only the children\'s relatives get it (parents, family members), only parents change it (with the current keys), and it is kept as ciphertext', async () => {
+      assert.deepEqual(await A('select * from get_tree($1)', [baby]), [], 'none yet');
+      const T = 'TREE'.repeat(10);
+      await rejects(B('select set_tree($1,$2,2)', [baby, T]), /Only parents/, 'not a family member');
+      await rejects(C('select set_tree($1,$2,2)', [baby, T]), /Only parents/, 'not a caregiver');
+      await rejects(A1('select set_tree($1,$2,2)', [baby, T]), /Only parents/, 'not a parent without two-step verification');
+      await rejects(A('select set_tree($1,$2,1)', [baby, T]), /stale epoch/, 'with the current keys only');
+      await rejects(A('select set_tree($1,$2,2)', [baby, 'T'.repeat(32769)]), /too large/);
+      await A('select set_tree($1,$2,2)', [baby, T]); await A('select set_tree($1,$2,2)', [baby, T + 'X']);
+      assert.deepEqual((await B('select blob, epoch from get_tree($1)', [baby])).map(r => [r.blob, r.epoch]), [[T + 'X', 2]], 'a family member reads it');
+      assert.deepEqual((await q('select blob, updated_by from trees')).map(r => [r.blob, r.updated_by]), [[T + 'X', id.A]], 'one tree per log, as the phone sealed it');
+      await rejects(C('select * from get_tree($1)', [baby]), /no access/, 'not a caregiver');
+      await rejects(D('select * from get_tree($1)', [baby]), /no access/, 'not a babysitter, even one who may see the family list');
+      await rejects(A1('select * from get_tree($1)', [baby]), /no access/, 'not a parent without two-step verification');
+      for (const who of [A, B, C]) await rejects(who('select * from trees'), /permission denied/, 'no direct access to the table');
+      assert.equal((await A('select * from activity_log($1)', [baby])).filter(l => l.action === 'tree_changed').length, 2, 'in the activity log');
+    });
     await t('lost authenticator: another parent can reset MFA, never your own', async () => {
       await su.query(`insert into auth.mfa_factors(user_id,status) values ($1,'verified')`, [id.C]);
       await rejects(B('select reset_member_mfa($1,$2)', [baby, id.C]), /Only parents/); await rejects(A('select reset_member_mfa($1,$2)', [baby, id.A]), /another parent/);

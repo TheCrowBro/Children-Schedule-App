@@ -380,10 +380,11 @@ const pickFormula = async (page, scope, name) => {
 
     await step('people add their own contact details; family can see them, a babysitter without the people permission cannot, and the server never can', async () => {
       await syncNow(D); await D.click('[data-tab=family]');
-      const me = await D.evaluate(() => Auth.id); await D.waitForSelector('.ftreesvg [data-tk=me]'); await D.click('.ftreesvg [data-tk=me]');   // (you, at the foot of the family tree)
+      const me = await D.evaluate(() => Auth.id), openList = async X => { await X.waitForSelector('details.famlist'); if (!(await X.evaluate(() => document.querySelector('details.famlist').open))) await X.click('details.famlist > summary'); };
+      await openList(D); await D.waitForSelector(`[data-pview="${me}"]`); await D.click(`[data-pview="${me}"]`);   // (you, in your family, in the families list)
       await D.fill('#dRel', 'Dad'); await D.fill('#dPhone', '+1 555 010 4444'); await D.fill('#dWork', 'Riverside Fire Station'); await D.fill('#dWorkPhone', '555 010 5555'); await D.click('#pvSave');
       await P.click('[data-tab=family]'); await P.evaluate(() => Sync.loadPeople()); await P.evaluate(() => render());
-      await P.click(`.ftreesvg [data-tk="p:${await P.evaluate(() => db.meta.babyId)}:${me}"]`); const t = await P.textContent('#sheet');   // (Dad, on the family tree)
+      await openList(P); await P.click(`[data-pview="${me}"]`); const t = await P.textContent('#sheet');
       assert(/Riverside Fire Station/.test(t) && /\+1 555 010 4444/.test(t), t);
       assert.deepEqual(await P.$$eval('#sheet a.callbtn', a => a.map(x => x.getAttribute('href'))), ['tel:+15550104444', 'tel:5550105555']);
       assert.equal(await P.$$eval('#pvAccess', b => b.length), 1, 'a parent also gets "Change access" here'); await P.click('#pvClose');

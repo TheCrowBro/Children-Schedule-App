@@ -224,6 +224,14 @@ const E2EE = (() => {
     try { return Guide.cleanDetails(JSON.parse(dec.decode(await open(k, blob, detailsAad(baby, user, epoch))))); } catch (e) { return null; }
   }
 
+  // The children's family tree (their relatives' names), sealed with the log's key and bound to this log.
+  const treeAad = (baby, epoch) => `ll1|tree|${baby}|${epoch}`;
+  async function sealTree(baby, t) { const c = current(baby); return { blob: await seal(c.main, enc.encode(JSON.stringify(FamilyTree.clean(t))), treeAad(baby, c.epoch)), epoch: c.epoch }; }
+  async function openTree(baby, blob, epoch) {
+    const k = raw(baby, epoch, 'main'); if (!k || !blob) return null;
+    try { return FamilyTree.clean(JSON.parse(dec.decode(await open(k, blob, treeAad(baby, epoch))))); } catch (e) { return null; }
+  }
+
   // ---- getting keys onto this phone ------------------------------------------------------------------
   async function absorbKeyring(baby, kr) {
     const c = raw(baby, kr.epoch, 'main'); if (!c) return;
@@ -372,7 +380,7 @@ const E2EE = (() => {
 
   return {
     load, ensureDevice, refresh, createLog, makeGrant, unlockWithRecovery, grantForRequest, approveDevice, healthGrants, rotate, replaceRecovery,
-    encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile, sealDetails, openDetails,
+    encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile, sealDetails, openDetails, sealTree, openTree,
     uuid, newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,
     fingerprint, securityCode, forget, wipeUser,
     get device() { return dev; },

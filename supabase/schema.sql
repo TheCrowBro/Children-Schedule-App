@@ -86,6 +86,17 @@ create table retired (
 );
 create index retired_by_baby on retired (baby_id, retired_at desc);
 
+-- The children's family tree: their parents, grandparents and great-grandparents, aunts, uncles and cousins, and what the children call
+-- them. The parents keep it. Like everything else in the log it is end-to-end encrypted (names included), and it is handed only to the
+-- children's relatives (parents and family members), never to caregivers, babysitters, medical assistants or friends.
+create table trees (
+  baby_id uuid primary key references babies(id) on delete cascade,
+  blob text not null default '' check (length(blob) <= 32768),
+  epoch int not null default 0,
+  updated_by uuid,
+  updated_at timestamptz not null default now()
+);
+
 create table invites (
   code text primary key,
   baby_id uuid not null references babies(id) on delete cascade,
@@ -181,6 +192,11 @@ create function has_perm(b uuid, p text) returns boolean language sql security d
   select exists (select 1 from members m where m.baby_id = b and m.user_id = auth.uid()
     and case when m.role = 'parent' then jwt_aal() = 'aal2' else coalesce((m.perms ->> p)::boolean, false) end) $$;
 
+-- A relative of the children in log b: a parent (with two-step verification) or a family member.
+create function is_relative(b uuid) returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from members m where m.baby_id = b and m.user_id = auth.uid()
+                 and m.role in ('parent', 'family') and (m.role <> 'parent' or jwt_aal() = 'aal2')) $$;
+
 create function display_of(b uuid, u uuid) returns text language sql security definer stable set search_path = public as $$
   select coalesce(nullif(m.display_name, ''), split_part(m.email, '@', 1), '') from members m where m.baby_id = b and m.user_id = u $$;
 
@@ -203,12 +219,13 @@ alter table activity        enable row level security;
 alter table invite_attempts enable row level security;
 alter table devices         enable row level security;
 alter table key_grants      enable row level security;
+alter table trees           enable row level security;
 
 create policy babies_read  on babies  for select using (is_member(id));
 create policy members_self on members for select using (user_id = auth.uid());   -- others via list_people()
 create policy events_read  on events  for select using (
   is_member(baby_id) and (not sensitive or has_perm(baby_id, 'view_health')));
--- invites, join_requests, activity, invite_attempts, devices, key_grants: no policies = no direct access (functions only).
+-- invites, join_requests, activity, invite_attempts, devices, key_grants, trees: no policies = no direct access (functions only).
 
 -- ── devices, key grants, recovery ──────────────────────────────────────────────────────────────
 -- The server only stores public keys and wrapped (encrypted) keys. The checks here keep the data model sane;
@@ -522,6 +539,26 @@ begin
                from retired r where r.baby_id = p_baby order by r.retired_at desc;
 end $$;
 
+-- The family tree, for the children's relatives.
+create function get_tree(p_baby uuid) returns table (blob text, epoch int, updated_at timestamptz)
+language plpgsql security definer stable set search_path = public as $$
+begin
+  if not is_relative(p_baby) then raise exception 'no access'; end if;
+  return query select t.blob, t.epoch, t.updated_at from trees t where t.baby_id = p_baby;
+end $$;
+
+-- A parent saves the family tree, sealed on their phone with the log's current keys.
+create function set_tree(p_baby uuid, p_blob text, p_epoch int) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_parent(p_baby) then raise exception 'Only parents can change the family tree'; end if;
+  if length(coalesce(p_blob, '')) > 32768 then raise exception 'family tree too large'; end if;
+  if p_epoch is null or p_epoch <> (select epoch from babies where id = p_baby) then raise exception 'stale epoch'; end if;
+  insert into trees (baby_id, blob, epoch, updated_by, updated_at) values (p_baby, coalesce(p_blob, ''), p_epoch, auth.uid(), now())
+    on conflict (baby_id) do update set blob = excluded.blob, epoch = excluded.epoch, updated_by = excluded.updated_by, updated_at = excluded.updated_at;
+  perform log_activity(p_baby, 'tree_changed');
+end $$;
+
 -- A parent can delete the note about a retired helper.
 create function forget_retired(p_id uuid) returns void
 language plpgsql security definer set search_path = public as $$
@@ -756,6 +793,7 @@ begin
     end if;
   end loop;
   delete from retired where user_id = me;          -- (notes about this person as a retired helper go too)
+  update trees set updated_by = null where updated_by = me;
   delete from auth.users where id = me;            -- cascades to remaining memberships, requests and phones
 end $$;
 
@@ -796,7 +834,7 @@ grant execute on function
   rotate_keys(uuid, int, jsonb, text, text, text, text),
   create_baby(text, text, uuid, jsonb, jsonb, text, jsonb, uuid, text), update_baby(uuid, text, int), list_people(uuid), set_display_name(text), set_my_details(uuid, text, int),
   set_member(uuid, uuid, text, jsonb, jsonb), remove_member(uuid, uuid), reset_member_mfa(uuid, uuid),
-  retire_member(uuid, uuid, text), list_retired(uuid), forget_retired(uuid),
+  retire_member(uuid, uuid, text), list_retired(uuid), forget_retired(uuid), is_relative(uuid), get_tree(uuid), set_tree(uuid, text, int),
   create_invite(uuid, text, jsonb), list_invites(uuid), rescind_invite(text), redeem_invite(text, text, uuid, text),
   my_requests(), cancel_my_request(uuid), list_requests(uuid), decide_request(uuid, boolean, text, jsonb, jsonb),
   push_events(uuid, jsonb), activity_log(uuid, int, bigint), delete_my_account()

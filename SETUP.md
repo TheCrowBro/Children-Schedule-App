@@ -46,6 +46,8 @@ Parents are admins. Everyone else gets a role plus check boxes that the parents 
 | Change the children's names, birthdays, colours and allergies | ✅ | ❌ never | ☑️ choose |
 | Invite, approve, change or remove people; see the **activity log** | ✅ | ❌ | ❌ |
 | **Retire** a caregiver, babysitter, medical assistant or friend (their access ends; a note of them stays) | ✅ | ❌ | ❌ |
+| See the children's **family tree** | ✅ | ✅ | ❌ never |
+| Add, change or remove people on the family tree | ✅ | ❌ | ❌ |
 
 These are enforced **in the database** (see `schema.sql`), not just hidden in the app: a modified app is refused and the
 phone is put back to the server's version. Joining takes an invite (valid **2 hours**, one use, rescindable) **and** a parent's approval.
@@ -53,7 +55,9 @@ The activity log (who added / edited / deleted what, who joined / left, role cha
 Relatives (parents and family members) are never retired; retiring a helper is removing them plus a note in the `retired` table (name, role,
 dates, reason, and their contact details as they were, still encrypted), which the people who may see the family list can read and a parent
 can delete. Deleting an account deletes the notes about that person too.
-It records *that* something happened, never the contents of entries.
+The children's family tree is one row per log in the `trees` table: a blob sealed on a parent's phone with the log's keys (names
+included), handed by `get_tree` only to parents and family members and written by `set_tree` only by parents, with the current keys.
+The activity log records *that* something happened, never the contents of entries (nor who is on the family tree).
 
 ## 3. Cloud backup providers (optional; each is independent)
 Backups are encrypted on the phone with the user's passphrase (12+ characters, PBKDF2 600,000 rounds, AES-GCM) before

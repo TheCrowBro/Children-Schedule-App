@@ -1234,7 +1234,7 @@ const TOURS = {
     { sel: '#view details.gd[data-grp^=m]', title: N_('Month by month'), why: N_('Milestones for every month. A reminder pops up on each month birthday.') },
   ],
   family: [
-    { sel: '.ftreeimg', title: N_('Family tree'), why: N_('You, your family and your relatives\' families, drawn as a tree that grows as people join. Tap someone for their details, a child for their day, or a family to switch to it.') },
+    { sel: '.ftreeimg', title: N_('Family tree'), why: N_('Your children\'s family tree: their parents, grandparents and great-grandparents, aunts, uncles and cousins. It grows as people are added. Tap someone for their details, or a child for their day; a parent adds people with the +.') },
     { sel: '#famAdd', title: N_('Add a family'), why: N_('Looking after someone else\'s children? Scan the QR code one of their parents shows you. Once they approve it, their family is on this page: in your family tree if you are family, or with the families you help with.') },
     { sel: '#syncNow', title: N_('Your shared log'), why: N_('When this phone last synced. Tap to sync now.') },
     { sel: 'details[data-grp=famlist]', title: N_('Families and relatives'), why: N_('Your family and your relatives\' families, with their children. Open one to switch; requests to join a family you are a parent in wait here for you.') },

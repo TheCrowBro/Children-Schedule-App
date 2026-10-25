@@ -389,29 +389,60 @@ details.fgrp{margin:6px 10px}details.fgrp .chips,details.fgrp .note,details.food
 .almark{position:absolute;top:2px;inset-inline-end:3px;width:13px;height:13px;border-radius:50%;background:var(--health-ink);color:#fff;font:700 9px/13px system-ui,sans-serif;font-style:normal;text-align:center}
 .legend .alkey .almark{position:static;display:inline-block;width:13px;height:13px;background:var(--health-ink);margin-inline-end:4px;vertical-align:middle}
 .alcard{border-inline-start:6px solid var(--health-ink)}
-/* the family tree: a picture of you and the families you are family in (ftree.js), that grows as people join */
-.ftreeimg{padding:10px 8px;background:radial-gradient(80% 60% at 50% 40%,var(--wash3),transparent 80%),var(--card)}
-.ftreesvg{display:block;width:100%;max-width:440px;height:auto;margin:0 auto;overflow:visible;--bark:#9b7a5c;--leaf:#9fc08e;--leaf-on:#78a866;--leaf-a:.36;-webkit-user-select:none;user-select:none}
-:root[data-mode="dark"] .ftreesvg{--bark:#a88a6c;--leaf:#5d7f50;--leaf-on:#77a265;--leaf-a:.42}
-.ftreesvg .bark path{fill:none;stroke:var(--bark);stroke-linecap:round}.ftreesvg .root{opacity:.75}
-.ftreesvg .canopy ellipse{fill:var(--leaf);opacity:var(--leaf-a)}.ftreesvg .canopy.on ellipse{fill:var(--leaf-on);opacity:.5}.ftreesvg .canopy.seed ellipse{fill:var(--leaf-on);opacity:.9}
-.ftreesvg text{font:600 11px system-ui,-apple-system,sans-serif;fill:var(--ink);text-anchor:middle;pointer-events:none;unicode-bidi:plaintext}
-.ftreesvg .tfname{font:700 13px var(--serif)}.ftreesvg .tfname.sm{font-size:11px}
+/* the family tree: a storybook tree of the children's family (ftree.js) */
+.ftreeimg{padding:0;overflow:hidden;background:linear-gradient(180deg,var(--ft-sky) 0%,var(--card) 70%)}
+.ftfoot{padding:0 14px 12px}
+.ftreewrap{direction:ltr;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}.ftreewrap::-webkit-scrollbar{display:none}   /* (the drawing is mirrored itself for right-to-left) */
+:root{--ft-sky:#eef5fb;--ft-bark:#9b7558;--ft-bark-dk:#76553e;--ft-leaf:#b5d99c;--ft-leaf2:#9fcb85;--ft-leaf-dk:#6fa85a;--ft-hill:#c4e2a9;--ft-hill-far:#dcefcb;--ft-heart:#e8798f}
+:root[data-mode="dark"]{--ft-sky:#1f2430;--ft-bark:#b08d6e;--ft-bark-dk:#8a6b52;--ft-leaf:#4f7a45;--ft-leaf2:#5f8f53;--ft-leaf-dk:#7fb069;--ft-hill:#3c5a35;--ft-hill-far:#2f4a2b;--ft-heart:#e0708a}
+.ftreesvg{display:block;height:auto;margin:0 auto;overflow:visible;-webkit-user-select:none;user-select:none}
+.ftreesvg .sun circle{fill:#ffd166}.ftreesvg .sun .rays path{stroke:#f4b942;stroke-width:2.4;stroke-linecap:round}.ftreesvg .sun .eye{fill:#9c6a12}.ftreesvg .sun .smile{fill:none;stroke:#9c6a12;stroke-width:1.4;stroke-linecap:round}
+.ftreesvg .moon{display:none}.ftreesvg .moon path{fill:#f3e7b5}
+:root[data-mode="dark"] .ftreesvg .sun{display:none}:root[data-mode="dark"] .ftreesvg .moon{display:inline}
+.ftreesvg .cloud path{fill:#fff;opacity:.9}:root[data-mode="dark"] .ftreesvg .cloud path{fill:#8d97a8;opacity:.3}
+.ftreesvg .hill ellipse{fill:var(--ft-hill)}.ftreesvg .hill .far{fill:var(--ft-hill-far)}
+.ftreesvg .flower .stem,.ftreesvg .tuft{fill:none;stroke:var(--ft-leaf-dk);stroke-width:1.6;stroke-linecap:round}
+.ftreesvg .flower circle{fill:#f6a5b9}.ftreesvg .flower.f1 circle{fill:#fbd46d}.ftreesvg .flower.f2 circle{fill:#b9a8f2}.ftreesvg .flower .mid{fill:#fff3c4}
+.ftreesvg .crown ellipse,.ftreesvg .crown circle{fill:var(--ft-leaf);opacity:.42}
+.ftreesvg .trunk{fill:var(--ft-bark);stroke:var(--ft-bark-dk);stroke-width:1.2}
+.ftreesvg .root,.ftreesvg .limb,.ftreesvg .branch,.ftreesvg .twig{fill:none;stroke:var(--ft-bark);stroke-linecap:round}.ftreesvg .root{stroke-width:4}
+.ftreesvg .knot{fill:var(--ft-bark-dk)}.ftreesvg .carve{fill:none;stroke:var(--ft-bark-dk);stroke-width:1.3}
+.ftreesvg .vine{fill:none;stroke:var(--ft-leaf-dk);stroke-width:2.2;stroke-linecap:round;stroke-dasharray:1 5}
+.ftreesvg .lf{fill:var(--ft-leaf-dk)}.ftreesvg .leaves .lf{fill:var(--ft-leaf2)}.ftreesvg .ftlf2{fill:var(--ft-leaf-dk);opacity:.55}
+.ftreesvg .fall{opacity:0;animation:ftfall 11s ease-in infinite}.ftreesvg .fall.f1{animation-delay:5.5s}.ftreesvg .fall .lf{fill:var(--ft-leaf2)}
+.ftreesvg .heart{fill:var(--ft-heart);stroke:var(--card);stroke-width:1.5}.ftreesvg .heart.faint{fill:none;stroke:var(--ft-heart);stroke-dasharray:2 2;opacity:.7}
+.ftreesvg .bird .body{fill:#e9846b}.ftreesvg .bird .tail,.ftreesvg .bird .wing{fill:#c4644d}.ftreesvg .bird .beak{fill:#f2b33d}.ftreesvg .bird .eye{fill:#2d2620}.ftreesvg .bird .leg{stroke:#76553e;stroke-width:1.2}
+.ftreesvg .butterfly .wings ellipse{fill:#f4a6c0}.ftreesvg .butterfly .wings .lower{fill:#c9a7f0}.ftreesvg .butterfly .bod{fill:#6b4f3a}.ftreesvg .butterfly .feel{fill:none;stroke:#6b4f3a;stroke-width:.9}
+.ftreesvg text{font:600 10.5px system-ui,-apple-system,sans-serif;fill:var(--ink);text-anchor:middle;pointer-events:none;unicode-bidi:plaintext}
+.ftreesvg .ftl{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}
+.ftreesvg .fti{font:700 14px var(--serif)}.ftreesvg .small .fti{font-size:12px}.ftreesvg .small .ftl{font-size:9.5px}
 .ftreesvg .hit{fill:transparent;stroke:none}
 .ftreesvg [role=button]{cursor:pointer;outline:none}
-.ftreesvg .tnode circle:not(.hit){fill:var(--card);stroke:var(--bark);stroke-width:2}
-.ftreesvg .tnode.kid circle:not(.hit){stroke:var(--card);stroke-width:2.5}.ftreesvg .tnode.kid .fti{fill:#fff}
-.ftreesvg .tnode.me circle:not(.hit){fill:var(--brand);stroke:var(--card);stroke-width:3}.ftreesvg .tnode.me .fti{fill:var(--on-brand);font-size:17px}
-.ftreesvg .fti{font:700 14px var(--serif)}
-.ftreesvg .ftl{font-size:10.5px;font-weight:500;fill:var(--mute)}.ftreesvg .ftl.me{font-size:12px;font-weight:700;fill:var(--ink)}
-.ftreesvg [role=button]:focus-visible circle:not(.hit),.ftreesvg .tfam:focus-visible .hit{stroke:var(--brand);stroke-width:3.5}
-.ftreesvg [role=button]:active circle:not(.hit){stroke:var(--brand)}
-/* whoever is new grows in: a person or a family sprouts, a branch draws out from the trunk */
+.ftreesvg .tnode .disc{fill:var(--card);stroke:var(--ft-bark);stroke-width:2}
+.ftreesvg .tnode.kid .disc{stroke:#fff;stroke-width:2.5}.ftreesvg .tnode.kid .fti{fill:#fff}
+.ftreesvg .tnode .curl{fill:none;stroke:var(--ft-leaf-dk);stroke-width:1.6;stroke-linecap:round}
+.ftreesvg .tnode.gone .disc{fill:var(--bg);stroke-dasharray:3 2}.ftreesvg .star{fill:#e9b949}
+.ftreesvg .tbud .disc{fill:var(--card);fill-opacity:.6;stroke:var(--ft-leaf-dk);stroke-width:1.8;stroke-dasharray:3 3}.ftreesvg .tbud .plus{stroke:var(--ft-leaf-dk);stroke-width:2.2;stroke-linecap:round}
+.ftreesvg .tbud .ftl{fill:var(--mute);font-weight:500;font-size:9.5px}
+.ftreesvg [role=button]:focus-visible .disc{stroke:var(--brand);stroke-width:3.5}
+.ftreesvg [role=button]:active .disc{stroke:var(--brand)}
+/* gently alive: the crown sways, the sun turns, a cloud drifts, the bird hops, the butterfly flutters; whoever is new sprouts in */
+.ftreesvg .crown{transform-box:view-box;animation:ftsway 7s ease-in-out infinite}
+.ftreesvg .rays{transform-box:fill-box;transform-origin:center;animation:ftspin 40s linear infinite}
+.ftreesvg .cloud{animation:ftcloud 16s ease-in-out infinite alternate}
+.ftreesvg .bird{animation:fthop 5s ease-in-out infinite}
+.ftreesvg .butterfly{animation:ftdrift 9s ease-in-out infinite}.ftreesvg .butterfly .wings{transform-box:fill-box;transform-origin:center;animation:ftflap .45s ease-in-out infinite}
 .ftreesvg .sprout{animation:ftsprout .6s cubic-bezier(.3,1.45,.6,1) both;animation-delay:var(--d,0ms);transform-box:fill-box;transform-origin:center}
-.ftreesvg path.sprout{stroke-dasharray:1;animation-name:ftbranch;animation-duration:.7s;animation-timing-function:ease-out}
+@keyframes ftsway{0%,100%{transform:rotate(-.5deg)}50%{transform:rotate(.5deg)}}
+@keyframes ftspin{to{transform:rotate(360deg)}}
+@keyframes ftcloud{to{transform:translateX(-28px)}}
+@keyframes fthop{0%,78%,100%{transform:translateY(0)}83%{transform:translateY(-4px)}88%{transform:translateY(0)}93%{transform:translateY(-2px)}}
+@keyframes ftdrift{0%,100%{transform:translate(0,0)}25%{transform:translate(-14px,-10px)}50%{transform:translate(-26px,-2px)}75%{transform:translate(-10px,6px)}}
+@keyframes ftflap{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.3)}}
+@keyframes ftfall{0%{opacity:0;transform:translate(0,0) rotate(0)}8%{opacity:.9}30%{transform:translate(14px,40px) rotate(40deg)}55%{transform:translate(-6px,80px) rotate(-20deg)}75%{opacity:.8}100%{opacity:0;transform:translate(10px,130px) rotate(60deg)}}
 @keyframes ftsprout{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
-@keyframes ftbranch{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
-@media(prefers-reduced-motion:reduce){.ftreesvg .sprout{animation:none}.ftreesvg path.sprout{stroke-dasharray:none}}
+@media(prefers-reduced-motion:reduce){.ftreesvg .crown,.ftreesvg .rays,.ftreesvg .cloud,.ftreesvg .bird,.ftreesvg .butterfly,.ftreesvg .butterfly .wings,.ftreesvg .sprout{animation:none}.ftreesvg .fall{display:none}}
+.ftreeimg .fhint{margin-top:2px;text-align:center}
 .ftreeimg .fam.pending{margin:10px 0 0;padding:10px 12px;border:1px dashed var(--line);border-radius:14px;background:var(--bg)}
 .kidhead{display:flex;align-items:center;gap:10px}
 details.famlist .fbranches{margin:0 14px 14px;margin-inline-start:26px}details.famlist .fpeople{margin-top:6px}

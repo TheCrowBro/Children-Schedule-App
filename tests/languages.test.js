@@ -130,6 +130,12 @@ const unmarked = (page, data) => page.evaluate(data => {
       await sheet(() => openAllergy(kids()[0].id, { foods: ['Peanut', 'Kiwi'], date: dkey(Date.now()) }), 'mark an allergy');
       await sheet(() => openDoctorReport(), 'report for the doctor');
       await sheet(() => { tab = 'family'; render(); document.querySelector('.ftreesvg [data-tk^="k:"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); }, 'a child tapped on the family tree');
+      // the family tree: adding someone, someone on it (remembered), and changing them
+      await sheet(() => { tab = 'family'; render(); document.querySelector('.ftreesvg [data-tk^="+gp:"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); }, 'adding a grandparent to the family tree');
+      await P.evaluate(() => Sync.editTree(t => FamilyTree.add(t, 'gp', t.parents[0].id, { id: 'gran0001', name: 'Gran', call: 'Gran', gone: true }), FamilyTree.clean({ parents: [{ id: 'mum00001', name: 'Mum', user: Auth.id }] })));
+      await sheet(() => { tab = 'family'; render(); document.querySelector('.ftreesvg [data-tk="p:gran0001"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); }, 'someone on the family tree');
+      await sheet(() => { tab = 'family'; render(); document.querySelector('.ftreesvg [data-tk="p:gran0001"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); document.querySelector('#tcEdit').click(); }, 'changing someone on the family tree');
+      await P.evaluate(() => { tab = 'family'; render(); }); await look('family, with a family tree');
       await sheet(() => { const k = kids()[1], d = new Date(); d.setMonth(d.getMonth() - 6); d.setDate(d.getDate() - 2); k.birth = dkey(d.getTime()); delete db.meta.solids; Tour.mark('day'); solidsCheck(); }, 'time for solid foods');
       // the PDF for the doctor: every line written on its pages
       const pdfText = await P.evaluate(async () => { window.qNotes = 'Is her sleep normal?'; const r = await doctorPdf(kids()[0].id, { days: 14, every: true, notes: window.qNotes }); return r.text.flat(); });

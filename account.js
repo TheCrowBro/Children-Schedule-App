@@ -425,74 +425,174 @@ const Acct = (() => {
     if (tab === 'family') render();
     const had = Sync.st.memberships.map(m => m.id).join();
     try { await Promise.all([Sync.loadMemberships(), Sync.loadMyRequests()]); } catch (e) { return; }   // (offline: the tree as the phone knows it)
-    await Promise.all([Sync.loadFamilyPeople(), Sync.loadFamilyRequests(), Sync.loadRetired()]);
+    await Promise.all([Sync.loadFamilyPeople(), Sync.loadFamilyRequests(), Sync.loadRetired(), RELATIVES.includes(db.meta.role) ? Sync.loadTree().catch(() => null) : null]);
     const now = Sync.st.memberships.filter(m => !had.split(',').includes(m.id));
     if (had && now.length) toast(__("You're in: {family}", { family: famName(now[0]) }));
     if (tab === 'family') render();
   }
-  // the picture (ftree.js): whoever this phone has not shown on it before sprouts in (all of it, the first time), remembered on the phone
-  const T = { seen: undefined, grow: {}, acts: {} }, SEEN = 'll.treeSeen';
+  // ---- the children's family tree (ftree.js): kept by the parents, sealed like the rest of the log, shown to the relatives -------
+  // Whoever this phone has not shown on it before sprouts in (all of it, the first time), remembered on the phone.
+  const T = { seen: undefined, grow: {}, acts: {}, for: null, scroll: null, width: 360, center: 180 }, SEEN = 'll.treeSeen';
   function treeSeen() {
     if (T.seen === undefined) { try { const a = JSON.parse(localStorage.getItem(SEEN) || 'null'); T.seen = Array.isArray(a) ? new Set(a) : null; } catch (e) { T.seen = null; } }
     return T.seen;
   }
-  const forgetTree = () => { T.seen = undefined; T.grow = {}; T.acts = {}; try { localStorage.removeItem(SEEN); } catch (e) { /* nothing kept */ } };
+  const forgetTree = () => { T.seen = undefined; T.grow = {}; T.acts = {}; T.scroll = null; try { localStorage.removeItem(SEEN); } catch (e) { /* nothing kept */ } };
   /** The family logs you are family in (offline before they were loaded: the one shown). */
   const kinFams = () => (Sync.st.memberships.length ? Sync.st.memberships : db.meta.babyId ? [{ id: db.meta.babyId, role: db.meta.role }] : []).filter(m => RELATIVES.includes(m.role));
-  /** The relatives in family log `m`, not you: its grown-ups on the tree. */
+  /** The relatives in family log `m`, not you. */
   const kinOf = m => (m.id === db.meta.babyId
     ? Sync.st.people.filter(p => RELATIVES.includes(p.role) && !p.is_you).map(p => ({ id: p.user_id, name: p.display_name || __('Member'), role: p.role }))
     : (Sync.st.familyPeople[m.id] || []).map(p => ({ id: p.id, name: p.name || __('Member'), role: p.role })));
   const firstOf = n => ([...String(n || '').trim()][0] || '?').toUpperCase();
-  /** A child's age on the tree: in weeks, then months, then years. */
+  /** A child's age: in weeks, then months, then years. */
   function kidAge(k, now = Date.now()) {
     const mo = Guide.monthsOld(k.birth, now);
     if (mo < 0) return '';
     if (mo < 1) return __n('{n} week', '{n} weeks', Math.max(0, Math.floor((now - new Date(k.birth + 'T00:00').getTime()) / DAY / 7)));
     return mo < 24 ? __n('{n} month', '{n} months', mo) : __n('{n} year', '{n} years', Math.floor(mo / 12));
   }
-  /** The tree as a picture of you and the families you are family in, with what each part does when tapped. */
+  // who someone is to the children, by where they are on the tree; adding someone there; whose …, for the sheet
+  const KIN = { parent: N_('Parent'), gp: N_('Grandparent'), ggp: N_('Great-grandparent'), sib: N_('Aunt or uncle'), partner: N_('Aunt or uncle'), cousin: N_('Cousin') };
+  const ADDS = { parent: N_("Add the children's other parent"), gp: N_('Add a grandparent'), ggp: N_('Add a great-grandparent'), sib: N_('Add an aunt or uncle'), partner: N_('Add a partner'), cousin: N_('Add a cousin') };
+  const WHOSE = { gp: N_("{name}'s parent"), ggp: N_("{name}'s parent"), sib: N_("{name}'s brother or sister"), partner: N_("{name}'s partner"), cousin: N_("{name}'s child") };
+  /** Until a parent adds anyone: the children's parents, as the log knows them. */
+  const startTree = () => FamilyTree.clean({ parents: Sync.st.people.filter(p => p.role === 'parent').slice(0, 2).map(p => ({ id: 'u' + p.user_id.replace(/-/g, '').slice(0, 12), name: p.display_name, user: p.user_id })) });
+  const shownTree = () => (Sync.st.tree !== undefined ? Sync.st.tree : db.meta.tree) || startTree();
+  /** Someone's name: as they call themselves in Little Log when they have an account this phone knows, else as written on the tree. */
+  function treeName(p) {
+    if (p && p.user) {
+      const m = Sync.st.people.find(x => x.user_id === p.user); if (m && m.display_name) return m.display_name;
+      for (const l of Object.values(Sync.st.familyPeople)) { const q = l.find(x => x.id === p.user); if (q && q.name) return q.name; }
+    }
+    return (p && p.name) || '';
+  }
+  /** The tree as the picture draws it, and what tapping each part does. */
+  function treeModel(t, edit) {
+    const acts = {}, now = Date.now();
+    const node = (p, kind) => {
+      const nm = treeName(p), key = 'p:' + p.id; acts[key] = () => treeCard(p.id);
+      return { key, label: p.call || nm, initial: firstOf(nm), title: [nm, p.call && p.call !== nm ? p.call : '', __(KIN[kind])].filter(Boolean).join(' · '), gone: !!p.gone };
+    };
+    const here = { id: db.meta.babyId, role: db.meta.role };
+    const kidsHere = kids().map(k => { const key = 'k:' + k.id, nm = kidName(k); acts[key] = () => kidCard(here, k, nm); return { key, label: nm, initial: firstOf(nm), title: [nm, kidAge(k, now)].filter(Boolean).join(' · '), color: k.color }; });
+    // an aunt or uncle's children: from their own family log when this phone has it (in their colours, to open), else as written
+    const cousins = sb => {
+      const m = sb.family && Sync.st.memberships.find(x => x.id === sb.family), live = m ? famKids(m) : [], names = m ? famKidNames(m) : [];
+      const listed = sb.kids.map((c, i) => {
+        const k = c.kid && live.find(x => x.id === c.kid), nm = k ? names[live.indexOf(k)] : treeName(c), key = 'p:' + c.id;
+        acts[key] = () => (k ? kidCard(m, k, nm) : treeCard(c.id));
+        return { key, label: c.call || nm, initial: firstOf(nm), title: [nm, k && kidAge(k, now), __('Cousin')].filter(Boolean).join(' · '), color: k ? k.color : Kids.PALETTE.other[i % Kids.PALETTE.other.length], gone: !!c.gone };
+      });
+      const born = live.filter(k => !sb.kids.some(c => c.kid === k.id)).map(k => {   // (born since they were added to the tree)
+        const nm = names[live.indexOf(k)], key = `c:${m.id}:${k.id}`; acts[key] = () => kidCard(m, k, nm);
+        return { key, label: nm, initial: firstOf(nm), title: [nm, kidAge(k, now), __('Cousin')].filter(Boolean).join(' · '), color: k.color };
+      });
+      return [...listed, ...born].slice(0, FamilyTree.MAX_KIDS);
+    };
+    const parents = t.parents.map(par => {
+      acts['+gp:p:' + par.id] = () => relativeForm({ kind: 'gp', at: par.id }); acts['+sib:p:' + par.id] = () => relativeForm({ kind: 'sib', at: par.id });
+      return { ...node(par, 'parent'),
+        gp: par.gp.map(g => { acts['+ggp:p:' + g.id] = () => relativeForm({ kind: 'ggp', at: g.id }); return { ...node(g, 'gp'), gp: g.gp.map(q => node(q, 'ggp')) }; }),
+        sibs: par.sibs.map(sb => ({ ...node(sb, 'sib'), partner: sb.partner ? node(sb.partner, 'partner') : null, kids: cousins(sb) })) };
+    });
+    acts['+parent'] = () => relativeForm({ kind: 'parent' });
+    const tr = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, __(v)]));
+    return { model: { title: __('Family tree'), rtl: I18n.rtl(), edit, text: tr({ parent: KIN.parent, gp: KIN.gp, ggp: KIN.ggp, sib: KIN.sib }), adds: tr(ADDS), kids: kidsHere, parents }, acts };
+  }
+  /** The family tree, for the children's relatives; the families you have asked to join, and adding one, for everyone. */
   function treePicHtml() {
-    const s = Sync.st, me = s.people.find(p => p.is_you), fams = kinFams(), mine = s.myRequests.filter(r => r.status === 'pending');
-    const crown = fams.find(m => m.role === 'parent') || fams.find(m => m.id === db.meta.babyId) || fams[0];
-    const seen = treeSeen(), now = Date.now(), acts = { me: async () => { if (!Sync.st.people.some(p => p.is_you)) await Sync.loadPeople().catch(() => {}); viewPerson(Auth.id); } };   // (your own card: your details, to fill in)
+    const s = Sync.st, mine = s.myRequests.filter(r => r.status === 'pending');
+    const add = `${mine.map(r => `<div class="fam pending"><div class="fhead"><span>⏳ ${__h('Request sent')}<br><small>${__h('Waiting for a parent to approve')}</small></span><button class="btn d" data-cancelreq="${esc(r.id)}">${__h('Cancel')}</button></div></div>`).join('')}
+      <button class="btn" id="famAdd" style="width:100%;margin-top:10px">+ ${__h('Add a family')}</button>`;
+    if (!RELATIVES.includes(db.meta.role)) return `<div class="card">${add}</div>`;   // (caregivers and the like help the family; its tree is for the family)
+    if (T.for !== db.meta.babyId) { T.for = db.meta.babyId; T.scroll = null; }
+    const t = shownTree(), edit = Sync.isParent(), { model, acts } = treeModel(t, edit);
+    const seen = treeSeen(), now = Date.now();
     let order = 0;
-    const sprout = key => {   // (the time each new part started growing is kept, so a render while it grows carries on)
+    model.sprout = key => {   // (the time each new part started growing is kept, so a render while it grows carries on)
       if (T.grow[key] == null) { if (seen && seen.has(key)) return null; T.grow[key] = now + Math.min(order++ * 80, 2000); }
       if (now - T.grow[key] > 1000) { delete T.grow[key]; return null; }
       return T.grow[key] - now;
     };
-    const families = fams.map(m => {
-      const on = m.id === db.meta.babyId, name = famName(m), names = famKidNames(m);
-      acts['f:' + m.id] = () => (on ? showFamList(m.id) : openFamily(m.id));
-      return { key: 'f:' + m.id, name, on, crown: m === crown, title: on ? __('{family}, showing', { family: name }) : __('Open {family}', { family: name }),
-        adults: kinOf(m).map(p => {
-          const key = `p:${m.id}:${p.id}`; acts[key] = () => (on ? viewPerson(p.id) : relativeCard(m, p));
-          return { key, initial: firstOf(p.name), label: p.name, title: `${p.name} · ${roleName(p.role)}` };
-        }),
-        kids: famKids(m).map((k, i) => {
-          const key = `k:${m.id}:${k.id}`, age = kidAge(k, now); acts[key] = () => kidCard(m, k, names[i]);
-          return { key, initial: firstOf(names[i]), label: names[i], title: age ? `${names[i]} · ${age}` : names[i], color: k.color };
-        }) };
-    });
-    const myName = (me && me.display_name) || '';
-    const { svg, keys } = FamilyTree.draw({ title: __('Family tree'), rtl: I18n.rtl(), sprout, families,
-      me: { key: 'me', initial: firstOf(myName || Auth.email), label: __('You'), title: myName ? `${__('You')} · ${myName}` : __('You') } });
-    T.acts = acts;
+    const { svg, keys, width, center } = FamilyTree.draw(model);
+    Object.assign(T, { acts, width, center });
     const all = new Set([...(seen || []), ...keys]);
     if (!seen || all.size > seen.size) { T.seen = all; try { localStorage.setItem(SEEN, JSON.stringify([...all].slice(-500))); } catch (e) { /* storage blocked: it grows in again next time */ } }
-    return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftreeimg">${svg}
-      ${fams.length ? '' : `<p class="note" style="text-align:center">${__h("Just you for now. It grows when you join your own family's log or a relative's.")}</p>`}
-      ${mine.map(r => `<div class="fam pending"><div class="fhead"><span>⏳ ${__h('Request sent')}<br><small>${__h('Waiting for a parent to approve')}</small></span><button class="btn d" data-cancelreq="${esc(r.id)}">${__h('Cancel')}</button></div></div>`).join('')}
-      <button class="btn" id="famAdd" style="width:100%;margin-top:10px">+ ${__h('Add a family')}</button></div>`;
+    const bare = !t.parents.some(p => p.gp.length || p.sibs.length);
+    return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftreeimg"><div class="ftreewrap">${svg.replace('<svg ', `<svg style="width:max(100%, ${Math.round(width * 0.9)}px)" `)}</div>
+      <div class="ftfoot">${bare ? `<p class="note fhint">${edit ? __h('Tap a + to add grandparents, great-grandparents, aunts, uncles and cousins.') : __h('A parent can add grandparents, aunts, uncles and cousins.')}</p>` : ''}
+      ${add}</div></div>`;
   }
-  /** A relative in another family log, tapped on the tree: open that family to see their details. */
-  function relativeCard(m, p) {
-    const fam = famName(m);
-    const close = showSheet(`<h3>${esc(p.name)}</h3><p class="note" style="margin-top:0">${esc(roleName(p.role))} · ${esc(fam)}</p>
-      <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button><button class="btn p" id="tcOpen">${__h('Open {family}', { family: fam })}</button></div>`);
+  /** Someone on the tree: who they are to the children, what the children call them, their contact details when they share this log;
+      a parent edits them here, and adds an aunt or uncle's partner and children. */
+  function treeCard(id) {
+    const w = FamilyTree.find(shownTree(), id); if (!w) return;
+    const p = w.p, edit = Sync.isParent(), member = p.user && Sync.st.people.find(x => x.user_id === p.user), sib = w.kind === 'sib' ? p : w.kind === 'partner' || w.kind === 'cousin' ? w.up : null;
+    const fam = sib && sib.family && Sync.st.memberships.find(m => m.id === sib.family && m.id !== db.meta.babyId);
+    const close = showSheet(`<h3>${esc(treeName(p))}</h3>
+      <p class="note" style="margin-top:0">${esc([__(KIN[w.kind]), w.kind === 'parent' ? '' : __("{name}'s side", { name: treeName(w.side) })].filter(Boolean).join(' · '))}</p>
+      ${p.call ? `<div class="stat"><span>${__h('What the children call them')}<br><b class="sel">${esc(p.call)}</b></span></div>` : ''}
+      ${p.gone ? `<p class="note">✦ ${__h('In loving memory')}</p>` : ''}
+      ${member ? detailsHtml(member.info || {}, member.email) : ''}
+      <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button>${fam ? `<button class="btn" id="tcOpen">${__h('Open {family}', { family: famName(fam) })}</button>` : ''}${edit ? `<button class="btn p" id="tcEdit">${__h('Edit')}</button>` : ''}</div>
+      ${edit && w.kind === 'sib' ? `<div class="row">${p.partner ? '' : `<button class="btn" id="tcPartner">+ ${__h('Add a partner')}</button>`}${p.kids.length < FamilyTree.MAX_KIDS ? `<button class="btn" id="tcCousin">+ ${__h('Add a cousin')}</button>` : ''}</div>` : ''}`);
     $('#sheet [data-close]').onclick = close;
-    $('#tcOpen').onclick = () => { close(); openFamily(m.id); };
+    if ($('#tcOpen')) $('#tcOpen').onclick = () => { close(); openFamily(fam.id); };
+    if ($('#tcEdit')) $('#tcEdit').onclick = () => relativeForm({ id });
+    if ($('#tcPartner')) $('#tcPartner').onclick = () => relativeForm({ kind: 'partner', at: id });
+    if ($('#tcCousin')) $('#tcCousin').onclick = () => relativeForm({ kind: 'cousin', at: id });
+  }
+  /** People this phone knows in Little Log who could be added: relatives in this log, and the parents and family in your relatives'
+      family logs (an aunt or uncle picked from their own family brings their partner and children along). */
+  function treeCandidates(t, kind) {
+    if (kind === 'cousin') return [];
+    const on = new Set(FamilyTree.walk(t).map(w => w.p.user).filter(Boolean)), out = [];
+    for (const p of Sync.st.people) if (RELATIVES.includes(p.role) && !on.has(p.user_id)) { on.add(p.user_id); out.push({ user: p.user_id, name: p.display_name || __('Member') }); }
+    for (const m of kinFams()) {
+      if (m.id === db.meta.babyId) continue;
+      for (const q of Sync.st.familyPeople[m.id] || []) if (q.id && !on.has(q.id)) { on.add(q.id); out.push({ user: q.id, name: q.name, fam: famName(m), family: q.role === 'parent' ? m.id : null }); }
+    }
+    return out.slice(0, 12);
+  }
+  /** An aunt or uncle picked from their own family log: their partner (its other parent) and their children come too. */
+  function fromFamily(pick) {
+    const m = Sync.st.memberships.find(x => x.id === pick.family); if (!m) return {};
+    const partner = (Sync.st.familyPeople[m.id] || []).find(q => q.role === 'parent' && q.id !== pick.user), names = famKidNames(m);
+    return { family: m.id, ...(partner ? { partner: { id: FamilyTree.newId(), name: partner.name, user: partner.id } } : {}), kids: famKids(m).map((k, i) => ({ id: FamilyTree.newId(), name: names[i], kid: k.id })) };
+  }
+  /** Add someone to the tree (kind, at: who they hang from), or change someone on it (id). Parents only. */
+  function relativeForm({ kind, at, id }) {
+    const t = shownTree(), w = id ? FamilyTree.find(t, id) : null, up = w ? w.up : at ? (FamilyTree.find(t, at) || {}).p : null;
+    if (id && !w) return;
+    kind = w ? w.kind : kind;
+    const p = w ? w.p : {}, picks = w ? [] : treeCandidates(t, kind), whose = WHOSE[kind] && up ? __(WHOSE[kind], { name: treeName(up) }) : '';
+    const close = showSheet(`<h3>🌱 ${w ? esc(treeName(p)) : __h(ADDS[kind])}</h3>${whose ? `<p class="note" style="margin-top:0">${esc(whose)}</p>` : ''}
+      ${picks.length ? `<label class="f">${__h('Already in Little Log')}</label><div class="chips">${picks.map((c, i) => chip('rlPick', i, `${esc(c.name)}${c.fam ? ` <small>· ${esc(c.fam)}</small>` : ''}`, false, '', true)).join('')}</div>` : ''}
+      <label class="f" for="rlName">${__h('Name')}</label><input id="rlName" type="text" maxlength="40" value="${esc(p.name || '')}">
+      <label class="f" for="rlCall">${__h('What the children call them')}</label><input id="rlCall" type="text" maxlength="24" value="${esc(p.call || '')}" placeholder="${__h('e.g. Nana, Grandpa Joe')}">
+      <div class="chips" style="margin-top:12px">${chip('rlGone', '1', __h('In loving memory'), !!p.gone)}</div>
+      <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="rlSave">${w ? __h('Save') : __h('Add')}</button></div>
+      ${w ? `<div class="row"><button class="btn d" id="rlRemove">${__h('Remove from the tree')}</button></div>` : ''}`);
+    $('#sheet [data-close]').onclick = close;
+    const pick = () => picks[(document.querySelector('#sheet [name=rlPick]:checked') || {}).value];
+    document.querySelectorAll('#sheet [name=rlPick]').forEach(r => r.onchange = () => { const c = pick(); if (c) $('#rlName').value = c.name; });
+    $('#rlName').oninput = () => { const c = pick(); if (c && $('#rlName').value.trim() !== c.name) document.querySelector('#sheet [name=rlPick]:checked').checked = false; };   // (typed someone else)
+    const save = async (change, done) => {
+      try { await Sync.loadPeople().catch(() => {}); await Sync.editTree(change, startTree()); close(); toast(__(done)); render(); }
+      catch (e) { toast(err(e)); }
+    };
+    $('#rlSave').onclick = () => {
+      const name = $('#rlName').value.trim(), call = $('#rlCall').value.trim(), gone = !!document.querySelector('#sheet [name=rlGone]:checked'), c = pick();
+      if (!name) return toast(__('Enter a name'));
+      if (w) return save(tr => FamilyTree.update(tr, id, { name, call, gone }), N_('Saved'));
+      const person = { id: FamilyTree.newId(), name, call, gone, ...(c ? { user: c.user } : {}), ...(c && c.family && kind === 'sib' ? fromFamily(c) : {}) };
+      save(tr => FamilyTree.add(tr, kind, at, person), N_('Saved'));
+    };
+    if ($('#rlRemove')) $('#rlRemove').onclick = () => {
+      if (!confirm(__('Remove {name} from the family tree? Anyone added through them goes too.', { name: treeName(p) }))) return;
+      save(tr => FamilyTree.remove(tr, id), N_('Removed'));
+    };
   }
   /** A child tapped on the tree: their age and allergies, and their day (their family is opened first). */
   function kidCard(m, k, name) {
@@ -507,12 +607,6 @@ const Acct = (() => {
       if (m.id !== db.meta.babyId && !(await openFamily(m.id))) return;
       setKid(k.id); tab = 'day'; viewDay = startOfDay(Date.now()); render(); window.scrollTo(0, 0);
     };
-  }
-  /** The families list below, opened at family `id`. */
-  function showFamList(id) {
-    const d = document.querySelector('details[data-grp=famlist]'); if (!d) return;
-    d.open = true; openGroups.add('famlist');
-    (d.querySelector(`[data-fam="${CSS.escape(id)}"]`) || d).scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
   /** Every family you are family in: its children and relatives (the family shown: everyone in it, to tap), switching, and the
       requests to join one you are a parent in. A twirl-down in place of the family list; it opens by itself when a new request
@@ -586,7 +680,7 @@ const Acct = (() => {
     if (!Auth.configured || !db.meta.babyId) return `<div class="card"><b>${__h('Family sharing is off')}</b><p class="note">${Auth.configured ? __h('Create a baby log to share it.') : __h("Account service isn't configured (see {file}), so this device keeps its own private log.", { file: 'SETUP.md' })}</p></div>`;
     const s = Sync.st, parent = Sync.isParent();
     if (Date.now() - (F.treeAt || 0) > 30000) refreshTree();
-    if (membersLoadedFor !== db.meta.babyId) { membersLoadedFor = db.meta.babyId; Promise.all([Sync.loadPeople(), Sync.loadRetired(), parent ? Sync.loadAdmin() : null, Sync.loadDevices(), Sync.myDevices().then(r => { F.myPhones = r; }), Sync.securityCode().then(c => { F.secCode = c; })]).then(() => { if (tab === 'family') render(); }).catch(() => {}); }
+    if (membersLoadedFor !== db.meta.babyId) { membersLoadedFor = db.meta.babyId; Promise.all([Sync.loadPeople(), Sync.loadRetired(), RELATIVES.includes(db.meta.role) ? Sync.loadTree().catch(() => null) : null, parent ? Sync.loadAdmin() : null, Sync.loadDevices(), Sync.myDevices().then(r => { F.myPhones = r; }), Sync.securityCode().then(c => { F.secCode = c; })]).then(() => { if (tab === 'family') render(); }).catch(() => {}); }
     const person = m => `<div class="stat"><button class="pbtn" data-pview="${esc(m.user_id)}"><span>${esc(m.display_name || __('Member'))}${m.is_you ? ` <small>${__h('(you)')}</small>` : ''}<br><small>${m.role ? esc(roleName(m.role)) : ''}${m.info && m.info.relation ? ' · ' + esc(m.info.relation) : ''}${m.email && m.role ? ' · ' + esc(m.email) : ''}</small></span><span class="chev" aria-hidden="true">›</span></button>
       ${parent && !m.is_you ? `<span class="btns"><button class="btn" data-person="${esc(m.user_id)}" style="padding:6px 12px">${__h('Edit')}</button>${HELPERS.includes(m.role) ? `<button class="btn" data-retire="${esc(m.user_id)}" style="padding:6px 12px">${__h('Retire')}</button>` : ''}</span>` : ''}</div>`;
     // with roles shown (people allowed to see the family list): the relatives are in the families twirl-down (in a family you help
@@ -653,8 +747,13 @@ const Acct = (() => {
       try { await Sync.removePhone(b.dataset.rmphone); F.myPhones = await Sync.myDevices(); render(); toast(__('Phone removed')); } catch (e) { toast(err(e)); }
     });
     el('famAdd').onclick = addFamily;
-    const pic = document.querySelector('.ftreesvg');   // a tap on the tree: a person, a child or a family
-    if (pic) pic.onclick = e => { const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act(); };
+    const pic = document.querySelector('.ftreesvg'), wrap = pic && pic.parentElement;   // a tap on the tree: someone on it, or a bud to add someone
+    if (pic) {
+      pic.onclick = e => { const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act(); };
+      // a tree wider than the screen scrolls sideways: it opens at the trunk, and stays where it was scrolled to
+      wrap.scrollLeft = T.scroll != null ? T.scroll : Math.max(0, (T.center * pic.clientWidth) / T.width - wrap.clientWidth / 2);
+      wrap.onscroll = () => { T.scroll = wrap.scrollLeft; };
+    }
     document.querySelectorAll('[data-cancelreq]').forEach(b => b.onclick = async () => { try { await Sync.cancelRequest(b.dataset.cancelreq); render(); } catch (e) { toast(err(e)); } });
     document.querySelectorAll('[data-famopen]').forEach(b => b.onclick = () => openFamily(b.dataset.famopen, b));
     clearInterval(F.treeTimer);   // while one of your requests waits, look every 15 s for the approval
@@ -777,7 +876,7 @@ const Acct = (() => {
     join_requested: l => __('{email} asked to join as {role}', l.v),
     member_approved: l => __('{actor} approved {email} as {role}', l.v), request_denied: l => __('{actor} denied {email}', l.v),
     role_changed: l => __('{actor} made {person} a {role}', l.v), permissions_changed: l => __('{actor} changed what {person} can do', l.v),
-    member_removed: l => __('{actor} removed {person}', l.v), member_retired: l => __('{actor} retired {person}', l.v), left: l => __('{person} left the log', { person: l.detail.person || l.actor }),
+    member_removed: l => __('{actor} removed {person}', l.v), member_retired: l => __('{actor} retired {person}', l.v), tree_changed: l => __('{actor} changed the family tree', l.v), left: l => __('{person} left the log', { person: l.detail.person || l.actor }),
     mfa_reset: l => __('{actor} reset two-step verification for {person}', l.v),
   };
   const activityLine = l => {

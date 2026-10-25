@@ -1,8 +1,9 @@
 // More than one family: someone with their own family log who also looks after a sister's children and, now and then, a
-// brother-in-law's. The Family tab draws their family tree as a picture that grows as people join (tap a person, a child or a
-// family), with the families listed in a twirl-down below; another family is added by scanning an invite from one of its parents
-// (who approves it), requests to join any family they are a parent in are approved from that list, and switching between
-// families is quick and loses nothing, even offline.   node tests/families.test.js
+// brother-in-law's. The Family tab draws the children's family tree (parents, grandparents and great-grandparents, aunts, uncles
+// and cousins), which the parents grow by adding people, end-to-end encrypted and shown only to relatives; the families are listed
+// in a twirl-down below. Another family is added by scanning an invite from one of its parents (who approves it), requests to
+// join any family they are a parent in are approved from that list, and switching between families is quick and loses nothing,
+// even offline.   node tests/families.test.js
 const assert = require('assert');
 /* global Store, dayKid */
 const { setup } = require('./lib/harness');
@@ -24,9 +25,17 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       kids: [...f.querySelectorAll('.fkid')].map(k => k.lastChild.textContent.trim()), role: (f.querySelector('.fhead small') || {}).textContent || '',   // (a child's name comes after the initial in its circle)
     })));
     const family = () => J.evaluate(() => { tab = 'family'; render(); });
-    // the picture: each part that can be tapped, and whether it is growing in
-    const pic = (P = J) => P.evaluate(() => [...document.querySelectorAll('.ftreesvg [data-tk]')].map(n => ({ key: n.dataset.tk, label: n.getAttribute('aria-label'), sprout: !!n.closest('.sprout') })));
+    // the picture: each part that can be tapped (people, and the buds where a parent adds someone), and whether it is growing in
+    const pic = (P = J) => P.evaluate(() => [...document.querySelectorAll('.ftreesvg [data-tk]')].map(n => ({ key: n.dataset.tk, label: n.getAttribute('aria-label'), sprout: !!n.closest('.sprout'), gone: n.classList.contains('gone') })));
     const tap = (key, P = J) => P.click(`.ftreesvg [data-tk="${key}"]`);
+    const keyOf = (label, P = J) => P.evaluate(l => { const n = [...document.querySelectorAll('.ftreesvg [data-tk]')].find(x => (x.getAttribute('aria-label') || '').startsWith(l)); return n ? n.dataset.tk : null; }, label);
+    const addTo = async (bud, name, { call = '', gone = false, pick = null } = {}) => {
+      await tap(bud); await J.waitForSelector('#rlName');
+      if (pick != null) await J.click(`#sheet input[name=rlPick][value="${pick}"]`); else await J.fill('#rlName', name);
+      if (call) await J.fill('#rlCall', call);
+      if (gone) await J.click('#sheet input[name=rlGone]');
+      await J.click('#rlSave'); await J.waitForFunction(() => document.querySelector('#sheet').hidden);
+    };
     const openList = async () => { if (!(await J.evaluate(() => document.querySelector('details.famlist').open))) await J.click('details.famlist > summary'); };
     const askToJoin = async code => {
       await family(); await J.evaluate(() => { document.querySelector('#toast').textContent = ''; });
@@ -35,18 +44,20 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     };
     const ids = {};
     for (const [k, P] of [['jo', J], ['sarah', S], ['tom', T]]) ids[k] = await P.evaluate(() => db.meta.babyId);
-    const leo = await J.evaluate(() => kids()[0].id), ava = await S.evaluate(() => kids()[0].id), sarahId = await S.evaluate(() => Auth.id);
+    const leo = await J.evaluate(() => kids()[0].id), ava = await S.evaluate(() => kids()[0].id);
+    const jo = 'p:u' + (await J.evaluate(() => Auth.id)).replace(/-/g, '').slice(0, 12);   // (Jo on her children's tree, before anyone is added)
     await J.evaluate(() => { const k = kids()[0].id; db.events.push({ id: 'jo-own', type: 'feed', ts: Date.now() - 3600e3, data: { kind: 'bottle', ml: 120 }, note: 'at home', updated: stamp(), by: Auth.id, child: k }); save(); });
     await syncNow(J);
     await S.evaluate(() => { const k = kids()[0].id; db.events.push({ id: 'sarah-1', type: 'sleep', ts: Date.now() - 7200e3, end: Date.now() - 5400e3, data: {}, note: 'nap', updated: stamp(), by: Auth.id, child: k }); save(); });
     await syncNow(S);
 
-    await step('the Family tab starts with a picture of the family tree: you at the foot of the trunk, your family as its crown with its children, growing in the first time', async () => {
+    await step('the Family tab starts with the children\'s family tree: their parent where the trunk forks, the child on the grass, growing in the first time, and buds where a parent can add people', async () => {
       await J.evaluate(() => Sync.loadPeople()); await family();
-      const first = await pic();
-      assert.deepEqual(first.map(n => n.key), [`f:${ids.jo}`, `k:${ids.jo}:${leo}`, 'me']);
-      assert.deepEqual(first.map(n => n.label), ['Your family, showing', 'Leo', 'You · Jo']);
-      assert(first.every(n => n.sprout), 'the first time, all of it grows in');
+      const first = await pic(), people = first.filter(n => !n.key.startsWith('+'));
+      assert.deepEqual(people.map(n => [n.key, n.label]), [[jo, 'Jo · Parent'], [`k:${leo}`, 'Leo']]);
+      assert.deepEqual(first.filter(n => n.key.startsWith('+')).map(n => n.key).sort(), ['+gp:' + jo, '+parent', '+sib:' + jo].sort(), 'the other parent, a grandparent, an aunt or uncle');
+      assert(people.every(n => n.sprout), 'the first time, all of it grows in');
+      assert(/Tap a \+ to add grandparents, great-grandparents, aunts, uncles and cousins/.test(await J.textContent('.ftreeimg')));
       await J.waitForTimeout(1200); await family();
       assert((await pic()).every(n => !n.sprout), 'once grown, it stays put');
       assert.equal(await J.isVisible('#famSw'), false, 'no family switcher with one family');
@@ -66,27 +77,47 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await J.click('#sheet [data-close]');
     });
 
-    await step('asking to join the sister\'s family: the request waits under the picture; once she approves, her family grows on the tree as a branch of its own, with her and her children', async () => {
+    await step('asking to join the sister\'s family: the request waits under the picture; once she approves, her family is in the list, named after her, with her child', async () => {
       await askToJoin(await invite(S, 'family', {}));   // (as family: relatives' families are the family tree)
       assert.deepEqual((await tree()).map(f => [f.pending, f.name]), [[false, 'Your family'], [true, '']]);
       assert(/Waiting for a parent to approve/.test(await J.textContent('.ftreeimg .fam.pending')), 'under the picture');
       await approveAll(S);
-      // the tree looks again every 15 seconds while a request waits; her family grows on it as a branch of its own
-      const grown = await (await J.waitForFunction(id => { const f = document.querySelector(`.ftreesvg [data-tk="f:${id}"]`); return f && { family: !!f.closest('.sprout'), you: !!document.querySelector('.ftreesvg [data-tk=me]').closest('.sprout'), branch: document.querySelectorAll('.ftreesvg path.branch').length }; }, ids.sarah, { timeout: 40000 })).jsonValue();
-      assert.deepEqual(grown, { family: true, you: false, branch: 1 }, 'the new family sprouts on a new branch; the rest stays put');
-      await J.waitForFunction(() => document.querySelectorAll('details.famlist .fam:not(.pending)').length === 2);
+      // the list looks again every 15 seconds while a request waits
+      await J.waitForFunction(() => document.querySelectorAll('details.famlist .fam:not(.pending)').length === 2, null, { timeout: 40000 });
       assert(/You're in: Sarah's family/.test(await J.textContent('#toast')));
       assert.deepEqual(await tree(), [{ name: 'Your family', pending: false, on: true, kids: ['Leo'], role: 'Parent' }, { name: "Sarah's family", pending: false, on: false, kids: ['Ava'], role: 'Family member' }]);
       assert(/Family: Sarah/.test(await J.textContent(`details.famlist .fam[data-fam="${ids.sarah}"]`)), 'with the relatives in it');
-      await J.waitForFunction(k => document.querySelector(`.ftreesvg [data-tk="${k}"]`), `p:${ids.sarah}:${sarahId}`);
-      const keys = (await pic()).map(n => n.key);
-      assert.deepEqual(keys, [`f:${ids.jo}`, `k:${ids.jo}:${leo}`, `f:${ids.sarah}`, `p:${ids.sarah}:${sarahId}`, `k:${ids.sarah}:${ava}`, 'me'], 'Sarah and Ava on her branch');
       assert.equal(await J.isVisible('#famSw'), true, 'the switcher at the top, now there are two'); assert(/Your family/.test(await J.textContent('#famSw')));
     });
 
+    await step('a parent grows the tree: a grandparent typed in with what the children call her, a great-grandparent in loving memory, and the sister picked from Little Log, who brings her child along as a cousin; the server sees none of it', async () => {
+      await tap('+gp:' + jo); await J.waitForSelector('#rlName');
+      assert(/Add a grandparent/.test(await J.textContent('#sheet h3')) && /Jo's parent/.test(await J.textContent('#sheet')));
+      await J.click('#sheet [data-close]');
+      await addTo('+gp:' + jo, 'Rose Miller', { call: 'Nana' });
+      // the new grandparent sprouts in; the rest stays put
+      const grown = await (await J.waitForFunction(() => { const n = [...document.querySelectorAll('.ftreesvg [data-tk]')].find(x => /^Rose Miller · Nana · Grandparent/.test(x.getAttribute('aria-label'))); return n && { rose: !!n.closest('.sprout'), leo: !!document.querySelector('.ftreesvg [data-tk^="k:"]').closest('.sprout'), label: n.querySelector('.ftl').textContent }; })).jsonValue();
+      assert.deepEqual(grown, { rose: true, leo: false, label: 'Nana' }, 'shown as the children call her');
+      const rose = await keyOf('Rose Miller');
+      await addTo('+ggp:' + rose, 'Edith', { gone: true });
+      assert.deepEqual((await pic()).filter(n => /^Edith/.test(n.label)).map(n => [n.label, n.gone]), [['Edith · Great-grandparent', true]], 'remembered');
+      await tap('+sib:' + jo); await J.waitForSelector('#rlName');
+      assert(/Sarah · Sarah's family/.test(await J.textContent('#sheet')), 'people already in Little Log, to pick');
+      await J.click('#sheet [data-close]');
+      await addTo('+sib:' + jo, '', { pick: 0 });
+      await J.waitForFunction(() => [...document.querySelectorAll('.ftreesvg [data-tk]')].some(x => /^Ava · Cousin/.test(x.getAttribute('aria-label'))));
+      const kin = (await pic()).filter(n => !n.key.startsWith('+')).map(n => n.label);
+      assert(kin.includes('Sarah · Aunt or uncle') && kin.includes('Ava · Cousin'), JSON.stringify(kin));
+      assert.equal(await J.evaluate(() => getComputedStyle([...document.querySelectorAll('.ftreesvg [data-tk]')].find(x => /^Ava/.test(x.getAttribute('aria-label'))).querySelector('.disc')).fill), await S.evaluate(() => { const d = document.createElement('div'); d.style.color = kids()[0].color; document.body.append(d); const c = getComputedStyle(d).color; d.remove(); return c; }), 'in her own colour, from her own family');
+      // sealed on Jo's phone: the server keeps only ciphertext
+      const row = (await H.q('select blob, epoch from trees where baby_id=$1', [ids.jo]))[0];
+      assert(row && row.blob.length > 100 && !/Rose|Nana|Edith|Sarah|Ava/.test(row.blob), 'no names on the server');
+      assert((await J.evaluate(() => Sync.activity().then(r => r.map(l => l.action)))).includes('tree_changed'), 'in the activity log');
+    });
+
     await step('tapping the sister on the tree offers her family; opening it shows her children and her log; what is logged there reaches her phone', async () => {
-      await tap(`p:${ids.sarah}:${sarahId}`);
-      assert(/Sarah/.test(await J.textContent('#sheet h3')) && /Parent · Sarah's family/.test(await J.textContent('#sheet')));
+      await tap(await keyOf('Sarah'));
+      assert(/Sarah/.test(await J.textContent('#sheet h3')) && /Aunt or uncle · Jo's side/.test(await J.textContent('#sheet')));
       await J.click('#tcOpen');
       await J.waitForFunction(id => db.meta.babyId === id && !Sync.switching, ids.sarah);
       assert(/Now showing Sarah's family/.test(await J.textContent('#toast')));
@@ -99,6 +130,9 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await family(); assert.deepEqual((await tree()).map(f => [f.name, f.on]), [['Your family', false], ["Sarah's family", true]]);
       // joined with a typed code, not the QR code: her keys came early (for the tree), but the security code must still be compared
       assert(/Check this security code/.test(await J.textContent('#view')), 'asked to compare the security code');
+      // her children's tree: Jo, as family, sees it but adds no one
+      await J.waitForFunction(() => [...document.querySelectorAll('.ftreesvg [data-tk]')].some(x => /^Sarah · Parent/.test(x.getAttribute('aria-label')))); const theirs = await pic();
+      assert(theirs.some(n => n.label === 'Sarah · Parent') && theirs.some(n => n.label === 'Ava') && !theirs.some(n => n.key.startsWith('+')), JSON.stringify(theirs));
     });
 
     await step('switching back is instant and loses nothing, even offline: a change not sent yet stays with its family and goes when it is open again', async () => {
@@ -113,8 +147,8 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.deepEqual(r.kept, [ids.sarah], "the sister's family is kept on the phone"); assert.deepEqual(r.unsent, { [ids.sarah]: 1 });
       await family(); await J.waitForFunction(id => /1 change not sent yet: it goes when you open this family/.test(document.querySelector(`details.famlist .fam[data-fam="${id}"]`).textContent), ids.sarah);
       J.context().__down = false;
-      // a child tapped on the tree: her day, in her family
-      await tap(`k:${ids.sarah}:${ava}`);
+      // a cousin tapped on the tree (kept on the phone, so it shows offline too): her day, in her family
+      await tap(await keyOf('Ava'));
       assert(/Ava/.test(await J.textContent('#sheet h3')) && /Sarah's family/.test(await J.textContent('#sheet')));
       await J.click('#tcDay'); await J.waitForFunction(([id, k]) => db.meta.babyId === id && !Sync.switching && tab === 'day' && dayKid() === k, [ids.sarah, ava]);
       await syncNow(J); await syncNow(S);
@@ -164,11 +198,12 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert(kin.some(t => /Gran/.test(t)) && kin.some(t => /\(you\)/.test(t)) && !kin.some(t => /Amy/.test(t)), 'the relatives, in the families list: ' + JSON.stringify(kin));
       const helpers = await J.textContent('#helpers');
       assert(/Amy/.test(helpers) && /Medical assistant/.test(helpers) && !/Gran/.test(helpers), helpers);
-      // on the tree: Gran grows on your family; a medical assistant is not family, so not on the tree
-      const nodes = (await pic()).map(n => n.key);
-      assert(nodes.includes(`p:${ids.jo}:${gran}`) && !nodes.some(k => k.endsWith(amy)), JSON.stringify(nodes));
-      await tap(`p:${ids.jo}:${gran}`); assert(/Gran/.test(await J.textContent('#sheet h3')) && /Family member/.test(await J.textContent('#sheet'))); await J.click('#pvClose');
-      await tap(`f:${ids.jo}`); await J.waitForFunction(() => document.querySelector('details.famlist').open);   // your own family: the list opens at it
+      // the children's tree: Gran (family) sees it, the same, but adds no one; a medical assistant is not family: no tree, and the server won't hand it over
+      await G.evaluate(() => { tab = 'family'; render(); }); await G.waitForFunction(() => [...document.querySelectorAll('.ftreesvg [data-tk]')].some(x => /^Rose Miller/.test(x.getAttribute('aria-label'))));
+      assert.equal((await pic(G)).filter(n => n.key.startsWith('+')).length, 0, 'no buds for her');
+      await A.evaluate(() => { tab = 'family'; render(); }); await A.waitForSelector('#syncNow');
+      assert.equal(await A.$('.ftreeimg'), null, 'no tree for a medical assistant');
+      assert(/no access/.test(await A.evaluate(() => Sync.loadTree().then(() => 'handed over', e => e.message))));
       assert.equal(await J.$$eval(`[data-retire="${gran}"]`, x => x.length), 0, 'relatives are never retired');
       await J.click(`#helpers [data-pview="${amy}"]`);
       const card = await J.textContent('#sheet'); assert(/\(555\) 010-2468/.test(card) && /Westside Pediatrics/.test(card) && /Visiting nurse/.test(card), 'her details: ' + card);
@@ -199,11 +234,11 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       const helped = await J.evaluate(() => [...document.querySelectorAll('.fhelp .fam')].map(f => [f.querySelector('.fhead b').textContent, f.querySelector('.fhead small').textContent]));
       assert.deepEqual(helped, [['Noah', 'Babysitter']]);
       assert(/Families you help with/.test(await J.textContent('#view')));
-      assert(!(await pic()).some(n => n.key.includes(ids.tom)), 'not on the family tree');
     });
 
     await step('removed from a family: it leaves the app, and nothing of it stays on the phone', async () => {
       await J.click(`[data-famopen="${ids.tom}"]`); await J.waitForFunction(id => db.meta.babyId === id && !Sync.switching, ids.tom); await syncNow(J);
+      await family(); assert.equal(await J.$('.ftreeimg'), null, 'a family she babysits for: its tree is for its family');
       await J.click('#famSw'); await J.click(`#sheet [data-fampick="${ids.jo}"]`); await J.waitForFunction(id => db.meta.babyId === id && !Sync.switching, ids.jo);
       assert((await J.evaluate(() => Store.parkedIds())).includes(ids.tom));
       const jo = await J.evaluate(() => Auth.id);

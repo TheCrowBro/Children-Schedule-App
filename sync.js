@@ -10,7 +10,7 @@ const Sync = (() => {
   let busy = false, busyAt = 0, again = false, timer = null, started = false, peopleAt = 0, failures = 0, retryAt = 0;
   let flight = Promise.resolve(), switching = false;   // (the sync under way, and a switch to another family log)
   // What belongs to one family log; the rest of db.meta belongs to the phone (language, clock face, region, the sync clock …)
-  const OWN = ['role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'art', 'solids', 'ms', 'kid'];
+  const OWN = ['role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'art', 'solids', 'ms', 'kid', 'tree'];
 
   const enabled = () => Auth.configured && Auth.signedIn;
   const linked = () => enabled() && !!db.meta.babyId;
@@ -289,6 +289,30 @@ const Sync = (() => {
     st.retired = rows; return rows;
   }
   const forgetRetired = async id => { await Auth.rpc('forget_retired', { p_id: id }); await loadRetired(); };
+  /** The children's family tree, for their relatives (null: none made yet). It is kept on the phone too, to show offline. */
+  async function loadTree() {
+    const b = db.meta.babyId, rows = list(await Auth.rpc('get_tree', { p_baby: b }));
+    const t = rows.length && rows[0].blob ? await E2EE.openTree(b, rows[0].blob, rows[0].epoch) : null;
+    if (b !== db.meta.babyId) return t;   // (switched family meanwhile)
+    st.tree = t;
+    if (JSON.stringify(db.meta.tree || null) !== JSON.stringify(t)) { if (t) db.meta.tree = t; else delete db.meta.tree; save(true); }
+    return t;
+  }
+  /** Change the family tree (parents only): `fn` changes the latest copy (made from `start` when there is none yet) and says false
+      when it can't, because what it changes is gone. Sealed here, saved on the server. */
+  async function editTree(fn, start) {
+    const b = db.meta.babyId;
+    for (let again = true; ; again = false) {
+      const t = FamilyTree.clean((await loadTree()) || start);
+      if (fn(t) === false) throw new Error(N_('The family tree changed meanwhile: try again'));
+      try {
+        const { blob, epoch } = await E2EE.sealTree(b, t);
+        await Auth.rpc('set_tree', { p_baby: b, p_blob: blob, p_epoch: epoch });
+      } catch (e) { if (again && /stale epoch/.test((e && e.message) || '')) { await run(true); continue; } throw e; }   // (new keys since: fetch them and try once more)
+      if (b === db.meta.babyId) { st.tree = t; db.meta.tree = t; save(true); }
+      return t;
+    }
+  }
   async function setMember(user, role, perms) {
     // Someone newly allowed to see health notes needs the health key for each of their phones.
     const p = st.people.find(x => x.user_id === user), had = !!p && (p.role === 'parent' || !!(p.perms && p.perms.view_health));
@@ -356,7 +380,7 @@ const Sync = (() => {
       else { reset(); db.baby = { name: m.name || '', birth: m.birth || '', kids: Kids.clean(m.kids, m.name, m.birth) }; }
       if (db.meta.unverifiedIn && db.meta.unverifiedIn[id]) { db.meta.unverified = true; delete db.meta.unverifiedIn[id]; }   // (its keys came with the family tree)
       db.meta.babyId = id; db.meta.role = m.role; db.meta.perms = m.perms;
-      st.people = []; st.devices = []; st.requests = []; st.invites = []; st.retired = []; st.needsAccess = false; st.denied = 0; peopleAt = 0;
+      st.people = []; st.devices = []; st.requests = []; st.invites = []; st.retired = []; st.tree = undefined; st.needsAccess = false; st.denied = 0; peopleAt = 0;
       save(true); await Store.whenSaved();
       if (kept) await Store.drop(id);   // (it is the main copy now)
     } finally { switching = false; }
@@ -412,5 +436,5 @@ const Sync = (() => {
 
   return { st, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
     createInvite, rescind, decide, setMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
-    pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyPeople, retireMember, loadRetired, forgetRetired, get switching() { return switching; }, onChange: null, onSessionLost: null };
+    pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyPeople, retireMember, loadRetired, forgetRetired, loadTree, editTree, get switching() { return switching; }, onChange: null, onSessionLost: null };
 })();

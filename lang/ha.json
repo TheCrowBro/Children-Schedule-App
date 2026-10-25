@@ -1444,7 +1444,6 @@
   "one": "Canji {n} bai tafi ba tukuna: zai tafi idan kun buɗe wannan iyalin.",
   "other": "Canje-canje {n} ba su tafi ba tukuna: za su tafi idan kun buɗe wannan iyalin."
  },
- "1efd4xo": "Ku",
  "1b0i0ln": "Ana sauyawa…",
  "1p7x3j8": "Yanzu ana nuna: {family}",
  "1uu4057": "Ba a iya sauyawa ba: {reason}",
@@ -1474,15 +1473,12 @@
  "arar4a": "An ajiye {person} a tarihi ta hannun {actor}",
  "17n774r": "Kuna kula da yaran wani? Ku karanta lambar QR da iyayensu suka nuna muku. Bayan sun amince, iyalinsu zai bayyana a wannan shafi: a bishiyar iyalinku idan kuna cikin dangi, ko kuma a “Iyalan da kuke taimaka wa”.",
  "195vm2m": "Kuna kula da yaran wani? Ku roƙi iyayensu su buɗe shafin Iyali → Gayyaci wani a manhajar Little Log ɗinsu, su zaɓi abin da za ku iya yi, sannan su nuna muku lambar QR. Ku karanta ta a nan. Bayan sun amince, iyalinsu zai bayyana a nan: a bishiyar iyalinku idan kuna cikin dangi, ko kuma a “Iyalan da kuke taimaka wa”. Kuna iya sauyawa tsakanin iyalai a kowane lokaci.",
- "ymkivl": "Ku, iyalinku da iyalan danginku, an zana su kamar bishiya mai girma yayin da mutane ke shiga. Ku danna mutum don ganin bayanai, yaro don ganin ranarsa, ko iyali don komawa gare shi.",
  "1dv359l": "Iyalai da dangi",
  "1xzrjrm": {
   "one": "shekara {n}",
   "other": "shekaru {n}"
  },
- "vtzopg": "{family}, ana nunawa",
  "thlxlz": "Buɗe {family}",
- "5dqw62": "A yanzu ku kaɗai ne. Bishiyar za ta girma idan kun shiga rajistar iyalinku ko ta danginku.",
  "wo8v8p": "Nuna ranar {name}",
  "1d71jrf": {
   "one": "Buƙata {n} na jiran amincewarku",

@@ -1468,7 +1468,6 @@
   "many": "{n} alterações ainda não enviadas: elas serão enviadas quando você abrir esta família.",
   "other": "{n} alterações ainda não enviadas: elas serão enviadas quando você abrir esta família."
  },
- "1efd4xo": "Você",
  "1b0i0ln": "Trocando…",
  "1p7x3j8": "Exibindo agora: {family}",
  "1uu4057": "Não foi possível trocar de família: {reason}",
@@ -1499,16 +1498,13 @@
  "arar4a": "{actor} arquivou {person}",
  "17n774r": "Cuida dos filhos de outra pessoa? Escaneie o QR code que um dos pais mostrar para você. Depois da aprovação, a família deles aparece nesta página: na sua árvore da família, se você é da família, ou em “Famílias que você ajuda”.",
  "195vm2m": "Cuida dos filhos de outra pessoa? Peça a um dos pais que abra a aba Família → Convidar alguém no Little Log, escolha o que você poderá fazer e mostre o QR code para você. Escaneie o código aqui. Depois da aprovação, a família deles aparece aqui: na sua árvore da família, se você é da família, ou em “Famílias que você ajuda”. Você pode trocar de família quando quiser.",
- "ymkivl": "Você, sua família e as famílias dos seus parentes, num desenho de árvore que cresce conforme as pessoas entram. Toque em alguém para ver os dados, numa criança para ver o dia dela ou numa família para mudar para ela.",
  "1dv359l": "Famílias e parentes",
  "1xzrjrm": {
   "one": "{n} ano",
   "many": "{n} anos",
   "other": "{n} anos"
  },
- "vtzopg": "{family}, diário aberto",
  "thlxlz": "Abrir {family}",
- "5dqw62": "Por enquanto, só você. A árvore cresce quando você entra no diário da sua família ou no de outros parentes.",
  "wo8v8p": "Ver o dia de {name}",
  "1d71jrf": {
   "one": "{n} pedido aguardando sua aprovação",

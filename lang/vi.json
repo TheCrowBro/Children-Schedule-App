@@ -1420,7 +1420,6 @@
  "11didv": {
   "other": "{n} thay đổi chưa được gửi: sẽ được gửi khi bạn mở gia đình này."
  },
- "1efd4xo": "Bạn",
  "1b0i0ln": "Đang chuyển…",
  "1p7x3j8": "Đang xem: {family}",
  "1uu4057": "Không chuyển được: {reason}",
@@ -1449,14 +1448,11 @@
  "arar4a": "{actor} đã lưu trữ {person}",
  "17n774r": "Bạn đang chăm con của người khác? Quét mã QR mà bố hoặc mẹ của bé cho bạn xem. Khi họ duyệt, gia đình đó sẽ hiện trên trang này: trong cây gia đình của bạn nếu bạn là người thân, hoặc trong mục “Gia đình bạn giúp đỡ”.",
  "195vm2m": "Bạn đang chăm con của người khác? Hãy nhờ bố hoặc mẹ của bé mở thẻ Gia đình → Mời thêm người trong Little Log của họ, chọn những việc bạn được làm và cho bạn xem mã QR. Quét mã đó tại đây. Khi họ duyệt, gia đình đó sẽ hiện ở đây: trong cây gia đình của bạn nếu bạn là người thân, hoặc trong mục “Gia đình bạn giúp đỡ”. Bạn có thể chuyển qua lại giữa các gia đình bất cứ lúc nào.",
- "ymkivl": "Bạn, gia đình bạn và gia đình của người thân, được vẽ thành một cái cây lớn dần khi có thêm người tham gia. Chạm vào một người để xem thông tin, vào một bé để xem ngày của bé, hoặc vào một gia đình để chuyển sang.",
  "1dv359l": "Gia đình và người thân",
  "1xzrjrm": {
   "other": "{n} tuổi"
  },
- "vtzopg": "{family}, đang xem",
  "thlxlz": "Mở {family}",
- "5dqw62": "Hiện chỉ có bạn. Cây sẽ lớn dần khi bạn tham gia nhật ký của gia đình mình hoặc của người thân.",
  "wo8v8p": "Xem ngày của {name}",
  "1d71jrf": {
   "other": "{n} yêu cầu đang chờ bạn duyệt"

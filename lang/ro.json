@@ -1468,7 +1468,6 @@
   "few": "{n} modificări încă netrimise: vor fi trimise când deschizi această familie.",
   "other": "{n} de modificări încă netrimise: vor fi trimise când deschizi această familie."
  },
- "1efd4xo": "Tu",
  "1b0i0ln": "Se schimbă…",
  "1p7x3j8": "Acum vezi: {family}",
  "1uu4057": "Nu s-a putut schimba familia: {reason}",
@@ -1499,16 +1498,13 @@
  "arar4a": "{actor} a mutat în arhivă: {person}",
  "17n774r": "Ai grijă de copiii altcuiva? Scanează codul QR pe care ți-l arată unul dintre părinți. După aprobare, familia lor apare pe această pagină: în arborele familiei, dacă faci parte din familie, sau la „Familii pe care le ajuți”.",
  "195vm2m": "Ai grijă de copiii altcuiva? Cere-i unuia dintre părinți să deschidă fila Familie → Invită pe cineva în aplicația Little Log, să aleagă ce poți face și să-ți arate codul QR. Scanează-l aici. După aprobare, familia lor apare aici: în arborele familiei, dacă faci parte din familie, sau la „Familii pe care le ajuți”. Poți trece oricând de la o familie la alta.",
- "ymkivl": "Tu, familia ta și familiile rudelor tale, desenate ca un arbore care crește pe măsură ce se alătură oameni noi. Atinge o persoană ca să vezi detaliile, un copil ca să-i vezi ziua sau o familie ca să treci la ea.",
  "1dv359l": "Familii și rude",
  "1xzrjrm": {
   "one": "{n} an",
   "few": "{n} ani",
   "other": "{n} de ani"
  },
- "vtzopg": "{family}, jurnal deschis acum",
  "thlxlz": "Deschide {family}",
- "5dqw62": "Deocamdată ești doar tu. Arborele crește când te alături jurnalului familiei tale sau al unei rude.",
  "wo8v8p": "Arată ziua lui {name}",
  "1d71jrf": {
   "one": "{n} cerere așteaptă aprobarea ta",
