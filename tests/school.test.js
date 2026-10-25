@@ -5,7 +5,7 @@
 // age starts; the Guide's school-age topics; all of it end-to-end encrypted, and cleaned up when it comes from a hostile writer.
 //   node tests/school.test.js
 const assert = require('assert');
-/* global G, describe, saveProfile, openSheet, Routine, E2EE, atCare, pickupAfter, toLocalInput, viewDay */
+/* global G, describe, saveProfile, openSheet, Routine, E2EE, atCare, pickupAfter, toLocalInput, dkey, viewDay:writable */
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
