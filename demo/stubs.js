@@ -1,7 +1,9 @@
 'use strict';
 /* Stand-ins for the parts of the app that need a phone (sign-in, encryption, sync, Keychain), so the real screens run in a plain page.
    Everything lives in memory: a reload starts again from the sample family. Used only by scripts/build-demo.js. */
-const Store = { st: { ok: true, err: '', quarantined: false, recovered: false, onChange: null }, init: async () => {}, load: async () => demoDb(), save() {}, whenSaved: async () => {}, peek: async () => null, backup() {}, quarantine: () => [], usingIndexedDB: false };
+const Store = { st: { ok: true, err: '', quarantined: false, recovered: false, onChange: null }, init: async () => {}, load: async () => demoDb(), save() {}, whenSaved: async () => {}, peek: async () => null, backup() {}, quarantine: () => [], usingIndexedDB: false,
+  blobPut: async (n, b) => { demoBlobs.set(n, b); }, blobGet: async n => demoBlobs.get(n) || null, blobDel: async n => { demoBlobs.delete(n); } };
+const demoBlobs = new Map();   // (pictures added in the demo live in memory)
 const Native = { is: false, onBack() {}, onUrl() {}, launchUrl() {}, saveFile: () => Promise.reject(new Error('cancelled')), storeUrl: () => null, openExternal() {}, version: async () => '' };
 const Auth = { id: 'demo', signedIn: false, configured: false, init: async () => {} };
 const Sync = { st: { people: [{ display_name: 'Mum', is_you: true }, { display_name: 'Dad' }, { display_name: 'Grandpa Joe' }] }, setMyDetails: async () => {}, can: () => true, linked: () => false, isParent: () => true, nameOf: () => '', schedule() {}, pushBaby() {}, onChange: null, onSessionLost: null };

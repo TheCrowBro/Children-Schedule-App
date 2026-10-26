@@ -839,3 +839,22 @@ grant execute on function
   my_requests(), cancel_my_request(uuid), list_requests(uuid), decide_request(uuid, boolean, text, jsonb, jsonb),
   push_events(uuid, jsonb), activity_log(uuid, int, bigint), delete_my_account()
 to authenticated;
+
+-- ── pictures and videos: the private storage bucket "media" ───────────────────────────────────
+-- A big moment can carry pictures and a short video. They are files in the bucket "media", encrypted on the phones with the log's main
+-- key before upload (the server sees sizes and who uploaded what, nothing else), at <baby_id>/<media id> and <baby_id>/<media id>.t
+-- (a thumbnail). The rules mirror the entries': members read, people who may add entries upload, people who may delete entries
+-- delete (their own, or anyone's). Safe to run again on an installation that already has the rest.
+insert into storage.buckets (id, name, public, file_size_limit) values ('media', 'media', false, 62914560)
+  on conflict (id) do update set public = false, file_size_limit = 62914560;
+create or replace function media_baby(p_name text) returns uuid language sql immutable as $$
+  select case when p_name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[A-Za-z0-9_.-]{1,64}$'
+              then split_part(p_name, '/', 1)::uuid end $$;
+grant execute on function media_baby(text) to authenticated;
+drop policy if exists media_read on storage.objects;
+drop policy if exists media_add on storage.objects;
+drop policy if exists media_delete on storage.objects;
+create policy media_read   on storage.objects for select to authenticated using (bucket_id = 'media' and is_member(media_baby(name)));
+create policy media_add    on storage.objects for insert to authenticated with check (bucket_id = 'media' and has_perm(media_baby(name), 'add_entries'));
+create policy media_delete on storage.objects for delete to authenticated using (bucket_id = 'media'
+  and ((owner_id = auth.uid()::text and has_perm(media_baby(name), 'delete_own')) or has_perm(media_baby(name), 'delete_others')));

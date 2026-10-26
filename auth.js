@@ -44,6 +44,10 @@ const Auth = (() => {
   }
   const authed = async (path, method = 'GET', body) => raw(path, { method, headers: hdr(await token()), ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
   const claims = () => { try { return JSON.parse(atob(s.access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); } catch (e) { return {}; } };
+  // the storage bucket (pictures and videos, encrypted on the phone): raw bytes, with the session's token
+  const fail = (status, txt) => { let m = ''; try { const j = JSON.parse(txt); m = j.message || j.error || ''; } catch (e) { /* not JSON */ } const err = new Error(m || __('Request failed ({status})', { status })); err.status = status; return err; };
+  const gone = (status, txt) => status === 404 || (status === 400 && /not.?found|"404"/i.test(txt));
+  const bytesHdr = async more => ({ apikey: CFG.supabaseKey, Authorization: 'Bearer ' + await token(), ...more });
 
   return {
     configured,
@@ -81,6 +85,24 @@ const Auth = (() => {
     },
     mfaRemove: id => authed('/auth/v1/factors/' + id, 'DELETE'),
 
+    /** Puts a file in the storage bucket (a file already there is left as it is). */
+    async upload(path, bytes) {
+      const r = await Native.fetch(CFG.supabaseUrl.replace(/\/$/, '') + path, { method: 'POST', body: bytes, headers: await bytesHdr({ 'Content-Type': 'application/octet-stream' }) }, 180000);
+      if (r.ok) return; const txt = await r.text();
+      if (r.status === 409 || (r.status === 400 && /already exists/i.test(txt))) return;
+      throw fail(r.status, txt);
+    },
+    /** A file from the storage bucket as a Uint8Array, or null when there is no such file. */
+    async download(path) {
+      const r = await Native.fetch(CFG.supabaseUrl.replace(/\/$/, '') + path, { headers: await bytesHdr() }, 180000);
+      if (r.ok) return new Uint8Array(await r.arrayBuffer());
+      const txt = await r.text(); if (gone(r.status, txt)) return null; throw fail(r.status, txt);
+    },
+    /** Deletes a file from the storage bucket (one that is already gone counts as deleted). */
+    async remove(path) {
+      const r = await Native.fetch(CFG.supabaseUrl.replace(/\/$/, '') + path, { method: 'DELETE', headers: await bytesHdr() });
+      if (r.ok) return; const txt = await r.text(); if (gone(r.status, txt)) return; throw fail(r.status, txt);
+    },
     /** PostgREST call: api('/events?...', {method, body, headers}) */
     async api(path, opt = {}) {
       const call = async tok => {

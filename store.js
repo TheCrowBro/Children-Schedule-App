@@ -27,6 +27,11 @@ const Store = (() => {
   const put = (k, v) => tx('readwrite', s => s.put(v, k));
 
   async function init() { try { idb = await open(); } catch (e) { idb = null; } }
+  // pictures and videos (media.js), by name; too big for the localStorage fallback, so without IndexedDB they are fetched again when shown
+  const MB = 'media.';
+  async function blobPut(name, blob) { if (idb) await put(MB + name, blob); }
+  async function blobGet(name) { if (!idb) return null; try { return (await get(MB + name)) || null; } catch (e) { return null; } }
+  async function blobDel(name) { try { if (idb) await tx('readwrite', s => s.delete(MB + name)); } catch (e) { /* already gone */ } }
 
   /** Returns the saved log (or null if there is none). Never throws. */
   async function load() {
@@ -86,5 +91,5 @@ const Store = (() => {
     return out;
   }
 
-  return { st, init, load, save, whenSaved, peek, backup, quarantine, park, unpark, drop, parkedIds, get usingIndexedDB() { return !!idb; } };
+  return { st, init, load, save, whenSaved, peek, backup, quarantine, park, unpark, drop, parkedIds, blobPut, blobGet, blobDel, get usingIndexedDB() { return !!idb; } };
 })();

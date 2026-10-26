@@ -52,6 +52,19 @@ const E2EE = (() => {
     const all = unb64(s), k = await S.importKey('raw', key, 'AES-GCM', false, ['decrypt']);
     return new Uint8Array(await S.decrypt({ name: 'AES-GCM', iv: all.slice(0, 12), additionalData: enc.encode(aad) }, k, all.slice(12)));
   }
+  // Pictures and videos (media.js): the bytes under the main key, with the epoch in front so any phone picks the right key. The AAD
+  // binds a file to its log and its name, so a file can't be moved to another moment or another family's log.
+  const mediaAad = (baby, name) => `ll1|media|${baby}|${name}`;
+  async function sealMedia(baby, name, bytes) {
+    const cur = current(baby); if (!cur || !cur.main) throw new Error('no key');
+    const iv = rand(12), k = await S.importKey('raw', cur.main, 'AES-GCM', false, ['encrypt']);
+    return cat(new Uint8Array([1, cur.epoch >> 8, cur.epoch & 255]), iv, new Uint8Array(await S.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(mediaAad(baby, name)) }, k, bytes)));
+  }
+  async function openMedia(baby, name, all) {
+    const key = all[0] === 1 ? raw(baby, (all[1] << 8) | all[2], 'main') : null; if (!key) throw new Error('no key');
+    const k = await S.importKey('raw', key, 'AES-GCM', false, ['decrypt']);
+    return new Uint8Array(await S.decrypt({ name: 'AES-GCM', iv: all.slice(3, 15), additionalData: enc.encode(mediaAad(baby, name)) }, k, all.slice(15)));
+  }
   /** ECIES-style: only the holder of the matching private key can open it. */
   async function wrapTo(pub, bytes, ctx) {
     const eph = await S.generateKey(ECDH, true, ['deriveBits']), peer = await S.importKey('jwk', pubOf(pub), ECDH, false, []);
@@ -179,7 +192,15 @@ const E2EE = (() => {
         if (Array.isArray(d.foods)) o.foods = d.foods.filter(x => typeof x === 'string' && x.trim()).slice(0, 30).map(x => x.slice(0, 60)); s('amount', 30); break;
       case 'meal': s('meal', 20); if (Array.isArray(d.foods)) o.foods = d.foods.filter(x => typeof x === 'string' && x.trim()).slice(0, 30).map(x => x.slice(0, 60)); s('amount', 30); break;
       case 'potty': b('pee'); b('poo'); b('dry'); b('accident'); b('asked'); s('where', 20); break;
-      case 'moment': s('what', 80); b('own'); break;
+      case 'moment': s('what', 80); b('own');
+        if (Array.isArray(d.media)) {   // pictures and videos: ids and sizes only (the files are elsewhere)
+          const big = v => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.round(Math.min(v, 1e9)) : undefined);
+          const m = d.media.filter(x => x && typeof x === 'object' && /^[A-Za-z0-9_-]{6,40}$/.test(x.id || '') && (x.kind === 'photo' || x.kind === 'video')).slice(0, 5)
+            .map(x => { const o2 = { id: x.id, kind: x.kind }; for (const f of ['w', 'h', 'bytes']) { const v = big(x[f]); if (v !== undefined) o2[f] = v; } const dur = num(x.dur); if (dur !== undefined) o2.dur = dur;
+              if (typeof x.mime === 'string' && /^(image|video)\/[\w.+-]{1,30}$/.test(x.mime)) o2.mime = x.mime; return o2; });
+          if (m.length) o.media = m;
+        }
+        break;
       case 'vaccine': s('name', 60); b('own'); n('dose'); s('place', 80); s('batch', 40); break;
       case 'visit': s('kind', 30); s('who', 80); s('why', 120); break;
       case 'growth': n('weight'); n('height'); n('head'); break;
@@ -394,7 +415,7 @@ const E2EE = (() => {
     load, ensureDevice, refresh, createLog, makeGrant, unlockWithRecovery, grantForRequest, approveDevice, healthGrants, rotate, replaceRecovery,
     encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile, sealDetails, openDetails, sealTree, openTree,
     /** The kinds of entry this version of the app knows (an older one skips the newer kinds). */
-    KINDS: TYPES.join(' '), SENSITIVE, isSensitive,
+    KINDS: TYPES.join(' ') + ' +media', SENSITIVE, isSensitive, sealMedia, openMedia,
     uuid, newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,
     fingerprint, securityCode, forget, wipeUser,
     get device() { return dev; },

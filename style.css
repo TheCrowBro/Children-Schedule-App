@@ -471,6 +471,18 @@ details.mmmore>summary::-webkit-details-marker{display:none}details.mmmore[open]
 .kstage{margin:6px 0 0}.kmo{margin:4px 0}.kmo .ic{color:var(--g-moment)}.kmo small{color:var(--mute)}
 .grow{background:var(--wash2);border-radius:12px;padding:8px 10px;margin:8px 0}.grow .ic{color:var(--brand)}
 :root[data-mode="dark"] .moment{--mwash:rgba(211,165,72,.13)}
+/* Pictures and videos with a big moment: thumbnails under the card (tap one to see it big), the picker in the sheet, and the viewer */
+.mstrip{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 10px;padding-inline-start:14px}
+.mthumb{position:relative;width:72px;height:72px;border-radius:12px;border:1px solid var(--line);background:var(--wash2);padding:0;overflow:hidden;cursor:pointer;flex:none}
+.mthumb img{width:100%;height:100%;object-fit:cover;display:block}.mthumb .ph{display:grid;place-items:center;height:100%;font-size:26px;opacity:.6}
+.mthumb .play{position:absolute;inset-inline-end:5px;bottom:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:11px;display:grid;place-items:center;pointer-events:none}
+.mthumb .x{position:absolute;top:0;inset-inline-end:0;width:28px;height:28px;border:0;border-radius:0 0 0 12px;background:rgba(0,0,0,.6);color:#fff;font:400 18px/28px system-ui,sans-serif;padding:0;cursor:pointer}[dir=rtl] .mthumb .x{border-radius:0 0 12px 0}
+.mthumb .pend{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;line-height:1.2;text-align:center;padding:2px}
+.mmedia{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}.mmedia:empty{display:none}.mmedia .mthumb{width:84px;height:84px}
+.mmpick .btn{flex:1}
+.mview{min-height:180px;display:grid;place-items:center;background:#111;border-radius:14px;overflow:hidden;color:#fff}.mview img,.mview video{max-width:100%;max-height:60vh;display:block}.mview img.dim{opacity:.5;filter:blur(2px)}
+.mvn{text-align:center}
+details.moments>.mstrip{margin:-4px 12px 10px}
 /* The health record: a page of its own (back button, the child, growth with a chart over the CDC percentile lines, vaccines, visits) */
 /* The way back from a page of its own: a bar that stays at the top while the page scrolls, with a big "Back to …" and "Today" */
 .backbar{position:sticky;top:0;z-index:4;display:flex;gap:8px;margin:0 -16px 12px;padding:8px 16px 10px;background:linear-gradient(var(--bg) 72%,transparent)}

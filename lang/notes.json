@@ -735,6 +735,17 @@
   "At daycare or school": "Tour step title: the banner at the top while a child is at daycare, preschool or school.",
   "Drop-off and pick-up": "Tour step title: the Drop-off button on the Day page (logging a drop-off, and who picks the child up).",
   "Dots show what was logged each day. Days away travelling are outlined, a star marks a big moment, and ◆ something on the calendar.": "Tour step (Month tab). Keep the ◆ sign: it is the mark used on the calendar days.",
-  "This page is a step away from the rest: tap here to go back to where you came from, or \"Today\" for today's page. The tabs below work as always.": "Tour step (health record): the bar at the top with the big back button and the \"Today\" button (use your word for Today, the same as the Day page's)."
+  "This page is a step away from the rest: tap here to go back to where you came from, or \"Today\" for today's page. The tabs below work as always.": "Tour step (health record): the bar at the top with the big back button and the \"Today\" button (use your word for Today, the same as the Day page's).",
+  "Picture or video": "Label in the big-moment sheet, above the pictures already added and the two Add buttons.",
+  "Add a picture": "Button in the big-moment sheet: opens the phone's photo picker (or camera).",
+  "Add a video": "Button in the big-moment sheet: opens the phone's video picker (or camera).",
+  "Up to {n} pictures and one video of up to a minute.": "Note under the Add buttons in the big-moment sheet, and the message when someone tries to add more. {n} is a number (4).",
+  "That video is too big. Up to {max} MB.": "Shown when a chosen video is over the size limit. {max} is a number of megabytes (60).",
+  "That video is longer than a minute. Trim it in your Photos app first.": "Shown when a chosen video is over a minute long. 'Photos app' is the phone's own photo app.",
+  "That file isn't a picture or a video Little Log can show.": "Shown when the chosen file can't be read as a picture or a video.",
+  "Not uploaded yet": "Small label over a picture in the big-moment sheet while it is still waiting to be sent to the family's log (no connection yet).",
+  "Couldn't load it. Check the connection and try again.": "Shown when a picture or video can't be fetched from the family's log.",
+  "Picture": "Spoken label of a thumbnail that is a picture (for screen readers).",
+  "Video": "Spoken label of a thumbnail that is a video (for screen readers)."
  }
 }

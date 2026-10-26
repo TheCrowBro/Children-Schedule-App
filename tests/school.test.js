@@ -153,7 +153,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.deepEqual(r.w.sort(), [['care:School', '12345'], ['pickup:School', '12345'], ['play:Swimming', '2']]);
       assert.deepEqual([r.sat, r.mon, r.tue, r.wed], [false, true, true, false]);
       await P.evaluate(id => G.page(id, 'routine'), noah);
-      const today = await P.evaluate(() => new Date().getDay()), text = await P.textContent('#view');
+      const today = await P.evaluate(() => new Date(Date.now() - 6 * 3600e3).getDay()), text = await P.textContent('#view');   // (the routine's day runs from 6 AM to 6 AM)
       if (today === 0 || today === 6) assert(/Other days of the week/.test(text) && /Drop-off · School/.test(text) && /Mon – Fri/.test(text), 'at the weekend, school is under the other days');
       else assert(/Drop-off · School/.test(await P.textContent('#view .routine')), 'on a school day, school is in the day');
       assert(/Daycare, school, homework, and lessons and clubs are worked out from the last 4 weeks/.test(text));
@@ -162,7 +162,8 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('the stats: days at school and the time there (the card is School for a school child, Daycare & school before)', async () => {
       await P.evaluate(id => { G.page(id, 'stats'); }, noah);
       const card = await P.$$eval('#view .scard', x => x.map(c => c.textContent.replace(/\s+/g, ' ')).find(t => /Days there/.test(t)) || '');
-      assert(/School ?Days there ?5 ?Time there on those days ?(7h|6h 5\dm)/.test(card), card);
+      const schoolDays = [1, 2, 3, 4, 5, 6].filter(d => { const wd = new Date(Date.now() - d * 864e5).getDay(); return wd >= 1 && wd <= 5; }).length;   // (the last 7 days: today has no drop-off yet)
+      assert(new RegExp(`School ?Days there ?${schoolDays} ?Time there on those days ?(7h|6h 5\\dm)`).test(card), card);
       await P.evaluate(id => { G.page(id, 'stats'); }, ella);
       assert(/Daycare & school/.test(await P.textContent('#view')));
     });

@@ -110,6 +110,34 @@ function createShim(superUrl, opts = {}) {
     return { status: res.status, headers: Object.fromEntries(res.headers), body: await res.text() };
   }
   const pgErr = e => J(/permission denied/.test(e.message) ? 403 : 400, { message: e.message, code: e.code });
+  // ---- Storage subset: the private bucket "media". The bytes stay in memory here; the rules run in Postgres (storage.objects + its policies).
+  const objects = new Map();   // 'media/<baby>/<name>' → Buffer
+  async function storage(req, url) {
+    const bearer = (req.headers()['authorization'] || '').replace('Bearer ', ''), claims = parse(bearer);
+    if (!claims) return J(401, { statusCode: '401', error: 'Unauthorized', message: 'Invalid JWT' });
+    const m = req.method(), key = url.pathname.replace(/^\/storage\/v1\/object\/(authenticated\/)?/, ''), [bucket, ...rest] = key.split('/'), name = rest.join('/');
+    const miss = () => J(400, { statusCode: '404', error: 'not_found', message: 'Object not found' });
+    try {
+      if (m === 'POST' || m === 'PUT') {
+        const buf = req.postDataBuffer() || Buffer.alloc(0);
+        if (buf.length > 62914560) return J(413, { statusCode: '413', error: 'Payload too large', message: 'The object exceeded the maximum allowed size' });
+        if (objects.has(key)) return J(400, { statusCode: '409', error: 'Duplicate', message: 'The resource already exists' });
+        await asUser(claims, c => c.query('insert into storage.objects (bucket_id, name, owner, owner_id, metadata) values ($1, $2, $3::uuid, $3::text, $4)', [bucket, name, claims.sub, JSON.stringify({ size: buf.length })]));
+        objects.set(key, buf); return J(200, { Key: key });
+      }
+      if (m === 'GET') {
+        const r = await asUser(claims, c => c.query('select 1 from storage.objects where bucket_id = $1 and name = $2', [bucket, name]));
+        if (!r.rows.length || !objects.has(key)) return miss();
+        return { status: 200, contentType: 'application/octet-stream', headers: { 'access-control-allow-origin': '*' }, body: objects.get(key) };
+      }
+      if (m === 'DELETE') {
+        const r = await asUser(claims, c => c.query('delete from storage.objects where bucket_id = $1 and name = $2', [bucket, name]));
+        if (!r.rowCount) return miss();
+        objects.delete(key); return J(200, { message: 'Successfully deleted' });
+      }
+    } catch (e) { return J(/permission denied|row-level security/.test(e.message) ? 403 : 400, { statusCode: '403', error: 'Unauthorized', message: e.message }); }
+    return J(404, { message: 'unhandled storage ' + m + ' ' + key });
+  }
   async function rest(req, url, body) {
     const bearer = (req.headers()['authorization'] || '').replace('Bearer ', ''), claims = parse(bearer);
     if (!claims) return J(401, { message: 'JWT expired or invalid', code: 'PGRST301' });
@@ -150,7 +178,7 @@ function createShim(superUrl, opts = {}) {
   }
 
   return {
-    ready, o, sessions, totp,
+    ready, o, sessions, totp, storage: objects,
     /** Install on a Playwright context for https://fake.supabase.co/** */
     async install(ctx, origin = 'https://fake.supabase.co') {
       await ready;
@@ -163,7 +191,7 @@ function createShim(superUrl, opts = {}) {
         if (o.refreshFail && url.pathname === '/auth/v1/token') return route.fulfill(J(500, { message: 'auth service unavailable' }));
         if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
         let body = null; try { body = req.postData() ? JSON.parse(req.postData()) : null; } catch (e) {}
-        try { route.fulfill(url.pathname.startsWith('/auth/') ? await auth(req, url.pathname, body) : url.pathname.startsWith('/functions/') ? await functions(req, url) : await rest(req, url, body)); }
+        try { route.fulfill(url.pathname.startsWith('/auth/') ? await auth(req, url.pathname, body) : url.pathname.startsWith('/functions/') ? await functions(req, url) : url.pathname.startsWith('/storage/') ? await storage(req, url) : await rest(req, url, body)); }
         catch (e) { route.fulfill(J(500, { message: String(e.stack || e) })); }
       });
     },

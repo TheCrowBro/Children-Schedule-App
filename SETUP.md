@@ -13,6 +13,9 @@ once, then fill in `config.js` (all values are public client IDs, not secrets) a
    permissions, approvals, audit log). If you ran an earlier version, drop its tables first; there is no data migration.
    It also holds people's encrypted contact details (`members.details`, written only through `set_my_details`) and room for the larger
    encrypted profile (children, formula, allergies, pediatrician; 8 KB, which is why a child can have at most 12 allergies).
+   Its last section makes the private storage bucket `media` and its rules, for the pictures and short videos that go with big moments
+   (encrypted on the phones before upload, like the entries). On a project that already ran an earlier version of the file, run just that
+   section (from `-- ── pictures and videos`): it is safe to run again and touches nothing else.
 3. **Project Settings → API**: copy the *Project URL* and *anon public* key into `supabaseUrl` / `supabaseKey`.
 
 ### Lock down sign-in (dashboard settings)

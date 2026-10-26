@@ -113,6 +113,13 @@ const Pdf = (() => {
         y += 4;
         continue;
       }
+      if (b.imgs) {   // a row of pictures (each {img, w, h}) as tall as ROW points, scaled down together when they don't fit the width
+        const gap = 6, ROW = 110, ws0 = b.imgs.map(p => (p.w / p.h) * ROW), tot = ws0.reduce((a, w) => a + w, 0) + gap * (ws0.length - 1), s = Math.min(1, CW / tot), h = ROW * s, ws = ws0.map(w => w * s);
+        await room(h + 8);
+        if (draw) { let x = M.x; b.imgs.forEach((p, i) => { ctx.drawImage(p.img, X(x, ws[i]), y, ws[i], h); x += ws[i] + gap; }); }
+        y += h + 8;
+        continue;
+      }
       if (b.table) {
         const t = b.table, size = 8.5, lh = size * 1.35, sum = t.cols.reduce((a, c) => a + c.w, 0);
         const xs = [], ws = t.cols.map(c => (c.w / sum) * CW);

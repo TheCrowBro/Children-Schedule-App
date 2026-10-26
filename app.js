@@ -116,6 +116,7 @@ function stamp() {
 function removeEvent(ev) {
   db.events = db.events.filter(x => x !== ev);
   db.deleted.push({ id: ev.id, type: ev.type, ts: ev.ts, updated: stamp() });
+  const media = (ev.data || {}).media; if (Array.isArray(media) && media.length) Media.discard(media.map(m => m.id));   // (its pictures and videos go too, unless another child's copy of the moment has them)
 }
 
 // ---------- Helpers ----------
@@ -321,6 +322,14 @@ function graduationCheck() {
   if ($('#gMoment')) $('#gMoment').onclick = () => openMoment(null, { kid: k.id, what: 'Turned 18', day: Math.min(day.getTime(), Date.now()) });
   $('#gBook').onclick = () => { close(); makeBook(k.id); };
 }
+/** A picture for the book: the full one if this phone has it or can fetch it, else its thumbnail; null when neither can be had. */
+async function mediaImage(m) {
+  for (const name of [m.id, m.id + '.t']) {
+    try { const u = await Media.ensure(name, name === m.id ? m.mime : 'image/jpeg'), im = new Image(); im.src = u; await im.decode(); return { img: im, w: im.naturalWidth, h: im.naturalHeight }; }
+    catch (e) { /* the thumbnail, then */ }
+  }
+  return null;
+}
 /** A child's book: their big moments in chapters for each stage of growing up, how they grew, their vaccines, and the years in numbers. */
 async function bookPdf(id) {
   const k = kidById(id), name = kidName(k), health = Sync.can('health'), blocks = [{ h: 1, text: __("{name}'s book", { name }) }];
@@ -330,6 +339,8 @@ async function bookPdf(id) {
     const st = stageOf(k, e.ts); if (st !== ch) { blocks.push({ h: 2, text: __(Stages.byId(st).name) }); ch = st; }
     blocks.push({ p: [describe(e)[0], fmtDay(dkey(e.ts)), k.birth && Stages.age(k.birth, e.ts)].filter(Boolean).join(' · '), bold: true });
     if (e.note) blocks.push({ p: e.note, muted: true });
+    const imgs = []; for (const m of (e.data.media || []).filter(x => x.kind === 'photo')) { const im = await mediaImage(m); if (im) imgs.push(im); }
+    if (imgs.length) blocks.push({ imgs });
   }
   if (health) {   // (how they grew: the measurement nearest each birthday; the vaccines)
     const g = entriesOf(k.id).filter(e => e.type === 'growth'), byYear = new Map();
@@ -1340,11 +1351,21 @@ function recordButton(k) {
 // end-to-end encrypted like the rest of the log. They show at the top of their day, with a star on the calendar, and in the Month tab's
 // journal, in chapters for each stage of growing up. stages.js has ideas for every age; anything else can be written in.
 const momentsOf = ids => { const set = new Set(ids); return db.events.filter(e => e.type === 'moment' && set.has(childOf(e))).sort((a, b) => a.ts - b.ts); };
+/** A big moment's pictures and videos, as thumbnails to tap (the thumbnails this phone hasn't got yet are fetched meanwhile). */
+function mediaStrip(e) {
+  const list = (e.data || {}).media || []; if (!list.length) return '';
+  Media.prime(list);
+  return `<div class="mstrip">${list.map(m => { const u = Media.url(m.id + '.t'); return `<button type="button" class="mthumb${u ? '' : ' wait'}" data-media="${e.id}:${m.id}" aria-label="${m.kind === 'video' ? __h('Video') : __h('Picture')}">${u ? `<img src="${u}" alt="">` : '<span class="ph">🖼</span>'}${m.kind === 'video' ? '<span class="play" aria-hidden="true">▶</span>' : ''}</button>`; }).join('')}</div>`;
+}
+/** Tapping a thumbnail opens the picture or video big (on the page, and in a moment's sheet). */
+function bindMedia(root) {
+  root.querySelectorAll('[data-media]').forEach(b => b.onclick = x => { x.stopPropagation(); const [eid, mid] = b.dataset.media.split(':'); const e = db.events.find(y => y.id === eid); if (e) openMediaView(e, mid); });
+}
 /** A big moment as a card: what happened, for whom (on a page with several children) and how old they were; in the journal, the day. */
 function momentRow(e, inJournal) {
   const k = kidById(childOf(e)), [what] = describe(e), age = k ? Stages.age(k.birth, e.ts) : '';
   const sub = [inJournal && fmtDay(dkey(e.ts)), !inJournal && kids().length > 1 && k && kidName(k), age].filter(Boolean).join(' · ');
-  return `<button class="card moment" data-moment="${e.id}"><span class="mi">🌟</span><span class="mb"><b>${esc(what)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}${e.note ? `<small class="mn">“${esc(e.note)}”</small>` : ''}${byLine(e)}</span></button>`;
+  return `<button class="card moment" data-moment="${e.id}"><span class="mi">🌟</span><span class="mb"><b>${esc(what)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}${e.note ? `<small class="mn">“${esc(e.note)}”</small>` : ''}${byLine(e)}</span></button>${mediaStrip(e)}`;
 }
 /** The day's big moments, at the top of the day. */
 const momentCards = day => momentsOf(pageKids().map(k => k.id)).filter(e => e.ts >= day && e.ts < day + DAY).map(e => momentRow(e)).join('');
@@ -1359,7 +1380,8 @@ function momentButton() {
 function momentInfo(e) {
   const k = kidById(childOf(e)), [what] = describe(e);
   popup(`<h3>🌟 ${esc(what)}</h3><p class="note">${esc([fmtDay(dkey(e.ts)), kids().length > 1 && k && kidName(k), k && Stages.age(k.birth, e.ts)].filter(Boolean).join(' · '))}</p>
-    ${e.note ? `<p>“${esc(e.note)}”</p>` : ''}${byLine(e)}<div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Close')}</button></div>`);
+    ${e.note ? `<p>“${esc(e.note)}”</p>` : ''}${byLine(e)}${mediaStrip(e)}<div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Close')}</button></div>`);
+  bindMedia($('#sheet'));
 }
 /** Save a big moment, or change one: what happened (an idea for the child's age, or in your own words), the day, and a note. */
 function openMoment(ev, pre = {}) {
@@ -1379,9 +1401,37 @@ function openMoment(ev, pre = {}) {
     ${others.length ? `<details class="mmmore"><summary>${__h('Ideas for other ages')}<span class="chev" aria-hidden="true">›</span></summary>${others.map(([x, l]) => ideas(l, x)).join('')}</details>` : ''}
     <label class="f" for="mmOwn">${__h('Or in your own words')}</label><input id="mmOwn" type="text" maxlength="80" value="${d.own ? esc(d.what) : ''}" placeholder="${__h('e.g. First time at the beach')}">
     <label class="f" for="mmNote">${__h('Note (optional)')}</label><textarea id="mmNote" rows="3" maxlength="1000" placeholder="${__h('Where you were, who was there, what they did')}">${esc(ev ? ev.note : '')}</textarea>
+    <label class="f">${__h('Picture or video')}</label><div class="mmedia" id="mmMedia"></div>
+    <div class="row mmpick"><button type="button" class="btn" id="mmPic">📷 ${__h('Add a picture')}</button><button type="button" class="btn" id="mmVid">🎬 ${__h('Add a video')}</button></div>
+    <input type="file" id="mmPicFile" accept="image/*" hidden><input type="file" id="mmVidFile" accept="video/*" hidden>
+    <p class="note">${__h('Up to {n} pictures and one video of up to a minute.', { n: Media.MAX.photos })}</p>
     <div class="row" style="margin-top:14px">${editing && Sync.can('delete', ev) ? `<button class="btn d" id="mmDel">${__h('Delete')}</button>` : ''}<button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="mmSave">${__h('Save')}</button></div>`);
   const S = $('#sheet');
   if (cur && others.some(([, l]) => l.includes(cur))) S.querySelector('.mmmore').open = true;
+  // pictures and videos: one added is kept on this phone at once (and sent with the next sync); one taken off goes with Save
+  let media = [...(d.media || [])]; const added = [], dropped = [], limits = () => toast(__('Up to {n} pictures and one video of up to a minute.', { n: Media.MAX.photos }));
+  const drawMedia = () => {
+    const box = $('#mmMedia'); if (!box) return;
+    box.innerHTML = media.map(m => { const u = Media.url(m.id + '.t'); return `<div class="mthumb">${u ? `<img src="${u}" alt="">` : '<span class="ph">🖼</span>'}${m.kind === 'video' ? '<span class="play" aria-hidden="true">▶</span>' : ''}${Sync.linked() && (db.meta.mediaUp || []).includes(m.id) ? `<span class="pend">${__h('Not uploaded yet')}</span>` : ''}<button type="button" class="x" data-mmrm="${m.id}" aria-label="${__h('Remove')}">×</button></div>`; }).join('');
+    box.querySelectorAll('[data-mmrm]').forEach(b => b.onclick = () => { const id = b.dataset.mmrm; media = media.filter(m => m.id !== id); if (added.includes(id)) { added.splice(added.indexOf(id), 1); Media.discard([id]); } else dropped.push(id); drawMedia(); });
+    $('#mmPic').disabled = media.filter(m => m.kind === 'photo').length >= Media.MAX.photos; $('#mmVid').disabled = media.filter(m => m.kind === 'video').length >= Media.MAX.videos;
+  };
+  const take = async (input, kind) => {
+    const file = input.files && input.files[0]; input.value = ''; if (!file) return;
+    if (media.filter(m => m.kind === kind).length >= (kind === 'video' ? Media.MAX.videos : Media.MAX.photos)) return limits();
+    const btn = kind === 'video' ? $('#mmVid') : $('#mmPic'), label = btn.innerHTML; btn.disabled = true; btn.textContent = __('Loading…');
+    try {
+      const prep = kind === 'video' ? await Media.fromVideo(file) : await Media.fromPhoto(file);
+      if (prep.error) return toast(prep.error);
+      const item = await Media.stage(prep); media.push(item); added.push(item.id); save(true);
+    } catch (e) { toast(__("That file isn't a picture or a video Little Log can show.")); }
+    finally { btn.innerHTML = label; Icons.paint(btn); drawMedia(); }
+  };
+  $('#mmPic').onclick = () => $('#mmPicFile').click(); $('#mmVid').onclick = () => $('#mmVidFile').click();
+  $('#mmPicFile').onchange = () => take($('#mmPicFile'), 'photo'); $('#mmVidFile').onchange = () => take($('#mmVidFile'), 'video');
+  drawMedia();
+  const bail = () => { if (added.length) { Media.discard(added); save(true); } close(); };   // (closed without saving: the new pictures go again)
+  $('#sheetBack').onclick = bail; S.querySelectorAll('[data-close]').forEach(b => b.onclick = bail);
   $('#mmOwn').oninput = () => { if ($('#mmOwn').value.trim()) S.querySelectorAll('[name=mmWhat]:checked').forEach(r => { r.checked = false; }); };
   S.querySelectorAll('[name=mmWhat]').forEach(r => r.addEventListener('change', () => { if (r.checked) $('#mmOwn').value = ''; }));
   if ($('#mmDel')) $('#mmDel').onclick = () => { if (confirm(__('Delete this entry?'))) { removeEvent(ev); save(); close(); render(); toast(__('Deleted')); } };
@@ -1394,13 +1444,37 @@ function openMoment(ev, pre = {}) {
     const ids = multi ? [...S.querySelectorAll('[name=mmKid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
     if (!ids.length) return toast(__('Choose who this is for'));
     const data = own && !Stages.known(own) ? { what: own, own: true } : { what };   // (typed in: shown as typed)
+    if (media.length) data.media = media;
     for (const id of ids) {
       const rec = ev || { id: uid(), type: 'moment', by: Auth.id || undefined };
       Object.assign(rec, { ts, data: structuredClone(data), note: $('#mmNote').value.trim(), updated: stamp(), child: id });
       if (!ev) db.events.push(rec);
     }
+    if (dropped.length) Media.discard(dropped);
     save(); close(); viewDay = startOfDay(ts); render(); toast(ids.length > 1 ? __n('Saved for {n} child', 'Saved for {n} children', ids.length) : __('Saved'));
   };
+}
+/** A big moment's picture or video, big: ‹ › through them, and a copy to keep (Save or share). */
+async function openMediaView(ev, id) {
+  const list = (ev.data || {}).media || []; let i = Math.max(0, list.findIndex(m => m.id === id)), shown = 0;
+  const [what] = describe(ev), k = kidById(childOf(ev)), several = list.length > 1;
+  popup(`<h3>🌟 ${esc(what)}</h3><p class="note">${esc([fmtDay(dkey(ev.ts)), k && Stages.age(k.birth, ev.ts)].filter(Boolean).join(' · '))}</p><div class="mview" id="mview"></div><p class="note mvn" id="mvn"></p>
+    <div class="row" style="margin-top:12px">${several ? `<button type="button" class="btn" id="mvPrev" aria-label="${__h('Back')}">‹</button>` : ''}<button class="btn" data-close>${__h('Close')}</button><button type="button" class="btn" id="mvSave">${__h('Save or share')}</button>${several ? `<button type="button" class="btn" id="mvNext" aria-label="${__h('Next')}">›</button>` : ''}</div>`);
+  const show = async () => {
+    const m = list[i], box = $('#mview'), n = ++shown; if (!m || !box) return;
+    const t = Media.url(m.id + '.t'); box.innerHTML = t ? `<img src="${t}" alt="" class="dim">` : `<span class="ph">${__h('Loading…')}</span>`;
+    $('#mvn').textContent = several ? __('{n} of {total}', { n: i + 1, total: list.length }) : '';
+    try { const u = await Media.ensure(m.id, m.mime); if (n !== shown || !$('#mview')) return; $('#mview').innerHTML = m.kind === 'video' ? `<video src="${u}" controls playsinline></video>` : `<img src="${u}" alt="">`; }
+    catch (e) { if (n === shown) toast(__(e.message)); }
+  };
+  if (several) { $('#mvPrev').onclick = () => { i = (i + list.length - 1) % list.length; show(); }; $('#mvNext').onclick = () => { i = (i + 1) % list.length; show(); }; }
+  $('#mvSave').onclick = async () => {
+    const m = list[i];
+    try { await Media.ensure(m.id, m.mime); const blob = await Store.blobGet(m.id); if (!blob) throw new Error(N_("Couldn't load it. Check the connection and try again."));
+      download(`little-log-${slugOf(what)}-${i + 1}.${m.kind === 'video' ? ((m.mime || '').split('/')[1] || 'mp4').replace(/;.*/, '') : 'jpg'}`, new Uint8Array(await blob.arrayBuffer()), m.mime); }
+    catch (e) { toast(__(e.message)); }
+  };
+  show();
 }
 /** The Month tab's journal: every big moment of the child, in chapters for each stage of growing up. */
 function momentsJournal() {
@@ -2147,6 +2221,7 @@ function bind() {
   document.querySelectorAll('[data-qmore]').forEach(b => b.onclick = () => openMoreTypes(b.dataset.qmore.split(' ')));
   document.querySelectorAll('[data-addmore]').forEach(b => b.onclick = () => openMoreTypes(b.dataset.addmore.split(' ')));
   document.querySelectorAll('[data-momentnew]').forEach(b => b.onclick = () => openMoment(null, { day: viewDay }));
+  bindMedia(document);
   document.querySelectorAll('[data-stageok]').forEach(b => b.onclick = () => { const m = db.meta.stageSeen || (db.meta.stageSeen = {}); for (const id of b.dataset.stageok.split(' ')) m[id] = b.dataset.stage; Store.save(db); render(); });
   document.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.plan); if (ev) openPlan(ev); });
   document.querySelectorAll('[data-plannew]').forEach(b => b.onclick = () => openPlan(null, { day: viewDay }));
@@ -2486,6 +2561,7 @@ Lock.onChange = () => render();
 Sync.onSessionLost = () => Acct.sessionLost();
 (async () => {
   await Promise.all([I18n.init(), Store.init()]); db = normalize(await Store.load());   // before anything reads the log, or shows text
+  Media.onChange = () => render();   // (a thumbnail arrived)
   Icons.init(); Icons.paint(document.querySelector('#tabs')); Icons.paint(document.querySelector('#cover')); Icons.paint(document.querySelector('#helpBtn'));
   Theme.onChange = () => render();
   Store.st.onChange = () => { render(); if (!Store.st.ok) toast(__('Cannot save on this phone – free up space')); };

@@ -53,6 +53,13 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   several. They show at the top of their day, with a star on the calendar, in the Month tab's journal (in chapters for each stage of
   growing up, with how old the child was), and on the family tree when someone taps a child. Shared and end-to-end encrypted like
   every entry
+- **Pictures and videos with a big moment**: up to 4 pictures and one video of up to a minute, from the camera roll or the camera.
+  Pictures are shrunk to 1600 px on the phone; everything is encrypted on the phone with the log's key before it goes to the family's
+  private storage bucket, so the server sees sizes and nothing else. Thumbnails show under the moment's card and in the journal; tap one
+  to see it big, step through them, and keep a copy (Save or share). A picture added offline goes up with the next sync; the other phones
+  fetch thumbnails by themselves and the full picture or video when tapped, and keep what they have shown. Removing a picture or
+  deleting the moment removes the files too (a moment saved for several children shares them until the last copy goes). The child's
+  book prints the pictures under each moment
 - **More than one child**: up to 8 children in one shared log. Each has a page of their own with their own colour (blues for boys, reds for girls, a different shade for each; parents can change any colour), an "All" view, and entries can be logged for several children at once. Names, colours and which child an entry belongs to are end-to-end encrypted like everything else
 - **Watercolour look**: soft washes in the open child's colour and hand-painted style icons, with dark outlines and text kept at readable contrast (light and dark mode)
 - **Day clock**: a French carriage clock (a frame of thin soft-gold lines, a painted panel, a white face

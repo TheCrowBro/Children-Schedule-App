@@ -187,6 +187,7 @@ const Sync = (() => {
         if (st.rotateNeeded && db.meta.role === 'parent' && Auth.aal === 'aal2') { await E2EE.rotate(db.meta.babyId, db.baby); st.rotateNeeded = false; }
         changed = await pull() + await retryStash();
         await push();
+        await Media.flush();
         if (Date.now() - peopleAt > 120000 || db.events.some(e => e.by && !st.people.some(p => p.user_id === e.by))) { await loadPeople().catch(() => {}); }
         await loadDevices().catch(() => {});
         if (db.meta.role === 'parent') await loadAdmin().catch(() => {});

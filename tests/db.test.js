@@ -382,6 +382,23 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       assert.equal((await q(`select count(*)::int c from report_limits where k <> '*' and k !~ '^[a-c]{64}$'`))[0].c, 0, 'only the hashed keys are kept');
     });
 
+    await t('pictures and videos (the "media" bucket): members read a log\'s files, people who may add entries upload under its id only, their own files they may delete, other people\'s only with the permission; strangers and parents without two-step verification get nothing', async () => {
+      const obj = (who, name, owner) => who('insert into storage.objects (bucket_id, name, owner_id) values ($1, $2, $3)', ['media', name, owner]);
+      const mid = (await su.query(`insert into auth.users(email) values ('media@x.com') returning id`)).rows[0].id, M = actor(url, { sub: mid, email: 'media@x.com', aal: 'aal1' });
+      await q(`insert into members (baby_id, user_id, email, display_name, role, perms) values ($1, $2, 'media@x.com', 'Nanny', 'caregiver', role_preset('caregiver'))`, [baby, mid]);
+      await obj(A, `${baby}/pic1`, id.A); await obj(M, `${baby}/pic2`, mid);
+      await rejects(obj(H, `${baby}/pic3`, id.H), /row-level security/, 'a stranger'); await rejects(obj(A1, `${baby}/pic4`, id.A), /row-level security/, 'a parent without two-step verification');
+      await rejects(obj(A, 'pic5', id.A), /row-level security/, 'not under a log'); await rejects(obj(A, `${baby}/a/pic6`, id.A), /row-level security/, 'nested'); await rejects(obj(A, `00000000-0000-0000-0000-000000000000/pic7`, id.A), /row-level security/, 'someone else\'s log');
+      await q(`update members set perms = perms || '{"add_entries": false}' where user_id = $1`, [mid]); await rejects(obj(M, `${baby}/pic8`, mid), /row-level security/, 'without the permission to add entries');
+      await q(`update members set perms = perms || '{"add_entries": true}' where user_id = $1`, [mid]);
+      const names = who => who('select name from storage.objects where bucket_id = $1 order by name', ['media']).then(r => r.map(x => x.name));
+      assert.deepEqual(await names(M), [`${baby}/pic1`, `${baby}/pic2`]); assert.deepEqual(await names(A), [`${baby}/pic1`, `${baby}/pic2`]); assert.deepEqual(await names(H), []); assert.deepEqual(await names(A1), []);
+      const del = (who, name) => who('delete from storage.objects where bucket_id = $1 and name = $2 returning name', ['media', name]).then(r => r.length);
+      assert.equal(await del(M, `${baby}/pic1`), 0, 'not someone else\'s'); assert.equal(await del(H, `${baby}/pic1`), 0); assert.equal(await del(M, `${baby}/pic2`), 1, 'their own');
+      await obj(M, `${baby}/pic2`, mid); await q(`update members set perms = perms || '{"delete_own": false}' where user_id = $1`, [mid]); assert.equal(await del(M, `${baby}/pic2`), 0, 'not even their own without the permission');
+      assert.equal(await del(A, `${baby}/pic2`), 1, 'a parent deletes anyone\'s'); assert.equal(await del(A, `${baby}/pic1`), 1);
+      await q('delete from members where user_id = $1', [mid]); await q('delete from auth.users where id = $1', [mid]);
+    });
     await t('account deletion: a non-parent just leaves (log asks for rotation); sole parent takes the log with them; with another parent the log stays', async () => {
       await D('select delete_my_account()'); assert.equal((await q('select count(*)::int c from auth.users where id=$1', [id.D]))[0].c, 0);
       assert.equal((await q('select count(*)::int c from babies where id=$1', [baby]))[0].c, 1); assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, true);
