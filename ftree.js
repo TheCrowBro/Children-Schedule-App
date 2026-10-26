@@ -122,7 +122,7 @@ const FamilyTree = (() => {
     if (region === 'na') return 'maple';
     if (region === 'uk') return 'oak';
     if (region === 'anz') return 'eucalyptus';
-    if (region === 'latam') return 'jacaranda';
+    if (region === 'latam' || region === 'br') return 'jacaranda';
     if (region === 'eu') return ['it', 'es', 'pt', 'el'].includes(l) ? 'olive' : ['ru', 'uk', 'pl'].includes(l) ? 'birch' : 'beech';
     if (region === 'asia') return /Kolkata|Calcutta|Dhaka|Karachi|Colombo|Kathmandu/.test(tz) ? 'banyan' : /Bangkok|Ho_Chi_Minh|Saigon|Jakarta|Manila|Kuala_Lumpur|Singapore/.test(tz) ? 'mango' : /Dubai|Riyadh|Tehran|Jerusalem|Tel_Aviv|Baghdad|Amman|Beirut|Qatar|Kuwait|Muscat/.test(tz) ? 'olive' : 'cherry';
     if (region === 'mea') return /^Africa\//.test(tz) ? 'acacia' : 'olive';

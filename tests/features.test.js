@@ -217,20 +217,20 @@ const pickFormula = async (page, scope, name) => {
     await step('the formula list: usual and recent ones on top, then a twirl-down for each region (where you are first, and open), and "Other" for any formula', async () => {
       const r = await P.evaluate(() => ({ map: ['Europe/London', 'Europe/Berlin', 'Australia/Sydney', 'Pacific/Auckland', 'America/Sao_Paulo', 'America/Mexico_City', 'Asia/Tokyo', 'Asia/Dubai', 'Africa/Lagos', 'America/Chicago', 'America/Toronto', 'Mars/Base'].map(z => Formulas.regionFor(z)),
         first: Formulas.ordered('uk')[0].name, here: myRegion() }));
-      assert.deepEqual(r.map, ['uk', 'eu', 'anz', 'anz', 'latam', 'latam', 'asia', 'mea', 'mea', 'na', 'na', 'na']);
+      assert.deepEqual(r.map, ['uk', 'eu', 'anz', 'anz', 'br', 'latam', 'asia', 'mea', 'mea', 'na', 'na', 'na']);
       assert.equal(r.first, 'UK & Ireland'); assert.equal(r.here, 'na', 'this test phone is on UTC, which counts as North America');
       await P.click('[data-tab=day]'); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]');
       assert.equal(await P.isVisible('#fFormula .flist'), false, 'folded away until tapped');
       await P.click('#fFormula .fcur');
       const regs = await P.$$eval('#fFormula details.freg', d => d.map(x => [x.dataset.region, x.open]));
-      assert.deepEqual(regs.map(x => x[0]), ['na', 'latam', 'uk', 'eu', 'anz', 'asia', 'mea'], 'every region, where you are first');
-      assert.deepEqual(regs.map(x => x[1]), [true, false, false, false, false, false, false], 'yours open, the rest folded');
+      assert.deepEqual(regs.map(x => x[0]), ['na', 'latam', 'br', 'uk', 'eu', 'anz', 'asia', 'mea'], 'every region, where you are first');
+      assert.deepEqual(regs.map(x => x[1]), [true, false, false, false, false, false, false, false], 'yours open, the rest folded');
       assert(/Where you are/.test(await P.textContent('#fFormula details.freg[data-region=na] > summary')));
       assert.equal(await P.isVisible('#fFormula details.freg[data-region=eu] [data-fv="HiPP Organic PRE"]'), false, 'a folded region hides its formulas');
       await P.click('#fFormula details.freg[data-region=eu] > summary'); await P.click('#fFormula details.freg[data-region=eu] [data-fv="HiPP Organic PRE"]');
       assert.equal(await P.inputValue('#formulaSel'), 'HiPP Organic PRE'); assert.equal(await P.textContent('#fFormula .fv'), 'HiPP Organic PRE');
       assert.equal(await P.isVisible('#fFormula .flist'), false, 'choosing one folds the list away');
-      for (const [reg, f] of [['na', 'Enfamil NeuroPro'], ['uk', 'Kendamil Classic First Infant Milk'], ['anz', 'a2 Platinum Premium'], ['asia', 'Meiji Hohoemi'], ['latam', 'NAN Optipro'], ['mea', 'Bebelac']]) assert(await P.$(`#fFormula details.freg[data-region=${reg}] [data-fv="${f}"]`), f);
+      for (const [reg, f] of [['na', 'Enfamil NeuroPro'], ['uk', 'Kendamil Classic First Infant Milk'], ['anz', 'a2 Platinum Premium'], ['asia', 'Meiji Hohoemi'], ['latam', 'NAN Optipro'], ['br', 'NAN Comfor 1'], ['mea', 'Bebelac']]) assert(await P.$(`#fFormula details.freg[data-region=${reg}] [data-fv="${f}"]`), f);
       await P.click('#fFormula .fcur'); await P.click('#fFormula [data-fv=__other]'); assert.equal(await P.isVisible('#formula'), true, 'Other opens a box to type in');
       await P.fill('#formula', "Grandma's special blend"); await P.fill('#ml', '60'); await P.click('#save');
       assert.equal(await P.evaluate(() => db.events.find(e => e.data && e.data.ml === 60).data.formula), "Grandma's special blend");
@@ -348,6 +348,9 @@ const pickFormula = async (page, scope, name) => {
       await P.click('[data-tab=more]');
       assert.equal(await P.inputValue('#regionSel'), '', 'automatic at first'); assert.equal(await P.textContent('#regionSel option[value=""]'), 'Automatic: North America');
       await P.selectOption('#regionSel', 'uk'); assert.equal(await P.evaluate(() => db.meta.region), 'uk');
+      // Brazil is a region of its own: its time zones, its formulas, SAMU as the emergency number, school at 6 and a jacaranda
+      assert.deepEqual(await P.evaluate(() => [Formulas.regionFor('America/Sao_Paulo'), Formulas.regionFor('America/Manaus'), Formulas.regionFor('America/Argentina/Buenos_Aires'), __(Guide.sos('br')), FamilyTree.speciesFor('br', 'pt'), Stages.schoolAge('br'), __(Formulas.name('br'))]),
+        ['br', 'br', 'latam', '192 (SAMU)', 'jacaranda', 6, 'Brazil']);
       await P.click('[data-tab=day]'); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]'); await P.click('[name=milk][value=Formula]'); await P.click('#fFormula .fcur');
       assert.deepEqual(await P.$$eval('#fFormula details.freg', d => d.slice(0, 2).map(x => [x.dataset.region, x.open])), [['uk', true], ['na', false]]);
       await P.click('#cancel');

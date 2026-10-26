@@ -60,6 +60,9 @@ const unmarked = (page, data) => page.evaluate(data => {
       const plist = fs.readFileSync(path.join(__dirname, '..', 'ios', 'App', 'App', 'Info.plist'), 'utf8');
       const ios = [...((plist.split('<key>CFBundleLocalizations</key>')[1] || '').split('</array>')[0]).matchAll(/<string>([^<]+)<\/string>/g)].map(m => m[1]);
       assert.deepEqual(ios, langs.map(l => l[0]), 'Info.plist CFBundleLocalizations lists every language');
+      // the Portuguese is Brazilian Portuguese: named so, and tagged pt-BR for the page (screen readers) and for dates when the phone has no Portuguese of its own
+      const pt = await P.evaluate(async () => { const was = I18n.chosen(); await I18n.set('pt'); const r = [I18n.label('pt'), document.documentElement.lang, I18n.locale()]; await I18n.set(was); return r; });
+      assert.deepEqual(pt.slice(0, 2), ['Português (Brasil)', 'pt-BR']); assert(/^pt-BR/.test(pt[2]), pt[2]);
       await P.context().close();
     });
 

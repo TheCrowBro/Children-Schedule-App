@@ -39,6 +39,7 @@ The id is a hash of the English text. When the English changes, its old translat
 7. **Address the reader as a warm, friendly app for parents would** in your language, and stay consistent throughout.
    - In German, for example, use `du`.
    - In Japanese, use です/ます.
+   - The Portuguese is Brazilian Portuguese (`você`, celular, bebê, registro); the app calls it Português (Brasil).
 8. **Read the notes.** The `note` next to a text in `en.json` explains short or ambiguous texts, for example:
    - whether "Left" means the breast side;
    - what fills a `{what}` placeholder.

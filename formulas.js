@@ -12,6 +12,9 @@ const Formulas = (() => {
       'Kirkland Signature ProCare', "Parent's Choice", 'up&up', "Member's Mark", 'Neocate Infant', 'EleCare', 'PurAmino', 'Alfamino Infant'] },
     { id: 'latam', name: N_('Latin America'), items: ['NAN Optipro', 'NAN Supreme Pro', 'NAN AR', 'NAN HA', 'Lactogen', 'Enfamil Premium', 'Enfamil Confort', 'Enfamil A.R.', 'Nutramigen',
       'Similac', 'Similac Total Comfort', 'Nutrilon', 'Aptamil', 'Frisolac Gold', 'S-26 Gold', 'Neocate', 'Alfamino'] },
+    { id: 'br', name: N_('Brazil'), items: ['NAN Supreme Pro 1', 'NAN Comfor 1', 'NAN Soy', 'NAN A.R.', 'NAN Sem Lactose', 'Nestogeno 1', 'Aptamil Premium+ 1', 'Aptamil Profutura 1',
+      'Aptamil ProExpert Pepti', 'Aptamil ProExpert AR', 'Aptamil ProExpert Sem Lactose', 'Milupa 1', 'Enfamil Premium 1', 'Enfamil Gentlease', 'Enfamil A.R.', 'Nutramigen Premium', 'Similac Advance',
+      'Alfaré', 'Althéra', 'Pregomin Pepti', 'Neocate LCP', 'Alfamino'] },
     { id: 'uk', name: N_('UK & Ireland'), items: ['Aptamil First Infant Milk', 'Aptamil Profutura First Infant Milk', 'Aptamil Comfort', 'Aptamil Anti-Reflux', 'Aptamil Pepti',
       'Cow & Gate First Infant Milk', 'Cow & Gate Comfort', 'Cow & Gate Anti-Reflux', 'SMA PRO First Infant Milk', 'SMA Little Steps First Infant Milk', 'SMA Comfort', 'SMA Anti-Reflux', 'SMA Lactose Free',
       'Kendamil Classic First Infant Milk', 'Kendamil Organic First Infant Milk', 'Kendamil Goat First Infant Milk', 'HiPP Organic First Infant Milk', 'Kabrita Goat Milk', 'Mamia (Aldi)',
@@ -28,6 +31,7 @@ const Formulas = (() => {
   ];
   const ALL = new Set(REGIONS.flatMap(r => r.items));
   const LATAM = /^America\/(Argentina\/.*|Mexico_City|Monterrey|Merida|Cancun|Chihuahua|Ciudad_Juarez|Hermosillo|Mazatlan|Tijuana|Matamoros|Bahia_Banderas|Ojinaga|Guatemala|Belize|El_Salvador|Tegucigalpa|Managua|Costa_Rica|Panama|Havana|Santo_Domingo|Port-au-Prince|Jamaica|Bogota|Caracas|Lima|Guayaquil|La_Paz|Santiago|Punta_Arenas|Asuncion|Montevideo|Sao_Paulo|Bahia|Belem|Fortaleza|Recife|Maceio|Manaus|Cuiaba|Campo_Grande|Porto_Velho|Rio_Branco|Boa_Vista|Araguaina|Santarem|Noronha|Cayenne|Paramaribo|Guyana)$/;
+  const BRAZIL = /^America\/(Sao_Paulo|Bahia|Belem|Fortaleza|Recife|Maceio|Manaus|Cuiaba|Campo_Grande|Porto_Velho|Rio_Branco|Boa_Vista|Araguaina|Santarem|Noronha|Eirunepe)$/;
   const MIDEAST = /^Asia\/(Dubai|Riyadh|Qatar|Kuwait|Bahrain|Muscat|Baghdad|Tehran|Jerusalem|Tel_Aviv|Amman|Beirut|Damascus|Aden|Gaza|Hebron|Nicosia|Famagusta)$/;
   /** Which region's list to show first, from the phone's time zone. */
   function regionFor(tz) {
@@ -37,6 +41,7 @@ const Formulas = (() => {
     if (/^(Australia\/|Pacific\/(Auckland|Chatham|Norfolk)$)/.test(tz)) return 'anz';
     if (/^Africa\//.test(tz) || MIDEAST.test(tz)) return 'mea';
     if (/^(Asia|Indian)\//.test(tz)) return 'asia';
+    if (BRAZIL.test(tz)) return 'br';
     if (LATAM.test(tz)) return 'latam';
     return 'na';
   }

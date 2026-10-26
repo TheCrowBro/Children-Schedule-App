@@ -120,13 +120,15 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   "Back to Guide" (or Stats, or More) and "Today"; every sheet has a big close button in its corner that stays put while the sheet
   scrolls; and the tabs at the bottom are always there
 - **Formula**: pick from a list with the usual and recent formulas on top, then a twirl-down of common formulas for each region (North
-  America, Latin America, UK & Ireland, Europe, Australia & New Zealand, Asia, Middle East & Africa; where you are comes first and open),
+  America, Latin America, Brazil, UK & Ireland, Europe, Australia & New Zealand, Asia, Middle East & Africa; where you are comes first and
+  open),
   or type in any other.
   Each child's usual formula is filled in on bottle feeds. When every formula feed on three days running used the same one, it becomes
   that child's default and stays so until another formula is used the same way; each phone works this out from the shared log, so nobody
   has to save it. A parent can also choose it in More → Children
-- **Where you are** (More): automatic from the phone's time zone, or one of the seven regions. The formula list puts its formulas first,
-  and the Guide gives its emergency number (911, 999, 112, 000 / 111, or "your local emergency number"), medicine names and ages first
+- **Where you are** (More): automatic from the phone's time zone, or one of the eight regions. The formula list puts its formulas first,
+  and the Guide gives its emergency number (911, 999, 112, 000 / 111, 192 (SAMU) in Brazil, or "your local emergency number"), medicine
+  names and ages first
 - **People's contact details** (phone, work, notes) that each person adds for themselves, visible to those allowed to see the family list
 - **Appearance**: match the phone, light, dark, or automatic by **sunrise and sunset** (worked out from the phone's time zone, no location
   needed); switching plays a short sunset into dark or sunrise into light
@@ -137,7 +139,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 - **Family tree** (Family tab): the children's family tree, painted as a soft watercolour (washes with pigment edges, paper grain) of
   the tree most common where the family comes from: an English oak (UK & Ireland), a red maple (North America), a European beech, a
   silver birch, an olive tree, a eucalyptus (Australia & New Zealand), cherry blossom (East Asia), a banyan with its hanging roots
-  (South Asia), a mango tree, an umbrella acacia (Africa) or a jacaranda (Latin America), each with its own bark, crown, leaves and
+  (South Asia), a mango tree, an umbrella acacia (Africa) or a jacaranda (Latin America and Brazil), each with its own bark, crown, leaves
+  and
   ground, two birds of that place on its branches and its own leaves (or petals) drifting down. It follows the app's language and the
   region in More (and the time zone), and a parent can choose another for the whole family (**Change tree**). The children sit on the grass at the foot of
   the trunk; their parents, a couple joined by a heart, where it forks; each parent's brothers and sisters (the aunts and uncles) with
@@ -185,7 +188,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 - **Update app** (More): opens Little Log's page in the App Store or Google Play, where an update is one tap, and shows the version
   that's installed
 - **32 languages**: the app follows the phone's language, or one chosen in More → Language:
-  - English, Spanish, Portuguese, French, German, Italian, Dutch, Polish, Romanian, Russian, Ukrainian and Turkish;
+  - English, Spanish, Portuguese (Brazilian Portuguese, which a phone set to European Portuguese gets too), French, German, Italian,
+    Dutch, Polish, Romanian, Russian, Ukrainian and Turkish;
   - Arabic, Hebrew, Persian and Urdu, laid out right to left;
   - Hindi, Bengali, Marathi, Telugu and Tamil;
   - Chinese (simplified and traditional), Japanese, Korean, Vietnamese, Thai, Indonesian and Filipino;

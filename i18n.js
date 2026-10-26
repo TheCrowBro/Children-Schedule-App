@@ -7,17 +7,18 @@
 
    The language follows the phone unless one is chosen in More → Language (kept on this phone). Dates and times use the language's own
    formats, with the phone's regional variant when it is the same language (an English phone in the UK keeps UK dates), and Western
-   digits throughout so numbers read the same everywhere in the app. Arabic, Hebrew, Persian and Urdu run right to left. */
+   digits throughout so numbers read the same everywhere in the app. Arabic, Hebrew, Persian and Urdu run right to left. The Portuguese
+   is Brazilian Portuguese (pt-BR); a phone set to European Portuguese gets it too. */
 const I18n = (() => {
-  // [code, name in the language itself, right to left]
+  // [code, name in the language itself, right to left, the full tag when the catalogue is one variant of the language]
   const LANGS = [
-    ['en', 'English'], ['es', 'Español'], ['pt', 'Português'], ['fr', 'Français'], ['de', 'Deutsch'], ['it', 'Italiano'],
+    ['en', 'English'], ['es', 'Español'], ['pt', 'Português (Brasil)', 0, 'pt-BR'], ['fr', 'Français'], ['de', 'Deutsch'], ['it', 'Italiano'],
     ['nl', 'Nederlands'], ['pl', 'Polski'], ['ro', 'Română'], ['ru', 'Русский'], ['uk', 'Українська'], ['tr', 'Türkçe'],
     ['ar', 'العربية', 1], ['he', 'עברית', 1], ['fa', 'فارسی', 1], ['ur', 'اردو', 1],
     ['hi', 'हिन्दी'], ['bn', 'বাংলা'], ['mr', 'मराठी'], ['te', 'తెలుగు'], ['ta', 'தமிழ்'],
     ['zh-Hans', '简体中文'], ['zh-Hant', '繁體中文'], ['ja', '日本語'], ['ko', '한국어'], ['vi', 'Tiếng Việt'], ['th', 'ไทย'],
     ['id', 'Bahasa Indonesia'], ['fil', 'Filipino'], ['sw', 'Kiswahili'], ['am', 'አማርኛ'], ['ha', 'Hausa'],
-  ].map(([id, name, rtl]) => ({ id, name, rtl: !!rtl }));
+  ].map(([id, name, rtl, tag]) => ({ id, name, rtl: !!rtl, tag: tag || '' }));   // (the Portuguese is Brazilian: a phone set to pt-PT gets it too)
   const KEY = 'll.lang', PSEUDO = 'qps';   // the pseudo-language the tests use: every known string comes back as ⟦…⟧
   const cats = {}, loading = {};
   let cur = 'en', loc = null, rules = null;
@@ -66,9 +67,10 @@ const I18n = (() => {
   /** The locale for dates, times and lists: the phone's own variant of the language when it has one, with Western digits. */
   function locale() {
     if (loc) return loc;
-    let l = cur === PSEUDO ? 'en-US' : cur;
-    if (!/-(Hans|Hant)$/.test(l)) {
-      const phone = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || '']).find(x => x && x.split('-')[0].toLowerCase() === l);
+    const L = LANGS.find(x => x.id === cur);
+    let l = cur === PSEUDO ? 'en-US' : (L && L.tag) || cur;   // (a variant's own tag, e.g. pt-BR, unless the phone has its own variant below)
+    if (!/-(Hans|Hant)$/.test(cur)) {
+      const phone = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || '']).find(x => x && x.split('-')[0].toLowerCase() === cur);
       if (phone) l = phone;
     }
     try { l = new Intl.Locale(l, { numberingSystem: 'latn' }).toString(); } catch (e) { /* an old browser: as it is */ }
@@ -83,7 +85,7 @@ const I18n = (() => {
   function label(id) {
     const L = LANGS.find(x => x.id === id); if (!L) return id;
     let here = '';
-    try { here = new Intl.DisplayNames([locale()], { type: 'language' }).of(id) || ''; } catch (e) { /* no DisplayNames */ }
+    try { here = new Intl.DisplayNames([locale()], { type: 'language' }).of(L.tag || id) || ''; } catch (e) { /* no DisplayNames */ }
     return here && here.toLowerCase() !== L.name.toLowerCase() ? `${L.name} (${here})` : L.name;
   }
 
@@ -104,7 +106,7 @@ const I18n = (() => {
   function apply(code) {
     cur = code; loc = null; rules = null;
     const L = LANGS.find(x => x.id === code), root = document.documentElement;
-    root.lang = code === PSEUDO ? 'en' : code; root.dir = L && L.rtl ? 'rtl' : 'ltr';
+    root.lang = code === PSEUDO ? 'en' : (L && L.tag) || code; root.dir = L && L.rtl ? 'rtl' : 'ltr';   // (pt-BR: so screen readers pick the Brazilian voice)
   }
   /** Start in the chosen language (or the phone's). Resolves once its catalogue is loaded. */
   async function init() { const c = chosen() || auto(); await load(c); apply(cats[c] || c === 'en' ? c : 'en'); }

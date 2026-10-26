@@ -258,7 +258,7 @@ const Guide = (() => {
       warn: N_('Don\'t use homeopathic teething tablets or gels: the FDA warned against them in 2016 and 2017 after some were found to contain far more belladonna than the label said, with reports of seizures.') },
   ];
   // The emergency number where the phone is, for the regions that share one; elsewhere it differs from country to country.
-  const SOS = { na: '911', uk: '999', eu: '112', anz: N_('000 (Australia) or 111 (New Zealand)') };
+  const SOS = { na: '911', uk: '999', eu: '112', anz: N_('000 (Australia) or 111 (New Zealand)'), br: '192 (SAMU)' };
   const sos = region => SOS[region] || N_('your local emergency number');
   /** Guide text for a region: {sos} becomes its emergency number. */
   const local = (text, region) => text.replace(/\{sos\}/g, sos(region));
