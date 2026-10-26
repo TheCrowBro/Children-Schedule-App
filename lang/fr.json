@@ -2140,5 +2140,16 @@
  "ugdpe4": "Sauvegardez le journal dans un fichier, exportez une copie pour votre pédiatre, ou restaurez une sauvegarde.",
  "en4ybm": "Les nouvelles versions arrivent par la boutique d'applications. Ce bouton ouvre la page de Little Log dans la boutique.",
  "1kg9wfd": "Repartir de zéro",
- "bki80w": "Supprime toutes les entrées de ce journal, pour tous ceux qui le partagent. Seuls les parents voient ce bouton."
+ "bki80w": "Supprime toutes les entrées de ce journal, pour tous ceux qui le partagent. Seuls les parents voient ce bouton.",
+ "pd0tu4": "Vidéo",
+ "qdvq5l": "Photo",
+ "mlv1wt": "Photo ou vidéo",
+ "xvdvl5": "Ajouter une photo",
+ "1y6ejnw": "Ajouter une vidéo",
+ "rk2p7c": "Jusqu'à {n} photos et une vidéo d'une minute au plus.",
+ "1rfj2tw": "Pas encore envoyée",
+ "z8hvzc": "Ce fichier n'est ni une photo ni une vidéo que Little Log peut afficher.",
+ "18d7cl5": "Chargement impossible. Vérifiez la connexion et réessayez.",
+ "wd001k": "Cette vidéo est trop lourde. {max} Mo au maximum.",
+ "17qmb09": "Cette vidéo dure plus d'une minute. Raccourcissez-la d'abord dans votre app Photos."
 }

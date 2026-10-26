@@ -2178,5 +2178,16 @@
  "ugdpe4": "Zrób kopię zapasową dziennika w pliku, wyeksportuj kopię dla pediatry albo przywróć kopię zapasową.",
  "en4ybm": "Nowe wersje pojawiają się w sklepie z aplikacjami. Ten przycisk otwiera tam stronę Little Log.",
  "1kg9wfd": "Zacznij od nowa",
- "bki80w": "Usuwa wszystkie wpisy z tego dziennika – u wszystkich, którzy z niego korzystają. Ten przycisk widzą tylko rodzice."
+ "bki80w": "Usuwa wszystkie wpisy z tego dziennika – u wszystkich, którzy z niego korzystają. Ten przycisk widzą tylko rodzice.",
+ "pd0tu4": "Film",
+ "qdvq5l": "Zdjęcie",
+ "mlv1wt": "Zdjęcie lub film",
+ "xvdvl5": "Dodaj zdjęcie",
+ "1y6ejnw": "Dodaj film",
+ "rk2p7c": "Do {n} zdjęć i jeden film o długości do minuty.",
+ "1rfj2tw": "Jeszcze nie wysłano",
+ "z8hvzc": "Ten plik nie jest zdjęciem ani filmem, który Little Log może pokazać.",
+ "18d7cl5": "Nie udało się wczytać. Sprawdź połączenie i spróbuj ponownie.",
+ "wd001k": "Ten film jest za duży. Najwyżej {max} MB.",
+ "17qmb09": "Ten film trwa dłużej niż minutę. Najpierw przytnij go w aplikacji Zdjęcia."
 }

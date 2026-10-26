@@ -2140,5 +2140,16 @@
  "ugdpe4": "Fă o copie de rezervă a jurnalului într-un fișier, exportă o copie pentru medicul pediatru sau restaurează o copie de rezervă.",
  "en4ybm": "Versiunile noi vin prin magazinul de aplicații. Acest buton deschide pagina Little Log de acolo.",
  "1kg9wfd": "De la zero",
- "bki80w": "Șterge toate înregistrările din acest jurnal, pentru toți cei care îl partajează. Doar părinții văd acest buton."
+ "bki80w": "Șterge toate înregistrările din acest jurnal, pentru toți cei care îl partajează. Doar părinții văd acest buton.",
+ "pd0tu4": "Videoclip",
+ "qdvq5l": "Poză",
+ "mlv1wt": "Poză sau videoclip",
+ "xvdvl5": "Adaugă o poză",
+ "1y6ejnw": "Adaugă un videoclip",
+ "rk2p7c": "Până la {n} poze și un videoclip de cel mult un minut.",
+ "1rfj2tw": "Încă netrimis",
+ "z8hvzc": "Fișierul acela nu este o poză sau un videoclip pe care Little Log să îl poată afișa.",
+ "18d7cl5": "Nu s-a putut încărca. Verifică conexiunea și încearcă din nou.",
+ "wd001k": "Videoclipul acela este prea mare. Cel mult {max} MB.",
+ "17qmb09": "Videoclipul acela durează mai mult de un minut. Scurtează-l mai întâi în aplicația Poze."
 }

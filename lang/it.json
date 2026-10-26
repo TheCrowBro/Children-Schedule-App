@@ -2140,5 +2140,16 @@
  "ugdpe4": "Salva il diario come file di backup, esporta una copia per il pediatra, o ripristina un backup.",
  "en4ybm": "Le nuove versioni arrivano dallo store. Questo apre la pagina di Little Log nello store.",
  "1kg9wfd": "Ricominciare da capo",
- "bki80w": "Elimina tutte le voci di questo diario, per tutti quelli che lo condividono. Solo i genitori vedono questo pulsante."
+ "bki80w": "Elimina tutte le voci di questo diario, per tutti quelli che lo condividono. Solo i genitori vedono questo pulsante.",
+ "pd0tu4": "Video",
+ "qdvq5l": "Foto",
+ "mlv1wt": "Foto o video",
+ "xvdvl5": "Aggiungi una foto",
+ "1y6ejnw": "Aggiungi un video",
+ "rk2p7c": "Fino a {n} foto e un video di al massimo un minuto.",
+ "1rfj2tw": "Non ancora caricato",
+ "z8hvzc": "Quel file non è una foto né un video che Little Log possa mostrare.",
+ "18d7cl5": "Impossibile caricarlo. Controlla la connessione e riprova.",
+ "wd001k": "Quel video è troppo grande. Al massimo {max} MB.",
+ "17qmb09": "Quel video dura più di un minuto. Accorcialo prima nell'app Foto."
 }
