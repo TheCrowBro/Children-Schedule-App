@@ -746,6 +746,21 @@
   "Not uploaded yet": "Small label over a picture in the big-moment sheet while it is still waiting to be sent to the family's log (no connection yet).",
   "Couldn't load it. Check the connection and try again.": "Shown when a picture or video can't be fetched from the family's log.",
   "Picture": "Spoken label of a thumbnail that is a picture (for screen readers).",
-  "Video": "Spoken label of a thumbnail that is a video (for screen readers)."
+  "Video": "Spoken label of a thumbnail that is a video (for screen readers).",
+  "How would you like to use Little Log?": "Title of the first screen on a new phone, above three big buttons (just this phone / share with family / restore a backup).",
+  "Just this phone": "First-screen button (and a button on the sign-in screen): keep the log on this phone only, without an account.",
+  "Everything stays on this phone. You can share it with the family later, from the Family tab.": "Under the 'Just this phone' button. 'Family' is the name of the tab.",
+  "Share with family": "First-screen button, and the button on the Family tab when the log is kept on this phone only: sign in to share.",
+  "Sign in with your email to start a log the family shares, or to join one. It is kept safe in the family's cloud, end-to-end encrypted, so a new phone just signs in.": "Under the 'Share with family' button, and on the Family tab while the log is on this phone only.",
+  "Moving from another phone?": "First-screen button: restore a backup made on another phone.",
+  "Restore the backup you made there.": "Under the 'Moving from another phone?' button.",
+  "Restore a backup": "Title of the restore screen (reached from the first screen).",
+  "Type the passphrase you chose when you made the backup, then choose the backup file (from iCloud Drive, Google Drive, Dropbox, OneDrive or wherever you saved it).": "Explanation on the restore screen. Keep the service names as they are.",
+  "Choose the backup file": "Button on the restore screen: opens the phone's file picker.",
+  "Keep a backup in the cloud": "Title of the screen shown once after choosing 'Just this phone'.",
+  "If you change or lose your phone, a backup is the only way to get this log back. It is encrypted with a passphrase only you know, and lives in your own iCloud Drive, Google Drive, Dropbox or OneDrive.": "Explanation on the keep-a-backup screen. Keep the service names as they are.",
+  "Set it up": "Button: go to More → Cloud backup to set the backup up now (on the keep-a-backup screen and on the Day page reminder).",
+  "You can always do it later: More → Cloud backup. Until then, a note on the Day page reminds you.": "Note on the keep-a-backup screen. 'More' and 'Cloud backup' are the tab and the card as named in the app.",
+  "Keep a backup in the cloud, in case you change or lose your phone.": "The reminder card on the Day page while a log kept on this phone only has no backup yet."
  }
 }

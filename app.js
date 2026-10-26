@@ -308,6 +308,14 @@ function grownCard() {
   return `<div class="card grown"><p>🎓 ${__h("{name} is grown up, and Little Log's work is done. Everything stays here, and you can go on logging.", { name: kidName(k) })}</p><small>${esc(yearsText(k))}</small>
     <div class="row"><button class="btn" data-book="${k.id}">📖 ${__h("{name}'s book", { name: kidName(k) })}</button><button class="btn" data-export="${k.id}">📄 ${__h('The record as a file')}</button></div></div>`;
 }
+/** A log kept on this phone only, with entries and no backup yet: a reminder to keep one in the cloud, in case the phone is changed or
+    lost. Put off, it comes back a month later; a backup to a drive or a saved backup file ends it. */
+function backupNudge() {
+  if (!Native.is || Sync.linked() || !db.events.length || typeof Cloud.last !== 'function') return '';
+  if (db.meta.fileBackupAt || ['google', 'dropbox', 'onedrive'].some(p => Cloud.last(p))) return '';
+  if (db.meta.backupNudgeAt && Date.now() - db.meta.backupNudgeAt < 30 * DAY) return '';
+  return `<div class="card grownote backupnudge"><p>☁️ ${__h('Keep a backup in the cloud, in case you change or lose your phone.')}</p><span class="row"><button class="btn p" data-backupgo>${__h('Set it up')}</button><button class="btn" data-backuplater>${__h('Not now')}</button></span></div>`;
+}
 /** On (or after) a child's 18th birthday, once: a sheet to celebrate it, with the book and a way to keep the day as a big moment. */
 function graduationCheck() {
   if (!$('#sheet').hidden || Acct.gate() || Tour.active() || !Tour.seen('day')) return;
@@ -562,7 +570,7 @@ function dayView() {
     <div class="d">${isToday ? __h('Today') : esc(fmtDate(viewDay))}<small>${isToday ? esc(fmtDate(viewDay)) : ''}${esc(ageText(viewDay))}</small></div>
     <button data-nav="1" aria-label="${__h('Next day')}" ${isToday ? 'disabled' : ''}>›</button></div>
   ${allergyLine()}
-  ${isToday ? stageNote() + grownCard() : ''}
+  ${isToday ? stageNote() + grownCard() + backupNudge() : ''}
   ${momentCards(viewDay)}
   ${isToday ? comingUp() : ''}
   ${trip && isToday ? travelQuick() : quickButtons()}
@@ -2222,6 +2230,8 @@ function bind() {
   document.querySelectorAll('[data-addmore]').forEach(b => b.onclick = () => openMoreTypes(b.dataset.addmore.split(' ')));
   document.querySelectorAll('[data-momentnew]').forEach(b => b.onclick = () => openMoment(null, { day: viewDay }));
   bindMedia(document);
+  document.querySelectorAll('[data-backupgo]').forEach(b => b.onclick = () => Acct.goCloudCard());
+  document.querySelectorAll('[data-backuplater]').forEach(b => b.onclick = () => { db.meta.backupNudgeAt = Date.now(); save(true); render(); });
   document.querySelectorAll('[data-stageok]').forEach(b => b.onclick = () => { const m = db.meta.stageSeen || (db.meta.stageSeen = {}); for (const id of b.dataset.stageok.split(' ')) m[id] = b.dataset.stage; Store.save(db); render(); });
   document.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.plan); if (ev) openPlan(ev); });
   document.querySelectorAll('[data-plannew]').forEach(b => b.onclick = () => openPlan(null, { day: viewDay }));

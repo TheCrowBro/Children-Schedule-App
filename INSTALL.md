@@ -17,6 +17,7 @@ Each saved version is a git tag, and a backup zip holds the same version ready t
 | 1.4.2 | `v1.4.2` | 25 October 2026 | A teenager's pages leave the baby days out: no feed, diaper, potty or night-waking buttons, no diapers or potty in the legends, no formula setting, and a Guide without the solids, the baby medicines, the milestones and the newborn worries. The Everyone page keeps all of it while a younger child is in the family. Nothing changes in the data. |
 | 1.4.3 | `v1.4.3` | 25 October 2026 | The Guide matches each age: from 5 it leaves the baby years out (newborn worries, solids, baby medicines), from 6 the month-by-month milestones too (a 5-year-old's list keeps the preschool years). With Everyone chosen it has a card for each child and every key part for the ages in the family. Nothing changes in the data. |
 | 1.5.0 | `v1.5.0` | 26 October 2026 | Pictures and short videos with big moments: up to 4 pictures and a video of up to a minute per moment, encrypted on the phone and kept in the family's private storage bucket, shown under the moment's card, in a viewer, and in the child's book. **Needs the database:** run the *pictures and videos* section at the end of `supabase/schema.sql` once (SETUP.md §1). Going back to an older version leaves the files where they are; the older app shows the moments without them. |
+| 1.5.1 | `v1.5.1` | 26 October 2026 | A clearer first screen: **Just this phone**, **Share with family** (sign in) or **Moving from another phone?** (restore a backup file with its passphrase). A log kept on the phone only is offered a cloud backup straight away, the Day page reminds until one is made, and the Family tab offers to share later, keeping the entries. Nothing changes in the data or on the server. |
 
 Android shows the version without its last number: 1.1.0 as "1.1". All the phones in a family should run the same version.
 
@@ -29,7 +30,9 @@ You need the app file (`.apk`), from a backup zip (§7) or built yourself (§5).
 1. Copy the `.apk` to the phone (by email to yourself, a USB cable or a cloud drive) and tap it.
 2. Android asks whether the app you opened it with (Files, Chrome, Gmail…) may install apps. Allow it, go back and tap **Install**.
    With the phone plugged into a computer and USB debugging on, `adb install -r <file>.apk` does the same.
-3. Open Little Log. Until a server is set up (§4) it offers **Use on this device only**: a private log on the phone.
+3. Open Little Log. The first screen asks how you'd like to use it: **Just this phone**, **Share with family** (needs a server, §4) or
+   **Moving from another phone?** (restore a backup file). Until a server is set up (§4) it offers **Use on this device only** instead:
+   a private log on the phone.
 
 Needs Android 7.0 or newer.
 
@@ -49,7 +52,9 @@ Apple only lets an app onto an iPhone through Xcode, TestFlight or the App Store
 Needs iOS 15 or newer.
 
 ## 4. Sign-in, families and cloud backup (optional)
-On its own the app keeps everything on the phone. For a family to share a log you need a Supabase project (the free tier is fine):
+On its own the app keeps everything on the phone (**Just this phone** on the first screen), with an encrypted backup to the owner's own
+cloud drive or Files (More → Cloud backup) for moving phones. For a family to share a log you need a Supabase project (the free tier is
+fine):
 1. Follow [SETUP.md §1](SETUP.md#1-supabase-project-free-tier-is-fine): create the project, run `supabase/schema.sql` in its SQL
    Editor, and make the sign-in settings in its table (the emailed code, two-step verification, CAPTCHA, token lifetime, your own
    email sender).

@@ -297,6 +297,10 @@ details.tips ul{margin:0 0 6px;padding-inline-start:20px;line-height:1.5;font-si
 .legend .plankey i{color:var(--brand);font-style:normal;margin-inline-end:4px;font-size:10px}.planbtn{border-color:var(--brand)}.planbtn .tm .ic{color:var(--brand)}
 .grown{border-inline-start:4px solid var(--g-moment)}.grown p{margin:0 0 4px}.grown small{color:var(--mute)}.grown .row{margin-top:10px;flex-wrap:wrap}
 .grownote{display:flex;gap:10px;align-items:center;justify-content:space-between}.grownote p{margin:0;font-size:14px}.grownote .btn{flex:none;padding:6px 12px}
+.backupnudge .row{display:flex;flex-direction:column;gap:6px;flex:none;margin:0}
+/* The first screen: three big choices; More → Cloud backup lit for a moment when arrived at from the backup step or the reminder */
+.wbtn{display:flex;text-align:start;width:100%;margin-top:10px;padding:12px 14px}.wbtn small{display:block;font-weight:400;color:var(--mute);margin-top:3px;font-size:13px;line-height:1.35}.wbtn.p small{color:inherit;opacity:.85}
+.card.lit{outline:3px solid #f2b84b;outline-offset:2px}
 .clock .carc{fill:none;stroke:var(--g-care);stroke-width:5;stroke-linecap:round;opacity:.55}
 .banner .brow.care small{display:block;font-weight:400;opacity:.85}
 .clock .ray.approx path:not(.hitl){stroke-dasharray:3 3}

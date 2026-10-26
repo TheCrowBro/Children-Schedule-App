@@ -109,9 +109,10 @@ const Acct = (() => {
   function gate() {
     if (!Native.is) return { html: appOnlyHtml(), bind() {} };
     if (!Auth.configured) { if (!db.meta.localOnly) return { html: setupHtml(), bind: bindSetup }; }
-    else if (!Auth.signedIn) return { html: loginHtml(), bind: bindLogin };
+    else if (!Auth.signedIn && !db.meta.localOnly) return welcomed() ? { html: loginHtml(), bind: bindLogin } : { html: welcomeHtml(), bind: bindWelcome };
     if (Lock.locked) return { html: lockHtml(), bind: bindLock };
-    if (Auth.configured) {
+    if (db.meta.backupStep && !Auth.signedIn) return { html: backupHtml(), bind: bindBackupStep };
+    if (Auth.configured && Auth.signedIn) {   // (a log kept on this phone only skips the account's screens)
       if (!F.loaded || F.loading) return { html: `<div class="card"><div class="empty">${__h('Loading…')}</div></div>`, bind() {} };
       if (F.needsMfa()) return { html: mfaVerifyHtml(), bind: bindMfaVerify };
       if (enrollNeeded()) return { html: enrollHtml(), bind: bindEnroll };
@@ -125,7 +126,55 @@ const Acct = (() => {
   const setupHtml = () => `<div class="card"><b>${__h("Sign-in isn't set up yet")}</b>
     <p class="note">${__h('This copy of Little Log has no account service configured, so family sync and sign-in are unavailable. See {file} to turn them on.', { file: 'SETUP.md' })}</p>
     <button class="btn p" id="localOnly" style="width:100%">${__h('Use on this device only')}</button></div>`;
-  const bindSetup = () => { $('#localOnly').onclick = () => { db.meta.localOnly = true; save(true); render(); }; };
+  const bindSetup = () => { $('#localOnly').onclick = () => { markWelcome(); db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); }; };
+
+  // ---- the first screen: just this phone, share with family, or restore a backup from another phone ------------------------------
+  // The choice is remembered on this phone (like the tours), so the sign-in screen comes straight up next time.
+  const W = { step: 'choose', err: '' };
+  const welcomed = () => { try { return localStorage.getItem('ll.welcome') === '1'; } catch (e) { return false; } };
+  const markWelcome = () => { try { localStorage.setItem('ll.welcome', '1'); } catch (e) { /* storage blocked: it may show again */ } };
+  const SHARE_WHY = N_("Sign in with your email to start a log the family shares, or to join one. It is kept safe in the family's cloud, end-to-end encrypted, so a new phone just signs in.");
+  const welcomeHtml = () => (W.step === 'restore' ? restoreHtml() : `<div class="card welcome"><b>${__h('How would you like to use Little Log?')}</b>
+    <button class="btn p wbtn" id="wLocal"><span><b>${__h('Just this phone')}</b><small>${__h('Everything stays on this phone. You can share it with the family later, from the Family tab.')}</small></span></button>
+    <button class="btn wbtn" id="wShare"><span><b>${__h('Share with family')}</b><small>${__h(SHARE_WHY)}</small></span></button>
+    <button class="btn wbtn" id="wRestore"><span><b>${__h('Moving from another phone?')}</b><small>${__h('Restore the backup you made there.')}</small></span></button></div>`);
+  const restoreHtml = () => `<div class="card"><b>${__h('Restore a backup')}</b>
+    <p class="note">${__h('Type the passphrase you chose when you made the backup, then choose the backup file (from iCloud Drive, Google Drive, Dropbox, OneDrive or wherever you saved it).')}</p>
+    <label class="f">${__h('Backup passphrase ({n}+ characters)', { n: Cloud.MIN_PASS })}</label><input id="rsPass" type="password" autocomplete="off">
+    <button class="btn p" id="rsFile" style="width:100%;margin-top:12px">${__h('Choose the backup file')}</button><input type="file" id="rsFileIn" accept="application/json,.json" hidden>
+    <div class="row"><button class="btn" id="rsBack">${__h('Back')}</button></div>${alertP(W.err)}</div>`;
+  function bindWelcome() {
+    const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
+    on('#wLocal', () => { markWelcome(); db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); });
+    on('#wShare', () => { markWelcome(); render(); });
+    on('#wRestore', () => { W.step = 'restore'; W.err = ''; render(); });
+    on('#rsBack', () => { W.step = 'choose'; W.err = ''; render(); });
+    const passOk = () => { const p = $('#rsPass').value; if (p && p.length >= Cloud.MIN_PASS) return p; W.err = __('Set a backup passphrase ({n}+ characters) first', { n: Cloud.MIN_PASS }); render(); return null; };
+    on('#rsFile', () => { if (passOk()) $('#rsFileIn').click(); });
+    const fi = $('#rsFileIn');
+    if (fi) fi.onchange = async e => {
+      const f = e.target.files[0], p = passOk(); e.target.value = ''; if (!f || !p) return;
+      Cloud.setPass(p); db.meta.localOnly = true;
+      try { applyBackup(await Cloud.fromFile(f)); markWelcome(); W.step = 'choose'; W.err = ''; }   // (applyBackup saves, redraws and says how many entries came back)
+      catch (x) { delete db.meta.localOnly; W.err = err(x); render(); }   // (a wrong passphrase: back on the restore card, with the reason)
+    };
+  }
+  // ---- keep a backup: offered once after choosing this phone only; the Day page reminds until one is made --------------------------
+  const backupHtml = () => `<div class="card"><b>☁️ ${__h('Keep a backup in the cloud')}</b>
+    <p class="note">${__h('If you change or lose your phone, a backup is the only way to get this log back. It is encrypted with a passphrase only you know, and lives in your own iCloud Drive, Google Drive, Dropbox or OneDrive.')}</p>
+    <button class="btn p" id="bsGo" style="width:100%">${__h('Set it up')}</button>
+    <button class="btn" id="bsLater" style="width:100%;margin-top:8px">${__h('Not now')}</button>
+    <p class="note">${__h('You can always do it later: More → Cloud backup. Until then, a note on the Day page reminds you.')}</p></div>`;
+  const bindBackupStep = () => {
+    $('#bsGo').onclick = () => { delete db.meta.backupStep; save(true); goCloudCard(); };
+    $('#bsLater').onclick = () => { delete db.meta.backupStep; save(true); render(); };
+  };
+  /** More → Cloud backup, scrolled into view and lit for a moment. */
+  function goCloudCard() {
+    tab = 'more'; render();
+    const c = $('#cPass') && $('#cPass').closest('.card'); if (!c) return;   // (no :has(): an older WebView would throw on it)
+    c.scrollIntoView({ block: 'start' }); c.classList.add('lit'); setTimeout(() => c.classList.remove('lit'), 2500);
+  }
 
   // ---- app lock -------------------------------------------------------------------------------
   const lockHtml = () => `<div class="card" style="text-align:center"><div style="font-size:48px">🔒</div><b>${__h('Little Log is locked')}</b>
@@ -144,7 +193,8 @@ const Acct = (() => {
       ? `<p class="note">${__h("Enter your email and we'll send you a one-time code. No password needed. First time? This creates your account.")}</p>
          <label class="f">${__h('Email')}</label><input id="lEmail" type="email" inputmode="email" autocomplete="email" value="${esc(L.email)}" placeholder="${__h('you@example.com')}">
          ${CFG.captchaSiteKey ? '<div id="captcha" style="margin-top:12px"></div>' : ''}
-         <button class="btn p" id="lSend" style="width:100%;margin-top:12px" ${L.busy ? 'disabled' : ''}>${L.busy ? __h('Sending…') : __h('Email me a code')}</button>`
+         <button class="btn p" id="lSend" style="width:100%;margin-top:12px" ${L.busy ? 'disabled' : ''}>${L.busy ? __h('Sending…') : __h('Email me a code')}</button>
+         <button class="btn" id="lLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>`
       : `<p class="note">${__h('We sent a code to **{email}**. It works for 10 minutes.', { email: L.email })}</p>
          <label class="f">${__h('Code')}</label><input id="lCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="12345678">
          <button class="btn p" id="lVerify" style="width:100%;margin-top:12px" ${L.busy ? 'disabled' : ''}>${L.busy ? __h('Checking…') : __h('Sign in')}</button>
@@ -159,6 +209,7 @@ const Acct = (() => {
     } catch (e) { L.err = err(e); const el = $('#captcha'); if (el) el.textContent = L.err; }
   }
   function bindLogin() {
+    if ($('#lLocal')) $('#lLocal').onclick = () => { db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); };
     const go = async fn => { L.busy = true; L.err = ''; render(); try { await fn(); } catch (e) { L.err = err(e); } L.busy = false; render(); };
     // Read the inputs *before* go() re-renders the form (which replaces them).
     const send = () => {
@@ -707,7 +758,8 @@ const Acct = (() => {
   let invForm = null, invFormFor = null;
   function familyHtml() {
     if (invFormFor !== db.meta.babyId) { invForm = null; invFormFor = db.meta.babyId; }   // (another family: its own form)
-    if (!Auth.configured || !db.meta.babyId) return `<div class="card"><b>${__h('Family sharing is off')}</b><p class="note">${Auth.configured ? __h('Create a baby log to share it.') : __h("Account service isn't configured (see {file}), so this device keeps its own private log.", { file: 'SETUP.md' })}</p></div>`;
+    if (!Auth.configured || !db.meta.babyId) return `<div class="card"><b>${__h('Family sharing is off')}</b><p class="note">${!Auth.configured ? __h("Account service isn't configured (see {file}), so this device keeps its own private log.", { file: 'SETUP.md' }) : Auth.signedIn ? __h('Create a baby log to share it.') : __h(SHARE_WHY)}</p>
+      ${Auth.configured && !Auth.signedIn ? `<button class="btn p" id="famShare" style="width:100%">${__h('Share with family')}</button>` : ''}</div>`;
     const s = Sync.st, parent = Sync.isParent();
     if (Date.now() - (F.treeAt || 0) > 30000) refreshTree();
     if (membersLoadedFor !== db.meta.babyId) { membersLoadedFor = db.meta.babyId; Promise.all([Sync.loadPeople(), Sync.loadRetired(), RELATIVES.includes(db.meta.role) ? Sync.loadTree().catch(() => null) : null, parent ? Sync.loadAdmin() : null, Sync.loadDevices(), Sync.myDevices().then(r => { F.myPhones = r; }), Sync.securityCode().then(c => { F.secCode = c; })]).then(() => { if (tab === 'family') render(); }).catch(() => {}); }
@@ -765,6 +817,7 @@ const Acct = (() => {
   }
   function bindFamily() {
     const el = id => document.getElementById(id);
+    if (el('famShare')) el('famShare').onclick = () => { delete db.meta.localOnly; markWelcome(); save(true); render(); };   // (a log kept on this phone so far: sign in to share it)
     if (!el('syncNow')) return;
     document.querySelectorAll('[data-pview]').forEach(b => b.onclick = () => viewPerson(b.dataset.pview));   // anyone can open a person's card
     document.querySelectorAll('[data-rview]').forEach(b => b.onclick = () => viewRetired(b.dataset.rview));
@@ -1003,12 +1056,12 @@ const Acct = (() => {
     document.querySelectorAll('[data-cd]').forEach(b => b.onclick = () => { Cloud.disconnect(b.dataset.cd); render(); });
     document.querySelectorAll('[data-cb]').forEach(b => b.onclick = () => run(__('Backing up…'), async () => { await Cloud.backup(b.dataset.cb); return __('Backed up to {service}', { service: Cloud.label(b.dataset.cb) }); }));
     document.querySelectorAll('[data-cr]').forEach(b => b.onclick = () => run(__('Restoring…'), async () => { applyBackup(await Cloud.restore(b.dataset.cr)); }));
-    on('#cFileSave', async () => { try { const f = await Cloud.toFile(); await Native.saveFile(f.name, await f.text()); } catch (e) { if (!/cancel|abort/i.test(e && e.message)) toast(err(e)); } });
+    on('#cFileSave', async () => { try { const f = await Cloud.toFile(); await Native.saveFile(f.name, await f.text()); db.meta.fileBackupAt = Date.now(); save(true); render(); } catch (e) { if (!/cancel|abort/i.test(e && e.message)) toast(err(e)); } });
     on('#cFileLoad', () => { if (!Cloud.pass || Cloud.pass.length < Cloud.MIN_PASS) return toast(__('Set a backup passphrase ({n}+ characters) first', { n: Cloud.MIN_PASS })); $('#cFile').click(); });
     $('#cFile').onchange = async e => { try { applyBackup(await Cloud.fromFile(e.target.files[0])); } catch (x) { toast(err(x)); } e.target.value = ''; };
   }
   /** Called by app.js after each render/sync to keep the Family tab badge current. */
   function updateBadge() { const b = $('#famBadge'); if (!b) return; const n = Sync.isParent() ? Sync.st.requests.length : 0; b.hidden = !n || tab === 'family'; b.textContent = n; }
 
-  return { init, gate, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, cloudHtml, bindMoreAccount, applyBackup, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, parseJoin, sessionLost };
+  return { init, gate, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, cloudHtml, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, parseJoin, sessionLost };
 })();

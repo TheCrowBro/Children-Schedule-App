@@ -33,6 +33,7 @@ async function setup({ port = 8126 } = {}) {
     await installFakeNative(ctx, opts);
     if (opts.skew) await ctx.addInitScript(off => { const real = Date.now.bind(Date); Date.now = () => real() + off; }, opts.skew);
     if (!opts.tour) await ctx.addInitScript(() => { try { if (!localStorage.getItem('ll.tours')) localStorage.setItem('ll.tours', '{"day":1}'); } catch (e) { /* no storage */ } });   // (the first-time tour has its own test)
+    if (!opts.welcome) await ctx.addInitScript(() => { try { localStorage.setItem('ll.welcome', '1'); } catch (e) { /* no storage */ } });   // (the first screen has its own test: start.test.js)
     await shim.install(ctx);
     const p = await ctx.newPage(); p.errs = []; p.csp = [];
     p.on('pageerror', e => p.errs.push(e.message));

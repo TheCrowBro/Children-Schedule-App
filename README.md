@@ -169,11 +169,18 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   helper who moved away, stopped, or died: their access ends at once (as if removed, and the log changes its keys), but they stay on a
   **Retired** list with their role, dates, the reason and their details (still end-to-end encrypted), and their past entries still say
   who added them. To have them back, invite them again; a parent can also delete the note
+- **The first screen**: a new phone asks how you'd like to use Little Log. **Just this phone** keeps everything on the phone, with no
+  account; **Share with family** signs in with an email to start a log the family shares, or to join one; **Moving from another phone?**
+  restores the backup file made on the old phone, with its passphrase. The choice is remembered. A log kept on the phone only can share
+  later from the Family tab (**Share with family**), and its entries wait to be taken into the new log
 - **Locked-down accounts**: email one-time code + security check (CAPTCHA), **two-step verification** (required for parents), Face ID / fingerprint
   **app lock**, secrets in the **Keychain / Keystore**, "sign out everywhere", in-app account deletion
 - **End-to-end encryption**: the server can't read the baby's name, entries, notes or health data. Phones hold the keys (Keychain / Keystore); a recovery code
   protects against losing every phone; keys change automatically when someone leaves or loses a phone
-- **Encrypted cloud backup** to Google Drive, Dropbox, OneDrive, or iCloud Drive / Files
+- **Encrypted cloud backup** (More → Cloud backup) to Google Drive, Dropbox, OneDrive, or iCloud Drive / Files, with a passphrase only
+  you know. A log kept on the phone only is offered it straight after the first screen (**Set it up**, or **Not now**), and until a backup
+  is made a note on the Day page reminds you once something is logged (put off, it comes back a month later). To move phones, the new
+  phone restores the backup file at its first screen; a backup in a drive is restored from More → Cloud backup after connecting the drive
 - Works offline; changes sync when you're back online
 - **Update app** (More): opens Little Log's page in the App Store or Google Play, where an update is one tap, and shows the version
   that's installed
