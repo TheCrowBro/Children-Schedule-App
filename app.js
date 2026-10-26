@@ -1419,9 +1419,15 @@ function doctorHtml() {
   return `<button class="docbtn" id="docBtn"><span class="di">🩺</span><span><b>${__h('Pediatrician')}</b><small>${set ? esc([d.name, d.practice].filter(Boolean).join(' · ')) + (d.phone ? ' · ' + esc(d.phone) : '') : __h('Add their name and number')}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
 function guideView() {
-  const ks = [kidById(viewKid())].filter(k => k && k.birth), now = Date.now();
-  const cur = ks.map(k => [k, Guide.monthsOld(k.birth, now)]).filter(([, m]) => m >= 0);
-  const ms = Object.entries(Guide.MILESTONES), sos = __(Guide.sos(myRegion())), older = allFrom('toddler');
+  const now = Date.now(), everyone = curKid() === 'all';
+  // who the Guide is for: the child shown, or with Everyone chosen the whole family (every key part of every age in it)
+  const who = everyone ? kids() : pageKids(), months = k => (k.birth ? Stages.months(k.birth, now) : 0), stg = k => stageOf(k, now);
+  const ks = (everyone ? kids() : [kidById(viewKid())]).filter(k => k && k.birth), cur = ks.map(k => [k, Guide.monthsOld(k.birth, now)]).filter(([, m]) => m >= 0);
+  const all = s => who.length > 0 && who.every(k => Stages.from(stg(k), s)), some = f => who.some(f);
+  const ms = Object.entries(Guide.MILESTONES), sos = __(Guide.sos(myRegion())), older = all('toddler'), schoolAge = all('school'), teenAge = all('teen'), ten = some(k => months(k) >= 120);
+  // the baby years go at 5 (the newborn worries, the solids, the baby medicines) and the month-by-month milestones at 6 (a 5-year-old's
+  // list keeps the preschool years); with Everyone chosen, a younger child in the family keeps them all
+  const youngest = who.length ? Math.min(...who.map(months)) : 0, babyDays = youngest < 60, under6 = youngest < 72, msList = ms.filter(([n]) => youngest < 60 || +n >= 36);
   // what is common at the child's age: the milestones until 5, then what the school and teenage years are about
   const nowCard = ([k, m]) => {
     const key = ms.map(([n]) => +n).filter(n => n <= Math.max(1, m)).pop() || 1, M = Guide.MILESTONES[key], st = stageOf(k, now), note = Guide.STAGE_NOTES[st === 'grown' ? 'teen' : st];
@@ -1433,32 +1439,46 @@ function guideView() {
     <p>${__h(c.body)}</p>${c.call ? `<p class="call">${__h(c.call, { sos })}</p>` : ''}${grp === 'g' ? picsHtml(c.id) : ''}</details>`;
   const newborn = `<h2>${__h('Common with newborns')}</h2>${Guide.COMMON.map(c => card('g', c)).join('')}`;
   const toddler = `<h2>${__h('Toddlers and preschoolers')}</h2>${Guide.TODDLER.map(c => card('t', c)).join('')}`;
-  // the topics of the child's stage first: a toddler's, a school child's or a teenager's; and those of the next stage near the end, as
-  // what comes next (the school years for a preschooler, the teenage years from 10). A teenager's Guide leaves the baby years out: the
-  // solids, the baby medicines, the milestones and the newborn worries. With Everyone chosen they stay while a younger child is in the family.
-  const school = `<h2>${__h('School age')}</h2>${Guide.SCHOOL.map(c => card('s', c)).join('')}`, schoolAge = allFrom('school');
-  const teens = `<h2>${__h('Teenagers')}</h2>${Guide.TEEN.map(c => card('n', c)).join('')}`, teenAge = allFrom('teen'), k0 = kidById(viewKid()), ten = !!(k0 && k0.birth && Stages.months(k0.birth, now) >= 120);
-  const babyDays = !(curKid() === 'all' ? kids() : pageKids()).every(k => Stages.from(stageOf(k), 'teen'));
-  return `${doctorHtml()}
+  const school = `<h2>${__h('School age')}</h2>${Guide.SCHOOL.map(c => card('s', c)).join('')}`;
+  const teens = `<h2>${__h('Teenagers')}</h2>${Guide.TEEN.map(c => card('n', c)).join('')}`;
+  const food = `<h2>${__h('Food')}</h2>
+  <details class="gd" data-grp="gsolids" ${openGroups.has('gsolids') ? 'open' : ''}><summary><span class="gi">🥄</span><span class="gt"><b>${__h('Starting solid foods')}</b><small>${__h('From around 6 months, with the key allergens early')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    ${solidsGuideHtml(sos)}</details>`;
+  const meds = `<h2>${__h('Medicines')}</h2>
+  ${medsHtml()}`, checks = `<h2>${__h('Health checks')}</h2>${Guide.CHECKS.map(c => card('h', c)).join('')}`;
+  const milestones = `<h2>${__h('Month by month')}</h2>
+  ${msList.map(([n, M]) => milestoneDetails(+n, M)).join('')}`;
+  const head = `${doctorHtml()}
   ${Sync.can('health') && kidById(viewKid()) ? recordButton(kidById(viewKid())) : ''}
   <p class="note emer"><b>${__h('Emergency?')}</b> ${older ? __h('Call {sos} for blue lips or face, trouble breathing, a child who is hard to wake, or a seizure.', { sos }) : __h('Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.', { sos })}</p>
-  ${cur.length ? `<h2>${__h('Right now')}</h2>${cur.map(nowCard).join('')}` : ''}
-  ${teenAge ? teens : schoolAge ? school : older ? toddler : ''}
-  ${babyDays ? `<h2>${__h('Food')}</h2>
-  <details class="gd" data-grp="gsolids" ${openGroups.has('gsolids') ? 'open' : ''}><summary><span class="gi">🥄</span><span class="gt"><b>${__h('Starting solid foods')}</b><small>${__h('From around 6 months, with the key allergens early')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
-    ${solidsGuideHtml(sos)}</details>` : ''}
-  ${older ? '' : newborn}
-  ${babyDays ? `<h2>${__h('Medicines')}</h2>
-  ${medsHtml()}` : ''}
-  <h2>${__h('Health checks')}</h2>${Guide.CHECKS.map(c => card('h', c)).join('')}
-  ${older ? '' : toddler}
-  ${babyDays ? `<h2>${__h('Month by month')}</h2>
-  ${ms.map(([n, M]) => milestoneDetails(+n, M)).join('')}` : ''}
-  ${!schoolAge && allFrom('preschool') ? school : ''}${schoolAge && !teenAge && ten ? teens : ''}
-  ${older && babyDays ? newborn : ''}
-  <p class="note">${__h("General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.")}</p>
+  ${cur.length ? `<h2>${__h('Right now')}</h2>${cur.map(nowCard).join('')}` : ''}`;
+  const foot = `<p class="note">${__h("General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.")}</p>
   ${I18n.lang() === 'en' ? '' : `<p class="note">${__h('This translation was made with the help of AI and may have mistakes. In an emergency, call {sos}. If something reads wrong, tell us: More → Language → Report a language issue.', { sos })}</p>`}
   ${babyDays ? picCreditsHtml() : ''}`;
+  // Everyone: every key part for the ages in the family, youngest first
+  if (everyone && who.length > 1) {
+    return `${head}
+    ${babyDays ? newborn + food + meds : ''}
+    ${some(k => !Stages.from(stg(k), 'school')) ? toddler : ''}
+    ${some(k => Stages.from(stg(k), 'school') && !Stages.from(stg(k), 'teen')) || some(k => stg(k) === 'preschool') ? school : ''}
+    ${some(k => Stages.from(stg(k), 'teen')) || ten ? teens : ''}
+    ${checks}
+    ${under6 ? milestones : ''}
+    ${foot}`;
+  }
+  // one child: the topics of their stage first; those of the next stage near the end, as what comes next (the school years for a
+  // preschooler, the teenage years from 10); a baby's Guide puts the newborn worries first and the toddler years later
+  return `${head}
+  ${teenAge ? teens : schoolAge ? school : older ? toddler : ''}
+  ${babyDays ? food : ''}
+  ${older ? '' : newborn}
+  ${babyDays ? meds : ''}
+  ${checks}
+  ${older ? '' : toddler}
+  ${under6 ? milestones : ''}
+  ${!schoolAge && all('preschool') ? school : ''}${schoolAge && !teenAge && ten ? teens : ''}
+  ${older && babyDays ? newborn : ''}
+  ${foot}`;
 }
 /** A common worry's pictures, in a twirl-down of their own inside its card. It stays shut until someone chooses to look, and shuts again
     when the card closes or the Guide is left, so nobody comes across them by surprise. */

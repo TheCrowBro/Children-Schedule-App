@@ -55,7 +55,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await P.click('details[data-grp=nmind] > summary'); assert(/take it seriously: stay with them/.test(await P.textContent('details[data-grp=nmind]')));
       assert(/The teenage years/.test(await P.textContent('.nowcard')));
       const tom = await P.evaluate(() => G.age(1, 11, 0, 'Tom')); await P.evaluate(id => G.page(id, 'guide'), tom);
-      const t = await heads(); assert(t.indexOf('School age') === 1 && t.indexOf('Teenagers') > t.indexOf('Month by month'), t.join(', '));
+      assert.deepEqual(await heads(), ['Right now', 'School age', 'Health checks', 'Teenagers'], 'at 11: the school years first, the teenage years as what comes next, none of the baby years');
       await P.evaluate(id => { G.age(1, 7, 0); G.page(id, 'guide'); }, tom); assert(!(await heads()).includes('Teenagers'), 'not at 7');
     });
 
