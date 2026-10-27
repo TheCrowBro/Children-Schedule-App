@@ -214,7 +214,7 @@ const server = http.createServer((req, res) => {
     assert.equal((await q(`select count(*)::int c from members where email='dad@x.com'`))[0].c, 0);
   });
   await step('the parent sees the request (badge + list) and approves it', async () => {
-    await goTab(A, 'day'); await syncNow(A);
+    await A.evaluate(() => { tab = 'day'; render(); }); await syncNow(A);   // (not a click: the request may already have popped up)
     await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Someone wants to join/.test(await A.textContent('#sheet')) && /dad@x.com/.test(await A.textContent('#sheet')), 'the request pops up on the parent\'s phone as it arrives');
     await A.click('#sheet [data-close]'); await A.waitForFunction(() => $('#sheet').hidden, null, { timeout: 5000 });
     await syncNow(A); await sleep(100); assert(await A.evaluate(() => $('#sheet').hidden), 'put off with Later, it does not pop up again while the app runs');
@@ -390,7 +390,7 @@ const server = http.createServer((req, res) => {
     await goTab(A, 'family'); const code = await mkInvite(A, 'friend'), secret = await A.evaluate(c => E2EE.inviteSecret(c), code); secrets.push(secret);
     const E = await device({ launchUrl: `app.littlelog.newborn://join?join=${code}&s=${secret}` });   // opened from the link: the secret rides along
     await signIn(E, 'eve@x.com'); await E.waitForSelector('#wCheck');
-    await goTab(A, 'day'); await syncNow(A); await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Verified: they scanned your QR code/.test(await A.textContent('#sheet'))); await A.click('#sheet [data-approve]'); await noRequest(A);
+    await A.evaluate(() => { tab = 'day'; render(); }); await syncNow(A);   // (not a click: the request may already have popped up) await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Verified: they scanned your QR code/.test(await A.textContent('#sheet'))); await A.click('#sheet [data-approve]'); await noRequest(A);
     await su.query(`update key_grants set auth=null where grantee in (select 'd:'||d.id::text from devices d join auth.users u on u.id=d.user_id where u.email='eve@x.com')`);   // the server strips the proof
     await E.click('#wCheck'); await E.waitForFunction(() => /did not come from the parent who invited you/.test((Sync.st.err || '') + document.body.textContent), null, { timeout: 15000 });
     assert.equal(await E.evaluate(() => E2EE.hasKeys(db.meta.babyId)), false, 'no keys were accepted');
