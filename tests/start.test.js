@@ -28,6 +28,19 @@ const ungated = p => p.waitForFunction(() => !document.body.classList.contains('
       assert.equal(await P.evaluate(() => db.meta.localOnly), true);
     });
 
+    await step('the first screen has a tour of its own: it starts by itself on a new phone, says Just this phone is not a one-way door, ? restarts it, and after the choice the home screen\'s tour follows', async () => {
+      const T = await H.device({ welcome: true, tour: true }); await T.waitForSelector('#wLocal'); await T.waitForSelector('.tour-tip', { timeout: 5000 }); await T.waitForTimeout(600);
+      const at = () => T.evaluate(() => ({ n: document.querySelector('.tt-n').textContent, t: document.querySelector('#tourT').textContent, w: document.querySelector('#tourW').textContent }));
+      const s1 = await at(); assert.equal(s1.t, 'Just this phone'); assert.equal(s1.n, '1 of 5'); assert(/not a one-way door/.test(s1.w) && /Share with family/.test(s1.w), s1.w);
+      await T.click('.tt-next'); await T.waitForTimeout(500); assert.equal((await at()).t, 'Share with family');
+      await T.click('.tt-next'); await T.click('.tt-next'); await T.waitForTimeout(500); assert.equal((await at()).t, 'Your language');
+      await T.click('.tt-skip'); assert.equal(await T.$('.tour'), null); assert.equal(await T.evaluate(() => JSON.parse(localStorage.getItem('ll.tours')).welcome), 1, 'seen, even when skipped');
+      assert(await T.isVisible('#helpBtn'), '? stays on the first screen'); await T.click('#helpBtn'); await T.waitForSelector('.tour-tip'); assert.equal((await at()).t, 'Just this phone'); await T.keyboard.press('Escape');
+      await T.reload(); await T.waitForSelector('#wLocal'); await T.waitForTimeout(1200); assert.equal(await T.$('.tour'), null, 'not again after a restart');
+      await T.click('#wLocal'); await T.waitForSelector('#bsLater'); assert.equal(await T.$('.tour'), null, 'nothing on the backup step'); await T.click('#bsLater'); await ungated(T);
+      await T.waitForSelector('.tour-tip', { timeout: 5000 }); await T.waitForTimeout(300); assert(/^(A page for each child|Log it in one tap)$/.test((await at()).t), 'then the home screen\'s own tour (one child: no tabs for children): ' + (await at()).t); await T.keyboard.press('Escape');
+    });
+
     await step('a log kept on this phone only is reminded to keep a backup once it has entries; put off, the reminder comes back a month later; Set it up opens More → Cloud backup, lit', async () => {
       assert.equal(await P.$('.backupnudge'), null, 'nothing logged yet: no reminder');
       await P.click('#view .quick [data-add=feed]'); await P.waitForSelector('#save'); await P.click('#save');

@@ -489,6 +489,11 @@ details.famlist .fbranches{margin:0 14px 14px;margin-inline-start:26px}details.f
 .moment .mb{flex:1;min-width:0}.moment small{display:block;color:var(--mute);margin-top:2px}.moment .mn{font-style:italic;color:var(--ink)}
 .momentbtn{border-color:var(--g-moment)}.momentbtn+.tripbtn{margin-top:4px}.momentbtn .tm .ic{width:42px;height:42px;color:var(--g-moment)}
 .mmark{position:absolute;top:1px;inset-inline-start:3px;color:var(--g-moment);font:700 11px/1 system-ui,sans-serif;font-style:normal}
+/* a day with a big moment: a gold ring and wash on the calendar (with a trip's or an allergy's marks when they share the day) */
+.cal button.momentday{border-color:var(--g-moment);box-shadow:inset 0 0 0 2px var(--g-moment);background:linear-gradient(135deg,var(--mwash,rgba(212,165,72,.26)),transparent 78%),var(--card)}
+.cal button.momentday .mmark{font-size:13px}.cal button.tripday.momentday{box-shadow:inset 0 -3px 0 var(--trip),inset 0 0 0 2px var(--g-moment)}
+.cal button.allergyday.momentday{box-shadow:inset 0 0 0 2px var(--health-ink)}.cal button.tripday.allergyday.momentday{box-shadow:inset 0 -3px 0 var(--trip),inset 0 0 0 2px var(--health-ink)}
+:root[data-mode="dark"] .cal button.momentday{--mwash:rgba(211,165,72,.22)}
 .legend .mmkey .mmark{position:static;display:inline-block;margin-inline-end:4px}
 details.moments>.moment,details.moments>.mmadd{margin:0 12px 8px;width:calc(100% - 24px)}details.moments>.mmadd{margin-bottom:12px}
 details.moments>.mh{margin:10px 16px 6px;color:var(--g-moment)}

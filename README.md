@@ -75,7 +75,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   shows that entry's details (editing stays in the list below, where "Show in the list" takes you); tap a quarter of
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
-- **Month view** with a day's counts at a glance (and the entries in a twirl-down); **stats** for the last 7, 14 or 30 days, 3 months, 6
+- **Month view** with a day's counts at a glance (and the entries in a twirl-down); a day with a big moment is ringed and washed in
+  gold, like the big-moment cards and buttons; **stats** for the last 7, 14 or 30 days, 3 months, 6
   months or a year (over 30 days the charts show an average day for each week, over a year for each month), the key numbers on each card and
   every chart in a twirl-down of its own, drawn small; a **Height & weight** card with the latest measurements and their percentiles
 - **Routine** tab: the times of day that keep coming back, laid out like a day in a calendar from morning to night (morning, afternoon,
@@ -148,7 +149,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   reminder to take the baby out of the car seat), and tips for each kind of trip. Travel days stay outlined in the month view. Leaving
   and coming home play a short journey across the screen (from the house, or back to it) while the page changes under it
 - **Tutorial**: a ? on every screen starts a short tour of it: a highlight box glides from button to button with a line on why it's there.
-  The home screen's tour starts by itself the first time. Every part of every screen is in its tour, including what only shows up as a
+  The home screen's tour starts by itself the first time, and so does the first screen's: what Just this phone, Share with family and
+  Moving from another phone mean, and that Just this phone is not a one-way door (the Family tab's Share with family signs you in later,
+  entries and all). Every part of every screen is in its tour, including what only shows up as a
   child grows (drop-off, homework, the calendar, turning 18) and the health record, which has a tour of its own
 - **Easy to find the way back**: the health record (a page of its own) has a bar that stays at the top while you scroll, with a big
   "Back to Guide" (or Stats, or More) and "Today"; every sheet has a big close button in its corner that stays put while the sheet

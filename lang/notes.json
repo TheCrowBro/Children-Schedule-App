@@ -792,6 +792,11 @@
     "Later": "Button on that pop-up: close it and decide later (the request stays on the Family tab).",
     "From now on, only your face, fingerprint or passcode opens Little Log's little log.": "The phone's own Face ID / fingerprint prompt when app lock is turned on. 'Little Log' stays in English; if the play on words does not work in your language, say simply that it opens Little Log.",
     "Your face, fingerprint or passcode opens Little Log's little log.": "The phone's own Face ID / fingerprint prompt each time the app is unlocked. 'Little Log' stays in English; if the play on words does not work in your language, say simply that it opens Little Log.",
-    "Just checking it's you": "Title of the phone's Face ID / fingerprint prompt. Warm and short."
+    "Just checking it's you": "Title of the phone's Face ID / fingerprint prompt. Warm and short.",
+    "Everything stays on this phone and nothing needs setting up. It is not a one-way door: the Family tab's Share with family signs you in later, and every entry comes along.": "The first screen's tour, on the Just this phone choice. 'Share with family' is a button in the app (translate it the same as that button).",
+    "For more than one phone: sign in with your email, invite the other parent, the grandparents or a babysitter, and everyone sees the same log, end-to-end encrypted.": "The first screen's tour, on the Share with family choice.",
+    "Restore the backup file you made on the old phone, with its passphrase.": "The first screen's tour, on the Moving from another phone? choice.",
+    "Your language": "The first screen's tour: the title of the step on the language picker.",
+    "Little Log speaks 32 languages. Change it here, or later in More → Language.": "The first screen's tour, on the language picker. 'More' and 'Language' are names in the app (translate them as there)."
   }
 }

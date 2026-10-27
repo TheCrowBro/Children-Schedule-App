@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
   async function device(opts = {}) {
     const ctx = await (opts.br || browser).newContext({ viewport: { width: 390, height: 800 } });
     if (opts.native !== false) await installFakeNative(ctx, opts);
-    await ctx.addInitScript(() => { try { if (!localStorage.getItem('ll.tours')) localStorage.setItem('ll.tours', '{"day":1}'); localStorage.setItem('ll.welcome', '1'); } catch (e) { /* no storage */ } });   // (the first-time tour is tested in features, the first screen in start)
+    await ctx.addInitScript(() => { try { if (!localStorage.getItem('ll.tours')) localStorage.setItem('ll.tours', '{"day":1,"welcome":1}'); localStorage.setItem('ll.welcome', '1'); } catch (e) { /* no storage */ } });   // (the first-time tour is tested in features, the first screen in start)
     await ctx.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { try { ['mlang', 'macct', 'mkids', 'mregion', 'munits', 'mlook', 'mcloud', 'mdata', 'mapp', 'secnewborn', 'sectoddler', 'secschool', 'secteens', 'secpuberty', 'secfood', 'secmeds', 'secplay', 'secchecks', 'secmonths'].forEach(g => openGroups.add(g)); } catch (e) { /* not the app */ } }));   // (the More page's twirl-downs start closed)
     await shim.install(ctx);
     await ctx.route('https://challenges.cloudflare.com/**', r => r.fulfill({ contentType: 'text/javascript', body: turnstile }));

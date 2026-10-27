@@ -109,7 +109,7 @@ const Acct = (() => {
   function gate() {
     if (!Native.is) return { html: appOnlyHtml(), bind() {} };
     if (!Auth.configured) { if (!db.meta.localOnly) return { html: setupHtml(), bind: bindSetup }; }
-    else if (!Auth.signedIn && !db.meta.localOnly) return welcomed() ? { html: loginHtml(), bind: bindLogin } : { html: welcomeHtml(), bind: bindWelcome };
+    else if (!Auth.signedIn && !db.meta.localOnly) return welcomed() ? { html: loginHtml(), bind: bindLogin } : { html: welcomeHtml(), bind: bindWelcome, tour: W.step === 'choose' ? 'welcome' : null };   // (the first screen has a tour)
     if (Lock.locked) return { html: lockHtml(), bind: bindLock, plain: true };   // (no badge over the lock)
     if (db.meta.backupStep && !Auth.signedIn) return { html: backupHtml(), bind: bindBackupStep };
     if (Auth.configured && Auth.signedIn) {   // (a log kept on this phone only skips the account's screens)

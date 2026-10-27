@@ -572,10 +572,11 @@ function render() {
   fitTabs();
   $('#av').innerHTML = vk ? avatar(vk) : ''; $('#av').hidden = !vk;
   const g = Acct.gate();
-  document.body.classList.toggle('gated', !!g); $('#helpBtn').hidden = !!g;
+  document.body.classList.toggle('gated', !!g); gateTour = g ? g.tour || null : null; $('#helpBtn').hidden = !!g && !gateTour;
   if (g) {
     $('#sleepBanner').hidden = true; $('#syncLine').textContent = ''; $('#kidBar').hidden = true; $('#av').hidden = true; $('#famSw').hidden = true; $('#view').innerHTML = (g.plain ? '' : Acct.heroHtml()) + g.html + langMini(); g.bind(); Icons.paint($('#view'));
     $('#langMini').onchange = e => setLanguage(e.target.value); lastScreen = 'signin';
+    if (gateTour) autoTour();   // (the first screen's tour starts by itself the first time)
     return;
   }
   syncLine();
@@ -2133,6 +2134,14 @@ function openQuick(type) {
 // What each screen's tour points at, and why it's there (tour.js shows them). Steps for things that aren't on the screen right now (one
 // child, no permission, no trip) are left out by themselves.
 const TOURS = {
+  // the first screen: what each choice means, and that Just this phone is not a one-way door (most people start there)
+  welcome: [
+    { sel: '#wLocal', title: N_('Just this phone'), why: N_("Everything stays on this phone and nothing needs setting up. It is not a one-way door: the Family tab's Share with family signs you in later, and every entry comes along.") },
+    { sel: '#wShare', title: N_('Share with family'), why: N_('For more than one phone: sign in with your email, invite the other parent, the grandparents or a babysitter, and everyone sees the same log, end-to-end encrypted.') },
+    { sel: '#wRestore', title: N_('Moving from another phone?'), why: N_('Restore the backup file you made on the old phone, with its passphrase.') },
+    { sel: '.langmini', title: N_('Your language'), why: N_('Little Log speaks 32 languages. Change it here, or later in More → Language.') },
+    { sel: '#helpBtn', title: N_('Help on every screen'), why: N_('Tap ? on any screen for a tour of it.') },
+  ],
   day: [
     { sel: '#kidBar', title: N_('A page for each child'), why: N_('Each child has their own page in their own colour. "All" shows everyone together.') },
     { sel: '#view .quick', title: N_('Log it in one tap'), why: N_('Tap what just happened. The time is filled in for you, with shortcuts for a few minutes ago.') },
@@ -2244,17 +2253,23 @@ const TOURS = {
   ],
 };
 /** The tour of the screen that is showing: the Day tab on a travel day has its own. */
-const tourPage = () => (tab === 'day' && tripOn(viewDay) ? 'travel' : tab);
+let gateTour = null;   // the tour of the screen before the app (the first screen's choices), while it shows
+const tourPage = () => gateTour || (tab === 'day' && tripOn(viewDay) ? 'travel' : tab);
 function startTour() {
-  if (Acct.gate()) return;
+  if (document.body.classList.contains('gated') && !gateTour) return;
   const page = tourPage();
   if (!$('#sheet').hidden) $('#sheet').hidden = $('#sheetBack').hidden = true;
   const steps = TOURS[page] || [], skipFamily = page === 'family' && document.querySelector('#syncNow');   // signed in: the "sharing is off" card isn't there
   const shown = (skipFamily ? steps.filter(s => s.sel !== '#view .card') : steps).map(s => ({ ...s, title: __(s.title), why: __(s.why) }));
-  if (!Tour.start(shown, () => { if (page === 'day') { Tour.mark('day'); render(); } })) toast(__('Nothing to show on this screen yet'));
+  if (!Tour.start(shown, () => { if (page === 'day') { Tour.mark('day'); render(); } if (page === 'welcome') Tour.mark('welcome'); })) toast(__('Nothing to show on this screen yet'));
 }
-/** The home screen's tour starts by itself the first time, once nothing else is open. */
+/** The home screen's tour starts by itself the first time, once nothing else is open; so does the first screen's, the first time it shows. */
 function autoTour() {
+  if (gateTour) {
+    if (Tour.active() || Tour.seen(gateTour)) return;
+    clearTimeout(autoTour.t); autoTour.t = setTimeout(() => { if (gateTour && !Tour.active() && !Tour.seen(gateTour) && $('#sheet').hidden) startTour(); }, 500);
+    return;
+  }
   if (tab !== 'day' || Tour.active() || Tour.seen('day') || Acct.gate() || !$('#sheet').hidden || tripOn(viewDay)) return;
   clearTimeout(autoTour.t); autoTour.t = setTimeout(() => { if (tab === 'day' && !Tour.active() && !Tour.seen('day') && $('#sheet').hidden && !Acct.gate() && !tripOn(viewDay)) startTour(); }, 500);   // (still so after a sync?)
 }
