@@ -497,6 +497,10 @@ details.famlist .fbranches{margin:0 14px 14px;margin-inline-start:26px}details.f
 .legend .mmkey .mmark{position:static;display:inline-block;margin-inline-end:4px}
 details.moments>.moment,details.moments>.mmadd{margin:0 12px 8px;width:calc(100% - 24px)}details.moments>.mmadd{margin-bottom:12px}
 details.moments>.mh{margin:10px 16px 6px;color:var(--g-moment)}
+/* the Month page's Big moments journal: gold and dashed like Plan a trip and Add to the calendar above it, with a gold star; so is its Save button */
+details.gd.moments{border:2px dashed var(--g-moment);background:linear-gradient(135deg,var(--mwash,rgba(212,165,72,.18)),transparent 60%),var(--card)}
+details.gd.moments>summary .gi .ic{color:var(--g-moment)}details.moments>.mmadd{border:2px dashed var(--g-moment);background:var(--card)}details.moments>.mmadd .ic{color:var(--g-moment)}
+:root[data-mode="dark"] details.gd.moments{--mwash:rgba(211,165,72,.14)}
 details.mmmore{margin-top:8px}details.mmmore>summary{display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:var(--brand);font-weight:600;padding:4px 0;list-style:none}
 details.mmmore>summary::-webkit-details-marker{display:none}details.mmmore[open]>summary .chev{transform:rotate(90deg)}
 .kstage{margin:6px 0 0}.kmo{margin:4px 0}.kmo .ic{color:var(--g-moment)}.kmo small{color:var(--mute)}

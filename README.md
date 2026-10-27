@@ -76,7 +76,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); a day with a big moment is ringed and washed in
-  gold, like the big-moment cards and buttons; **stats** for the last 7, 14 or 30 days, 3 months, 6
+  gold, like the big-moment cards and buttons, and so is the **Big moments** journal at the bottom of the page (gold and dashed, like
+  Plan a trip and Add to the calendar above it); **stats** for the last 7, 14 or 30 days, 3 months, 6
   months or a year (over 30 days the charts show an average day for each week, over a year for each month), the key numbers on each card and
   every chart in a twirl-down of its own, drawn small; a **Height & weight** card with the latest measurements and their percentiles
 - **Routine** tab: the times of day that keep coming back, laid out like a day in a calendar from morning to night (morning, afternoon,
