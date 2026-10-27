@@ -69,17 +69,19 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   shows that entry's details (editing stays in the list below, where "Show in the list" takes you); tap a quarter of
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
-- **Month view** with a day's counts at a glance (and the entries in a twirl-down); **stats** with a chart for every section
+- **Month view** with a day's counts at a glance (and the entries in a twirl-down); **stats** for the last 7, 14 or 30 days, 3 months, 6
+  months or a year (over 30 days the charts show an average day for each week, over a year for each month), the key numbers on each card and
+  every chart in a twirl-down of its own, drawn small; a **Height & weight** card with the latest measurements and their percentiles
 - **Routine** tab: the times of day that keep coming back, laid out like a day in a calendar from morning to night (morning, afternoon,
   evening, then the night, which counts with the evening before it: the routine's day runs from 6 AM to 6 AM) with a line at the time now. A feed, a meal of solid food, a nap, a kind of play or a medicine that happened within 45 minutes of the same time
   on most of the last 7 days (and on at least 3) is part of the routine, with what it usually is (how long, how much, which medicine and
   dose). Nothing is set by hand and nothing is stored: it's worked out from the log every time, so it moves when the baby's day does.
-  Today's times are ticked off as they're logged, and the next one is shown on top. Diapers, night wakings, vomiting and health notes are
+  Today's times are ticked off as they're logged, and the next one is shown on top. Diapers, wake-ups, vomiting and health notes are
   left out: they don't keep to a clock. Daycare, school, homework, and lessons and clubs keep to the days of the week instead: they are
   worked out for each day of the week over the last 4 weeks (school at 8:30, Mon – Fri; swimming on Tuesdays), come back on those days
   only, and the other days' times are listed under the day's
 - **Report for the doctor** (Stats → PDF): a clean PDF to hand over or email: the child's age, allergies, pediatrician and usual
-  formula, the parents' questions for the doctor, then the last 7, 14, 30 or 90 days at a glance (feeds, diapers, sleep, night wakings,
+  formula, the parents' questions for the doctor, then the last 7, 14, 30 or 90 days at a glance (feeds, diapers, sleep, wake-ups,
   vomiting, the highest temperature, symptoms, medicines, foods tried), day by day, health notes and medicines, and optionally every
   entry. It's made on the phone (nothing is uploaded), in the app's language (right to left for Arabic, Hebrew, Persian and Urdu), on A4
   or US Letter by where you are
@@ -88,11 +90,18 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   the log; the Guide keeps it under Food). Feed → **Solids** has a twirl-down of common first foods by group (key allergens first and
   open, then grains, vegetables, fruit, and meat, fish and beans), each food that is or contains a common allergen marked "key
   allergen", or type in any other food, plus how much was eaten. Meals have a routine time of their own
-- **Allergies**: a parent marks a food the child reacted to, with the date of the first reaction and what happened (More → Children, or
-  "Mark an allergy" on a meal tapped on the clock, which fills in its foods and date). It's kept in the child's profile, end-to-end
-  encrypted, and seen by everyone sharing the log: the first date is marked on the calendar like a trip, the Day tab shows the child's
-  allergies at the top, the foods list flags them, logging one warns straight away, and the doctor's report lists them
-- **Guide tab**: for teenagers, sleep, mental health (and what to do at once if they talk about hurting themselves), phones and life
+- **Allergies**: a parent marks what the child reacted to: a food, a **medicine or medical thing** (penicillin, amoxicillin, ibuprofen,
+  latex, plasters…), a **vaccine** or an ingredient, an **insect sting**, something in the **environment** (pollen, dust mites, cats…) or
+  anything else, with how bad it was (mild, or serious: trouble breathing, swelling, emergency care), whether the child carries an adrenaline
+  auto-injector, the date of the first reaction and what happened (More → Children, the health record's **Allergies** section, or "Mark an
+  allergy" on a meal tapped on the clock, which fills in its foods and date). It's kept in the child's profile, end-to-end encrypted, and
+  seen by everyone sharing the log: the first date is marked on the calendar like a trip, the Day tab shows the child's allergies at the
+  top, the foods list flags them, logging an allergen warns straight away, the medicine form warns when the medicine (or one of its family:
+  Augmentin for a penicillin allergy, Tylenol for paracetamol) is one the child is allergic to and asks before logging it, and the doctor's
+  report lists them
+- **Guide tab**: for 8-to-16-year-olds, **puberty**: what to expect and when (and when to see the doctor), how to talk about it, and their
+  privacy (some things are theirs to share; ask before writing about their body, periods or feelings in a log the family shares). For
+  teenagers, sleep, mental health (and what to do at once if they talk about hurting themselves), phones and life
   online, alcohol, vaping and drugs, relationships, sex and consent, periods, spots and acne, food, body image and sport (and a knock to
   the head), driving and growing independence come first (from 10, after the milestones, as what comes next). For school children, sleep, screens and staying safe online, homework and reading, friends and bullying, food and staying
   active, teeth, bedwetting, worries and feelings, puberty, head lice and safety out and about come first (for a preschooler, after the
@@ -105,7 +114,22 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   Six of the common worries (skin, jaundice, the belly button, the cord stump, poop and the soft spots) have **pictures**: 10 photos and 2
   drawings with what they show, kept in a twirl-down of their own inside the card that stays shut until tapped, and shuts again when the card
   closes or you leave the Guide, so nobody sees them by surprise. They're from Wikimedia Commons under free licences, credited in the app and in
-  [img/guide/CREDITS.md](img/guide/CREDITS.md)
+  [img/guide/CREDITS.md](img/guide/CREDITS.md). **Tutorials**, a twirl-down of short videos worth watching for the ages on the page, from
+  public health bodies and children's hospitals (first meals and starting solids, healthy snacks, potty training, first aid for a choking or
+  unresponsive baby or child, safe sleep, newborn care, teeth, fever, tantrums, car seats), each a tap that opens YouTube. The Guide's
+  emergency note is followed by **Not an emergency?**: the region's health advice line (NHS 111, 811 in Canada, healthdirect…) and the
+  **nurse advice line**, **after-hours** number and **hospital non-emergency line** saved with the pediatrician, each with a Call button
+- **ml or fl oz** for milk: a switch in the feed form (→ fl oz / → ml) converts the number already typed and sets the unit for the whole
+  app (the list, the Day tiles, Stats, the routine, travel's quick amounts and the doctor's report), or choose it in More → Units; amounts are
+  stored in ml, so phones set differently agree. ml until switched
+- **Woke up**: the night-waking entry is "Woke up" (a wake-up), with Pain among the reasons beside hungry, diaper, gas and unknown;
+  Stats count wake-ups per night
+- **The day of the week** on the day clock, above the hands
+- **The family calendar on the phone**: an event on the Month tab (an exam, an appointment, a lesson, a trip) goes straight into the
+  phone's own calendar (**Add to phone calendar**: the calendar app's new-event screen on Android, the system's on iOS, no calendar
+  permission needed) or travels as a calendar file (.ics) through the share sheet, to email, messages or Files, which Google Calendar,
+  Apple Calendar and Outlook all open; **Share this month's calendar** sends everything in the month as one file. All on the phone: there
+  is no calendar server, and nothing leaves unless you send it
 - **Travel mode**: plan a trip ahead from the Month page (always there: it leaves on the day picked) or with the "Travelling?" button at
   the bottom of today; it asks how (car, plane, train, ship) and the dates, and refuses overlapping trips. For those days the Day tab
   becomes a travel page on every phone in the log: a clock painted to match the journey, its own set of colours (checked for colour-blind
@@ -126,6 +150,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   Each child's usual formula is filled in on bottle feeds. When every formula feed on three days running used the same one, it becomes
   that child's default and stays so until another formula is used the same way; each phone works this out from the shared log, so nobody
   has to save it. A parent can also choose it in More → Children
+- **More** is a page of twirl-downs, one per setting, each with its current value on its line (Language, Security & account, Children,
+  Where you are, Units, Appearance and clock art, Cloud backup, Your data, App updates), closed until tapped
 - **Where you are** (More): automatic from the phone's time zone, or one of the eight regions. The formula list puts its formulas first,
   and the Guide gives its emergency number (911, 999, 112, 000 / 111, 192 (SAMU) in Brazil, or "your local emergency number"), medicine
   names and ages first
@@ -134,9 +160,13 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   needed); switching plays a short sunset into dark or sunrise into light
 - **Sleep timer**, **month calendar** with coloured dots, **stats** (7/14/30 days)
 - **Health checklist** (blue hands/feet, clicking hips, belly bulge, jaundice…) with "call your doctor" prompts
+- **Security and sharing** (Family tab): invites, the activity log, encryption, the security code and your phones in one twirl-down,
+  which opens by itself when something needs checking
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters*, *Medical assistants* and *Friends*; per-person check boxes for exactly what
   they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**. Parents get a private **activity log** of who did what.
-- **Family tree** (Family tab): the children's family tree, painted as a soft watercolour (washes with pigment edges, paper grain) of
+- **Family tree** (Family tab): the family as the tree's **roots**: a detailed tree above the ground (its crown, boughs and birds, the
+  sun or the moon, the hill with its flowers) and below it the children as the newest root tips just under the trunk, the parents
+  below them, the grandparents deeper and the great-grandparents deepest, aunts and uncles as side roots with their children. Painted as a soft watercolour (washes with pigment edges, paper grain) of
   the tree most common where the family comes from: an English oak (UK & Ireland), a red maple (North America), a European beech, a
   silver birch, an olive tree, a eucalyptus (Australia & New Zealand), cherry blossom (East Asia), a banyan with its hanging roots
   (South Asia), a mango tree, an umbrella acacia (Africa) or a jacaranda (Latin America and Brazil), each with its own bark, crown, leaves
@@ -195,6 +225,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 - Works offline; changes sync when you're back online
 - **Update app** (More): opens Little Log's page in the App Store or Google Play, where an update is one tap, and shows the version
   that's installed
+- **Edge to edge on Android 15 and later**: the page keeps clear of the status and navigation bars (a plugin reports their size), the tab
+  bar grows by the bar below it, and the bar icons follow light or dark mode
+- **The app icon**: the baby in the centre, rays in the day clock's colours around it, on soft creamy white (`npm run icons` draws every size)
 - **32 languages**: the app follows the phone's language, or one chosen in More → Language:
   - English, Spanish, Portuguese (Brazilian Portuguese, which a phone set to European Portuguese gets too), French, German, Italian,
     Dutch, Polish, Romanian, Russian, Ukrainian and Turkish;

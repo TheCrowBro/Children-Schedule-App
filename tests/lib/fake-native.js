@@ -22,6 +22,8 @@ async function installFakeNative(ctx, { launchUrl = null, biometric = true } = {
       App: { addListener: (ev, f) => (listeners[ev] = listeners[ev] || []).push(f), exitApp: () => calls.push(['App.exitApp']), getLaunchUrl: async () => (launchUrl ? { url: launchUrl } : null) },
       Filesystem: { writeFile: async o => calls.push(['writeFile', o.path, o.data.length]), getUri: async o => ({ uri: 'file:///cache/' + o.path }) },
       Share: { share: async o => calls.push(['share', o.url]) },
+      Calendar: { insert: async o => calls.push(['calendar', o.title]) },
+      Insets: { get: async () => ({ top: 0, bottom: 0, left: 0, right: 0 }), addListener: (ev, f) => { (listeners['insets.' + ev] = listeners['insets.' + ev] || []).push(f); return { remove() {} }; }, setBars: async o => calls.push(['setBars', o.light]) },
     };
     // The bundled Capacitor core replaces window.Capacitor; its custom-platform hook makes it report "android".
     window.CapacitorCustomPlatform = { name: 'android', plugins: {} };

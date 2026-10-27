@@ -252,11 +252,19 @@ const Art = (() => {
     },
     maple(R) {
       let s = sky(R, [['#f6dcb4', 40, 30, 150, 110, 0.55], ['#f3c9b2', 240, 50, 120, 100, 0.5], ['#fbeedd', 140, 180, 160, 120, 0.4], ['#efe0c8', 20, 260, 90, 90, 0.45]]);
+      // the pond, with a bank of earth and moss on each side; the bridge stands on the banks, its arch over the water
       s += wash(`M-12 ${H + 12}L-12 284C60 278 200 280 ${W + 12} 286L${W + 12} ${H + 12}Z`, '#b9d6e2', 0.55, 0.35);
-      s += ring(7, i => `<path d="M${P(20 + i * 34, 300 + (i % 3) * 9)}h${18 + (i % 2) * 10}" stroke="#fff" stroke-width="1.2" stroke-opacity=".7" stroke-linecap="round"/>`);
-      // a red arched bridge, mirrored in the pond
-      const br = (o, y0, flip) => `<g opacity="${o}" ${flip ? `transform="translate(0 ${2 * y0}) scale(1 -1)"` : ''}><path d="M56 ${y0}Q132 ${y0 - 40} 208 ${y0}" fill="none" stroke="#b8322a" stroke-width="5" stroke-linecap="round"/><path d="M60 ${y0 - 9}Q132 ${y0 - 49} 204 ${y0 - 9}" fill="none" stroke="#c43a2f" stroke-width="2.4" stroke-linecap="round"/>${ring(9, i => { const x = 66 + i * 16.5, t = (x - 56) / 152, yd = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * (y0 - 40) + t * t * y0; return `<path d="M${P(x, yd - 9)}L${P(x, yd)}" stroke="#a52a24" stroke-width="1.6"/>`; })}</g>`;
-      s += `<g filter="url(#wcs)">${br(1, 292, false)}</g><g filter="url(#wet)">${br(0.35, 292, true)}</g>`;
+      s += ring(5, i => `<path d="M${P(96 + i * 16, 312 + (i % 3) * 8)}h${14 + (i % 2) * 8}" stroke="#fff" stroke-width="1.2" stroke-opacity=".7" stroke-linecap="round"/>`);
+      s += wash(`M-12 ${H + 12}L-12 272C14 268 40 272 60 284C72 291 80 302 82 ${H + 12}Z`, '#cdbf9f', 0.8, 0.45) + wash(`M${W + 12} ${H + 12}L${W + 12} 270C250 266 226 270 206 282C194 289 186 300 184 ${H + 12}Z`, '#cdbf9f', 0.8, 0.45);
+      s += `<g filter="url(#wet)"><ellipse cx="22" cy="292" rx="42" ry="11" fill="#9db37a" opacity=".55"/><ellipse cx="244" cy="290" rx="42" ry="11" fill="#9db37a" opacity=".55"/><ellipse cx="56" cy="318" rx="22" ry="7" fill="#a8bd84" opacity=".4"/></g>`;
+      // a red arched bridge from bank to bank: posts planted in the ground, the deck arching over the pond, and only the arch mirrored
+      const y0 = 286, deck = `M62 ${y0}Q132 ${y0 - 34} 202 ${y0}`, post = (x, h) => `<path d="M${P(x, y0 - h)}L${P(x, y0 + 7)}" stroke="#9c2a22" stroke-width="3.2" stroke-linecap="round"/>`;
+      const rail = `<path d="M62 ${y0 - 12}Q132 ${y0 - 46} 202 ${y0 - 12}" fill="none" stroke="#c43a2f" stroke-width="2.4" stroke-linecap="round"/>` + ring(7, i => { const x = 72 + i * 20, t = (x - 62) / 140, yd = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * (y0 - 34) + t * t * y0; return `<path d="M${P(x, yd - 12)}L${P(x, yd)}" stroke="#a52a24" stroke-width="1.6"/>`; });
+      s += `<g filter="url(#wet)" opacity=".3" transform="translate(0 ${2 * y0 + 6}) scale(1 -1)"><path d="M84 ${y0}Q132 ${y0 - 30} 180 ${y0}" fill="none" stroke="#b8322a" stroke-width="5"/></g>`;
+      s += `<g filter="url(#wcs)">${post(62, 14)}${post(202, 14)}<path d="${deck}" fill="none" stroke="#b8322a" stroke-width="5.5" stroke-linecap="round"/><path d="${deck}" fill="none" stroke="#e2a79b" stroke-width="1.2" stroke-opacity=".6"/>${rail}</g>`;
+      // a stone lantern on the left bank, and reeds on the right
+      s += `<g filter="url(#wcs)"><path d="M22 300L22 280" stroke="#8d8578" stroke-width="4"/><path d="M12 280h20l-2-7h-16z" fill="#8d8578"/><path d="M15 273h14v-8h-14z" fill="#a39b8c"/><path d="M11 265h22l-11-8z" fill="#8d8578"/><path d="M14 300h16l-1 4h-14z" fill="#8d8578"/></g>`;
+      s += `<g filter="url(#wcs)">${ring(5, i => `<path d="M${P(236 + i * 6, 296)}q${(i % 2 ? 3 : -3)} -14 ${(i % 2 ? 1 : -1)} -30" fill="none" stroke="#6f8a52" stroke-width="1.3" stroke-linecap="round"/>`)}</g>`;
       const ink = '#4a3527';
       s += branch([[-14, 76], [14, 58], [44, 38], [84, 20], [126, 10], [170, 10]], 10, 2, ink) + twig(R, 44, 38, 4.4, 20, 3, ink) + twig(R, 84, 20, 4.5, 18, 2.4, ink) + twig(R, 14, 58, 1.6, 26, 3.4, ink);
       s += branch([[278, 128], [262, 100], [250, 72], [244, 44], [248, 16]], 9, 2, ink) + twig(R, 250, 72, 3.6, 22, 2.6, ink) + twig(R, 262, 100, 1.8, 22, 3, ink);
@@ -307,10 +315,15 @@ const Art = (() => {
       s += `<g filter="url(#wet)"><rect x="-20" y="130" width="${W + 40}" height="30" fill="#fff" opacity=".5"/></g>`;
       s += range(R, [[-12, 176], [30, 124], [82, 176], [140, 150], [200, 184], [250, 132], [W + 12, 168]], '#8f9fc4', 0.6, 140);
       s += range(R, [[-12, 254], [40, 228], [100, 262], [170, 246], [230, 232], [W + 12, 248]], '#6b7fa6', 0.6);
-      s += wash(`M-12 ${H + 12}L-12 282L${W + 12} 282L${W + 12} ${H + 12}Z`, '#b7d3e5', 0.6, 0.25);
-      s += `<g filter="url(#wet)" opacity=".35" transform="translate(0 564) scale(1 -1)">${range(R, [[-12, 254], [40, 228], [100, 262], [170, 246], [230, 232], [W + 12, 248]], '#6b7fa6', 0.6)}</g>`;
-      s += ring(6, i => `<path d="M${P(14 + i * 44, 300 + (i % 3) * 10)}h${22 + (i % 2) * 8}" stroke="#fff" stroke-width="1.2" stroke-opacity=".75" stroke-linecap="round"/>`);
-      [[8, 296, 46, 11], [22, 300, 36, 9], [36, 298, 28, 8], [246, 298, 44, 11], [260, 300, 34, 9], [228, 300, 26, 7]].forEach(([x, b, h, w]) => { s += pine(R, x, b, h, w, '#3d5a4f', 0.85); });
+      // the valley floor: a meadow in two greens, a stream winding down from the mountains, a chalet, a fence and wild flowers
+      s += wash(`M-12 ${H + 12}L-12 270C70 258 170 264 ${W + 12} 254L${W + 12} ${H + 12}Z`, '#bccf9c', 0.65, 0.3);
+      s += wash(`M-12 ${H + 12}L-12 306C70 296 190 302 ${W + 12} 292L${W + 12} ${H + 12}Z`, '#9dbb7e', 0.55, 0.3);
+      s += `<g filter="url(#wc)"><path d="M146 262C158 274 134 286 150 298C164 310 136 324 152 ${H + 12}" fill="none" stroke="#9ec6dc" stroke-width="7" stroke-opacity=".75" stroke-linecap="round"/><path d="M147 266C157 276 138 286 151 297C162 308 140 322 151 334" fill="none" stroke="#fff" stroke-width="1.4" stroke-opacity=".7"/></g>`;
+      s += `<g filter="url(#wcs)"><path d="M198 302L198 284L214 270L230 284L230 302Z" fill="#efe4d2"/><path d="M193 287L214 266L235 287" fill="none" stroke="#a7493a" stroke-width="5" stroke-linecap="round"/><path d="M209 302L209 292L219 292L219 302Z" fill="#7d5a3c"/><path d="M202 288h6v6h-6zM222 288h6v6h-6z" fill="#f6cf92"/></g>`;
+      s += `<g filter="url(#wcs)">${ring(6, i => `<path d="M${P(14 + i * 13, 312)}v-10" stroke="#8b7a62" stroke-width="2" stroke-linecap="round"/>`)}<path d="M8 305h76" stroke="#8b7a62" stroke-width="1.6"/></g>`;
+      for (let i = 0; i < 22; i++) s += `<circle cx="${P(12 + R() * 120, 314 + R() * 24).split(' ')[0]}" cy="${f(314 + R() * 24)}" r="${f(1.3 + R() * 1.2)}" fill="${['#f2c76b', '#f7f1e4', '#e58fa2', '#9ec6dc'][i % 4]}" opacity=".85"/>`;
+      for (let i = 0; i < 12; i++) s += `<circle cx="${f(170 + R() * 90)}" cy="${f(318 + R() * 20)}" r="${f(1.3 + R() * 1.2)}" fill="${['#f2c76b', '#f7f1e4', '#e58fa2'][i % 3]}" opacity=".85"/>`;
+      [[8, 290, 46, 11], [24, 294, 36, 9], [40, 292, 28, 8], [262, 292, 40, 10], [248, 296, 30, 8]].forEach(([x, b, h, w]) => { s += pine(R, x, b, h, w, '#3d5a4f', 0.85); });
       return s;
     },
     garden(R) {

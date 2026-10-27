@@ -80,7 +80,7 @@ const Lock = (() => {
     async unlock() {
       if (trying || !bioAllowed()) return false;
       trying = true;
-      try { const ok = await Native.Biometric.authenticate(__('Unlock Little Log')); if (ok) { locked = false; away = Date.now(); } return ok; }
+      try { const ok = await Native.Biometric.authenticate(__('Unlock')); if (ok) { locked = false; away = Date.now(); } return ok; }
       finally { trying = false; }
     },
     reset() { locked = false; },

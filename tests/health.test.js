@@ -3,7 +3,7 @@
 // notes (a helper without health access gets none of it, the server keeps it under the health key); the doctor's report; the Day page
 // and the milestone sheet leading to it; the Guide's health checks.   node tests/health.test.js
 const assert = require('assert');
-/* global Growth, openSheet, openRecord, reportBlocks, describe, saveProfile, dkey, G, usUnits, viewDay, startOfDay */
+/* global Growth, openSheet, openRecord, reportBlocks, describe, saveProfile, dkey, G, usUnits, viewDay, startOfDay, openAllergy, kidById */
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
@@ -163,6 +163,32 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert(!/BMI/.test(await P.textContent('#gpct')), 'and no BMI');
       await P.click(`#sheet [name=kid][value="${ella}"]`); await P.click('#save');
       assert.deepEqual(await P.evaluate(() => db.events.filter(e => e.type === 'growth' && e.data.weight === 23).map(e => [e.child, e.data])), [[ella, { weight: 23, height: 122 }]]);
+    });
+
+    await step('allergies beyond food: a medicine allergy with how bad it was and an adrenaline pen is kept in the profile, shown in the record, on the day and in the report, and the medicine form warns about the medicine and its family', async () => {
+      await P.evaluate(id => { tab = 'day'; render(); openAllergy(id, { kind: 'medicine' }); }, leo); await P.waitForSelector('#alSave');
+      assert.equal(await P.textContent('#alWhich'), 'Which medicine?'); assert(await P.$('#sheet [name=alFood][value=Penicillin]'), 'common medicines are offered');
+      await P.click('#sheet [name=alKind][value=sting]'); assert.equal(await P.textContent('#alWhich'), 'Which insect?'); assert(await P.$('#sheet [name=alFood][value=Bee]'));
+      await P.click('#sheet [name=alKind][value=medicine]'); await P.click('#alSave'); assert.equal((await P.textContent('#toast')).trim(), 'Choose what it is to');
+      await P.click('#sheet [name=alFood][value=Penicillin]'); await P.click('#sheet [name=alSev][value=serious]'); await P.click('#sheet [name=alEpi]'); await P.fill('#alNote', 'swelling after amoxicillin'); await P.click('#alSave');
+      await P.waitForFunction(() => $('#sheet').hidden);
+      const al = await P.evaluate(id => kidById(id).allergies, leo);
+      assert.deepEqual(al.map(a => [a.food, a.kind, a.severity, a.epi]), [['Penicillin', 'medicine', 'serious', true]]);
+      await P.evaluate(id => { tab = 'day'; render(); const b = document.querySelector(`[data-kid="${id}"]`); if (b) b.click(); }, leo);
+      assert(/Penicillin \(Medicine or medical · serious · adrenaline pen\)/.test(await P.textContent('.allergyline')), await P.textContent('.allergyline'));
+      await P.evaluate(id => openRecord(id, 'day'), leo);
+      const rec = (await P.textContent('#view .card.allergies')).replace(/\s+/g, ' ');
+      assert(/Penicillin Medicine or medical\s*Serious reaction · Carries an adrenaline auto-injector · first reaction/.test(rec), rec);
+      assert(/Penicillin \(Medicine or medical · serious · adrenaline pen · first reaction/.test(await P.evaluate(id => JSON.stringify(reportBlocks(id, { days: 7, every: true, notes: '' }).blocks), leo)), 'in the report');
+      await P.evaluate(() => { tab = 'day'; render(); openSheet('med'); }); await P.waitForSelector('#mname');   // (a toddler's Meds button is behind More)
+      await P.evaluate(id => { const c = document.querySelector(`#sheet [name=kid][value="${id}"]`); if (c && !c.checked) c.click(); }, leo); await P.fill('#mname', 'Augmentin'); await P.dispatchEvent('#mname', 'input');
+      assert.equal(await P.isVisible('#medWarn'), true, 'warns about a medicine in the penicillin family'); assert(/Leo is allergic to Penicillin/.test(await P.textContent('#medWarn')));
+      await P.fill('#mname', 'Vitamin D'); await P.dispatchEvent('#mname', 'input'); assert.equal(await P.isVisible('#medWarn'), false);
+      await P.fill('#mname', 'penicillin V'); await P.dispatchEvent('#mname', 'input'); assert.equal(await P.isVisible('#medWarn'), true);
+      P.dialogs = []; await P.click('#save'); await P.waitForFunction(() => $('#sheet').hidden);
+      assert.deepEqual(P.dialogs, ['Leo is allergic to this medicine. Log it anyway?'], 'logging it asks first');
+      await P.evaluate(() => { db.events = db.events.filter(e => !(e.type === 'med' && e.data.name === 'penicillin V')); Store.save(db); });
+      await P.evaluate(id => { kidById(id).allergies = []; saveProfile(); }, leo);
     });
 
     if (process.env.DEBUG) console.log('page errors:', P.errs);

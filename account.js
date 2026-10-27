@@ -173,6 +173,7 @@ const Acct = (() => {
   function goCloudCard() {
     tab = 'more'; render();
     const c = $('#cPass') && $('#cPass').closest('.card'); if (!c) return;   // (no :has(): an older WebView would throw on it)
+    const d = c.closest('details'); if (d && !d.open) { d.open = true; openGroups.add(d.dataset.grp); }   // (Cloud backup is a twirl-down on More)
     c.scrollIntoView({ block: 'start' }); c.classList.add('lit'); setTimeout(() => c.classList.remove('lit'), 2500);
   }
 
@@ -211,7 +212,7 @@ const Acct = (() => {
   const waitMsg = ms => __n('Too many tries. Try again in {n} second.', 'Too many tries. Try again in {n} seconds.', Math.max(1, Math.ceil(ms / 1000)));
   const lockHtml = () => {
     const pinMode = Lock.mode === 'pin', bio = Lock.bioAllowed;
-    return `<div class="card" style="text-align:center"><div style="font-size:48px">🔒</div><b>${__h('Little Log is locked')}</b>
+    return `<div class="card" style="text-align:center"><div style="font-size:48px">🔒</div><b>${__h('Locked')}</b>
     ${pinMode ? `<p class="note">${__h('Enter your PIN to continue.')}</p>${padHtml('ul', Lock.wait ? waitMsg(Lock.wait) : '')}` : `<p class="note">${__h('Use Face ID, your fingerprint or your phone passcode to continue.')}</p>`}
     ${bio ? `<button class="btn${pinMode ? '' : ' p'}" id="unlock" style="width:100%">${pinMode ? __h('Use Face ID / fingerprint instead') : __h('Unlock')}</button>` : ''}
     <button class="btn" id="lockOut" style="width:100%;margin-top:8px">${pinMode ? __h('Forgot your PIN?') : __h('Sign out')}</button></div>`;
@@ -886,6 +887,7 @@ const Acct = (() => {
       <div class="note" style="margin-top:6px">${__h('Signed in as {email} · {role}', { email: Auth.email, role: roleName(db.meta.role) })}</div></div>
     ${reqs}${phonesCard}
     ${people}
+    <details class="gd secshare" data-grp="secshare" ${invite || db.meta.unverified || (parent && db.meta.recoveryAck === false) || openGroups.has('secshare') ? 'open' : ''}><summary><span class="gi">🔐</span><span class="gt"><b>${__h('Security and sharing')}</b><small>${esc(parent ? __('Invites, the activity log, encryption and your phones') : __('Encryption and your phones'))}</small></span><span class="chev" aria-hidden="true">›</span></summary><div class="gdin">
     ${parent ? `<h2>${__h('Invite someone')}</h2><div class="card" id="invCard">
       <p class="note" style="margin-top:0">${__h('Invites work once and last 2 hours. After they scan it, you approve them.')}</p>
       ${accessFormHtml('inv', invForm ? invForm.role : 'caregiver', invForm && invForm.perms)}
@@ -894,7 +896,7 @@ const Acct = (() => {
       ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Open invites')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(roleName(i.role))}<br><small>${esc(left(i.expires_at))}</small></span>
         <span class="btns"><button class="btn" data-showinv="${esc(i.code)}" style="padding:6px 10px">${__h('Show')}</button><button class="btn d" data-rescind="${esc(i.code)}" style="padding:6px 10px">${__h('Rescind')}</button></span></div>`).join('')}` : ''}</div>
     <h2>${__h('Activity log')}</h2><div class="card"><div class="stat"><span>${__h('Who added, changed or deleted what, and who joined or left.')}<br><small>${__h('Only parents can see this.')}</small></span><button class="btn" id="actBtn" style="padding:6px 12px">${__h('View')}</button></div></div>` : ''}
-    ${encCard}
+    ${encCard}</div></details>
     <div class="card"><button class="btn d" id="leave" style="width:100%">${__h('Leave this log')}</button></div>`;
   }
   function inviteHtml() {
@@ -1091,6 +1093,8 @@ const Acct = (() => {
       <div class="row"><button class="btn" id="signOut">${__h('Sign out')}</button><button class="btn" id="signOutAll">${__h('Sign out everywhere')}</button></div>
       <div class="row"><button class="btn d" id="delAcct">${__h('Delete account')}</button></div></div>`;
   }
+  /** The line under "Security & account" on the More page. */
+  function accountSub() { return `${F.verified ? __('Two-step verification on') : __('Two-step verification off')} · ${Lock.mode !== 'off' ? __('App lock on') : __('App lock off')}`; }
   function cloudHtml() {
     const av = Cloud.available(), row = p => {
       const last = Cloud.last(p);
@@ -1156,5 +1160,5 @@ const Acct = (() => {
   /** Called by app.js after each render/sync to keep the Family tab badge current. */
   function updateBadge() { const b = $('#famBadge'); if (!b) return; const n = Sync.isParent() ? Sync.st.requests.length : 0; b.hidden = !n || tab === 'family'; b.textContent = n; }
 
-  return { init, gate, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, cloudHtml, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, parseJoin, sessionLost };
+  return { init, gate, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, accountSub, cloudHtml, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, parseJoin, sessionLost };
 })();

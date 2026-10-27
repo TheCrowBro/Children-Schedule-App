@@ -21,6 +21,7 @@ Each saved version is a git tag, and a backup zip holds the same version ready t
 | 1.5.2 | `v1.5.2` | 26 October 2026 | Brazilian Portuguese, named so: More → Language says Português (Brasil), the app is tagged pt-BR (a phone set to European Portuguese gets it too), and Brazil is a region of its own in More → Where you are, chosen by itself in a Brazilian time zone: its formulas first, 192 (SAMU) as the Guide's emergency number, A4 reports, school at 6 and a jacaranda family tree. Nothing changes in the data or on the server. |
 | 1.5.3 | `v1.5.3` | 27 October 2026 | Play and activities in the Guide: the toys that suit each age (newborn to teenager, kinds not brands, with what to watch for), shown for each child's age and the next one, and Learning to swim (when lessons can begin, what to look for, water safety). From a child's first birthday the Day page says it is a good time to begin swim lessons, until closed. Nothing changes in the data or on the server. |
 | 1.5.4 | `v1.5.4` | 27 October 2026 | The app lock can be a PIN: More → App lock offers Off, Face ID / fingerprint (the phone's own lock, on by default when the phone has one) or a PIN of 4 to 8 digits chosen in the app, kept only as a salted hash in the Keychain / Keystore, with Face ID / fingerprint as an optional shortcut; five wrong PINs start a wait that doubles. Nothing changes in the data or on the server. |
+| 1.6.0 | `v1.6.0` | 27 October 2026 | The fix list: edge to edge on Android 15 (nothing cut off at the bottom of any page), the More page and Security and sharing as twirl-downs, Stats for 3 months, 6 months and a year with every chart in its own small twirl-down and a Height & weight card, ml or fl oz for milk, "Woke up" with Pain as a reason, the day of the week on the clock, nurse and hospital non-emergency lines, allergies to medicines, vaccines, stings and the environment (with the medicine form warning), puberty in the Guide, tutorial videos, the family calendar into the phone's calendar or as a calendar file, the Japanese garden and mountain paintings redone, the family as the roots of a more detailed tree, a new app icon, and emails styled like the app (paste the templates: §4). The lock screen says Little Log once. Nothing changes on the server; a phone still on 1.5.x keeps working. |
 | 1.5.5 | `v1.5.5` | 27 October 2026 | The same app, built for the family's own Supabase project (`config.js` now has its URL and public key): sign-in, family sharing and the cloud log work in this build. Nothing changes in the app itself. |
 
 Android shows the version without its last number: 1.1.0 as "1.1". All the phones in a family should run the same version.
@@ -71,6 +72,12 @@ fine):
    the terminal or the Supabase dashboard, never into a file in this repository.
 5. Build again (`npm run sync`, §5) and install the new build. The app's network rules are made from `config.js` when it is built, so
    an older build can't reach the project.
+
+### The emails look like the app
+Supabase → Authentication → Email Templates: paste [supabase/email/magic-link.html](supabase/email/magic-link.html) into **Magic link** (and **OTP**, if
+listed separately) with the subject *Your Little Log sign-in code*, and [supabase/email/confirm-signup.html](supabase/email/confirm-signup.html) into
+**Confirm sign up** with the subject *Welcome to Little Log: your code*. Both keep `{{ .Token }}` (the 8-digit code) and `{{ .Email }}`; the
+templates are plain inline-styled tables in the app's colours, so every mail app shows them the same.
 
 ## 5. Build from source
 You need:

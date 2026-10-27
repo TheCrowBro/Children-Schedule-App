@@ -299,7 +299,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       await P.click('[data-tab=more]'); assert.equal(await P.inputValue('#langSel'), '', 'automatic at first');
       assert.equal(await P.textContent('#langSel option[value=""]'), 'Automatic: English');
       await P.selectOption('#langSel', 'es'); await P.waitForFunction(() => document.documentElement.lang === 'es');   // (once its catalogue has loaded)
-      const r = await P.evaluate(() => ({ lang: document.documentElement.lang, dir: document.documentElement.dir, tabs: [...document.querySelectorAll('#tabs .tl')].map(t => t.textContent), stored: localStorage.getItem('ll.lang'), card: document.querySelector('#langCard b').textContent }));
+      const r = await P.evaluate(() => ({ lang: document.documentElement.lang, dir: document.documentElement.dir, tabs: [...document.querySelectorAll('#tabs .tl')].map(t => t.textContent), stored: localStorage.getItem('ll.lang'), card: document.querySelector('details[data-grp=mlang] summary b').textContent }));
       assert.deepEqual([r.lang, r.dir, r.stored], ['es', 'ltr', 'es']);
       assert.notDeepEqual(r.tabs, ['Day', 'Month', 'Stats', 'Guide', 'Family', 'More'], 'the tabs are in Spanish: ' + r.tabs);
       assert.notEqual(await P.evaluate(() => __('Language')), 'Language', 'the Language card itself is in Spanish');

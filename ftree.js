@@ -160,7 +160,7 @@ const FamilyTree = (() => {
     tiny: 'M0 -.55C.32 -.55 .32 .55 0 .55C-.32 .55 -.32 -.55 0 -.55Z',
   };
 
-  const CELL = 62, KCELL = 54, GCELL = 50, GAP = 16, RA = 17, RK = 15, RG = 14, KPR = 6, CPR = 4;
+  const CELL = 62, KCELL = 54, GCELL = 58, GAP = 16, RA = 17, RK = 15, RG = 14, KPR = 6, CPR = 4;
   const x = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const cut = (s, n) => { const a = [...String(s)]; return a.length > n ? a.slice(0, n - 1).join('') + '…' : a.join(''); };
   /** A long label on two lines, broken at the space or slash nearest its middle. */
@@ -272,58 +272,63 @@ const FamilyTree = (() => {
       return { p, dir, px, units, gx, gpItems, gg, edge };
     });
 
-    // the rows, from the top: room for the sky, the crown, the parents, the grass
+    // the rows: the tree stands above the ground, and the family is its roots below it: the children just under the trunk (the newest
+    // roots, not grown yet), the parents below them, the grandparents deeper, the great-grandparents deepest
     const has = r => nodes.some(n => n.row === r), Y = {};
-    let y = 58;
-    if (has(3)) { Y[3] = y; y += 88; }
-    if (has(2)) { Y[2] = y; y += 94; }
-    Y[1] = y; Y[0] = y + 108;
     const subs = Math.max(1, ...nodes.filter(n => n.row === 0).map(n => (n.sub || 0) + 1));
-    const yOf = n => (n.row === 0 ? Y[0] + (n.sub || 0) * 64 : Y[n.row]), ground = Y[0] + (subs - 1) * 64 + RK + 30, H = ground + 42;
+    const ground = 236;
+    Y[0] = ground + 50; let y = Y[0] + (subs - 1) * 64 + 98;
+    Y[1] = y; y += 96;
+    if (has(2)) { Y[2] = y; y += 90; }
+    if (has(3)) { Y[3] = y; y += 84; }
+    const yOf = n => (n.row === 0 ? Y[0] + (n.sub || 0) * 64 : Y[n.row]), deepest = has(3) ? Y[3] : has(2) ? Y[2] : Y[1], H = deepest + RA + 44;
     // the width it needs (at least the screen's), and where the trunk stands in it
-    const xs = [...nodes.map(n => [n.x - (n.small ? GCELL : n.kid ? KCELL : CELL) / 2, n.x + (n.small ? GCELL : n.kid ? KCELL : CELL) / 2]).flat(), -120, 120];
+    const xs = [...nodes.map(n => [n.x - (n.small ? GCELL : n.kid ? KCELL : CELL) / 2, n.x + (n.small ? GCELL : n.kid ? KCELL : CELL) / 2]).flat(), -150, 150];
     const lo = Math.min(...xs), hi = Math.max(...xs), W = Math.max(360, Math.ceil(hi - lo + 72)), ox = (W - (hi - lo)) / 2 - lo;
     const X = v => r1(m.rtl ? W - (v + ox) : v + ox), cx0 = X(0);
-    const people = nodes.filter(n => n.n).length, tw = Math.min(32, 18 + people * 0.7);
+    const people = nodes.filter(n => n.n).length, tw = Math.min(36, 18 + people * 0.9);
     const kind = SPECIES[m.species] ? m.species : 'oak', sp = SPECIES[kind], dark = !!m.dark, R = rng(hashOf(`${kind}|${W}|${H}|${people}`));
     const paper = dark ? '#21252c' : '#fbf8f1', deep = c => (dark ? mixHex(c, paper, 0.3) : c);   // (on dark paper the paints are a little deeper)
-    /** The point a share `t` along a branch from (ax, ay) to (bx, by). */
+    /** The point a share `t` along a curve from (ax, ay) to (bx, by). */
     const along = (ax, ay, bx, by, t) => { const my = (ay + by) / 2, u = 1 - t, a = u * u * u + 3 * u * u * t, b = 3 * u * t * t + t * t * t; return [ax * a + bx * b, ay * u * u * u + my * 3 * u * t + by * t * t * t]; };
     const branch = (ax, ay, bx, by) => { const my = (ay + by) / 2; return `M${X(ax)} ${r1(ay)}C${X(ax)} ${r1(my)} ${X(bx)} ${r1(my)} ${X(bx)} ${r1(by)}`; };
 
-    // the crown: washes over each group of grown-ups, shaped like this kind of tree (worked out first: the sun goes where it isn't)
+    // the crown, above the ground: it fills out as the family grows, shaped like this kind of tree
     const shape = { round: [1, 1], airy: [0.86, 0.86], clumps: [0.82, 1.04], wide: [1.28, 0.95], umbrella: [1.32, 0.64] }[sp.crown], blobs = [];
     const blob = (bx, by, rx, ry) => blobs.push([bx, by - (sp.crown === 'umbrella' ? ry * 0.25 : 0), rx * shape[0], ry * shape[1]]);
-    blob(0, Y[1] - 16, couple ? 98 : 68, 60);
-    for (const s of sides) {
-      for (const u of s.units) blob(u.cx, Y[1] - 14, 62, 52);
-      if (s.gpItems.length) blob(s.gx, Y[2] - 14, (s.gpItems.length * CELL) / 2 + 40, 62);
-      for (const u of s.gg) blob(u.cx, Y[3] - 12, u.w / 2 + 32, 52);
-    }
-    // ---- the painting: paper, sky, hill, crown, trunk and branches (still, in a layer of its own) ----
+    const cW = 84 + Math.min(56, people * 4), cH = 60 + Math.min(26, people * 2), cY = ground - 138 - Math.min(24, people * 1.5);
+    blob(0, cY, cW, cH); blob(-cW * 0.72, cY + 26, cW * 0.6, cH * 0.72); blob(cW * 0.74, cY + 22, cW * 0.58, cH * 0.7);
+    blob(-cW * 0.3, cY - cH * 0.6, cW * 0.5, cH * 0.6); blob(cW * 0.34, cY - cH * 0.55, cW * 0.5, cH * 0.58);
+    if (people > 6) { blob(-cW * 1.12, cY + 44, cW * 0.4, cH * 0.5); blob(cW * 1.14, cY + 40, cW * 0.4, cH * 0.5); }
+    // ---- the painting: paper, sky, hill, crown, trunk, boughs, then the soil and the roots (still, in a layer of its own) ----
     const A = [], wash = (fill, op, d) => `<path fill="${deep(fill)}" opacity="${op}" d="${d}"/>`;
     A.push(`<rect width="${W}" height="${H}" fill="${paper}"/>`);
-    // the sky: a pale wash, and the sun (or, at night, the moon and a few stars)
-    const top = blobs.filter(b => b[1] - b[3] < 110), left = Math.min(W, ...top.map(b => X(b[0]) - b[2])), right = W - Math.max(0, ...top.map(b => X(b[0]) + b[2]));
-    const sx = left >= right ? Math.max(30, Math.min(52, left - 34)) : W - Math.max(30, Math.min(52, right - 34));   // (in the corner the crown leaves freer)
-    A.push(`<g filter="url(#ftsky)">${wash(dark ? '#34435a' : '#d3e6f3', dark ? 0.7 : 0.75, blobPath(W / 2, 4, W * 0.7, 74, R))}</g>`);
-    if (!dark) A.push(`<g filter="url(#ftsky)" opacity=".8">${[[W * 0.68, 30, 34, 11], [W * 0.84, 52, 24, 8]].map(([a, b, rx, ry]) => wash('#ffffff', 0.95, blobPath(a, b, rx, ry, R))).join('')}</g>`);
-    A.push(dark ? `<g filter="url(#ftglow)"><circle cx="${sx}" cy="44" r="25" fill="#f3e7b5" opacity=".22"/></g><path d="M${sx + 6} 31a13 13 0 0 0 0 26a6 13 0 0 1 0-26z" fill="#f6ecc4" opacity=".95"/>`
+    // the sky: a pale wash, and the sun (or, at night, the moon and a few stars) in the corner the crown leaves free
+    const sx = m.rtl ? W - 46 : 46;
+    A.push(`<g filter="url(#ftsky)">${wash(dark ? '#34435a' : '#d3e6f3', dark ? 0.7 : 0.75, blobPath(W / 2, 8, W * 0.7, 80, R))}</g>`);
+    if (!dark) A.push(`<g filter="url(#ftsky)" opacity=".8">${[[W * (m.rtl ? 0.3 : 0.7), 34, 34, 11], [W * (m.rtl ? 0.16 : 0.84), 58, 24, 8]].map(([a, b, rx, ry]) => wash('#ffffff', 0.95, blobPath(a, b, rx, ry, R))).join('')}</g>`);
+    A.push(dark ? `<g filter="url(#ftglow)"><circle cx="${sx}" cy="46" r="25" fill="#f3e7b5" opacity=".22"/></g><path d="M${sx + 6} 33a13 13 0 0 0 0 26a6 13 0 0 1 0-26z" fill="#f6ecc4" opacity=".95"/>`
       + [[W * 0.3, 24, 1.6], [W * 0.62, 16, 1.2], [W * 0.82, 38, 1.4], [W * 0.46, 46, 1]].map(([a, b, r]) => `<circle cx="${r1(a)}" cy="${b}" r="${r}" fill="#f3e7b5" opacity=".75"/>`).join('')
-      : `<g filter="url(#ftglow)"><circle cx="${sx}" cy="44" r="27" fill="#fbd88a" opacity=".55"/></g><g filter="url(#ftbrush)"><circle cx="${sx}" cy="44" r="15" fill="#f8c862" opacity=".85"/></g>`);
-    // the hill, and its flowers (or dry grass)
-    const gr = GROUND[sp.ground], hill = (f, lift, op) => wash(gr[f], op, `M-20 ${H + 10}L-20 ${r1(ground - 4 + lift)}C${r1(W * 0.22)} ${r1(ground - 22 + lift)} ${r1(W * 0.62)} ${r1(ground - 30 + lift)} ${W + 20} ${r1(ground - 6 + lift)}L${W + 20} ${H + 10}Z`);
+      : `<g filter="url(#ftglow)"><circle cx="${sx}" cy="46" r="27" fill="#fbd88a" opacity=".55"/></g><g filter="url(#ftbrush)"><circle cx="${sx}" cy="46" r="15" fill="#f8c862" opacity=".85"/></g>`);
+    // the hill the tree stands on, its flowers (or dry grass), and the soil beneath, deeper in colour the further down
+    const gr = GROUND[sp.ground], hill = (f, lift, op) => wash(gr[f], op, `M-20 ${r1(ground + 6)}L-20 ${r1(ground - 4 + lift)}C${r1(W * 0.22)} ${r1(ground - 22 + lift)} ${r1(W * 0.62)} ${r1(ground - 30 + lift)} ${W + 20} ${r1(ground - 6 + lift)}L${W + 20} ${r1(ground + 6)}Z`);
     A.push(`<g class="wash" filter="url(#ftwash)">${hill(1, -10, 0.55)}${hill(0, 2, 0.8)}</g>`);
+    const soil = dark ? ['#4a3f33', '#3d3328', '#33291f'] : ['#e6d8bf', '#d6c3a2', '#c6ae88'];
+    A.push(`<g class="wash" filter="url(#ftwash)">${wash(soil[0], 0.75, `M-20 ${ground + 4}L${W + 20} ${ground + 4}L${W + 20} ${H + 20}L-20 ${H + 20}Z`)}${wash(soil[1], 0.55, `M-20 ${r1(Y[1] - 46)}C${r1(W * 0.3)} ${r1(Y[1] - 60)} ${r1(W * 0.7)} ${r1(Y[1] - 34)} ${W + 20} ${r1(Y[1] - 50)}L${W + 20} ${H + 20}L-20 ${H + 20}Z`)}${has(2) ? wash(soil[2], 0.45, `M-20 ${r1(Y[2] - 40)}C${r1(W * 0.35)} ${r1(Y[2] - 56)} ${r1(W * 0.7)} ${r1(Y[2] - 30)} ${W + 20} ${r1(Y[2] - 46)}L${W + 20} ${H + 20}L-20 ${H + 20}Z`) : ''}</g>`);
+    A.push(`<path d="M-20 ${r1(ground + 3)}C${r1(W * 0.3)} ${r1(ground - 2)} ${r1(W * 0.7)} ${r1(ground + 6)} ${W + 20} ${r1(ground + 1)}" fill="none" stroke="${deep(dark ? '#5a4d3e' : '#a98f6c')}" stroke-width="1.6" opacity=".6" filter="url(#ftbrush)"/>`);
+    const stones = [];
+    for (let i = 0; i < 14; i++) { const px = R() * W, py = ground + 20 + R() * (H - ground - 40); if (nodes.every(n => Math.hypot(X(n.x) - px, yOf(n) - py) > 42)) stones.push(`<ellipse cx="${r1(px)}" cy="${r1(py)}" rx="${r1(2.5 + R() * 4)}" ry="${r1(1.6 + R() * 2.4)}" fill="${deep(dark ? '#6a5c4b' : '#b8a384')}" opacity=".55" transform="rotate(${r1((R() - 0.5) * 50)} ${r1(px)} ${r1(py)})"/>`); }
+    A.push(`<g filter="url(#ftbrush)">${stones.join('')}</g>`);
     const tufts = [];
-    for (let i = 0; i < 9; i++) {
-      const fx = W * (0.05 + 0.9 * (i / 8)) + (R() - 0.5) * 20, fy = ground - 2 + R() * 22, c = gr[2 + (i % 2)];
-      tufts.push(sp.ground === 'meadow' ? [0, 72, 144, 216, 288].map(a => `<circle cx="${r1(fx)}" cy="${r1(fy - 2.6)}" r="2.4" fill="${deep(c)}" opacity=".75" transform="rotate(${a} ${r1(fx)} ${r1(fy)})"/>`).join('') + `<circle cx="${r1(fx)}" cy="${r1(fy)}" r="1.4" fill="#fff6d8"/>`
-        : `<path d="M${r1(fx - 5)} ${r1(fy)}q2-${sp.ground === 'savanna' ? 14 : 9} 4-1q2-${sp.ground === 'savanna' ? 16 : 10} 3 0q3-${sp.ground === 'savanna' ? 12 : 8} 5 1" fill="none" stroke="${deep(c)}" stroke-width="1.4" stroke-linecap="round" opacity=".8"/>`);
+    for (let i = 0; i < 11; i++) {
+      const fx = W * (0.04 + 0.92 * (i / 10)) + (R() - 0.5) * 20, fy = ground - 8 + R() * 10, c = gr[2 + (i % 2)];
+      tufts.push(sp.ground === 'meadow' ? [0, 72, 144, 216, 288].map(a => `<circle cx="${r1(fx)}" cy="${r1(fy - 2.6)}" r="2.4" fill="${deep(c)}" opacity=".75" transform="rotate(${a} ${r1(fx)} ${r1(fy)})"/>`).join('') + `<circle cx="${r1(fx)}" cy="${r1(fy)}" r="1.6" fill="${deep('#f6d26b')}"/>`
+        : `<path d="M${r1(fx - 5)} ${r1(fy)}q2-${sp.ground === 'savanna' ? 14 : 9} 4-1q2-${sp.ground === 'savanna' ? 16 : 10} 3 0q3-${sp.ground === 'savanna' ? 12 : 8} 5 1" fill="none" stroke="${deep(c)}" stroke-width="1.4" stroke-linecap="round"/>`);
     }
     A.push(`<g filter="url(#ftbrush)">${tufts.join('')}</g>`);
 
     const tufted = (cx, cy, rx, ry) => {   // a blob with smaller ones round its edge: a leafy outline
-      const out = [blobPath(cx, cy, rx, ry, R)], k = sp.crown === 'umbrella' ? 0 : 4;
+      const out = [blobPath(cx, cy, rx, ry, R)], k = sp.crown === 'umbrella' ? 0 : 5;
       for (let i = 0; i < k; i++) { const a = (i / k) * Math.PI * 2 + R() * 1.2, f = 0.3 + R() * 0.16; out.push(blobPath(cx + Math.cos(a) * rx * 0.86, cy + Math.sin(a) * ry * 0.8, rx * f, ry * f * 1.2, R)); }
       return out.join('');
     };
@@ -333,59 +338,68 @@ const FamilyTree = (() => {
     if (sp.under) A.push(crown(sp.under, 0.22, 0, 12, 0.85));   // (a little green under the blossom)
     A.push(crown(sp.wash[0], 0.6, 0, 0, 1));
 
-    // the trunk (it thickens as the family grows), its roots, and the branches: brush strokes in the bark's colours
-    const T = [], tTop = Y[1] - 4, tBot = ground + 12, w1 = tw / 2, w2 = Math.max(6, tw * 0.3), bark = deep(sp.bark[0]), line = deep(sp.bark[1]);
-    T.push(`<path fill="${bark}" d="M${X(-w1)} ${tBot}C${X(-w1 * 0.6)} ${r1(tBot - 34)} ${X(-w2 - 4)} ${r1((tTop + tBot) / 2)} ${X(-w2)} ${tTop}L${X(w2)} ${tTop}C${X(w2 + 3)} ${r1((tTop + tBot) / 2)} ${X(w1 * 0.6)} ${r1(tBot - 34)} ${X(w1)} ${tBot}Z"/>`);
-    T.push(`<path d="M${X(-w1 + 2)} ${tBot - 4}q-14 4-26 13M${X(w1 - 2)} ${tBot - 4}q14 4 28 11M${X(-3)} ${tBot - 2}q-4 8-12 14" fill="none" stroke="${bark}" stroke-width="${r1(Math.max(3.5, tw / 4))}" stroke-linecap="round"/>`);
-    const limb = (d, wdt) => `<path d="${d}" fill="none" stroke="${bark}" stroke-width="${r1(wdt)}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${line}" stroke-width="${r1(Math.max(1, wdt * 0.28))}" stroke-linecap="round" opacity=".45"/>`;
-    const perches = [];   // (where birds may sit: a point on a branch, and how steep it is there)
-    for (const n of nodes.filter(k => k.home)) { const ky = yOf(n) - RK; if (Math.abs(n.x) > 4) T.push(limb(branch(n.x, ky, Math.sign(n.x) * w2 * 0.6, Math.min(ky - 24, Y[1] + 52)), 2.4)); }
-    for (const s of sides) {
-      const target = s.gpItems.length ? [s.gx, Y[2] + RA + 2] : null;
-      if (target) {   // to the grandparents: a limb from this parent, a branch from each brother and sister
-        T.push(limb(branch(s.px, Y[1] - RA, target[0], target[1]), Math.max(6, tw * 0.42)));
-        perches.push(along(s.px, Y[1] - RA, target[0], target[1], 0.3), along(s.px, Y[1] - RA, target[0], target[1], 0.62));
-        for (const u of s.units) { T.push(limb(branch(u.sx, Y[1] - RA, target[0], target[1]), Math.max(4, tw * 0.26))); perches.push(along(u.sx, Y[1] - RA, target[0], target[1], 0.45)); }
-      } else for (const u of s.units) {   // no grandparents yet: an arching bough from the parent to each brother and sister
-        T.push(limb(`M${X(s.px)} ${Y[1] - RA}Q${X((s.px + u.sx) / 2)} ${r1(Y[1] - RA - 50)} ${X(u.sx)} ${Y[1] - RA}`, Math.max(4, tw * 0.26)));
-        perches.push([(s.px + u.sx) / 2, Y[1] - RA - 25]);
-      }
-      for (const u of s.gg) { T.push(limb(branch(u.gx, Y[2] - RA, u.cx, Y[3] + RG + 2), 3)); perches.push(along(u.gx, Y[2] - RA, u.cx, Y[3] + RG + 2, 0.5)); }
-    }
+    // the trunk (it thickens as the family grows) and the boughs into the crown: brush strokes in the bark's colours
+    const T = [], tTop = ground - 92, tBot = ground + 16, w1 = tw / 2, w2 = Math.max(6, tw * 0.3), bark = deep(sp.bark[0]), line = deep(sp.bark[1]);
+    T.push(`<path fill="${bark}" d="M${X(-w1 - 4)} ${tBot}C${X(-w1 * 0.6)} ${r1(tBot - 40)} ${X(-w2 - 4)} ${r1((tTop + tBot) / 2)} ${X(-w2)} ${tTop}L${X(w2)} ${tTop}C${X(w2 + 3)} ${r1((tTop + tBot) / 2)} ${X(w1 * 0.6)} ${r1(tBot - 40)} ${X(w1 + 4)} ${tBot}Z"/>`);
+    const limb = (d, wdt) => `<path d="${d}" fill="none" stroke="${bark}" stroke-width="${r1(wdt)}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${line}" stroke-width="${r1(Math.max(1, wdt * 0.28))}" stroke-linecap="round" opacity=".55"/>`;
+    const perches = [];   // (where birds may sit: a point on a bough)
+    blobs.forEach(([bx, by, rx, ry], i) => {   // boughs fanning up from the trunk into each part of the crown, and twigs off them
+      const low = i === 1 || i === 2, sy = low ? tTop + 26 : tTop + 4, ex = bx * 0.86, ey = by - ry * (low ? 0.05 : 0.25), wdt = i === 0 ? Math.max(7, tw * 0.5) : Math.max(4, tw * 0.3);
+      const bow = (tTop - ey) * 0.5, d = `M${X(0)} ${r1(sy)}C${X(bx * 0.25)} ${r1(sy - bow)} ${X(ex * 0.7)} ${r1(ey + bow * 0.6)} ${X(ex)} ${r1(ey)}`;
+      T.push(limb(d, wdt));
+      const at = t => { const u = 1 - t; return [u * u * u * 0 + 3 * u * u * t * bx * 0.25 + 3 * u * t * t * ex * 0.7 + t * t * t * ex, u * u * u * sy + 3 * u * u * t * (sy - bow) + 3 * u * t * t * (ey + bow * 0.6) + t * t * t * ey]; };
+      perches.push(at(0.45), at(0.75));
+      for (let k = 0; k < 2; k++) { const [tx0, ty0] = at(0.55 + k * 0.3), dir = (bx || (k ? 1 : -1)) > 0 ? 1 : -1; T.push(limb(`M${X(tx0)} ${r1(ty0)}q${r1(dir * 10)} ${r1(-14 - k * 4)} ${r1(dir * 20)} ${r1(-30 - k * 6)}`, Math.max(2, wdt * 0.38))); }
+    });
+    // a low branch with leaves on it, off the trunk, to the side the sun is not
+    const lx = m.rtl ? -1 : 1, ly = ground - 56;
+    T.push(limb(`M${X(lx * w2 * 0.6)} ${r1(ly + 10)}Q${X(lx * (w1 + 36))} ${r1(ly + 2)} ${X(lx * (w1 + 64))} ${r1(ly - 14)}`, Math.max(3, tw * 0.22)));
+    perches.push([lx * (w1 + 40), ly - 2]);
     // the bark's own marks
     const tx = f => X(f * w2), ty = f => r1(tTop + (tBot - tTop) * f);
-    if (sp.marks === 'birch') for (let i = 0; i < 7; i++) { const f = 0.1 + i * 0.12, l = 3 + R() * 6, o = (R() - 0.5) * w2; T.push(`<path d="M${r1(X(0) + o - l / 2)} ${ty(f)}h${r1(l)}" stroke="${line}" stroke-width="${r1(1.4 + R() * 1.6)}" stroke-linecap="round" opacity=".8"/>`); }
-    else if (sp.marks === 'patches') for (let i = 0; i < 6; i++) T.push(`<ellipse cx="${r1(X(0) + (R() - 0.5) * w2 * 1.2)}" cy="${ty(0.12 + i * 0.13)}" rx="${r1(2 + R() * 3)}" ry="${r1(4 + R() * 5)}" fill="${deep(sp.patches[i % 3])}" opacity=".8"/>`);
+    if (sp.marks === 'birch') for (let i = 0; i < 7; i++) { const f = 0.1 + i * 0.12, l = 3 + R() * 6, o = (R() - 0.5) * w2; T.push(`<path d="M${r1(X(0) + o - l / 2)} ${ty(f)}h${r1(l)}" stroke="${line}" stroke-width="${r1(1.4 + R() * 1.4)}" stroke-linecap="round" opacity=".8"/>`); }
+    else if (sp.marks === 'patches') for (let i = 0; i < 6; i++) T.push(`<ellipse cx="${r1(X(0) + (R() - 0.5) * w2 * 1.2)}" cy="${ty(0.12 + i * 0.13)}" rx="${r1(2 + R() * 3)}" ry="${r1(4 + R() * 5)}" fill="${deep(sp.patches[i % 3])}" opacity=".7"/>`);
     else if (sp.marks === 'bands') for (let i = 0; i < 6; i++) T.push(`<path d="M${tx(-0.7)} ${ty(0.12 + i * 0.13)}h${r1(w2 * 1.3)}" stroke="${line}" stroke-width="1.2" stroke-linecap="round" opacity=".55"/>`);
-    else if (sp.marks === 'twisted') T.push(`<path d="M${tx(-0.5)} ${ty(0.95)}C${tx(0.9)} ${ty(0.7)} ${tx(-0.9)} ${ty(0.4)} ${tx(0.4)} ${ty(0.05)}" fill="none" stroke="${line}" stroke-width="1.6" opacity=".55"/><ellipse cx="${tx(0.1)}" cy="${ty(0.55)}" rx="2.6" ry="4.4" fill="${line}" opacity=".6"/>`);
-    else if (sp.marks !== 'smooth') T.push(`<path d="M${tx(-0.45)} ${ty(0.92)}C${tx(-0.2)} ${ty(0.6)} ${tx(-0.6)} ${ty(0.35)} ${tx(-0.3)} ${ty(0.08)}M${tx(0.4)} ${ty(0.85)}C${tx(0.6)} ${ty(0.55)} ${tx(0.25)} ${ty(0.3)} ${tx(0.45)} ${ty(0.1)}" fill="none" stroke="${line}" stroke-width="1.3" opacity=".5"/>`
+    else if (sp.marks === 'twisted') T.push(`<path d="M${tx(-0.5)} ${ty(0.95)}C${tx(0.9)} ${ty(0.7)} ${tx(-0.9)} ${ty(0.4)} ${tx(0.4)} ${ty(0.05)}" fill="none" stroke="${line}" stroke-width="1.6" opacity=".55"/><ellipse cx="${tx(0.2)}" cy="${ty(0.5)}" rx="2.5" ry="3.5" fill="${line}" opacity=".6"/>`);
+    else if (sp.marks !== 'smooth') T.push(`<path d="M${tx(-0.45)} ${ty(0.92)}C${tx(-0.2)} ${ty(0.6)} ${tx(-0.6)} ${ty(0.35)} ${tx(-0.3)} ${ty(0.08)}M${tx(0.4)} ${ty(0.85)}C${tx(0.6)} ${ty(0.55)} ${tx(0.25)} ${ty(0.3)} ${tx(0.45)} ${ty(0.06)}" fill="none" stroke="${line}" stroke-width="1.3" opacity=".5"/>`
       + (sp.marks === 'gnarled' ? `<ellipse cx="${tx(0.25)}" cy="${ty(0.38)}" rx="3" ry="4.4" fill="${line}" opacity=".7"/>` : ''));
     T.push(`<path d="${heart(X(-w2 * 0.15), tTop + (tBot - tTop) * 0.62, 4)}" fill="none" stroke="${line}" stroke-width="1.2" opacity=".6"/>`);   // (initials of love, carved long ago)
-    // a banyan's roots hang from its branches to the ground, between the people
-    if (sp.roots) {
-      const row1 = nodes.filter(n => n.row === 1).map(n => n.x).sort((a, b) => a - b), gaps = [];
-      for (let i = 1; i < row1.length; i++) if (row1[i] - row1[i - 1] > 50) gaps.push((row1[i] + row1[i - 1]) / 2);
-      if (row1.length) gaps.push(row1[0] - 40, row1[row1.length - 1] + 40);
-      for (const gx0 of gaps.filter(g => Math.abs(g) > w1 + 10)) for (const off of [-4, 3]) T.push(`<path d="M${X(gx0 + off)} ${r1(Y[1] - 26)}C${X(gx0 + off + 3)} ${r1(Y[1] + 30)} ${X(gx0 + off - 3)} ${r1(ground - 30)} ${X(gx0 + off)} ${r1(ground + 4)}" fill="none" stroke="${bark}" stroke-width="1.5" opacity=".55"/>`);
-    }
+    if (sp.roots) for (const off of [-1, 1]) T.push(`<path d="M${X(off * cW * 0.5)} ${r1(cY + cH * 0.7)}C${X(off * (cW * 0.5 + 6))} ${r1(ground - 60)} ${X(off * (cW * 0.5 - 8))} ${r1(ground - 20)} ${X(off * (cW * 0.52))} ${r1(ground + 2)}" fill="none" stroke="${bark}" stroke-width="2.2" stroke-linecap="round" opacity=".8"/>`);   // (a banyan's hanging roots)
     A.push(`<g filter="url(#ftbrush)">${T.join('')}</g>`);
-    // the cousins: a vine from their parents down to each of them
-    A.push(`<g filter="url(#ftbrush)">${nodes.filter(k => k.cousin).map(n => `<path d="M${X(n.from)} ${Y[1] + RA + 4}C${X(n.from)} ${r1(Y[1] + 50)} ${X(n.x + (n.x > n.from ? -10 : 10))} ${r1(yOf(n) - 46)} ${X(n.x)} ${r1(yOf(n) - RK)}" fill="none" stroke="${deep(sp.wash[2])}" stroke-width="2.2" stroke-dasharray="1 5" stroke-linecap="round"/>`).join('')}</g>`);
-    // more washes over the branches, lit from the top left; then leaves, and the tree's own touches: blossom, fruit, autumn
-    A.push(crown(sp.wash[1], sp.blossom ? 0.34 : 0.42, -6, -8, 0.78), crown(sp.wash[2], sp.blossom ? 0.18 : 0.28, 8, 10, 0.62));
+    // more washes over the boughs, lit from the sun's side; then leaves, and the tree's own touches: blossom, fruit, autumn
+    const lit = m.rtl ? 6 : -6;
+    A.push(crown(sp.wash[1], sp.blossom ? 0.34 : 0.42, lit, -8, 0.8), crown(sp.wash[2], sp.blossom ? 0.18 : 0.28, -lit, 10, 0.64));
     A.push(`<g filter="url(#ftwash)">${blobs.map(([bx, by, rx, ry]) => wash(paper, dark ? 0.12 : 0.3, blobPath(X(bx - rx * 0.3), by - ry * 0.3, rx * 0.22, ry * 0.2, R))).join('')}</g>`);   // (blooms, where the water spread)
     const dabs = [];
     for (const [bx, by, rx, ry] of blobs) {
-      const n = Math.round((rx * ry) / 240);
+      const n = Math.round((rx * ry) / 150);
       for (let i = 0; i < n; i++) {
-        const a = R() * Math.PI * 2, d = Math.sqrt(R()) * 0.92, lx = X(bx + Math.cos(a) * rx * d), ly = by + Math.sin(a) * ry * d, pick = R();
-        if (sp.blossom && pick < 0.72) dabs.push(`<circle cx="${r1(lx)}" cy="${r1(ly)}" r="${r1(1.8 + R() * 2.6)}" fill="${deep(sp.blossom[Math.floor(R() * sp.blossom.length)])}" opacity="${r1(0.55 + R() * 0.4)}"/>`);
-        else if (sp.dabs && pick < 0.32) dabs.push(`<circle cx="${r1(lx)}" cy="${r1(ly)}" r="${r1(2.4 + R() * 3)}" fill="${deep(sp.dabs[Math.floor(R() * sp.dabs.length)])}" opacity=".6"/>`);
-        else dabs.push(leafOf(lx, ly, 4 + R() * 3, R() * 360, deep(sp.wash[2 - (i % 2)]), 0.5));
+        const a = R() * Math.PI * 2, d = Math.sqrt(R()) * 0.94, lx2 = X(bx + Math.cos(a) * rx * d), ly2 = by + Math.sin(a) * ry * d, pick = R();
+        if (sp.blossom && pick < 0.72) dabs.push(`<circle cx="${r1(lx2)}" cy="${r1(ly2)}" r="${r1(1.8 + R() * 2.6)}" fill="${deep(sp.blossom[Math.floor(R() * sp.blossom.length)])}" opacity="${r1(0.55 + R() * 0.4)}"/>`);
+        else if (sp.dabs && pick < 0.32) dabs.push(`<circle cx="${r1(lx2)}" cy="${r1(ly2)}" r="${r1(2.4 + R() * 3)}" fill="${deep(sp.dabs[Math.floor(R() * sp.dabs.length)])}" opacity=".6"/>`);
+        else dabs.push(leafOf(lx2, ly2, 4 + R() * 3, R() * 360, deep(sp.wash[2 - (i % 2)]), 0.5));
       }
-      if (sp.fruit) for (let i = 0; i < 2; i++) { const fx = X(bx + (R() - 0.5) * rx), fy = by + ry * (0.25 + R() * 0.3); dabs.push(`<ellipse cx="${r1(fx)}" cy="${r1(fy)}" rx="${kind === 'mango' ? 3.4 : 2}" ry="${kind === 'mango' ? 4.6 : 2.8}" fill="${deep(sp.fruit[i % 2])}" opacity=".9"/>`); }
+      if (sp.fruit) for (let i = 0; i < 3; i++) { const fx = X(bx + (R() - 0.5) * rx), fy = by + ry * (0.25 + R() * 0.3); dabs.push(`<ellipse cx="${r1(fx)}" cy="${r1(fy)}" rx="${kind === 'mango' ? 3.4 : 2}" ry="${kind === 'mango' ? 4.6 : 2}" fill="${deep(sp.fruit)}" opacity=".85"/>`); }
     }
+    for (let i = 0; i < 5; i++) dabs.push(leafOf(X(lx * (w1 + 24 + i * 9)), ly - 2 - (i % 2) * 6 - i * 2.4, 5 + R() * 2, (lx > 0 ? 300 : 60) + R() * 50, deep(sp.wash[1 + (i % 2)]), 0.8));   // (leaves on the low branch)
     A.push(`<g filter="url(#ftbrush)">${dabs.join('')}</g>`);
+    // the roots: from the foot of the trunk to each parent, on down to the grandparents and great-grandparents; brothers and
+    // sisters as side roots off the same root; the children as the newest root tips, just under the trunk
+    const RT = [], rootStroke = (d, wdt, op = 1) => `<path d="${d}" fill="none" stroke="${bark}" stroke-width="${r1(wdt)}" stroke-linecap="round" opacity="${op}"/><path d="${d}" fill="none" stroke="${line}" stroke-width="${r1(Math.max(0.8, wdt * 0.25))}" stroke-linecap="round" opacity=".45"/>`;
+    for (const s of sides) {
+      RT.push(rootStroke(branch(Math.sign(s.px || s.dir) * w2 * 0.5, tBot - 4, s.px, Y[1] - RA), Math.max(6, tw * 0.42)));
+      const target = s.gpItems.length ? [s.gx, Y[2] - RA - 2] : null;
+      if (target) {   // on down to the grandparents, and up again to each brother and sister
+        RT.push(rootStroke(branch(s.px, Y[1] + RA, target[0], target[1]), Math.max(5, tw * 0.3)));
+        for (const u of s.units) RT.push(rootStroke(branch(target[0], target[1], u.sx, Y[1] + RA), Math.max(3, tw * 0.2)));
+      } else for (const u of s.units) RT.push(rootStroke(`M${X(s.px)} ${Y[1] + RA}Q${X((s.px + u.sx) / 2)} ${r1(Y[1] + RA + 44)} ${X(u.sx)} ${Y[1] + RA}`, Math.max(3, tw * 0.2)));   // (no grandparents yet: a side root)
+      for (const u of s.gg) RT.push(rootStroke(branch(u.gx, Y[2] + RA, u.cx, Y[3] - RG - 2), 2.6));
+    }
+    if (!sides.length) RT.push(rootStroke(branch(0, tBot - 4, 0, Y[1] - RA), Math.max(6, tw * 0.42), 0.5));
+    for (const n of nodes.filter(k => k.home)) RT.push(rootStroke(branch(Math.sign(n.x || 1) * w2 * 0.3, tBot - 6, n.x, yOf(n) - RK - 2), 2.4, 0.9));   // (the children: new root tips)
+    for (const n of nodes.filter(k => k.cousin)) RT.push(rootStroke(`M${X(n.from)} ${Y[1] - RA}C${X(n.from)} ${r1(Y[1] - 50)} ${X(n.x)} ${r1(yOf(n) + 50)} ${X(n.x)} ${r1(yOf(n) + RK + 2)}`, 2));   // (cousins: from their parents)
+    for (let i = 0; i < 6; i++) { const rx0 = (R() - 0.5) * 60, ry0 = tBot + 6 + R() * 30; RT.push(`<path d="M${X(rx0 * 0.4)} ${r1(tBot - 4)}Q${X(rx0 * 0.8)} ${r1(ry0 - 10)} ${X(rx0)} ${r1(ry0)}" fill="none" stroke="${bark}" stroke-width="1.4" stroke-linecap="round" opacity=".7"/>`); }   // (fine hair roots at the foot)
+    A.push(`<g filter="url(#ftbrush)">${RT.join('')}</g>`);
     // and the paper's grain over all of it
     A.push(`<rect width="${W}" height="${H}" filter="url(#ftgrain)" opacity="${dark ? 0.35 : 0.5}"/>`);
     const defs = `<defs><path id="ftleaf" d="${LEAVES[sp.leaf]}"/><filter id="ftwash" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
@@ -394,24 +408,19 @@ const FamilyTree = (() => {
       <feColorMatrix in="rim" type="matrix" values=".72 0 0 0 0 0 .72 0 0 0 0 0 .72 0 0 0 0 0 .55 0" result="edge"/>
       <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="9" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -.6 1.08" result="ga"/>
       <feComposite in="b" in2="ga" operator="in" result="grain"/><feMerge><feMergeNode in="grain"/><feMergeNode in="edge"/></feMerge></filter>
-      <filter id="ftbrush" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation=".45"/></filter>
+      <filter id="ftbrush" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G"/></filter>
       <filter id="ftglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
-      <filter id="ftsky" x="-20%" y="-40%" width="140%" height="180%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="6" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="26" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="5"/></filter>
+      <filter id="ftsky" x="-20%" y="-40%" width="140%" height="180%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="6" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="26" xChannelSelector="R" yChannelSelector="G"/></filter>
       <filter id="ftgrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" seed="1" result="n"/>
       <feColorMatrix in="n" type="matrix" values="${dark ? '0 0 0 0 .9 0 0 0 0 .9 0 0 0 0 .95 0 0 0 -1.6 .9' : '0 0 0 0 .42 0 0 0 0 .36 0 0 0 0 .28 0 0 0 -1.5 .82'}"/></filter></defs>`;
 
     // ---- over it: hearts, birds, everyone, the buds, and leaves falling ----
     const B = [];
     B.push(`<g class="hearts">${hearts.map(h => `<path class="heart${h.faint ? ' faint' : ''}" d="${heart(X(h.x), Y[h.row] + 1, h.big ? 8 : h.small ? 5 : 6.5)}"/>`).join('')}</g>`);
-    // birds of this place on the branches, clear of everyone (one at least, on a twig of its own when there is no branch yet)
-    const clear = ([px, py]) => nodes.every(n => Math.hypot(n.x - px, yOf(n) - py) > 30) && Math.abs(py - 24) > 30;
+    // birds of this place on the boughs, well apart (one at least)
     const seats = [];
-    for (const p of perches) if (clear(p) && seats.every(q => Math.hypot(q[0] - p[0], q[1] - p[1]) > 70) && seats.length < 3) seats.push(p);
-    if (!seats.length) {   // (a little twig off the trunk to sit on)
-      const ty0 = (Y[1] + Y[0]) / 2 - 8, dir = m.rtl ? -1 : 1, ex = dir * (w1 + 30);
-      A.push(`<g filter="url(#ftbrush)">${limb(`M${X(dir * w2 * 0.6)} ${r1(ty0 + 8)}Q${X(dir * (w1 + 10))} ${r1(ty0 + 4)} ${X(ex)} ${r1(ty0)}`, 2.6)}</g>`);
-      seats.push([dir * (w1 + 18), ty0 + 2]);
-    }
+    for (const p of perches) if (p[1] < ground - 30 && seats.every(q => Math.hypot(q[0] - p[0], q[1] - p[1]) > 70) && seats.length < 3) seats.push(p);
+    if (!seats.length) seats.push([lx * (w1 + 40), ly - 2]);
     seats.forEach(([bx, by], i) => {
       const b = BIRDS[sp.birds[i % 2]], face = (bx < 0) !== !!m.rtl ? 1 : -1;   // (facing the trunk)
       B.push(`<g transform="translate(${X(bx)} ${r1(by + 2)}) scale(${face * (b.small ? 0.82 : 1)} ${b.small ? 0.82 : 1})"><g class="ftbird b${i}">${birdSvg(b)}</g></g>`);
@@ -428,7 +437,7 @@ const FamilyTree = (() => {
     const budNode = n => {
       const px = X(n.x), py = r1(yOf(n)), r = n.r, b = n.bud;
       return `<g class="tbud${n.small ? ' small' : ''}" role="button" tabindex="0" data-tk="${x(b.key)}" aria-label="${x(b.title)}"><circle class="hit" cx="${px}" cy="${r1(py + 6)}" r="${r + 10}"/>`
-        + `<circle class="disc" cx="${px}" cy="${py}" r="${r - 1}"/><path class="plus" d="M${px - 5} ${py}h10M${px} ${py - 5}v10"/>${n.small ? '' : `<text x="${px}" y="${r1(py + r + 12)}" class="ftl">${lines(b.label, 11).map((l, i) => `<tspan x="${px}" dy="${i ? 10.5 : 0}">${x(l)}</tspan>`).join('')}</text>`}</g>`;
+        + `<circle class="disc" cx="${px}" cy="${py}" r="${r - 1}"/><path class="plus" d="M${px - 5} ${py}h10M${px} ${py - 5}v10"/>${n.small ? '' : `<text x="${px}" y="${r1(py + r + 12)}" class="ftl">${lines(b.label, 11).map((l, i) => `<tspan x="${px}" dy="${i ? 11 : 0}">${x(l)}</tspan>`).join('')}</text>`}</g>`;
     };
     B.push(`<g class="people">${nodes.filter(n => n.bud).map(budNode).join('')}${nodes.filter(n => n.n).map(person).join('')}</g>`);
     // its own leaves (or petals) falling from the crown

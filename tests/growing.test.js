@@ -62,7 +62,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await P.evaluate(() => { G.age(0, 0, 1); G.page(kids()[0].id); });
       let b = await P.evaluate(() => G.buttons());
       assert.deepEqual(b.shown, ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med']); assert.equal(b.more, '', 'a newborn needs no More');
-      assert.deepEqual(b.labels.slice(0, 2), ['Feed', 'Diaper']); assert.deepEqual(await P.evaluate(() => G.legend()), ['Feeding', 'Diapers', 'Sleep & night wakings', 'Vomit', 'Play', 'Health & meds']);
+      assert.deepEqual(b.labels.slice(0, 2), ['Feed', 'Diaper']); assert.deepEqual(await P.evaluate(() => G.legend()), ['Feeding', 'Diapers', 'Sleep & wake-ups', 'Vomit', 'Play', 'Health & meds']);
       await P.evaluate(() => { G.age(0, 2, 3); G.page(kids()[0].id); });
       b = await P.evaluate(() => G.buttons());
       assert.deepEqual(b.shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'care']); assert.equal(b.more, 'med wake play vomit');
@@ -115,9 +115,9 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await P.evaluate(() => { tab = 'month'; render(); });
       assert(/Meals/.test((await P.$$eval('#view .tile', x => x.map(t => t.textContent)))[0]), 'an older child\'s day starts with meals');
       await P.evaluate(id => { G.ev('meal', G.at(1, 8), { meal: 'Breakfast', foods: [], amount: 'All of it' }, id); G.ev('meal', G.at(1, 10), { meal: 'Snack', foods: [] }, id); G.ev('meal', G.at(1, 12), { meal: 'Lunch', foods: [], amount: 'Hardly any' }, id); save(); tab = 'stats'; render(); }, leo);
-      const st = await P.evaluate(() => [...document.querySelectorAll('#view .scard')].map(c => c.querySelector('b').textContent.trim()));
+      const st = await P.evaluate(() => [...document.querySelectorAll('#view .scard:not(.hw)')].map(c => c.querySelector('b').textContent.trim()));
       assert.deepEqual(st.slice(0, 3), ['Meals', 'Potty', 'Sleep'], 'a toddler\'s stats: meals, the potty, sleep (no milk or diapers logged)');
-      const meals = await P.textContent('#view .scard'); assert(/Ate most or all of it\s*67\s?%/.test(meals), meals);
+      const meals = await P.textContent('#view .scard:not(.hw)'); assert(/Ate most or all of it\s*67\s?%/.test(meals), meals);
     });
 
     await step('an allergy is flagged at meals too, worded for a child rather than a baby', async () => {
@@ -278,10 +278,10 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
         G.ev('feed', G.at(1, 9), { kind: 'bottle', ml: 90, milk: 'Formula' }, kids()[1].id); save();
         return { toddler: head(kids()[0].id), glance: kv(kids()[0].id), baby: head(kids()[1].id) };
       });
-      assert.deepEqual(r.toddler, ['Date', 'Meals', 'Milk', 'ml', 'Potty', 'Accidents', 'Sleep', 'Night wakings', 'Vomit', 'Health & meds']);
+      assert.deepEqual(r.toddler, ['Date', 'Meals', 'Milk', 'ml', 'Potty', 'Accidents', 'Sleep', 'Wake-ups', 'Vomit', 'Health & meds']);
       for (const x of ['Meals per day', 'Milk feeds per day', 'On the potty per day', 'Accidents per day']) assert(r.glance.includes(x), x);
       assert(!r.glance.includes('Pee per day'), 'no diapers logged, so none in the report');
-      assert.deepEqual(r.baby, ['Date', 'Feeds', 'ml', 'Pee', 'Poo', 'Sleep', 'Night wakings', 'Vomit', 'Health & meds']);
+      assert.deepEqual(r.baby, ['Date', 'Feeds', 'ml', 'Pee', 'Poo', 'Sleep', 'Wake-ups', 'Vomit', 'Health & meds']);
     });
 
     await step('travel mode for a toddler: big buttons for a meal, milk, a diaper and sleep; a one-tap potty and a quick meal', async () => {

@@ -9,7 +9,7 @@
 const GROUPS = [
   { id: 'feed', label: N_('Feeding'), icon: '🍼', types: ['feed', 'meal'] },
   { id: 'diaper', label: N_('Diapers'), icon: '💧', types: ['diaper', 'potty'] },
-  { id: 'sleep', label: N_('Sleep & night wakings'), icon: '😴', types: ['sleep', 'wake'] },
+  { id: 'sleep', label: N_('Sleep & wake-ups'), icon: '😴', types: ['sleep', 'wake'] },
   { id: 'care', label: N_('Daycare & school'), icon: '🏫', types: ['care', 'pickup'] },
   { id: 'vomit', label: N_('Vomit'), icon: '🤮', types: ['vomit'] },
   { id: 'play', label: N_('Play'), icon: '🧸', types: ['play', 'study'] },
@@ -27,7 +27,7 @@ const TYPES = {
   feed:   { label: N_('Feed'),     noun: N_('feed'),       icon: '🍼' },
   diaper: { label: N_('Diaper'),   noun: N_('diaper'),     icon: '💧' },
   sleep:  { label: N_('Sleep'),    noun: N_('sleep'),      icon: '😴' },
-  wake:   { label: N_('Night wake'), noun: N_('night wake'), icon: '🌙' },
+  wake:   { label: N_('Woke up'), noun: N_('wake-up'), icon: '🌙' },
   vomit:  { label: N_('Vomit'),    noun: N_('vomit'),      icon: '🤮' },
   play:   { label: N_('Play'),     noun: N_('play'),       icon: '🧸' },
   health: { label: N_('Health'),   noun: N_('health note'), icon: '🩺' },
@@ -60,7 +60,7 @@ const URGENT = ['Blue lips or face', 'Fever', 'Fast / noisy breathing', 'Very sl
 const STOOL = [N_('Black/tarry'), N_('Green'), N_('Yellow'), N_('Brown'), N_('Red-streaked'), N_('White/pale')];
 const STOOL_WARN = ['Red-streaked', 'White/pale'];
 const PLAYS = [N_('Tummy time'), N_('Play'), N_('Walk / outing'), N_('Bath'), N_('Skin-to-skin')];
-const WAKE_WHY = [N_('Hungry'), N_('Diaper'), N_('Gas / fussy'), N_('Unknown')];
+const WAKE_WHY = [N_('Hungry'), N_('Diaper'), N_('Gas / fussy'), N_('Pain'), N_('Unknown')];
 const SIDES = [N_('Left'), N_('Right'), N_('Both')], MILKS = [N_('Breast milk'), N_('Formula')], AMOUNTS = [N_('Spit-up'), N_('Medium'), N_('Large')];
 // From a year old: milk from a cup too, and cow's milk or another milk instead of formula.
 const MILKS_OLDER = [...MILKS, N_("Cow's milk"), N_('Plant milk')];
@@ -144,6 +144,14 @@ const fmtNum = (x, d = 1) => new Intl.NumberFormat(I18n.locale(), { maximumFract
 // Weight and length: in kg and cm, or in pounds and inches (More → Units; in North America by default). Saved in kg and cm.
 const LB = 0.45359237, IN = 2.54;
 const usUnits = () => (db.meta.units ? db.meta.units === 'us' : myRegion() === 'na');
+const OZ = 29.5735;   // ml in a US fluid ounce
+/** Milk amounts in fl oz rather than ml: ml until switched, in More → Units or with the switch in the feed form (kept on this phone). */
+const volOz = () => db.meta.vol === 'oz';
+/** An amount kept in ml, shown in the unit chosen: "90 ml" or "3 fl oz". */
+const fmtVol = ml => (volOz() ? __('{n} fl oz', { n: fmtNum(ml / OZ, 1) }) : __('{n} ml', { n: fmtNum(ml, 0) }));
+/** The number to put in an input for an amount kept in ml, and the ml an input's number means. */
+const volIn = ml => (ml == null || ml === '' ? '' : volOz() ? Math.round(ml / OZ * 10) / 10 : ml);
+const volOut = v => (v == null || v === '' ? v : volOz() ? Math.round(v * OZ) : v);
 /** A weight (kg) in the phone's units: 12.4 kg, or 27 lb 5 oz. */
 function fmtWeight(kg) {
   if (!usUnits()) return __('{n} kg', { n: fmtNum(kg, 2) });
@@ -162,8 +170,8 @@ function describeEntry(e) {
   switch (e.type) {
     case 'feed':
       if (d.kind === 'solids') return [__('Solids'), [(d.foods || []).map(f => __(f)).join(', '), d.amount && __(d.amount)].filter(Boolean).join(' · ')];
-      if (d.kind === 'bottle') return [d.ml ? __('Bottle {ml} ml', { ml: d.ml }) : __('Bottle'), [d.milk && __(d.milk), d.formula].filter(Boolean).join(' · ')];
-      if (d.kind === 'cup') return [d.ml ? __('Cup {ml} ml', { ml: d.ml }) : __('Cup'), [d.milk && __(d.milk), d.formula].filter(Boolean).join(' · ')];
+      if (d.kind === 'bottle') return [d.ml ? __('Bottle {amt}', { amt: fmtVol(d.ml) }) : __('Bottle'), [d.milk && __(d.milk), d.formula].filter(Boolean).join(' · ')];
+      if (d.kind === 'cup') return [d.ml ? __('Cup {amt}', { amt: fmtVol(d.ml) }) : __('Cup'), [d.milk && __(d.milk), d.formula].filter(Boolean).join(' · ')];
       return [d.side ? __('Breast – {side}', { side: __(d.side) }) : __('Breast'), d.min ? min(d.min) : ''];
     case 'diaper':
       return [d.pee && d.poo ? __('Pee + Poo') : d.pee ? __('Pee') : d.poo ? __('Poo') : __('Dry'), [d.poo && d.color && __(d.color), d.rash && __('rash')].filter(Boolean).join(', ')];
@@ -434,6 +442,7 @@ function openPlan(ev, pre = {}) {
     <label class="f">${__h('Time (optional)')}</label><input id="ptime" type="time" value="${ev && !d.allday ? hhmm(ev.ts) : ''}">
     <label class="f">${__h('Last day (optional, for more than one day)')}</label><input id="puntil" type="date" value="${ev && startOfDay(planEnd(ev) - 1) !== startOfDay(ev.ts) ? dkey(planEnd(ev) - 1) : ''}">
     <label class="f">${__h('Note (optional)')}</label><textarea id="pnote" rows="2" maxlength="1000">${esc(ev ? ev.note : '')}</textarea>
+    ${ev ? `<div class="row" style="margin-top:14px"><button class="btn" id="pcal">📅 ${__h('Add to phone calendar')}</button><button class="btn" id="pshare">✉️ ${__h('Share as a calendar file')}</button></div>` : ''}
     <div class="row" style="margin-top:16px">${ev && Sync.can('delete', ev) ? `<button class="btn d" id="pdel">${__h('Delete')}</button>` : ''}<button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="psave">${__h('Save')}</button></div>`);
   Icons.paint($('#sheet'));
   $('#psave').onclick = () => {
@@ -454,6 +463,8 @@ function openPlan(ev, pre = {}) {
     save(); close(); render(); toast(__('Saved'));
   };
   if ($('#pdel')) $('#pdel').onclick = () => { if (confirm(__('Delete this entry?'))) { group.filter(e => Sync.can('delete', e)).forEach(removeEvent); save(); close(); render(); toast(__('Deleted')); } };
+  if ($('#pcal')) $('#pcal').onclick = () => Cal.addToPhone(ev);
+  if ($('#pshare')) $('#pshare').onclick = () => Cal.share([ev]);
 }
 /** Names to choose from for who drops off or picks up: the family's people, then the names used lately. */
 const whoNames = () => [...new Set([...peopleNames(), ...db.events.filter(e => e.type === 'care' || e.type === 'pickup').sort((a, b) => b.ts - a.ts).slice(0, 40)
@@ -569,7 +580,7 @@ function render() {
 /** Whoever is feeding the baby sees their allergies at the top of the day. */
 function allergyLine() {
   const ks = (dayKid() === 'all' ? kids() : [kidById(dayKid())]).filter(k => k && (k.allergies || []).length);
-  return ks.length ? `<p class="note allergyline">⚠️ ${__h('Allergies: {foods}', { foods: ks.map(k => (kids().length > 1 ? kidName(k) + ': ' : '') + k.allergies.map(a => __(a.food)).join(', ')).join(' · ') })}</p>` : '';
+  return ks.length ? `<p class="note allergyline">⚠️ ${__h('Allergies: {foods}', { foods: ks.map(k => (kids().length > 1 ? kidName(k) + ': ' : '') + k.allergies.map(a => allergyText(a)).join(', ')).join(' · ') })}</p>` : '';
 }
 function dayView() {
   const evs = eventsOnDay(viewDay), isToday = viewDay === startOfDay(Date.now()), twelve = face12(), trip = tripOn(viewDay), TM = trip && Travel.MEANS[Travel.meansOf(trip)];
@@ -678,6 +689,8 @@ function clockSvg(evs, day) {
     else if (h === 12) dial += `<g transform="translate(${f1(x)} ${f1(y)})" fill="${gilt}" stroke="${gilt}"><circle r="3.6"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(k => `<path d="M0 -5.4V-7.6" transform="rotate(${k * 45})" stroke-width="1.2" stroke-linecap="round"/>`).join('')}</g>`;
     else dial += num(...(plain ? P(a, rr(100)) : [x, y]), h * 15, plain ? String(h24 ? h : h % 12) : ROMAN[h % 12]);
   }
+  // the day of the week, in a small window above the centre like a watch's day dial (the phone's language)
+  dial += `<text class="wday" x="${C.x}" y="${f1(C.y - rr(14))}" text-anchor="middle" fill="${ink}">${esc(new Date(day).toLocaleDateString(I18n.locale(), { weekday: 'short' }))}</text>`;
   // quarters (tap targets), washed in the page colour when chosen
   let quads = '';
   for (let i = 0; i < 4; i++) { const a0 = ang(i / 4), a1 = ang((i + 1) / 4); quads += `<path class="qw ${quad === i ? 'on' : ''}" data-quad="${i}" role="button" tabindex="0" aria-pressed="${quad === i}" aria-label="${esc(quadInfo(i, day).label + ', ' + quadInfo(i, day).range)}" d="M${C.x} ${f1(C.y)}L${xy(a0, RD)}A${f1(RD)} ${f1(RD)} 0 0 1 ${xy(a1, RD)}Z"/>`; }
@@ -745,7 +758,7 @@ function clockLegend(evs) {
   return `<div class="clegend">${groupsOnPage(evs).map(g => { const n = evs.filter(e => g.types.includes(e.type)).length;
     return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))} <b>${n}</b></span>`; }).join('')}</div>`;
 }
-/** One twirl-down per group (pee and poo together, sleep and night wakings together…), each with a one-line summary. */
+/** One twirl-down per group (pee and poo together, sleep and wake-ups together…), each with a one-line summary. */
 const openGroups = new Set();
 function groupSummary(g, list) {
   const n = list.length;
@@ -753,14 +766,14 @@ function groupSummary(g, list) {
     case 'feed': {   // (milk feeds, and meals counted apart: a baby's solid food, an older child's meals)
       const milk = list.filter(e => e.type === 'feed' && e.data.kind !== 'solids'), ml = milk.reduce((a, e) => a + (+e.data.ml || 0), 0), solids = list.filter(e => e.type === 'feed' && e.data.kind === 'solids').length, meals = n - milk.length - solids;
       const drinks = milk.length && (allFrom('toddler') ? `${__('Milk')} ×${milk.length}` : __n('{n} feed', '{n} feeds', milk.length));
-      return [meals && __n('{n} meal', '{n} meals', meals), drinks && drinks + (ml ? ' · ' + __('{n} ml', { n: ml }) : ''), solids && `${__('Solids')} ×${solids}`].filter(Boolean).join(' · ');
+      return [meals && __n('{n} meal', '{n} meals', meals), drinks && drinks + (ml ? ' · ' + fmtVol(ml) : ''), solids && `${__('Solids')} ×${solids}`].filter(Boolean).join(' · ');
     }
     case 'diaper': {   // (diapers, and the potty)
       const dia = list.filter(e => e.type === 'diaper'), pot = list.filter(e => e.type === 'potty'), oops = pot.filter(e => e.data.accident).length;
       return [dia.length && `${__n('{n} diaper', '{n} diapers', dia.length)} · ${__('{pee} pee, {poo} poo', { pee: dia.filter(e => e.data.pee).length, poo: dia.filter(e => e.data.poo).length })}`,
         pot.length && [__n('{n} on the potty', '{n} on the potty', pot.filter(e => !e.data.accident && (e.data.pee || e.data.poo)).length), oops && __n('{n} accident', '{n} accidents', oops)].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
     }
-    case 'sleep': { const sl = list.filter(e => e.type === 'sleep'), w = list.length - sl.length, m = sl.reduce((a, e) => a + ((e.end || Date.now()) - e.ts) / MIN, 0); return [sl.length && `${__n('{n} sleep', '{n} sleeps', sl.length)} · ${fmtDur(m)}`, w && __n('{n} night waking', '{n} night wakings', w)].filter(Boolean).join(' · '); }
+    case 'sleep': { const sl = list.filter(e => e.type === 'sleep'), w = list.length - sl.length, m = sl.reduce((a, e) => a + ((e.end || Date.now()) - e.ts) / MIN, 0); return [sl.length && `${__n('{n} sleep', '{n} sleeps', sl.length)} · ${fmtDur(m)}`, w && __n('{n} wake-up', '{n} wake-ups', w)].filter(Boolean).join(' · '); }
     case 'play': {   // (and homework)
       const pl = list.filter(e => e.type === 'play'), st = list.filter(e => e.type === 'study'), m = xs => xs.reduce((a, e) => a + (+e.data.min || 0), 0);
       return [pl.length && __n('{n} time', '{n} times', pl.length) + (m(pl) ? ` · ${fmtDur(m(pl))}` : ''), st.length && `${__('Homework')} ${m(st) ? fmtDur(m(st)) : '×' + st.length}`].filter(Boolean).join(' · ');
@@ -788,8 +801,8 @@ function dayCounts(evs, day) {
   const sleeps = of('sleep'), mins = sleeps.reduce((a, e) => a + (Math.min(e.end || Date.now(), day + DAY) - Math.max(e.ts, day)) / MIN, 0), play = of('play').reduce((a, e) => a + (+e.data.min || 0), 0);
   const pot = of('potty'), oops = pot.filter(e => e.data.accident).length, older = allFrom('toddler'), study = of('study').reduce((a, e) => a + (+e.data.min || 0), 0);
   const careMin = stays(day, day + DAY, dayKid()).reduce((a, st) => a + (Math.min(st.end, day + DAY) - Math.max(st.start, day)) / MIN, 0);   // (time at daycare or school that day)
-  const T = { feeds: ['feed', '🍼', older ? N_('Milk') : N_('Feeds'), feeds.length, ml ? __('{n} ml', { n: ml }) : ''], pee: ['diaper', '💧', N_('Pee'), dia.filter(e => e.data.pee).length, ''], poo: ['poo', '💩', N_('Poo'), dia.filter(e => e.data.poo).length, ''],
-    sleep: ['sleep', '😴', N_('Sleep'), sleeps.length ? fmtDur(mins) : 0, sleeps.length ? __n('{n} sleep', '{n} sleeps', sleeps.length) : ''], wakes: ['sleep', '🌙', N_('Night wakings'), of('wake').length, ''],
+  const T = { feeds: ['feed', '🍼', older ? N_('Milk') : N_('Feeds'), feeds.length, ml ? fmtVol(ml) : ''], pee: ['diaper', '💧', N_('Pee'), dia.filter(e => e.data.pee).length, ''], poo: ['poo', '💩', N_('Poo'), dia.filter(e => e.data.poo).length, ''],
+    sleep: ['sleep', '😴', N_('Sleep'), sleeps.length ? fmtDur(mins) : 0, sleeps.length ? __n('{n} sleep', '{n} sleeps', sleeps.length) : ''], wakes: ['sleep', '🌙', N_('Wake-ups'), of('wake').length, ''],
     solids: ['feed', '🥄', N_('Solids'), of('feed').length - feeds.length, ''], meals: ['feed', '🍽', N_('Meals'), of('meal').length, ''],
     potty: ['diaper', '🚽', N_('Potty'), pot.filter(e => !e.data.accident && (e.data.pee || e.data.poo)).length, oops ? __n('{n} accident', '{n} accidents', oops) : ''], vomit: ['vomit', '🤮', N_('Vomit'), of('vomit').length, ''],
     play: ['play', '🧸', N_('Play'), play ? fmtDur(play) : of('play').length, ''], health: ['health', '🩺', N_('Health notes'), of('health').length, ''], meds: ['health', '💊', N_('Medicines'), of('med').length, ''],
@@ -851,6 +864,7 @@ function monthView() {
   <div class="legend">${groupsOnPage(inMonth).map(g => `<span><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))}</span>`).join('')}${anyAway ? `<span class="tripkey"><i></i>${__h('Travelling (its own colours)')}</span>` : ''}${anyPlan ? `<span class="plankey"><i>◆</i>${__h('On the calendar')}</span>` : ''}${anyAllergy ? `<span class="alkey"><i class="almark">!</i>${__h('First allergic reaction')}</span>` : ''}${anyMoment ? `<span class="mmkey"><i class="mmark">★</i>${__h('Big moment')}</span>` : ''}</div>
   ${monthTrip()}
   ${Sync.can('add') ? `<button class="planbtn" data-plannew><span class="tm">🗓</span><span><b>${__h('Add to the calendar')}</b><small>${__h('Exams, appointments, matches, lessons, school holidays…')}</small></span></button>` : ''}
+  <button class="btn icsbtn" id="monthIcs">📅 ${__h("Share this month's calendar")}<small>${__h('A calendar file for Google Calendar, Apple Calendar or Outlook, by email or message')}</small></button>
   ${monthDay()}
   ${momentsJournal()}`;
 }
@@ -910,16 +924,19 @@ function feedGaps(list) {
 const niceMax = v => { if (v <= 0) return 1; const p = 10 ** Math.floor(Math.log10(v)), m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; };
 /** A day-by-day bar chart drawn to scale. `series`: [{ name, color (a CSS colour), values: [number per day] }].
     `mode`: 'stack' (parts of one total) or 'group' (side by side). Each bar can be tapped for its numbers; a table sits under it. */
-function chart(days, series, { fmt = v => String(v), unit = '', mode = 'stack' } = {}) {
-  const W = 320, H = 132, L = 30, B = 18, T = 8, n = days.length, band = (W - L) / n;
+function chart(days, series, { fmt = v => String(v), unit = '', mode = 'stack', period = 'day' } = {}) {
+  const W = 320, H = 104, L = 30, B = 18, T = 8, n = days.length, band = (W - L) / n;
   const tot = i => (mode === 'stack' ? series.reduce((a, s) => a + s.values[i], 0) : Math.max(...series.map(s => s.values[i])));
   const max = niceMax(Math.max(0, ...days.map((_, i) => tot(i)))), y = v => T + (H - T - B) * (1 - v / max);
-  const wk = new Intl.DateTimeFormat(I18n.locale(), { weekday: 'narrow' });
-  const lbl = d => (n <= 14 ? wk.format(new Date(d)) : (new Date(d).getDate() % 5 === 0 ? String(new Date(d).getDate()) : ''));
+  const wk = new Intl.DateTimeFormat(I18n.locale(), { weekday: 'narrow' }), mo = new Intl.DateTimeFormat(I18n.locale(), { month: 'narrow' }), moY = new Intl.DateTimeFormat(I18n.locale(), { month: 'long', year: 'numeric' });
+  const every = Math.ceil(n / 6);   // (a label on every few weeks)
+  const lbl = (d, i) => (period === 'month' ? mo.format(new Date(d)) : period === 'week' ? (i % every === 0 ? fmtShort(d) : '')
+    : n <= 14 ? wk.format(new Date(d)) : (new Date(d).getDate() % 5 === 0 ? String(new Date(d).getDate()) : ''));
+  const when = d => (period === 'month' ? moY.format(new Date(d)) : period === 'week' ? __('Week of {date}', { date: fmtDate(d) }) : fmtDate(d));
   const bar = (x, w, y0, y1, top) => { const h = y0 - y1; if (h <= 0) return ''; const r = top ? Math.min(4, w / 2, h) : 0; return `M${x.toFixed(1)} ${y0.toFixed(1)}V${(y1 + r).toFixed(1)}${r ? `q0 -${r} ${r} -${r}h${(w - 2 * r).toFixed(1)}q${r} 0 ${r} ${r}` : `h${w.toFixed(1)}`}V${y0.toFixed(1)}Z`; };
   let g = [0, max / 2, max].map(v => `<path class="grid" d="M${L} ${y(v).toFixed(1)}H${W}"/><text class="ax" x="${L - 4}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${esc(fmt(Math.round(v * 10) / 10))}</text>`).join('');
   days.forEach((d, i) => {
-    const x0 = L + i * band, tip = `${fmtDate(d)}: ${series.map(s => `${fmt(s.values[i])}${unit} ${s.name}`).join(', ')}`;
+    const x0 = L + i * band, tip = `${when(d)}: ${series.map(s => `${fmt(s.values[i])}${unit} ${s.name}`).join(', ')}`;
     let shapes = '';
     if (mode === 'stack') {
       const w = Math.max(2, band * 0.62), x = x0 + (band - w) / 2; let acc = 0;
@@ -929,11 +946,15 @@ function chart(days, series, { fmt = v => String(v), unit = '', mode = 'stack' }
       series.forEach((s, k) => { const v = s.values[i]; if (v) shapes += `<path d="${bar(x0 + band * 0.15 + k * (w + 2), w, y(0), y(v), true)}" fill="${s.color}"/>`; });
     }
     g += `<g class="bar" data-tip="${esc(tip)}"><title>${esc(tip)}</title><rect class="hit" x="${x0.toFixed(1)}" y="${T}" width="${band.toFixed(1)}" height="${H - T - B}"/>${shapes}</g>`;
-    const t = lbl(d); if (t) g += `<text class="ax" x="${(x0 + band / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle">${esc(t)}</text>`;
+    const t = lbl(d, i); if (t) g += `<text class="ax" x="${(x0 + band / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle">${esc(t)}</text>`;
   });
   const legend = series.length > 1 ? `<div class="clegend">${series.map(s => `<span><i style="--c:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
-  const table = `<details class="tbl"><summary>${__h('Numbers')}<span class="chev" aria-hidden="true">›</span></summary><div class="tw"><table><thead><tr><th>${__h('Day')}</th>${series.map(s => `<th>${esc(s.name)}</th>`).join('')}</tr></thead><tbody>${days.map((d, i) => `<tr><td>${esc(fmtShort(d))}</td>${series.map(s => `<td>${esc(fmt(s.values[i]))}${unit}</td>`).join('')}</tr>`).reverse().join('')}</tbody></table></div></details>`;
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(__n('{what} per day, last {n} day', '{what} per day, last {n} days', n, { what: andList(series.map(s => s.name)) }))}">${g}</svg>${legend}${table}`;
+  const note = period === 'day' ? '' : `<p class="cnote">${period === 'month' ? __h('An average day in each month') : __h('An average day in each week')}</p>`;
+  const table = `<details class="tbl"><summary>${__h('Numbers')}<span class="chev" aria-hidden="true">›</span></summary><div class="tw"><table><thead><tr><th>${period === 'month' ? __h('Month') : period === 'week' ? __h('Week of') : __h('Day')}</th>${series.map(s => `<th>${esc(s.name)}</th>`).join('')}</tr></thead><tbody>${days.map((d, i) => `<tr><td>${esc(period === 'month' ? moY.format(new Date(d)) : fmtShort(d))}</td>${series.map(s => `<td>${esc(fmt(s.values[i]))}${unit}</td>`).join('')}</tr>`).reverse().join('')}</tbody></table></div></details>`;
+  const label = period === 'month' ? __n('{what} per day, by month, last {n} month', '{what} per day, by month, last {n} months', n, { what: andList(series.map(s => s.name)) })
+    : period === 'week' ? __n('{what} per day, by week, last {n} week', '{what} per day, by week, last {n} weeks', n, { what: andList(series.map(s => s.name)) })
+    : __n('{what} per day, last {n} day', '{what} per day, last {n} days', n, { what: andList(series.map(s => s.name)) });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${g}</svg>${legend}${note}${table}`;
 }
 function statsView() {
   const today = startOfDay(Date.now());
@@ -942,10 +963,20 @@ function statsView() {
   // Ignore days before anything was logged so averages aren't dragged down.
   const mine = scoped(), firstLog = mine.length ? Math.min(...mine.map(e => e.ts)) : today;
   const used = S.filter(s => s.day + DAY > firstLog);
-  const sum = k => used.reduce((a, s) => a + s[k], 0), per = k => used.length ? r1(sum(k) / used.length) : 0;
+  const sum = k => used.reduce((a, s) => a + s[k], 0), per = k => used.length ? r1(sum(k) / used.length) : 0, perVol = () => (sum('ml') ? fmtVol(sum('ml') / used.length) : '–');
   const gaps = feedGaps(S);
-  // (titles and row names are given in English and translated here; values come ready to show)
-  const card = (icon, title, rows, ch, cls = '') => `<div class="card scard ${cls}"><b>${icon} ${__h(title)}</b>${rows.map(([n, v]) => `<div class="stat"><span>${__h(n)}</span><b>${esc(v)}</b></div>`).join('')}${ch || ''}</div>`;
+  // Over 30 days the charts show an average day for each week (or each month over a year), so the bars stay readable.
+  const period = statDays > 200 ? 'month' : statDays > 31 ? 'week' : 'day';
+  const buckets = [];   // (groups of day stats, oldest first; the last week ends today, months are calendar months)
+  if (period === 'day') S.forEach(s => buckets.push([s]));
+  else if (period === 'week') for (let i = S.length; i > 0; i -= 7) buckets.unshift(S.slice(Math.max(0, i - 7), i));
+  else S.forEach(s => { const d = new Date(s.day), key = d.getFullYear() * 12 + d.getMonth(), last = buckets[buckets.length - 1]; if (last && last.key === key) last.push(s); else { const b = [s]; b.key = key; buckets.push(b); } });
+  const X = buckets.map(b => b[0].day);
+  const vals = f => buckets.map(b => { const u = b.filter(s => s.day + DAY > firstLog); return u.length ? r1(u.reduce((a, s) => a + f(s), 0) / u.length) : 0; });
+  const opts = o => ({ ...o, period });
+  // (titles and row names are given in English and translated here; values come ready to show; each chart folds open on its own)
+  const card = (icon, title, rows, charts, cls = '') => `<div class="card scard ${cls}"><b>${icon} ${__h(title)}</b>${rows.map(([n, v]) => `<div class="stat"><span>${__h(n)}</span><b>${esc(v)}</b></div>`).join('')}${(charts || []).map(([name, ch], i) => {
+    const id = 'sc' + title.replace(/\W/g, '') + i; return `<details class="chx" data-grp="${id}" ${openGroups.has(id) ? 'open' : ''}><summary><span class="gt">📊 ${__h(name)}</span><span class="chev" aria-hidden="true">›</span></summary>${ch}</details>`; }).join('')}</div>`;
   const flagged = mine.filter(e => e.type === 'health' && e.ts >= addDays(today, -statDays + 1) && (e.data.symptoms || []).length).sort((a, b) => b.ts - a.ts);
   const sym = {}; flagged.forEach(e => e.data.symptoms.forEach(s => sym[s] = (sym[s] || 0) + 1));
   const poo = {}; mine.filter(e => e.type === 'diaper' && e.data.poo && e.ts >= addDays(today, -statDays + 1) && e.data.color).forEach(e => poo[e.data.color] = (poo[e.data.color] || 0) + 1);
@@ -953,29 +984,31 @@ function statsView() {
   const older = allFrom('toddler'), has = k => sum(k) > 0, pct = x => new Intl.NumberFormat(I18n.locale(), { style: 'percent' }).format(x);
   return `
   <div class="seg">${[7, 14, 30].map(n => `<button data-range="${n}" class="${n === statDays ? 'on' : ''}">${__hn('{n} day', '{n} days', n)}</button>`).join('')}</div>
+  <div class="seg" style="margin-top:0">${[[91, __h('3 months')], [182, __h('6 months')], [365, __h('1 year')]].map(([n, l]) => `<button data-range="${n}" class="${n === statDays ? 'on' : ''}">${l}</button>`).join('')}</div>
   ${mine.length ? `<button class="btn pdfbtn" id="pdfBtn">📄 ${__h('Report for the doctor (PDF)')}</button>` : ''}
   ${kids().length > 1 ? `<h2>${esc(kidName(kidById(viewKid())))}</h2>` : ''}
   ${Sync.can('health') ? recordButton(kidById(viewKid())) : ''}
+  ${heightWeightCard(kidById(viewKid()))}
   ${mine.length ? '' : `<div class="empty">${__h('Log a few entries and your stats will show up here.')}</div>`}
   ${lowWet ? `<div class="card alert">⚠️ ${__h('Fewer than 6 wet diapers/day on average. After the first week this can signal low intake – worth mentioning to your pediatrician.')}</div>` : ''}
   ${older ? card('🍽', N_('Meals'), [[N_('Meals per day'), per('meals')], [N_('Snacks per day'), per('snacks')], ...(sum('rated') ? [[N_('Ate most or all of it'), pct(sum('ateWell') / sum('rated'))]] : [])],
-    chart(days, [{ name: __('meals'), color: 'var(--g-feed)', values: S.map(s => s.meals) }, { name: __('snacks'), color: 'var(--g-snack)', values: S.map(s => s.snacks) }])) : ''}
-  ${!older || has('feeds') ? card('🍼', older ? N_('Milk') : N_('Feeding'), older ? [[N_('Milk feeds per day'), per('feeds')], [N_('Milk ml per day'), per('ml') || '–']]
-    : [[N_('Feeds per day'), per('feeds')], [N_('Avg time between feeds'), gaps.length ? fmtDur(avg(gaps)) : '–'], [N_('Bottle ml per day'), per('ml') || '–'], ...(sum('solids') ? [[N_('Solid meals per day'), per('solids')]] : [])],
-    chart(days, [{ name: __('feeds'), color: 'var(--g-feed)', values: S.map(s => s.feeds) }]) + (sum('ml') ? `<p class="ch">${older ? __h('Milk ml per day') : __h('Bottle ml per day')}</p>${chart(days, [{ name: __('ml'), color: 'var(--g-feed)', values: S.map(s => s.ml) }])}` : '')) : ''}
+    [[N_('Meals and snacks per day'), chart(X, [{ name: __('meals'), color: 'var(--g-feed)', values: vals(s => s.meals) }, { name: __('snacks'), color: 'var(--g-snack)', values: vals(s => s.snacks) }], opts())]]) : ''}
+  ${!older || has('feeds') ? card('🍼', older ? N_('Milk') : N_('Feeding'), older ? [[N_('Milk feeds per day'), per('feeds')], [volOz() ? N_('Milk fl oz per day') : N_('Milk ml per day'), perVol()]]
+    : [[N_('Feeds per day'), per('feeds')], [N_('Avg time between feeds'), gaps.length ? fmtDur(avg(gaps)) : '–'], [volOz() ? N_('Bottle fl oz per day') : N_('Bottle ml per day'), perVol()], ...(sum('solids') ? [[N_('Solid meals per day'), per('solids')]] : [])],
+    [[N_('Feeds per day'), chart(X, [{ name: __('feeds'), color: 'var(--g-feed)', values: vals(s => s.feeds) }], opts())], ...(sum('ml') ? [[older ? (volOz() ? N_('Milk fl oz per day') : N_('Milk ml per day')) : (volOz() ? N_('Bottle fl oz per day') : N_('Bottle ml per day')), chart(X, [{ name: volOz() ? __('fl oz') : __('ml'), color: 'var(--g-feed)', values: vals(s => (volOz() ? s.ml / OZ : s.ml)) }], opts())]] : [])]) : ''}
   ${(older && !allFrom('school')) || has('potty') || has('accidents') || has('dry') ? card('🚽', N_('Potty'), [[N_('On the potty per day'), per('potty')], [N_('Accidents per day'), per('accidents')], [N_('Asked to go'), sum('asked')], ...(has('dry') ? [[N_('Stayed dry'), sum('dry')]] : [])],
-    chart(days, [{ name: __('on the potty'), color: 'var(--g-diaper)', values: S.map(s => s.potty) }, { name: __('accidents'), color: 'var(--g-oops)', values: S.map(s => s.accidents) }], { mode: 'group' })) : ''}
+    [[N_('Potty and accidents per day'), chart(X, [{ name: __('on the potty'), color: 'var(--g-diaper)', values: vals(s => s.potty) }, { name: __('accidents'), color: 'var(--g-oops)', values: vals(s => s.accidents) }], opts({ mode: 'group' }))]]) : ''}
   ${!older || has('pee') || has('poo') ? card('💧', N_('Diapers'), [[N_('Pee per day'), per('pee')], [N_('Poo per day'), per('poo')], ...(Object.keys(poo).length ? [[N_('Poo colours'), Object.entries(poo).map(([k, v]) => `${__(k)} ×${v}`).join(', ')]] : [])],
-    chart(days, [{ name: __('pee'), color: 'var(--g-diaper)', values: S.map(s => s.pee) }, { name: __('poo'), color: 'var(--g-poo)', values: S.map(s => s.poo) }], { mode: 'group' })) : ''}
-  ${card('😴', N_('Sleep'), [[N_('Sleep per day'), fmtDur(avg(used.map(s => s.sleep)))], [N_('Longest stretch (avg)'), fmtDur(avg(used.map(s => s.longest)))], [N_('Naps/sleeps per day'), per('naps')], [N_('Night wakings per day'), per('wakes')]],
-    chart(days, [{ name: __('hours asleep'), color: 'var(--g-sleep)', values: S.map(s => r1(s.sleep / 60)) }], { fmt: v => __('{h}h', { h: v }) }) + `<p class="ch">${__h('Night wakings per day')}</p>${chart(days, [{ name: __('night wakings'), color: 'var(--g-sleep)', values: S.map(s => s.wakes) }])}`)}
-  ${!older || has('vomit') ? card('🤮', N_('Vomit'), [[N_('Total'), sum('vomit')], [N_('Per day'), per('vomit')]], chart(days, [{ name: __('vomits'), color: 'var(--g-vomit)', values: S.map(s => s.vomit) }])) : ''}
-  ${!older || has('play') ? card('🧸', allFrom('school') ? N_('Activities') : N_('Play'), [[allFrom('school') ? N_('Activities per day') : N_('Play per day'), fmtDur(per('play'))]], chart(days, [{ name: __('minutes of play'), color: 'var(--g-play)', values: S.map(s => s.play) }], { fmt: v => __('{m}m', { m: v }) })) : ''}
+    [[N_('Pee and poo per day'), chart(X, [{ name: __('pee'), color: 'var(--g-diaper)', values: vals(s => s.pee) }, { name: __('poo'), color: 'var(--g-poo)', values: vals(s => s.poo) }], opts({ mode: 'group' }))]]) : ''}
+  ${card('😴', N_('Sleep'), [[N_('Sleep per day'), fmtDur(avg(used.map(s => s.sleep)))], [N_('Longest stretch (avg)'), fmtDur(avg(used.map(s => s.longest)))], [N_('Naps/sleeps per day'), per('naps')], [N_('Wake-ups per night'), per('wakes')]],
+    [[N_('Hours asleep per day'), chart(X, [{ name: __('hours asleep'), color: 'var(--g-sleep)', values: vals(s => s.sleep / 60) }], opts({ fmt: v => __('{h}h', { h: v }) }))], [N_('Wake-ups per night'), chart(X, [{ name: __('wake-ups'), color: 'var(--g-sleep)', values: vals(s => s.wakes) }], opts())]])}
+  ${!older || has('vomit') ? card('🤮', N_('Vomit'), [[N_('Total'), sum('vomit')], [N_('Per day'), per('vomit')]], [[N_('Vomits per day'), chart(X, [{ name: __('vomits'), color: 'var(--g-vomit)', values: vals(s => s.vomit) }], opts())]]) : ''}
+  ${!older || has('play') ? card('🧸', allFrom('school') ? N_('Activities') : N_('Play'), [[allFrom('school') ? N_('Activities per day') : N_('Play per day'), fmtDur(per('play'))]], [[allFrom('school') ? N_('Minutes of activities per day') : N_('Minutes of play per day'), chart(X, [{ name: __('minutes of play'), color: 'var(--g-play)', values: vals(s => s.play) }], opts({ fmt: v => __('{m}m', { m: v }) }))]]) : ''}
   ${has('care') ? card('🏫', allFrom('school') ? N_('School') : N_('Daycare & school'), [[N_('Days there'), used.filter(s => s.care > 0).length], [N_('Time there on those days'), fmtDur(avg(used.filter(s => s.care > 0).map(s => s.care)))]],
-    chart(days, [{ name: __('hours there'), color: 'var(--g-care)', values: S.map(s => r1(s.care / 60)) }], { fmt: v => __('{h}h', { h: v }) })) : ''}
-  ${has('study') ? card('📚', N_('Homework'), [[N_('Homework per day'), fmtDur(per('study'))]], chart(days, [{ name: __('minutes of homework'), color: 'var(--g-play)', values: S.map(s => s.study) }], { fmt: v => __('{m}m', { m: v }) })) : ''}
+    [[N_('Hours there per day'), chart(X, [{ name: __('hours there'), color: 'var(--g-care)', values: vals(s => s.care / 60) }], opts({ fmt: v => __('{h}h', { h: v }) }))]]) : ''}
+  ${has('study') ? card('📚', N_('Homework'), [[N_('Homework per day'), fmtDur(per('study'))]], [[N_('Minutes of homework per day'), chart(X, [{ name: __('minutes of homework'), color: 'var(--g-play)', values: vals(s => s.study) }], opts({ fmt: v => __('{m}m', { m: v }) }))]]) : ''}
   ${Sync.can('health') ? card('🩺', N_('Health & meds'), Object.keys(sym).length ? Object.entries(sym).map(([k, v]) => [k, v + '×']) : [[N_('Health notes'), __('none')]],
-    chart(days, [{ name: __('health notes'), color: 'var(--g-health)', values: S.map(s => s.health) }, { name: __('medicines'), color: 'var(--g-meds)', values: S.map(s => s.meds) }]), flagged.length ? 'alert' : '') : ''}
+    [[N_('Health notes and medicines per day'), chart(X, [{ name: __('health notes'), color: 'var(--g-health)', values: vals(s => s.health) }, { name: __('medicines'), color: 'var(--g-meds)', values: vals(s => s.meds) }], opts())]], flagged.length ? 'alert' : '') : ''}
   <p class="note">${__h('Stats are for your own tracking and are not medical advice. If something worries you, call your pediatrician. Call emergency services for blue lips/face, trouble breathing, or a baby who is hard to wake.')}</p>`;
 }
 function ageDays() { const k = kidById(viewKid()); return k && k.birth ? Math.floor((Date.now() - new Date(k.birth + 'T00:00').getTime()) / DAY) : 99; }
@@ -1001,7 +1034,7 @@ function routineView(now = Date.now()) {
     : s.type === 'care' || s.type === 'pickup' ? `${__(TYPES[s.type].label)} · ${placeName(s)}` : s.type === 'study' ? __(s.kind) : s.name);
   const what = s => {
     if (s.key === 'solids' || s.type === 'meal') return (s.foods || []).map(f => __(f)).join(', ');
-    if (s.type === 'feed') return s.kind === 'bottle' ? (s.ml ? (s.cup ? __('Cup {ml} ml', { ml: s.ml }) : __('Bottle {ml} ml', { ml: s.ml })) : s.cup ? __('Cup') : __('Bottle')) : [__('Breast'), s.minutes && __('{n} min', { n: s.minutes })].filter(Boolean).join(' · ');
+    if (s.type === 'feed') return s.kind === 'bottle' ? (s.ml ? (s.cup ? __('Cup {amt}', { amt: fmtVol(s.ml) }) : __('Bottle {amt}', { amt: fmtVol(s.ml) })) : s.cup ? __('Cup') : __('Bottle')) : [__('Breast'), s.minutes && __('{n} min', { n: s.minutes })].filter(Boolean).join(' · ');
     if (s.type === 'sleep') return s.minutes ? __('until about {time} ({long})', { time: clock(s.at + s.minutes), long: fmtDur(s.minutes) }) : '';
     if (s.type === 'play' || s.type === 'study') return s.minutes ? __('{n} min', { n: s.minutes }) : '';
     if (s.type === 'care' || s.type === 'pickup') return '';
@@ -1078,8 +1111,9 @@ function reportBlocks(kidId, { days, every, notes }, now = Date.now()) {
     { p: [born && __('Born {date}', { date: new Date(born).toLocaleDateString(I18n.locale(), { day: 'numeric', month: 'long', year: 'numeric' }) }), age && __('{age} old', { age }), k.sex === 'boy' ? __('Boy') : k.sex === 'girl' ? __('Girl') : ''].filter(Boolean).join(' · '), muted: true },
     { p: `${__('{from} to {to}', { from: fmtShort(R.from), to: fmtShort(R.to - 1) })} · ${__n('{n} day', '{n} days', R.days.length)}`, muted: true },
   ];
-  const about = [(k.allergies || []).length ? [__('Allergies'), k.allergies.map(a => (a.date ? `${__(a.food)} (${__('first reaction {date}', { date: fmtDay(a.date) })})` : __(a.food))).join('; ')] : null,
-    doc.name || doc.practice ? [__('Pediatrician'), [doc.name, doc.practice, doc.phone].filter(Boolean).join(' · ')] : null, formula ? [__('Usual formula'), formula] : null].filter(Boolean);
+  const about = [(k.allergies || []).length ? [__('Allergies'), k.allergies.map(a => allergyText(a, true)).join('; ')] : null,
+    doc.name || doc.practice ? [__('Pediatrician'), [doc.name, doc.practice, doc.phone, doc.nurse && __('nurse line {phone}', { phone: doc.nurse })].filter(Boolean).join(' · ')] : null,
+    doc.hospital || doc.hospPhone ? [__('Hospital'), [doc.hospital, doc.hospPhone].filter(Boolean).join(' · ')] : null, formula ? [__('Usual formula'), formula] : null].filter(Boolean);
   const tried = new Map();
   for (const e of db.events.filter(x => x.type === 'feed' && x.data && x.data.kind === 'solids' && childOf(x) === kidId && x.ts < now).sort((a, b) => a.ts - b.ts)) for (const f of e.data.foods || []) if (!tried.has(f.toLowerCase())) tried.set(f.toLowerCase(), [f, e.ts]);
   if (about.length) blocks.push({ kv: about });
@@ -1089,11 +1123,11 @@ function reportBlocks(kidId, { days, every, notes }, now = Date.now()) {
   else {
     blocks.push({ p: __n('Averages over the {n} day with entries.', 'Averages over the {n} days with entries.', used.length), muted: true, size: 8.5 }, { kv: [
       ...(anyOf('meals') ? [[__('Meals per day'), String(avg('meals'))]] : []),
-      ...(!older || anyOf('feeds') ? [[older ? __('Milk feeds per day') : __('Feeds per day'), String(avg('feeds'))]] : []), ...(avg('ml') ? [[older ? __('Milk ml per day') : __('Bottle ml per day'), __('{n} ml', { n: Math.round(avg('ml')) })]] : []), ...(avg('solids') ? [[__('Solid meals per day'), String(avg('solids'))]] : []),
+      ...(!older || anyOf('feeds') ? [[older ? __('Milk feeds per day') : __('Feeds per day'), String(avg('feeds'))]] : []), ...(avg('ml') ? [[older ? (volOz() ? __('Milk fl oz per day') : __('Milk ml per day')) : (volOz() ? __('Bottle fl oz per day') : __('Bottle ml per day')), fmtVol(avg('ml'))]] : []), ...(avg('solids') ? [[__('Solid meals per day'), String(avg('solids'))]] : []),
       ...(anyOf('potty') || anyOf('accidents') ? [[__('On the potty per day'), String(avg('potty'))], [__('Accidents per day'), String(avg('accidents'))]] : []),
       ...(!older || anyOf('pee') || anyOf('poo') ? [[__('Pee per day'), String(avg('pee'))], [__('Poo per day'), String(avg('poo'))]] : []),
       ...(R.evs.some(e => e.type === 'diaper' && e.data.poo && e.data.color) ? [[__('Poo colours'), count(R.evs.filter(e => e.type === 'diaper' && e.data.poo && e.data.color).map(e => __(e.data.color)))]] : []),
-      [__('Sleep per day'), fmtDur(avg('sleep'))], [__('Longest stretch (avg)'), fmtDur(avg('longest'))], [__('Night wakings per day'), String(avg('wakes'))],
+      [__('Sleep per day'), fmtDur(avg('sleep'))], [__('Longest stretch (avg)'), fmtDur(avg('longest'))], [__('Wake-ups per night'), String(avg('wakes'))],
       [__('Vomit'), vomits.length ? __n('{n} time', '{n} times', vomits.length) + (vomits.some(e => e.data.projectile) ? ` (${__('projectile')}: ${vomits.filter(e => e.data.projectile).length})` : '') : __('none')],
       ...(hot ? [[__('Highest temperature'), `${hot.data.temp}° · ${when(hot)}`]] : []),
       ...(health.some(e => (e.data.symptoms || []).length) ? [[__('Symptoms noted'), count(health.flatMap(e => e.data.symptoms || []).map(x => __(x)))]] : []),
@@ -1121,9 +1155,9 @@ function reportBlocks(kidId, { days, every, notes }, now = Date.now()) {
   // the columns of the table: a baby's always; an older child's meals and potty, and only what was logged in the period
   const C = (head, w, v, on = true, align = 'center') => ({ head, w, v, on, align });
   const cols = [C(__('Date'), 2.3, x => fmtShort(x.d), true, 'left'), C(__('Meals'), 1.1, x => x.meals, anyOf('meals')), C(older ? __('Milk') : __('Feeds'), 1, x => x.feeds, !older || anyOf('feeds')),
-    C(__('ml'), 1.1, x => x.ml || '–', !older || anyOf('ml')), C(__('Potty'), 1.1, x => x.potty, anyOf('potty') || anyOf('accidents')), C(__('Accidents'), 1.3, x => x.accidents, anyOf('accidents')),
+    C(volOz() ? __('fl oz') : __('ml'), 1.1, x => (x.ml ? (volOz() ? fmtNum(x.ml / OZ, 1) : x.ml) : '–'), !older || anyOf('ml')), C(__('Potty'), 1.1, x => x.potty, anyOf('potty') || anyOf('accidents')), C(__('Accidents'), 1.3, x => x.accidents, anyOf('accidents')),
     C(__('Pee'), 1, x => x.pee, !older || anyOf('pee')), C(__('Poo'), 1, x => x.poo, !older || anyOf('poo')), C(__('Sleep'), 1.3, x => (x.sleep ? fmtDur(x.sleep) : '–')),
-    C(__('Night wakings'), 1.2, x => x.wakes), C(__('Vomit'), 1, x => x.vomit),
+    C(__('Wake-ups'), 1.2, x => x.wakes), C(__('Vomit'), 1, x => x.vomit),
     C(__('Health & meds'), 2.8, x => [...x.health.map(e => (e.data.symptoms || []).map(s => __(s)).join(', ') || __('Note')), ...x.meds.map(e => e.data.name || __('Medication'))].join('; '), true, 'left')].filter(c => c.on);
   blocks.push({ h: 2, text: __('Day by day') }, { table: {
     cols: cols.map(c => (c.align === 'left' ? { w: c.w } : { w: c.w, align: c.align })), head: cols.map(c => c.head),
@@ -1181,6 +1215,40 @@ function openDoctorReport() {
 // allergies are part of the child's profile (More → Children), so everyone sharing the log sees them, and that first date is marked
 // on the calendar. The month a child turns 6 months old, a sheet says it is time to start (solidsCheck).
 const allergiesOf = id => (kidById(id) || {}).allergies || [];
+// Allergies to more than food: medicines and medical things, vaccines, insect stings and the environment, each with how bad it was.
+const ALLERGY_KINDS = [['food', N_('Food')], ['medicine', N_('Medicine or medical')], ['vaccine', N_('Vaccine')], ['sting', N_('Insect sting')], ['environment', N_('Environment')], ['other', N_('Other')]];
+const ALLERGY_COMMON = {
+  medicine: [N_('Penicillin'), N_('Amoxicillin'), N_('Cephalosporins'), N_('Sulfa antibiotics'), N_('Ibuprofen'), N_('Aspirin'), N_('Paracetamol / acetaminophen'), N_('Codeine'), N_('Local anaesthetic'), N_('Latex'), N_('Plasters / adhesive')],
+  vaccine: [N_('Egg (some flu and yellow fever vaccines)'), N_('Gelatin'), N_('Neomycin'), N_('A vaccine (say which in the note)')],
+  sting: [N_('Bee'), N_('Wasp'), N_('Hornet'), N_('Ant'), N_('Mosquito')],
+  environment: [N_('Pollen'), N_('Dust mites'), N_('Cats'), N_('Dogs'), N_('Mould'), N_('Grass')],
+  other: [],
+};
+const ALLERGY_WHICH = { food: N_('Which food?'), medicine: N_('Which medicine?'), vaccine: N_('Which vaccine or ingredient?'), sting: N_('Which insect?'), environment: N_('What in the environment?'), other: N_('What is it to?') };
+// Medicines sold under other names, or in the same family as one a child is allergic to: the medicine form warns about these too.
+const MED_FAMILIES = {
+  penicillin: ['amoxicillin', 'ampicillin', 'augmentin', 'co-amoxiclav', 'amoxiclav', 'flucloxacillin', 'piperacillin', 'penicillin'],
+  amoxicillin: ['amoxil', 'augmentin', 'co-amoxiclav', 'amoxiclav', 'amoxicillin'],
+  cephalosporins: ['cephalexin', 'cefalexin', 'keflex', 'cefdinir', 'ceftriaxone', 'cefuroxime', 'cefaclor', 'cef'],
+  'sulfa antibiotics': ['sulfamethoxazole', 'trimethoprim', 'bactrim', 'septra', 'co-trimoxazole', 'sulfa'],
+  ibuprofen: ['advil', 'motrin', 'nurofen', 'brufen', 'ibuprofen'],
+  aspirin: ['aspirin', 'salicylate', 'disprin'],
+  'paracetamol / acetaminophen': ['paracetamol', 'acetaminophen', 'tylenol', 'calpol', 'panadol', 'dafalgan', 'doliprane'],
+  codeine: ['codeine', 'co-codamol'],
+  latex: ['latex'],
+};
+/** Allergies to a medicine a child has, for a medicine's name as typed: the allergy's own name, or one of the family's names. */
+function medAllergies(kidIds, name) {
+  const t = String(name || '').trim().toLowerCase(); if (!t) return [];
+  return kidIds.flatMap(id => allergiesOf(id).filter(a => a.kind === 'medicine').filter(a => {
+    const n = a.food.toLowerCase(); return t.includes(n) || n.includes(t) || (MED_FAMILIES[n] || []).some(x => t.includes(x));
+  }).map(a => ({ kid: kidById(id), allergy: a })));
+}
+/** An allergy in a few words: "Peanut", "Penicillin (medicine)", "Bee (sting · serious · adrenaline pen)". */
+function allergyText(a, withDate) {
+  const bits = [a.kind && __((ALLERGY_KINDS.find(([k]) => k === a.kind) || [])[1] || a.kind), a.severity === 'serious' ? __('serious') : a.severity === 'mild' ? __('mild') : '', a.epi && __('adrenaline pen'), withDate && a.date && __('first reaction {date}', { date: fmtDay(a.date) })].filter(Boolean);
+  return bits.length ? `${__(a.food)} (${bits.join(' · ')})` : __(a.food);
+}
 const allergicTo = (id, food) => allergiesOf(id).find(a => Foods.same(a.food, food));
 /** A date of the log (YYYY-MM-DD) in words: 3 March 2027. */
 const fmtDay = key => new Date(key + 'T00:00').toLocaleDateString(I18n.locale(), { day: 'numeric', month: 'long', year: 'numeric' });
@@ -1201,23 +1269,31 @@ function foodsPicker(picked, kidIds, { open = true, baby = true } = {}) {
 /** Mark one or more foods as an allergy of a child, with the date of the first reaction and what happened. */
 function openAllergy(kidId, pre = {}) {
   if (!Sync.can('profile')) return toast(__('Only parents can change these.'));
-  const name = kidName(kidById(kidId)), common = Foods.GROUPS[0].items.map(([f]) => f), picked = pre.foods || [];
-  const close = popup(`<h3>⚠️ ${__h('Mark an allergy')}</h3><p class="note">${__h('For {name}. Everyone sharing the log will see it, so whoever feeds {name} knows.', { name })}</p>
-    <label class="f">${__h('Which food?')}</label><div class="chips" id="alFoods">${[...common, ...picked.filter(f => !common.includes(f))].map(f => chip('alFood', f, __h(f), picked.includes(f), 'warn')).join('')}</div>
-    <div class="row addfood"><input id="alOther" type="text" maxlength="60" placeholder="${__h('Another food')}" aria-label="${__h('Another food')}"><button type="button" class="btn" id="alAdd">${__h('Add')}</button></div>
+  const name = kidName(kidById(kidId)), picked = pre.foods || [];
+  let kind = ALLERGY_KINDS.some(([k]) => k === pre.kind) ? pre.kind : 'food';
+  const commonOf = k => (k === 'food' ? Foods.GROUPS[0].items.map(([f]) => f) : ALLERGY_COMMON[k] || []);
+  const chipsOf = k => [...commonOf(k), ...picked.filter(f => !commonOf(k).includes(f))].map(f => chip('alFood', f, __h(f), picked.includes(f), 'warn')).join('');
+  const close = popup(`<h3>⚠️ ${__h('Mark an allergy')}</h3><p class="note">${__h('For {name}. Everyone sharing the log will see it, so whoever looks after {name} knows.', { name })}</p>
+    <label class="f">${__h('Allergic to…')}</label><div class="chips">${ALLERGY_KINDS.map(([k, l]) => chip('alKind', k, __h(l), k === kind, '', true)).join('')}</div>
+    <label class="f" id="alWhich">${__h(ALLERGY_WHICH[kind])}</label><div class="chips" id="alFoods">${chipsOf(kind)}</div>
+    <div class="row addfood"><input id="alOther" type="text" maxlength="60" placeholder="${__h('Another one')}" aria-label="${__h('Another one')}"><button type="button" class="btn" id="alAdd">${__h('Add')}</button></div>
+    <label class="f">${__h('How bad was it?')}</label><div class="chips">${[['', N_('Not sure')], ['mild', N_('Mild: hives, itching, an upset tummy')], ['serious', N_('Serious: trouble breathing, swelling, or needed emergency care')]].map(([v, l]) => chip('alSev', v, __h(l), v === (pre.severity || ''), v === 'serious' ? 'warn' : '', true)).join('')}</div>
+    <div class="chips">${chip('alEpi', 1, __h('Carries an adrenaline auto-injector (EpiPen)'), !!pre.epi, 'warn')}</div>
     <label class="f" for="alDate">${__h('Date of the first reaction')}</label><input id="alDate" type="date" value="${esc(pre.date || dkey(Date.now()))}" max="${dkey(Date.now())}">
     <label class="f" for="alNote">${__h('What happened (optional)')}</label><textarea id="alNote" rows="2" maxlength="120" placeholder="${__h('e.g. hives around the mouth')}"></textarea>
     <p class="call">${__h('Call {sos} for trouble breathing, swelling of the lips, tongue or face, or if your baby goes floppy or pale.', { sos: __(Guide.sos(myRegion())) })}</p>
     <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="alSave">${__h('Save')}</button></div>`);
   $('#alAdd').onclick = () => { const v = $('#alOther').value.trim().slice(0, 60); if (!v) return; $('#alOther').value = ''; $('#alFoods').insertAdjacentHTML('beforeend', chip('alFood', v, esc(v), true, 'warn')); };
+  document.querySelectorAll('#sheet [name=alKind]').forEach(r => r.onchange = () => { if (!r.checked) return; kind = r.value; $('#alWhich').textContent = __(ALLERGY_WHICH[kind]); $('#alFoods').innerHTML = chipsOf(kind); });
   $('#alSave').onclick = () => {
     const k = kidById(kidId);   // (looked up again: a sync may have brought a newer profile while the sheet was open)
     if (!k) return close();
     const foods = [...document.querySelectorAll('#sheet [name=alFood]:checked')].map(c => c.value), date = $('#alDate').value, note = $('#alNote').value.trim();
-    if (!foods.length) return toast(__('Choose the food'));
+    const severity = (document.querySelector('#sheet [name=alSev]:checked') || {}).value || '', epi = !!document.querySelector('#sheet [name=alEpi]:checked'), kk = kind === 'food' ? '' : kind;
+    if (!foods.length) return toast(kind === 'food' ? __('Choose the food') : __('Choose what it is to'));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > dkey(Date.now())) return toast(__('Please pick a date'));
-    const before = k.allergies || [], fresh = foods.filter(f => !before.some(a => Foods.same(a.food, f)));
-    k.allergies = Kids.allergies([...before, ...foods.map(food => ({ food, date, note }))]);
+    const before = k.allergies || [], fresh = foods.filter(f => !before.some(a => (a.kind || '') === kk && Foods.same(a.food, f)));
+    k.allergies = Kids.allergies([...before.map(a => (foods.some(f => (a.kind || '') === kk && Foods.same(a.food, f)) ? { ...a, severity: severity || a.severity, epi: epi || a.epi } : a)), ...foods.map(food => ({ food, date, note, kind: kk, severity, epi }))]);
     // the profile (every child and the pediatrician) is stored encrypted with a size limit: say so rather than fail to save
     if (before.length + fresh.length > 12 || new TextEncoder().encode(JSON.stringify({ kids: Kids.clean(kids()), doctor: Guide.cleanDoctor(db.baby.doctor) })).length > 5600) {
       k.allergies = before; return toast(__('There is no room for more allergies for {name}: remove one, or shorten the notes.', { name }));
@@ -1320,18 +1396,36 @@ function growthChart(k, kind, list) {
   return `<svg class="chart gchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${g}</svg>`;
 }
 /** The health record page of the child shown: who they are, growth, vaccines, doctor visits. */
+/** The allergies in the health record: food, medicines, vaccines, stings and the environment, with how bad each was. */
+function allergyCardHtml(k) {
+  const can = Sync.can('profile'), list = k.allergies || [];
+  return `<div class="card allergies">${list.length ? list.map(a => `<div class="stat alrow ${a.severity === 'serious' ? 'serious' : ''}"><span>⚠️ <b>${__h(a.food)}</b> <small>${esc(__((ALLERGY_KINDS.find(([x]) => x === (a.kind || 'food')) || [])[1]))}</small><br><small>${esc([a.severity === 'serious' ? __('Serious reaction') : a.severity === 'mild' ? __('Mild reaction') : '', a.epi && __('Carries an adrenaline auto-injector'), a.date && __('first reaction {date}', { date: fmtDay(a.date) }), a.note].filter(Boolean).join(' · '))}</small></span></div>`).join('')
+    : `<p class="note">${__h('None marked. Food, medicines, vaccines, insect stings and the environment can all go here, so everyone looking after {name} knows.', { name: kidName(k) })}</p>`}
+    ${can ? `<button class="btn" data-aladd="${k.id}">⚠️ ${__h('Add an allergy')}</button>` : ''}</div>`;
+}
+/** The latest of each measurement (weight, length or height, head, BMI from 2) with its date and percentile, as rows. */
+function growthLatestHtml(k, growth) {
+  return GROWTH.map(([kind, label]) => { const e = growth.find(x => (kind === 'bmi' ? bmiOf(x.data) && ageMonths(k, x.ts) >= 24 : x.data[kind])); if (!e) return '';   // (BMI from 2 years old)
+    const v = kind === 'bmi' ? bmiOf(e.data) : e.data[kind];
+    const p = (k.sex === 'boy' || k.sex === 'girl') && k.birth && Growth.percentile(kind, k.sex, ageMonths(k, e.ts), v);
+    return `<div class="stat"><span>${__h(label)}<br><small>${esc(fmtShort(e.ts))}</small></span><b>${esc(kind === 'weight' ? fmtWeight(v) : kind === 'bmi' ? fmtNum(v, 1) : fmtLength(v))}${p ? `<small>${esc(pctText(p.pct))}</small>` : ''}</b></div>`; }).join('');
+}
+/** Height & weight on the Stats page: the latest numbers with their percentiles, a button to add a measurement, and the record's charts a tap away. */
+function heightWeightCard(k) {
+  if (!k || !Sync.can('health')) return '';
+  const growth = db.events.filter(e => childOf(e) === k.id && e.type === 'growth').sort((a, b) => b.ts - a.ts), rows = growthLatestHtml(k, growth);
+  return `<div class="card scard hw"><b>📏 ${__h('Height & weight')}</b>${rows || `<p class="note">${__h('No measurements yet. Add one after each checkup, or whenever you weigh and measure at home.')}</p>`}
+    <div class="row">${Sync.can('add') ? `<button class="btn" data-add="growth">📏 ${__h('Add a measurement')}</button>` : ''}${growth.length ? `<button class="btn" data-record="${k.id}">📈 ${__h('Charts')}</button>` : ''}</div></div>`;
+}
 function recordView() {
   const k = kidById(viewKid()), name = kidName(k), us = usUnits(), mine = db.events.filter(e => childOf(e) === k.id);
   const of = t => mine.filter(e => e.type === t).sort((a, b) => b.ts - a.ts), growth = of('growth'), vaccines = of('vaccine'), visits = of('visit'), add = Sync.can('add');
   const back = { day: N_('Day'), routine: N_('Routine'), month: N_('Month'), stats: N_('Stats'), guide: N_('Guide'), family: N_('Family'), more: N_('More') }[recordFrom] || N_('Guide');
   const born = k.birth ? new Date(k.birth + 'T00:00').toLocaleDateString(I18n.locale(), { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-  const al = (k.allergies || []).map(a => __(a.food));
+  const al = (k.allergies || []).map(a => allergyText(a));
   const head = `<div class="card rechead" style="--k:${k.color}">${avatar(k, 'lg')}<span><b>${__h("{name}'s health record", { name })}</b><small>${esc([born && __('Born {date}', { date: born }), k.birth && Stages.age(k.birth, Date.now()), k.sex === 'boy' ? __('Boy') : k.sex === 'girl' ? __('Girl') : ''].filter(Boolean).join(' · '))}</small>${al.length ? `<small class="allergyline">⚠️ ${__h('Allergies: {foods}', { foods: al.join(', ') })}</small>` : ''}</span></div>`;
   // growth: the latest of each measurement with its percentile, a chart per kind, and every measurement in a table
-  const latest = GROWTH.map(([kind, label]) => { const e = growth.find(x => (kind === 'bmi' ? bmiOf(x.data) && ageMonths(k, x.ts) >= 24 : x.data[kind])); if (!e) return '';   // (BMI from 2 years old)
-    const v = kind === 'bmi' ? bmiOf(e.data) : e.data[kind];
-    const p = (k.sex === 'boy' || k.sex === 'girl') && k.birth && Growth.percentile(kind, k.sex, ageMonths(k, e.ts), v);
-    return `<div class="stat"><span>${__h(label)}<br><small>${esc(fmtShort(e.ts))}</small></span><b>${esc(kind === 'weight' ? fmtWeight(v) : kind === 'bmi' ? fmtNum(v, 1) : fmtLength(v))}${p ? `<small>${esc(pctText(p.pct))}</small>` : ''}</b></div>`; }).join('');
+  const latest = growthLatestHtml(k, growth);
   const kinds = GROWTH.map(x => x[0]).filter(kind => growth.some(e => (kind === 'bmi' ? bmiOf(e.data) && ageMonths(k, e.ts) >= 24 : e.data[kind])));
   if (!kinds.includes(growthKind)) growthKind = kinds[0] || 'weight';
   const table = growth.length ? `<details class="tbl"><summary>${__h('Every measurement')}<span class="chev" aria-hidden="true">›</span></summary><div class="tw"><table><thead><tr><th>${__h('Date')}</th><th>${__h('Weight')}</th><th>${__h('Length or height')}</th><th>${__h('Head')}</th></tr></thead><tbody>
@@ -1348,7 +1442,7 @@ function recordView() {
   const visHtml = `<div class="card visits">${visits.length ? visits.map(e => { const [a, b] = describe(e); return `<button class="vrow vvisit" data-edit="${e.id}"><b>🏥 ${esc(a)}</b><small>${esc([fmtDay(dkey(e.ts)), b].filter(Boolean).join(' · '))}</small>${e.note ? `<small class="mn">“${esc(e.note)}”</small>` : ''}</button>`; }).join('')
     : `<p class="note">${__h('No visits saved yet: checkups, the dentist, eye and hearing tests, and the times your child was seen when unwell.')}</p>`}${add ? `<button class="btn" data-add="visit">🏥 ${__h('Add a visit')}</button>` : ''}</div>`;
   return `${backBar(back)}${head}
-    <h2>${__h('Growth')}</h2>${growthHtml}<h2>${__h('Vaccines')}</h2>${vacHtml}<h2>${__h('Doctor visits')}</h2>${visHtml}
+    <h2>${__h('Allergies')}</h2>${allergyCardHtml(k)}<h2>${__h('Height & weight')}</h2>${growthHtml}<h2>${__h('Vaccines')}</h2>${vacHtml}<h2>${__h('Doctor visits')}</h2>${visHtml}
     <button class="btn pdfbtn" id="pdfBtn">📄 ${__h('Report for the doctor (PDF)')}</button>
     <p class="note">${__h('Only people who may see health notes see the health record. Like everything in the log, it is end-to-end encrypted.')}</p>`;
 }
@@ -1362,7 +1456,7 @@ function backBar(back) {
 function recordButton(k) {
   const mine = db.events.filter(e => childOf(e) === k.id), n = t => mine.filter(e => e.type === t).length;
   const sum = [n('vaccine') && __n('{n} vaccine', '{n} vaccines', n('vaccine')), n('visit') && __n('{n} visit', '{n} visits', n('visit')), n('growth') && __n('{n} measurement', '{n} measurements', n('growth'))].filter(Boolean).join(' · ');
-  return `<button class="docbtn recbtn" data-record="${k.id}"><span class="di">📋</span><span><b>${kids().length > 1 ? __h("{name}'s health record", { name: kidName(k) }) : __h('Health record')}</b><small>${sum ? esc(sum) : __h('Vaccines, doctor visits and growth')}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
+  return `<button class="docbtn recbtn" data-record="${k.id}"><span class="di">📋</span><span><b>${kids().length > 1 ? __h("{name}'s health record", { name: kidName(k) }) : __h('Health record')}</b><small>${sum ? esc(sum) : __h('Allergies, vaccines, doctor visits, height and weight')}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
 
 // ---------- Big moments ----------
@@ -1511,6 +1605,13 @@ function doctorHtml() {
   const d = (db.baby.doctor || {}), set = d.name || d.phone || d.practice;
   return `<button class="docbtn" id="docBtn"><span class="di">🩺</span><span><b>${__h('Pediatrician')}</b><small>${set ? esc([d.name, d.practice].filter(Boolean).join(' · ')) + (d.phone ? ' · ' + esc(d.phone) : '') : __h('Add their name and number')}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
+/** Not an emergency? The region's health advice line, and the nurse, after-hours and hospital non-emergency numbers saved with the pediatrician, each with a Call button. */
+function calmLinesHtml() {
+  const d = Guide.cleanDoctor(db.baby.doctor);
+  const lines = [[N_('Nurse advice line'), d.nurse], [N_('After hours'), d.after], [d.hospital ? __('{hospital}, non-emergency line', { hospital: d.hospital }) : N_('Hospital non-emergency line'), d.hospPhone]].filter(([, v]) => v);
+  return `<div class="note calm"><b>${__h('Not an emergency?')}</b> ${__h(Guide.advice(myRegion()))}
+    ${lines.map(([l, v]) => `<div class="stat"><span>${__h(l)}<br><b class="sel">${esc(v)}</b></span>${Guide.tel(v) ? `<a class="btn callbtn" href="${esc(Guide.tel(v))}">📞 ${__h('Call')}</a>` : ''}</div>`).join('')}</div>`;
+}
 function guideView() {
   const now = Date.now(), everyone = curKid() === 'all';
   // who the Guide is for: the child shown, or with Everyone chosen the whole family (every key part of every age in it)
@@ -1532,6 +1633,14 @@ function guideView() {
     <p>${__h(c.body)}</p>${c.call ? `<p class="call">${__h(c.call, { sos })}</p>` : ''}${grp === 'g' ? picsHtml(c.id) : ''}</details>`;
   const newborn = `<h2>${__h('Common with newborns')}</h2>${Guide.COMMON.map(c => card('g', c)).join('')}`;
   const toddler = `<h2>${__h('Toddlers and preschoolers')}</h2>${Guide.TODDLER.map(c => card('t', c)).join('')}`;
+  // tutorials: one twirl-down of videos, a twirl-down per topic inside it, for the ages on the page (every age, when no child has a birth date)
+  const tutAges = who.filter(k => k.birth).map(k => months(k)), tuts = Guide.TUTORIALS.filter(t => !tutAges.length || tutAges.some(m => m >= t.ages[0] && m <= t.ages[1]));
+  const tutorials = !tuts.length ? '' : `<details class="gd tut" data-grp="videos" ${openGroups.has('videos') ? 'open' : ''}><summary><span class="gi">▶️</span><span class="gt"><b>${__h('Tutorials: videos worth watching')}</b><small>${__h("First meals, snacks, potty training, first aid, safe sleep and more, from health services and children's hospitals")}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    <p class="note">${__h("Short videos in English, chosen from public health bodies and children's hospitals. They open in YouTube. Little Log did not make them, and they can change or disappear.")}</p>
+    ${tuts.map(t => `<details class="gd med" data-grp="vid${t.id}" ${openGroups.has('vid' + t.id) ? 'open' : ''}><summary><span class="gi">${t.icon}</span><span class="gt"><b>${__h(t.title)}</b><small>${__hn('{n} video', '{n} videos', t.videos.length)}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+      ${t.videos.map(([id, title, who, mins]) => `<button class="vrow video" data-yt="${id}"><b>${esc(title)}</b><small>${esc(who)} · ${__h('{n} min', { n: mins })}</small></button>`).join('')}</details>`).join('')}</details>`;
+  // puberty: from 8 (it can start then) until 16, before the teenage topics
+  const puberty = some(k => months(k) >= 96 && months(k) < 192) ? `<h2>${__h('Puberty')}</h2>${Guide.PUBERTY.map(c => card('pb', c)).join('')}` : '';
   const school = `<h2>${__h('School age')}</h2>${Guide.SCHOOL.map(c => card('s', c)).join('')}`;
   const teens = `<h2>${__h('Teenagers')}</h2>${Guide.TEEN.map(c => card('n', c)).join('')}`;
   const food = `<h2>${__h('Food')}</h2>
@@ -1551,6 +1660,7 @@ function guideView() {
   const head = `${doctorHtml()}
   ${Sync.can('health') && kidById(viewKid()) ? recordButton(kidById(viewKid())) : ''}
   <p class="note emer"><b>${__h('Emergency?')}</b> ${older ? __h('Call {sos} for blue lips or face, trouble breathing, a child who is hard to wake, or a seizure.', { sos }) : __h('Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.', { sos })}</p>
+  ${calmLinesHtml()}
   ${cur.length ? `<h2>${__h('Right now')}</h2>${cur.map(nowCard).join('')}` : ''}`;
   const foot = `<p class="note">${__h("General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.")}</p>
   ${I18n.lang() === 'en' ? '' : `<p class="note">${__h('This translation was made with the help of AI and may have mistakes. In an emergency, call {sos}. If something reads wrong, tell us: More → Language → Report a language issue.', { sos })}</p>`}
@@ -1561,8 +1671,10 @@ function guideView() {
     ${babyDays ? newborn + food + meds : ''}
     ${some(k => !Stages.from(stg(k), 'school')) ? toddler : ''}
     ${some(k => Stages.from(stg(k), 'school') && !Stages.from(stg(k), 'teen')) || some(k => stg(k) === 'preschool') ? school : ''}
+    ${puberty}
     ${some(k => Stages.from(stg(k), 'teen')) || ten ? teens : ''}
     ${play}
+    ${tutorials}
     ${checks}
     ${under6 ? milestones : ''}
     ${foot}`;
@@ -1570,11 +1682,13 @@ function guideView() {
   // one child: the topics of their stage first; those of the next stage near the end, as what comes next (the school years for a
   // preschooler, the teenage years from 10); a baby's Guide puts the newborn worries first and the toddler years later
   return `${head}
+  ${puberty}
   ${teenAge ? teens : schoolAge ? school : older ? toddler : ''}
   ${babyDays ? food : ''}
   ${older ? '' : newborn}
   ${babyDays ? meds : ''}
   ${play}
+  ${tutorials}
   ${checks}
   ${older ? '' : toddler}
   ${under6 ? milestones : ''}
@@ -1676,7 +1790,7 @@ function openDoctor(edit) {
   const d = Guide.cleanDoctor(db.baby.doctor), can = Sync.can('profile');
   const line = (label, v, call) => (v ? `<div class="stat"><span>${__h(label)}<br><b class="sel">${esc(v)}</b></span>${call && Guide.tel(v) ? `<a class="btn callbtn" href="${esc(Guide.tel(v))}">📞 ${__h('Call')}</a>` : ''}</div>` : '');
   if (!edit) {
-    const info = [line(N_('Doctor'), d.name), line(N_('Practice'), d.practice), line(N_('Phone'), d.phone, true), line(N_('After hours / nurse line'), d.after, true), line(N_('Address'), d.address), line(N_('Notes'), d.notes)].join('');
+    const info = [line(N_('Doctor'), d.name), line(N_('Practice'), d.practice), line(N_('Phone'), d.phone, true), line(N_('Nurse advice line'), d.nurse, true), line(N_('After hours'), d.after, true), line(N_('Hospital'), d.hospital), line(N_('Hospital non-emergency line'), d.hospPhone, true), line(N_('Address'), d.address), line(N_('Notes'), d.notes)].join('');
     const close = popup(`<h3>🩺 ${__h('Pediatrician')}</h3>${info || `<p class="note">${__h('No pediatrician saved yet.')} ${can ? __h('Add their details so everyone looking after the baby has the number.') : __h('A parent can add them.')}</p>`}
       <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button>${can ? `<button class="btn p" id="docEdit">${info ? __h('Edit') : __h('Add details')}</button>` : ''}</div>`);
     if ($('#docEdit')) $('#docEdit').onclick = () => { close(); openDoctor(true); };
@@ -1684,11 +1798,13 @@ function openDoctor(edit) {
   }
   const f = (id, label, v, max, type = 'text') => `<label class="f">${__h(label)}</label><input id="${id}" type="${type}" maxlength="${max}" value="${esc(v)}"${type === 'tel' ? ' inputmode="tel"' : ''}>`;
   const close = popup(`<h3>🩺 ${__h('Pediatrician')}</h3><p class="note">${__h('Shared with everyone in the log, end-to-end encrypted.')}</p>
-    ${f('dcName', N_('Doctor'), d.name, 60)}${f('dcPractice', N_('Practice or clinic'), d.practice, 80)}${f('dcPhone', N_('Phone'), d.phone, 30, 'tel')}${f('dcAfter', N_('After hours / nurse line'), d.after, 30, 'tel')}${f('dcAddr', N_('Address'), d.address, 120)}
+    ${f('dcName', N_('Doctor'), d.name, 60)}${f('dcPractice', N_('Practice or clinic'), d.practice, 80)}${f('dcPhone', N_('Phone'), d.phone, 30, 'tel')}${f('dcNurse', N_('Nurse advice line'), d.nurse, 30, 'tel')}${f('dcAfter', N_('After hours'), d.after, 30, 'tel')}
+    <p class="note">${__h('When it is not an emergency: the nurse line answers questions about fever, rashes or medicine doses; the hospital\'s non-emergency line is for advice and to ask whether to come in.')}</p>
+    ${f('dcHosp', N_('Hospital'), d.hospital, 80)}${f('dcHospPhone', N_('Hospital non-emergency line'), d.hospPhone, 30, 'tel')}${f('dcAddr', N_('Address'), d.address, 120)}
     <label class="f">${__h('Notes')}</label><textarea id="dcNotes" rows="2" maxlength="200">${esc(d.notes)}</textarea>
     <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="dcSave">${__h('Save')}</button></div>`);
   $('#dcSave').onclick = () => {
-    db.baby.doctor = Guide.cleanDoctor({ name: $('#dcName').value, practice: $('#dcPractice').value, phone: $('#dcPhone').value, after: $('#dcAfter').value, address: $('#dcAddr').value, notes: $('#dcNotes').value });
+    db.baby.doctor = Guide.cleanDoctor({ name: $('#dcName').value, practice: $('#dcPractice').value, phone: $('#dcPhone').value, nurse: $('#dcNurse').value, after: $('#dcAfter').value, hospital: $('#dcHosp').value, hospPhone: $('#dcHospPhone').value, address: $('#dcAddr').value, notes: $('#dcNotes').value });
     Sync.linked() ? Sync.pushBaby() : save(); close(); render(); toast(__('Saved'));
   };
 }
@@ -1784,7 +1900,7 @@ function tripCard(tr) {
   return `<div class="card tripcard"><div class="th"><span class="tm">${M.icon}</span><span class="tt"><b>${__h('Travelling {by}', { by })}</b><small>${live ? __h('Day {n} of {days} · back {date}', { n, days, date: fmtShort(last) }) : __h('Day {n} of {days} · until {date}', { n, days, date: fmtShort(last) })}</small></span></div>
     ${journey}
     <details class="tips" data-grp="ttips" ${openGroups.has('ttips') ? 'open' : ''}><summary>${__h('Tips for travelling {by}', { by })}<span class="chev" aria-hidden="true">›</span></summary><ul>${Travel.TIPS[m].map(t => `<li>${__h(t)}</li>`).join('')}</ul></details>
-    ${Sync.can('edit', tr) ? `<div class="row"><button class="btn" data-tripedit="${tr.id}">${__h('Change trip')}</button>${live && today ? `<button class="btn" data-triphome>${__h("We're home")}</button>` : ''}</div>` : ''}</div>`;
+    <div class="row">${Sync.can('edit', tr) ? `<button class="btn" data-tripedit="${tr.id}">${__h('Change trip')}</button>${live && today ? `<button class="btn" data-triphome>${__h("We're home")}</button>` : ''}` : ''}<button class="btn" data-tripcal="${tr.id}">📅 ${__h('Add to calendar')}</button></div></div>`;
 }
 /** At the bottom of today's page: switch to travel mode, or the trip coming up. */
 function tripButton() {
@@ -1807,7 +1923,7 @@ function travelQuick() {
   const P = Travel.PALETTE.light, { big, rest } = travelTypes(), young = !allFrom('toddler');
   const label = { feed: young ? N_('Feed') : N_('Milk'), diaper: N_('Diaper'), sleep: N_('Asleep'), vomit: young ? N_('Spit-up') : N_('Vomit'), meal: N_('Meal'), potty: N_('Potty') };
   const babyRest = ['wake', 'play', 'health', 'med'], usual = rest.length && rest.every(t => babyRest.includes(t)) && rest.includes('wake') && rest.includes('play');
-  const what = usual ? (rest.includes('health') ? __h('More: play, night waking, health and medicine') : __h('More: play, night waking'))
+  const what = usual ? (rest.includes('health') ? __h('More: play, wake-ups, health and medicine') : __h('More: play, wake-ups'))
     : __h('More: {list}', { list: rest.slice(0, 4).map(t => __(tLabel(t))).join(' · ') + (rest.length > 4 ? ' …' : '') });
   return `<div class="quick tq">${big.map(k => `<button data-qadd="${k}" style="--cw:${Kids.rgba(P[groupOf(k).id], 0.3)}"><b>${TYPES[k].icon}</b>${__h(label[k])}</button>`).join('')}</div>
     ${rest.length ? `<button class="qmore" data-qmore="${rest.join(' ')}">${what}</button>` : ''}`;
@@ -1925,13 +2041,13 @@ function openQuick(type) {
   const big = (name, opts, cur, cls = '') => `<div class="chips big ${cls}">${opts.map(([v, l]) => chip(name, v, l, String(v) === String(cur), '', true)).join('')}</div>`;   // (labels come as HTML)
   const near = (v, list) => list.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
   const who = multi ? `<div class="chips kidchips">${kids().map(k => `<label class="chip kidchip" style="--k:${k.color}"><input type="checkbox" name="qkid" value="${k.id}" ${pre.includes(k.id) ? 'checked' : ''}><span>${avatar(k)}${esc(kidName(k))}</span></label>`).join('')}</div>` : '';
-  const ML = [60, 90, 120, 150, 180], older = allFrom('toddler');
+  const ML = volOz() ? [2, 3, 4, 5, 6].map(o => Math.round(o * OZ)) : [60, 90, 120, 150, 180], older = allFrom('toddler');
   let body = '', instant = false, title = __(tLabel(type));
   const ifYouLike = ` <small>${__h('(if you like)')}</small>`;
   if (type === 'feed') body = older ? `<label class="f">${__h('Cup, bottle or breast?')}</label>${big('qkind', [['cup', __h('Cup')], ['bottle', '🍼 ' + __h('Bottle')], ['breast', __h('Breast')]], pd.kind || 'cup')}
-    <div id="qBottle"><label class="f">${__h('About how much?')}</label>${big('qml', ML.map(v => [v, __h('{n} ml', { n: v })]), pd.ml ? near(+pd.ml, ML) : 120)}${big('qmilk', MILKS_OLDER.map(v => [v, __h(v)]), pd.milk || "Cow's milk")}</div>`
+    <div id="qBottle"><label class="f">${__h('About how much?')}</label>${big('qml', ML.map(v => [v, esc(fmtVol(v))]), pd.ml ? near(+pd.ml, ML) : ML[2])}${big('qmilk', MILKS_OLDER.map(v => [v, __h(v)]), pd.milk || "Cow's milk")}</div>`
     : `<label class="f">${__h('Bottle or breast?')}</label>${big('qkind', [['bottle', '🍼 ' + __h('Bottle')], ['breast', __h('Breast')]], pd.kind || 'bottle')}
-    <div id="qBottle"><label class="f">${__h('About how much?')}</label>${big('qml', ML.map(v => [v, __h('{n} ml', { n: v })]), pd.ml ? near(+pd.ml, ML) : 90)}${big('qmilk', [['Formula', __h('Formula')], ['Breast milk', __h('Breast milk')]], pd.milk || 'Formula')}</div>`;
+    <div id="qBottle"><label class="f">${__h('About how much?')}</label>${big('qml', ML.map(v => [v, esc(fmtVol(v))]), pd.ml ? near(+pd.ml, ML) : ML[1])}${big('qmilk', [['Formula', __h('Formula')], ['Breast milk', __h('Breast milk')]], pd.milk || 'Formula')}</div>`;
   if (type === 'feed') body += `
     <div id="qBreast"><label class="f">${__h('Side')}${ifYouLike}</label>${big('qside', SIDES.map(v => [v, __h(v)]), '')}
       <label class="f">${__h('About how long?')}${ifYouLike}</label>${big('qmin', [5, 10, 15, 20, 30].map(v => [v, __h('{n} min', { n: v })]), '')}</div>`;
@@ -2002,7 +2118,7 @@ const TOURS = {
     { sel: '.tripcard', title: N_('Your trip'), why: N_('How you are travelling and until when. Change it any time, or tap "We\'re home" to end it.') },
     { sel: '.legrow', title: N_('The journey'), why: N_('Tap when you set off and when you stop. Time on the move lights up the clock\'s outer ring, and long drives get a reminder to take a break.') },
     { sel: '.quick.tq', title: N_('Big buttons for busy moments'), why: N_('Each opens a short sheet: tap a rough time and an answer. "About 15 minutes ago" is fine; estimated times show with a ~.') },
-    { sel: '.qmore', title: N_('The rest'), why: N_('Play, night wakings, health notes and medicines are one more tap away.') },
+    { sel: '.qmore', title: N_('The rest'), why: N_('Play, wake-ups, health notes and medicines are one more tap away.') },
     { sel: 'svg.clock', title: N_('A travel clock'), why: N_('The painting matches how you travel, and travel days have their own colours, so they stand out later in the month view.') },
     { sel: '#helpBtn', title: N_('Help on every screen'), why: N_('Tap ? on any screen for a tour of it.') },
   ],
@@ -2067,25 +2183,19 @@ const TOURS = {
     { sel: 'details[data-grp=famlist]', title: N_('Families and relatives'), why: N_('Your family and your relatives\' families, with their children. Open one to switch; requests to join a family you are a parent in wait here for you.') },
     { sel: '#view .pbtn', title: N_('People'), why: N_('Everyone with access and their role. Tap a person for their contact details.') },
     { sel: '#helpers', title: N_('Caregivers and helpers'), why: N_('Caregivers, babysitters, medical assistants and friends, on a list of their own. Tap one for their details; a parent can retire someone who no longer helps.') },
-    { sel: '#invCard', title: N_('Invite someone'), why: N_('Make a one-time QR code. You approve them before they see anything.') },
-    { sel: '#actBtn', title: N_('Activity log'), why: N_('Who added, changed or deleted what. Only parents see this.') },
-    { sel: '#view .code.mono', title: N_('Security code'), why: N_('Everyone sharing the log sees the same code: a quick check that only your family has the keys.') },
+    { sel: 'details[data-grp=secshare]', title: N_('Security and sharing'), why: N_('Invite someone with a one-time QR code (you approve them before they see anything), see who added, changed or deleted what, check the security code everyone sharing the log sees, and manage your phones.') },
     { sel: '#view .card', title: N_('Family sharing'), why: N_('Sign in to share the log with family and caregivers, end-to-end encrypted.') },
   ],
   more: [
-    { sel: '#langCard', title: N_('Language'), why: N_('The app follows your phone\'s language unless you choose one here. If a translation reads wrong, "Report a language issue" sends it to us.') },
-    { sel: '.card:has(#signOut)', title: N_('Security & account'), why: N_('Who you are signed in as, two-step verification, the app lock with Face ID or a fingerprint, and signing out.') },
-    { sel: '.kidrow', title: N_('Your children'), why: N_('Names, birth dates, boy or girl and colours, with allergies and the health record. "Add a child" for twins or triplets.') },
-    { sel: '.kidrow .fpick', title: N_('Usual formula'), why: N_('Pick it from the list; each region folds open. After three days of the same formula it is picked for you.') },
-    { sel: '.kidrow [data-aladd]', title: N_('Allergies'), why: N_('Mark a food your child reacts to, with the date of the first reaction. It stays in view on the Day page and in the Guide.') },
-    { sel: '.kidrow .recbtn', title: N_('The health record'), why: N_('Vaccines, doctor visits and growth charts for each child, on a page of their own.') },
-    { sel: '#regionSel', title: N_('Where you are'), why: N_('Formulas sold here come first, and the Guide gives your emergency number and medicine names first.') },
-    { sel: '.card:has([name=units])', title: N_('Units'), why: N_('Kilograms and centimetres, or pounds and inches, for the health record.') },
-    { sel: '.card:has([data-art])', title: N_('Clock art'), why: N_('The painting around each child\'s clock.') },
-    { sel: '.card:has([name=themeMode])', title: N_('Light or dark'), why: N_('Match your phone, pick one, or follow sunrise and sunset.') },
-    { sel: '.card:has(#cPass)', title: N_('Cloud backup'), why: N_('A private, encrypted copy in your own cloud storage, scrambled with a passphrase only you know.') },
-    { sel: '.card:has(#expCsv)', title: N_('Your data'), why: N_('Back up the log as a file, export a copy for your pediatrician, or restore a backup.') },
-    { sel: '#appCard', title: N_('App updates'), why: N_('New versions come through the app store. This opens Little Log\'s page there.') },
+    { sel: 'details[data-grp=mlang]', title: N_('Language'), why: N_('The app follows your phone\'s language unless you choose one here. If a translation reads wrong, "Report a language issue" sends it to us.') },
+    { sel: 'details[data-grp=macct]', title: N_('Security & account'), why: N_('Who you are signed in as, two-step verification, the app lock with a PIN, Face ID or a fingerprint, and signing out.') },
+    { sel: 'details[data-grp=mkids]', title: N_('Your children'), why: N_('Names, birth dates, boy or girl and colours, the usual formula, allergies and the health record. "Add a child" for twins or triplets.') },
+    { sel: 'details[data-grp=mregion]', title: N_('Where you are'), why: N_('Formulas sold here come first, and the Guide gives your emergency number and medicine names first.') },
+    { sel: 'details[data-grp=munits]', title: N_('Units'), why: N_('Kilograms and centimetres or pounds and inches for the health record, and ml or fl oz for milk.') },
+    { sel: 'details[data-grp=mlook]', title: N_('Appearance and clock art'), why: N_('Light or dark: match your phone, pick one, or follow sunrise and sunset. And the painting around each child\'s clock.') },
+    { sel: 'details[data-grp=mcloud]', title: N_('Cloud backup'), why: N_('A private, encrypted copy in your own cloud storage, scrambled with a passphrase only you know.') },
+    { sel: 'details[data-grp=mdata]', title: N_('Your data'), why: N_('Back up the log as a file, export a copy for your pediatrician, or restore a backup.') },
+    { sel: 'details[data-grp=mapp]', title: N_('App updates'), why: N_('New versions come through the app store. This opens Little Log\'s page there.') },
     { sel: '#wipe', title: N_('Starting over'), why: N_('Deletes every entry in this log, for everyone sharing it. Only parents see this button.') },
   ],
 };
@@ -2117,7 +2227,7 @@ function kidsHtml() {
       <label class="f">${__h('Boy or girl')}</label><div class="chips">${chip('ks-' + k.id, 'boy', __h('Boy'), k.sex === 'boy', '', true)}${chip('ks-' + k.id, 'girl', __h('Girl'), k.sex === 'girl', '', true)}${chip('ks-' + k.id, '', __h('Not set'), !k.sex, '', true)}</div>
       ${Stages.from(stageOf(k), 'teen') ? '' : `<label class="f">${__h('Usual formula')}</label>${formulaPicker({ sel: `data-kfs="${k.id}" aria-label="${__h('Usual formula')}"`, txt: `data-kft="${k.id}" aria-label="${__h('Formula name')}"` }, usualFormula(k), recentFormulas([k]), dis)}
       <p class="note" style="margin:4px 0 0">${learnedFormula(k) && learnedFormula(k) !== k.formula ? __h('Picked up from the feeds: it was given at every formula feed three days running.') : __h('When one formula is given at every formula feed three days running, it becomes the usual one.')}</p>`}
-      <label class="f">${__h('Allergies')}</label>${(k.allergies || []).length ? k.allergies.map(a => `<div class="stat alrow"><span>⚠️ <b>${__h(a.food)}</b><br><small>${esc([a.date && __('first reaction {date}', { date: fmtDay(a.date) }), a.note].filter(Boolean).join(' · '))}</small></span>${can ? `<button class="btn d" data-alrm="${k.id}" data-food="${esc(a.food)}" aria-label="${__h('Remove {name}', { name: __(a.food) })}" style="padding:6px 12px">✕</button>` : ''}</div>`).join('') : `<p class="note" style="margin:0">${__h('None marked.')}</p>`}
+      <label class="f">${__h('Allergies')}</label>${(k.allergies || []).length ? k.allergies.map(a => `<div class="stat alrow"><span>⚠️ <b>${__h(a.food)}</b>${a.kind || a.severity || a.epi ? ` <small>${esc(allergyText(a).replace(/^.*?\(/, '(').replace(/\)$/, ')'))}</small>` : ''}<br><small>${esc([a.date && __('first reaction {date}', { date: fmtDay(a.date) }), a.note].filter(Boolean).join(' · '))}</small></span>${can ? `<button class="btn d" data-alrm="${k.id}" data-food="${esc(a.food)}" data-kind="${esc(a.kind || '')}" aria-label="${__h('Remove {name}', { name: __(a.food) })}" style="padding:6px 12px">✕</button>` : ''}</div>`).join('') : `<p class="note" style="margin:0">${__h('None marked.')}</p>`}
       ${can ? `<button class="btn" data-aladd="${k.id}" style="margin-top:6px">⚠️ ${__h('Mark an allergy')}</button>` : ''}
       ${Sync.can('health') ? recordButton(k) : ''}
       <label class="f">${__h('Colour')}</label><div class="swatches" role="radiogroup" aria-label="${__h('Colour')}">${Kids.swatches(k.sex).map(c => `<button type="button" class="sw ${c === k.color ? 'on' : ''}" data-kc="${k.id}" data-c="${c}" style="--k:${c}" role="radio" aria-checked="${c === k.color}" aria-label="${c}" ${dis}>${c === k.color ? '✓' : ''}</button>`).join('')}</div>
@@ -2187,7 +2297,7 @@ function artHtml() {
 /** Light, dark, matching the phone, or following sunrise and sunset (kept on this phone). */
 function appearanceHtml() {
   const m = Theme.mode, s = Theme.todaySun();
-  const opts = [['system', N_('Match phone')], ['light', N_('Light')], ['dark', N_('Dark')], ['sun', N_('Sunrise & sunset')]];
+  const opts = Object.entries(THEME_NAMES);
   const sun = s.polar ? (s.polar === 'day' ? __h("The sun doesn't set here today, so it stays light.") : __h("The sun doesn't rise here today, so it stays dark."))
     : __h('Today: light from {rise}, dark from {set}.', { rise: fmtTime(s.rise), set: fmtTime(s.set) });
   return `<div class="card"><b>🌗 ${__h('Appearance')}</b>
@@ -2199,23 +2309,35 @@ function appearanceHtml() {
 function unitsHtml() {
   const cur = usUnits() ? 'us' : 'metric';
   return `<div class="card"><b>📏 ${__h('Units')}</b><div class="chips" style="margin-top:10px">${chip('units', 'metric', __h('kg and cm'), cur === 'metric', '', true)}${chip('units', 'us', __h('pounds and inches'), cur === 'us', '', true)}</div>
-    <p class="note">${__h('For weight, length and height in the health record. Kept on this phone.')}</p></div>`;
+    <div class="chips" style="margin-top:10px">${chip('vol', 'ml', __h('ml'), !volOz(), '', true)}${chip('vol', 'oz', __h('fl oz'), volOz(), '', true)}</div>
+    <p class="note">${__h('Weight and height for the health record; ml or fl oz for milk, in the feed form, the list, the stats and the report. Kept on this phone.')}</p></div>`;
 }
+/** A settings group on the More page: a twirl-down with the setting's current value on its line, closed until tapped (open ones stay open while the app runs).
+    The card inside loses its own title, which the twirl-down carries. */
+function fold(id, icon, title, sub, html) {
+  const body = html.replace(/^(<div class="card"[^>]*>)<b>[^<]*<\/b>/, '$1');
+  return `<details class="gd set" data-grp="m${id}" ${openGroups.has('m' + id) ? 'open' : ''}><summary><span class="gi">${icon}</span><span class="gt"><b>${__h(title)}</b><small>${esc(sub)}</small></span><span class="chev" aria-hidden="true">›</span></summary><div class="gdin">${body}</div></details>`;
+}
+const THEME_NAMES = { system: N_('Match phone'), light: N_('Light'), dark: N_('Dark'), sun: N_('Sunrise & sunset') };
+let appVersion = '';
 function moreView() {
-  return languageHtml() + Acct.accountHtml() + `
-  ${kidsHtml()}
-  ${regionHtml()}
-  ${unitsHtml()}
-  ${artHtml()}
-  ${appearanceHtml()}
-  ${Acct.cloudHtml()}
-  <div class="card"><b>${__h('Your data')}</b><p class="note">${Sync.linked() ? __h('Entries are saved on this device and synced to your family log.') : __h('Everything is stored only on this device.')} ${__h('Export a plain-text copy to share with your pediatrician.')}</p>
+  const ks = kids(), acct = Acct.accountHtml(), av = Cloud.available(), cloudOn = ['google', 'dropbox', 'onedrive'].filter(p => av[p] && Cloud.connected(p)).map(Cloud.label);
+  const region = Formulas.REGIONS.find(r => r.id === db.meta.region);
+  const arts = [...new Set((ks.length > 1 ? [...ks.map(k => k.id), 'all'] : [ks[0].id]).map(id => __(Art.byId(artOf(id)).name)))];
+  return `${fold('lang', '🌐', N_('Language'), I18n.chosen() ? I18n.label(I18n.chosen()) : __('Automatic: {language}', { language: I18n.label(I18n.auto()) }), languageHtml())}
+  ${acct ? fold('acct', '🔐', N_('Security & account'), Acct.accountSub(), acct) : ''}
+  ${fold('kids', '👶', ks.length > 1 ? N_('Children') : N_('Baby'), ks.map(kidName).join(', '), kidsHtml())}
+  ${fold('region', '📍', N_('Where you are'), region ? __(region.name) : __('Automatic: {region}', { region: __(Formulas.name(Formulas.regionFor())).replace(/ \(.*\)$/, '') }), regionHtml())}
+  ${fold('units', '📏', N_('Units'), `${usUnits() ? __('pounds and inches') : __('kg and cm')} · ${volOz() ? __('fl oz') : __('ml')}`, unitsHtml())}
+  ${fold('look', '🌗', N_('Appearance and clock art'), `${__(THEME_NAMES[Theme.mode] || THEME_NAMES.system)} · ${arts.join(', ')}`, appearanceHtml() + artHtml())}
+  ${fold('cloud', '☁️', N_('Cloud backup'), cloudOn.length ? cloudOn.join(', ') + (Cloud.auto ? ' · ' + __('daily') : '') : __('Not set up'), Acct.cloudHtml())}
+  ${fold('data', '📄', N_('Your data'), __('Backup, export, the report for the doctor, restore'), `<div class="card"><b>${__h('Your data')}</b><p class="note">${Sync.linked() ? __h('Entries are saved on this device and synced to your family log.') : __h('Everything is stored only on this device.')} ${__h('Export a plain-text copy to share with your pediatrician.')}</p>
     <div class="row"><button class="btn" id="expJson">${__h('Backup (JSON)')}</button><button class="btn" id="expCsv">${__h('Export CSV')}</button></div>
     <div class="row"><button class="btn" id="expPdf">📄 ${__h('Report for the doctor (PDF)')}</button></div>
     <div class="row"><button class="btn" id="impJson">${__h('Restore from JSON')}</button></div>
-    <input type="file" id="impFile" accept="application/json" hidden></div>
-  <div class="card" id="appCard"><b>${__h('App updates')}</b><p class="note"><span id="appVer"></span>${__h('New versions of Little Log come through the app store.')}</p>
-    <div class="row"><button class="btn" id="appUpdate">${__h('Update app')}</button></div></div>
+    <input type="file" id="impFile" accept="application/json" hidden></div>`)}
+  ${fold('app', '🌟', N_('App updates'), appVersion ? __('Version {version}', { version: appVersion }) : __('Through the app store'), `<div class="card" id="appCard"><b>${__h('App updates')}</b><p class="note"><span id="appVer"></span>${__h('New versions of Little Log come through the app store.')}</p>
+    <div class="row"><button class="btn" id="appUpdate">${__h('Update app')}</button></div></div>`)}
   ${Sync.isParent() ? `<div class="card"><button class="btn d" id="wipe" style="width:100%">${__h('Delete all entries')}</button></div>` : ''}`;
 }
 /** More → Update app: the app's page in its store, where an update is one tap (the phone app can't replace itself). */
@@ -2240,6 +2362,7 @@ function bind() {
   document.querySelectorAll('[data-nums]').forEach(b => b.onclick = () => { db.meta.nums = b.dataset.nums; Store.save(db); render(); });
   document.querySelectorAll('[data-info]').forEach(b => b.onclick = () => openEntryInfo(b.dataset.info));
   document.querySelectorAll('#pdfBtn, #expPdf').forEach(b => b.onclick = openDoctorReport);
+  document.querySelectorAll('[data-yt]').forEach(b => b.onclick = () => Native.openExternal('https://www.youtube.com/watch?v=' + b.dataset.yt));
   document.querySelectorAll('details[data-grp]').forEach(d => d.ontoggle = () => {
     d.open ? openGroups.add(d.dataset.grp) : openGroups.delete(d.dataset.grp);
     if (!d.open) d.querySelectorAll('details.pix[open]').forEach(p => { p.open = false; });   // closing a card hides its pictures again
@@ -2258,6 +2381,8 @@ function bind() {
   document.querySelectorAll('[data-noteok]').forEach(b => b.onclick = () => { const m = db.meta.noteSeen || (db.meta.noteSeen = {}); for (const id of b.dataset.noteok.split(' ')) (m[id] || (m[id] = {}))[b.dataset.note] = true; Store.save(db); render(); });
   document.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.plan); if (ev) openPlan(ev); });
   document.querySelectorAll('[data-plannew]').forEach(b => b.onclick = () => openPlan(null, { day: viewDay }));
+  document.querySelectorAll('[data-tripcal]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.tripcal); if (ev) Cal.addToPhone(ev); });
+  if ($('#monthIcs')) $('#monthIcs').onclick = () => Cal.shareMonth(calMonth);
   document.querySelectorAll('[data-book]').forEach(b => b.onclick = () => makeBook(b.dataset.book));
   document.querySelectorAll('[data-export]').forEach(b => b.onclick = () => exportRecord(b.dataset.export));
   document.querySelectorAll('[data-record]').forEach(b => b.onclick = () => openRecord(b.dataset.record));
@@ -2280,9 +2405,10 @@ $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) { if (b
 
 function bindMore() {
   $('#appUpdate').onclick = updateApp;
-  Native.version().then(v => { const el = $('#appVer'); if (v && el) el.textContent = __('Version {version}', { version: v }) + ' · '; });
+  Native.version().then(v => { const el = $('#appVer'), sub = document.querySelector('details[data-grp=mapp] .gt small'); if (!v) return; appVersion = v; if (el) el.textContent = __('Version {version}', { version: v }) + ' · '; if (sub) sub.textContent = __('Version {version}', { version: v }); });
   document.querySelectorAll('[name=themeMode]').forEach(r => r.onchange = () => { if (r.checked) { Theme.set(r.value); render(); } });
   document.querySelectorAll('[name=units]').forEach(r => r.onchange = () => { if (r.checked) { db.meta.units = r.value; Store.save(db); render(); } });
+  document.querySelectorAll('[name=vol]').forEach(r => r.onchange = () => { if (r.checked) { db.meta.vol = r.value; Store.save(db); render(); } });
   $('#regionSel').onchange = e => { if (e.target.value) db.meta.region = e.target.value; else delete db.meta.region; Store.save(db); render(); toast(__('Where you are: {region}', { region: __(Formulas.name(myRegion())) })); };
   $('#langSel').onchange = e => setLanguage(e.target.value);
   if ($('#langReport')) $('#langReport').onclick = openLanguageReport;
@@ -2293,7 +2419,7 @@ function bindMore() {
   document.querySelectorAll('[data-alrm]').forEach(b => b.onclick = () => {
     const k = K(b.dataset.alrm); if (!k || !Sync.can('profile')) return;
     if (!confirm(__('Remove {food} from {name}\'s allergies?', { food: __(b.dataset.food), name: kidName(k) }))) return;
-    k.allergies = (k.allergies || []).filter(a => a.food !== b.dataset.food); commit(__('Removed'));
+    k.allergies = (k.allergies || []).filter(a => !(a.food === b.dataset.food && (a.kind || '') === b.dataset.kind)); commit(__('Removed'));
   });
   document.querySelectorAll('[data-kn]').forEach(i => i.onchange = () => { const k = K(i.dataset.kn); if (k && Sync.can('profile')) { k.name = i.value.trim().slice(0, 60); commit(); } });
   const setFormula = (k, name) => { k.formula = name.trim().slice(0, 60); k.formulaAt = Date.now(); commit(__('Saved')); };   // feeds before now don't count towards learning another
@@ -2368,7 +2494,7 @@ function openSheet(type, ev, pre) {
   if (type === 'feed') body = `
     ${L(N_('Type'))}${radios('kind', older ? [N_('breast'), N_('bottle'), N_('cup'), ...(d.kind === 'solids' ? ['solids'] : [])] : [N_('breast'), N_('bottle'), N_('solids'), ...(d.kind === 'cup' ? ['cup'] : [])], d.kind || (older ? 'cup' : 'breast'))}
     <div id="fBreast">${L(N_('Side'))}${radios('side', SIDES, d.side)}${L(N_('Minutes'))}${num('min', d.min, N_('e.g. 15'))}</div>
-    <div id="fBottle">${L(N_('Amount (ml)'))}${num('ml', d.ml, N_('e.g. 90'))}${L(N_('Milk'))}${radios('milk', older || MILKS_OLDER.slice(2).includes(d.milk) ? MILKS_OLDER : MILKS, d.milk)}
+    <div id="fBottle">${L(volOz() ? N_('Amount (fl oz)') : N_('Amount (ml)'))}<div class="volrow">${num('ml', volIn(d.ml), volOz() ? N_('e.g. 3') : N_('e.g. 90'), volOz() ? 0.5 : 1)}<button type="button" class="btn" id="volFlip" aria-label="${__h('Switch between ml and fl oz')}">${volOz() ? __h('→ ml') : __h('→ fl oz')}</button></div>${L(N_('Milk'))}${radios('milk', older || MILKS_OLDER.slice(2).includes(d.milk) ? MILKS_OLDER : MILKS, d.milk)}
       <div id="fFormula">${L(N_('Which formula'))}${formulaPicker({ sel: `id="formulaSel" aria-label="${__h('Which formula')}"`, txt: `id="formula" aria-label="${__h('Formula name')}"` }, ev ? d.formula || '' : usualFormula(feedKid(ev)), recentFormulas(ev ? [feedKid(ev)] : kids()))}</div></div>
     <div id="fSolids">${foodsPicker(d.foods || [], ev ? [childOf(ev)] : dayKid() === 'all' ? kids().map(k => k.id) : [dayKid()])}${L(N_('How much'))}${radios('amount', Foods.PORTIONS, d.amount)}</div>`;
   if (type === 'diaper') body = `
@@ -2428,7 +2554,7 @@ function openSheet(type, ev, pre) {
       <p class="note gpct" id="gpct" aria-live="polite"></p>`;
   }
   if (type === 'health') body += `<div class="recadd"><p class="note">${__h('A vaccine, a doctor visit or a measurement? They go in the health record:')}</p><div class="chips">${['vaccine', 'visit', 'growth'].map(t => `<button type="button" class="chip" data-switch="${t}"><span>${TYPES[t].icon} ${__h(TYPES[t].label)}</span></button>`).join('')}</div></div>`;
-  if (type === 'med') body = `${L(N_('Medicine / vitamin'))}<input id="mname" type="text" value="${esc(d.name || '')}" placeholder="${__h('e.g. Vitamin D')}">${L(N_('Dose'))}<input id="mdose" type="text" value="${esc(d.dose || '')}" placeholder="${__h('e.g. 1 ml')}">`;
+  if (type === 'med') body = `${L(N_('Medicine / vitamin'))}<input id="mname" type="text" value="${esc(d.name || '')}" placeholder="${__h('e.g. Vitamin D')}"><p class="call" id="medWarn" hidden></p>${L(N_('Dose'))}<input id="mdose" type="text" value="${esc(d.dose || '')}" placeholder="${__h('e.g. 1 ml')}">`;
 
   // Who is it for? Only asked when the log has more than one child. New entries can be logged for several at once (e.g. all three fed together),
   // except a measurement: that is one child's (the one whose health record is open).
@@ -2465,6 +2591,12 @@ function openSheet(type, ev, pre) {
       const k = growthKid(), at = fromLocalInput($('#ts').value) || defTs; $('#gHead').hidden = !(d.head || !k || !k.birth || Stages.months(k.birth, at) < 36);
       $('#gpct').textContent = k ? growthNote(k, at, readGrowth()) : '';
     }
+    if (type === 'med' && $('#medWarn')) {   // a medicine the child is allergic to, by its name or one of its family's
+      const ids = S.querySelector('[name=kid]') ? [...S.querySelectorAll('[name=kid]:checked')].map(c => c.value) : [ev && ev.child || kids()[0].id];
+      const hits = medAllergies(ids, $('#mname').value), w = $('#medWarn');
+      w.hidden = !hits.length; w.dataset.who = hits.map(h => kidName(h.kid)).join(', ');
+      if (hits.length) w.textContent = '⚠️ ' + hits.map(h => __('{child} is allergic to {what}', { child: kidName(h.kid), what: allergyText(h.allergy) })).join(' · ');
+    }
     if (type === 'feed' && $('#fBreast')) {
       const kind = val('kind'), b = kind === 'bottle' || kind === 'cup'; $('#fBreast').hidden = kind !== 'breast'; $('#fBottle').hidden = !b; $('#fSolids').hidden = kind !== 'solids'; $('#fFormula').hidden = val('milk') !== 'Formula';
       $('#formula').hidden = $('#formulaSel').value !== '__other';
@@ -2476,7 +2608,13 @@ function openSheet(type, ev, pre) {
   };
   S.onchange = e => { if (e && e.target && (e.target.id === 'formulaSel' || e.target.id === 'formula')) S.dataset.formulaPicked = '1'; sync(); };
   delete S.dataset.formulaPicked; sync();
-  S.oninput = type === 'growth' ? sync : null;   // (a measurement: the percentiles as the numbers are typed)
+  // ml ⇄ fl oz: the switch changes the unit for the whole app and converts the number already typed
+  if ($('#volFlip')) $('#volFlip').onclick = () => {
+    const v = $('#ml').value, ml = v === '' ? '' : volOut(+v); db.meta.vol = volOz() ? 'ml' : 'oz'; Store.save(db);
+    const lbl = $('#fBottle').querySelector('label'); if (lbl) lbl.textContent = volOz() ? __('Amount (fl oz)') : __('Amount (ml)');
+    $('#ml').value = volIn(ml); $('#ml').step = volOz() ? 0.5 : 1; $('#ml').placeholder = volOz() ? __('e.g. 3') : __('e.g. 90'); $('#volFlip').textContent = volOz() ? __('→ ml') : __('→ fl oz');
+  };
+  S.oninput = type === 'growth' || type === 'med' ? sync : null;   // (a measurement: the percentiles as the numbers are typed; a medicine: the allergy warning)
   S.querySelectorAll('[data-switch]').forEach(b => b.onclick = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; openSheet(b.dataset.switch); });
   S.querySelectorAll('[data-ago]').forEach(b => b.onclick = () => { $('#ts').value = toLocalInput(Date.now() - b.dataset.ago * MIN); });
   if ($('#foodAdd')) $('#foodAdd').onclick = () => { const v = $('#foodOther').value.trim().slice(0, 60); if (!v) return; $('#foodOther').value = ''; $('#foodTyped').insertAdjacentHTML('beforeend', chip('food', v, esc(v), true)); sync(); };
@@ -2490,7 +2628,7 @@ function openSheet(type, ev, pre) {
     const n = id => { const v = $(id).value; return v === '' ? undefined : +v; };
     const formulaName = () => { const sel = $('#formulaSel'); return sel ? (sel.value === '__other' ? $('#formula').value : sel.value).trim().slice(0, 60) : ''; };
     let data = {}, end;
-    if (type === 'feed') data = val('kind') === 'bottle' || val('kind') === 'cup' ? { kind: val('kind'), ml: n('#ml'), milk: val('milk'), ...(val('milk') === 'Formula' && formulaName() ? { formula: formulaName() } : {}) }
+    if (type === 'feed') data = val('kind') === 'bottle' || val('kind') === 'cup' ? { kind: val('kind'), ml: volOut(n('#ml')), milk: val('milk'), ...(val('milk') === 'Formula' && formulaName() ? { formula: formulaName() } : {}) }
       : val('kind') === 'solids' ? { kind: 'solids', foods: [...S.querySelectorAll('[name=food]:checked')].map(c => c.value), ...(val('amount') ? { amount: val('amount') } : {}) } : { kind: 'breast', side: val('side'), min: n('#min') };
     if (data.kind === 'solids' && !data.foods.length) return toast(__('Choose at least one food'));
     if (type === 'diaper') {
@@ -2506,7 +2644,7 @@ function openSheet(type, ev, pre) {
       data = { symptoms: [...S.querySelectorAll('[name=sym]:checked')].map(c => c.value), temp: n('#temp') };
       if (!data.symptoms.length && !data.temp && !$('#note').value.trim()) return toast(__('Tick a symptom or add a note'));
     }
-    if (type === 'med') { data = { name: $('#mname').value.trim(), dose: $('#mdose').value.trim() }; if (!data.name) return toast(__('Enter a name')); }
+    if (type === 'med') { data = { name: $('#mname').value.trim(), dose: $('#mdose').value.trim() }; if (!data.name) return toast(__('Enter a name')); if (!$('#medWarn').hidden && !confirm(__('{child} is allergic to this medicine. Log it anyway?', { child: $('#medWarn').dataset.who }))) return; }
     if (type === 'meal') data = { meal: val('meal') || mealAt(ts), foods: [...S.querySelectorAll('[name=food]:checked')].map(c => c.value), ...(val('amount') ? { amount: val('amount') } : {}) };
     if (type === 'vaccine') {
       const sel = $('#vname').value, own = $('#vother').value.trim().slice(0, 60), name = sel === '__other' ? own : sel, txt = id => $(id).value.trim();
@@ -2591,12 +2729,19 @@ Native.onBack(() => {
   return false;
 });
 Lock.onChange = () => render();
+/** Keeps the page out from under the phone's status and navigation bars: from Android 15 the app is drawn edge to edge and the web
+    view's safe-area values stay at zero, so the layout uses these variables next to env(safe-area-inset-*). */
+function applyInsets(i) {
+  const st = document.documentElement.style;
+  for (const k of ['top', 'bottom', 'left', 'right']) st.setProperty('--sa' + k[0], Math.max(0, Math.round(+(i || {})[k] || 0)) + 'px');
+}
 Sync.onSessionLost = () => Acct.sessionLost();
 (async () => {
   await Promise.all([I18n.init(), Store.init()]); db = normalize(await Store.load());   // before anything reads the log, or shows text
   Media.onChange = () => render();   // (a thumbnail arrived)
   Icons.init(); Icons.paint(document.querySelector('#tabs')); Icons.paint(document.querySelector('#cover')); Icons.paint(document.querySelector('#helpBtn'));
-  Theme.onChange = () => render();
+  Theme.onChange = () => { render(); Native.setBarsLight(!Theme.isDark()); };
+  Native.watchInsets(applyInsets); Native.setBarsLight(!Theme.isDark());   // the phone's bars: keep out from under them, icons to match
   Store.st.onChange = () => { render(); if (!Store.st.ok) toast(__('Cannot save on this phone – free up space')); };
   if (Store.st.quarantined || Store.st.recovered) setTimeout(() => toast(Store.st.recovered ? __('Your saved log was damaged and has been restored from a recent backup') : __('A damaged copy of the log was set aside; it will be re-downloaded from your family log')), 600);
   if (Native.is) {

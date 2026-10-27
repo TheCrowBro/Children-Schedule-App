@@ -80,7 +80,7 @@ function readPdf(buf) {
       const r = await P.evaluate(async () => { const x = await doctorPdf(kids()[0].id, { days: 7, every: true, notes: 'Is the red streak something to worry about?' }); return { pages: x.pages, text: x.text }; });
       const all = r.text.flat(), first = r.text[0];
       assert.equal(first[0], 'Leo'); assert(all.includes('Is the red streak something to worry about?'));
-      for (const t of ['Questions and notes for the doctor', 'At a glance', 'Day by day', 'Health notes and medicines', 'Every entry', 'Feeds per day', 'Bottle ml per day', 'Pee per day', 'Poo per day', 'Sleep per day', 'Night wakings per day', 'Highest temperature', 'Symptoms noted', 'Medicines given', 'Pediatrician', 'Usual formula']) assert(all.includes(t), t + ' is in it');
+      for (const t of ['Questions and notes for the doctor', 'At a glance', 'Day by day', 'Health notes and medicines', 'Every entry', 'Feeds per day', 'Bottle ml per day', 'Pee per day', 'Poo per day', 'Sleep per day', 'Wake-ups per night', 'Highest temperature', 'Symptoms noted', 'Medicines given', 'Pediatrician', 'Usual formula']) assert(all.includes(t), t + ' is in it');
       assert(all.some(l => /^Dr Rivera · Elm Street Clinic · 555 0100$/.test(l)), 'the pediatrician');
       assert(all.some(l => /^Yellow ×\d+, Red-streaked ×1$/.test(l)), 'poo colours with how often');
       assert(all.some(l => /^38\.4° · /.test(l)), 'the highest temperature, with when'); assert(all.includes('Vitamin D 1 ml ×1'));

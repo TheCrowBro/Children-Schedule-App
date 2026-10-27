@@ -36,6 +36,7 @@ const server = http.createServer((req, res) => {
     const ctx = await (opts.br || browser).newContext({ viewport: { width: 390, height: 800 } });
     if (opts.native !== false) await installFakeNative(ctx, opts);
     await ctx.addInitScript(() => { try { if (!localStorage.getItem('ll.tours')) localStorage.setItem('ll.tours', '{"day":1}'); localStorage.setItem('ll.welcome', '1'); } catch (e) { /* no storage */ } });   // (the first-time tour is tested in features, the first screen in start)
+    await ctx.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { try { ['mlang', 'macct', 'mkids', 'mregion', 'munits', 'mlook', 'mcloud', 'mdata', 'mapp'].forEach(g => openGroups.add(g)); } catch (e) { /* not the app */ } }));   // (the More page's twirl-downs start closed)
     await shim.install(ctx);
     await ctx.route('https://challenges.cloudflare.com/**', r => r.fulfill({ contentType: 'text/javascript', body: turnstile }));
     await ctx.route('https://api.dropboxapi.com/oauth2/token', r => { (opts.tokenCalls || (opts.tokenCalls = [])).push(r.request().postData()); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ access_token: 'dbx-at', refresh_token: 'dbx-rt', expires_in: 14400 }) }); });
@@ -164,8 +165,9 @@ const server = http.createServer((req, res) => {
 
   // ================= part 2: invites, approval, roles, permissions =================
   const goTab = async (p, t) => { await p.click(`[data-tab=${t}]`); await sleep(50); };
+  const openSec = async p => { await p.waitForSelector('details[data-grp=secshare]'); await p.evaluate(() => { document.querySelector('details[data-grp=secshare]').open = true; }); };   // (Security and sharing is a twirl-down)
   const mkInvite = async (p, role, ticks = [], unticks = []) => {
-    await goTab(p, 'family'); await p.waitForSelector('#invCard');
+    await goTab(p, 'family'); await openSec(p); await p.waitForSelector('#invCard');
     await p.click(`input[name=invrole][value=${role}]`);
     for (const k of ticks) await p.click(`input[name=invperm][value=${k}]:not(:checked)`);
     for (const k of unticks) await p.click(`input[name=invperm][value=${k}]:checked`);
@@ -176,7 +178,7 @@ const server = http.createServer((req, res) => {
   const pendingFor = async (email) => (await q(`select * from join_requests where email=$1 and status='pending'`, [email]));
   let inviteB, feedId;
   await step('role buttons load sensible defaults and lock what a role may never have', async () => {
-    await goTab(A, 'family'); await A.waitForSelector('#invCard');
+    await goTab(A, 'family'); await openSec(A); await A.waitForSelector('#invCard');
     const st = sel => A.evaluate(s => { const e = document.querySelector(s); return { checked: e.checked, disabled: e.disabled }; }, sel);
     await A.click('input[name=invrole][value=family]');
     assert.deepEqual(await st('input[name=invperm][value=edit_others]'), { checked: false, disabled: true }, 'family can never edit others\' entries');
@@ -337,7 +339,7 @@ const server = http.createServer((req, res) => {
     const r = await C.evaluate(c => Auth.rpc('redeem_invite', { p_code: c }), code); assert.equal(r.status, 'invalid');
   });
   await step('the activity log shows who did what – to parents only', async () => {
-    await goTab(A, 'family'); await A.click('#actBtn'); await A.waitForFunction(() => /Dad added an entry/.test(document.querySelector('#actList').textContent));
+    await goTab(A, 'family'); await openSec(A); await A.click('#actBtn'); await A.waitForFunction(() => /Dad added an entry/.test(document.querySelector('#actList').textContent));
     const t = await A.textContent('#actList');
     for (const s of ['Mum created the log', 'Dad added an entry', 'Mum added a private (health) entry', 'Mum approved dad@x.com as Family member', 'Nan edited an entry added by Mum', 'changed what Nan can do', 'rescinded a Friend invite']) assert(t.includes(s), 'missing: ' + s + '\n' + t.slice(0, 600));
     assert(!t.includes('nan was here') && !t.includes('Rash') && t.includes('changed the encryption keys'), 'entry contents are not in the log; key changes are');
@@ -434,7 +436,7 @@ const server = http.createServer((req, res) => {
     assert.equal(JSON.parse(await A.evaluate(() => localStorage.getItem('ll.lock'))).mode, 'bio', 'the phone\'s own lock, by default');
     await A.evaluate(() => localStorage.setItem('MOCK_BIO_FAIL', '1')); await A.reload();
     await A.waitForSelector('#unlock'); await sleep(500); assert(await A.isVisible('#unlock'), 'still locked after a failed prompt'); assert(!(await A.isVisible('#tabs')));
-    assert(/locked/.test(await A.textContent('#view')));
+    assert(/Locked/.test(await A.textContent('#view')) && (await A.textContent('#view')).split('Little Log').length <= 2, 'says Locked, and names the app at most once');
     await A.evaluate(() => localStorage.removeItem('MOCK_BIO_FAIL')); await A.click('#unlock'); await A.waitForSelector('#tabs');
     assert.equal(await A.textContent('#title'), "Leo's Log");
   });
@@ -532,7 +534,7 @@ const server = http.createServer((req, res) => {
 
   await step('removing a lost phone deletes its keys and changes the log\'s keys; that phone can read nothing new', async () => {
     const a2id = await A2.evaluate(() => E2EE.device.id), ep0 = await epochOnServer(), a2keys = await keysOf(A2), babyId = await babyOf(A2);
-    await goTab(A, 'family'); await A.waitForSelector(`[data-rmphone="${a2id}"]`); await A.click(`[data-rmphone="${a2id}"]`); await A.waitForFunction(i => !document.querySelector(`[data-rmphone="${i}"]`), a2id);
+    await goTab(A, 'family'); await openSec(A); await A.waitForSelector(`[data-rmphone="${a2id}"]`); await A.click(`[data-rmphone="${a2id}"]`); await A.waitForFunction(i => !document.querySelector(`[data-rmphone="${i}"]`), a2id);
     assert.equal((await q(`select count(*)::int c from key_grants where grantee=$1`, ['d:' + a2id]))[0].c, 0, 'its grant is gone'); assert.equal((await q('select rotate_needed from babies where id=$1', [babyId]))[0].rotate_needed, true);
     await syncNow(A); assert.equal(await epochOnServer(), ep0 + 1);
     assert.equal((await q(`select count(*)::int c from key_grants where epoch=$1 and grantee=$2`, [ep0 + 1, 'd:' + a2id]))[0].c, 0, 'and it is not in the new key distribution');

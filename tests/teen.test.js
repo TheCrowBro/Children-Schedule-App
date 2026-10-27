@@ -49,21 +49,21 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('the Guide: the teenage years first for a teenager; for a school child of 10 or more, after the milestones; not for a younger one', async () => {
       const heads = () => P.$$eval('#view h2', x => x.map(h => h.textContent.trim()));
       await P.evaluate(id => G.page(id, 'guide'), sophie);
-      assert.deepEqual(await heads(), ['Right now', 'Teenagers', 'Play and activities', 'Health checks'], 'no solids, baby medicines, milestones or newborn worries for a teenager');
+      assert.deepEqual(await heads(), ['Right now', 'Puberty', 'Teenagers', 'Play and activities', 'Health checks'], 'no solids, baby medicines, milestones or newborn worries for a teenager');
       assert.deepEqual(await P.$$eval('#view details.gd[data-grp^=n] .gt b', x => x.map(b => b.textContent)), ['Sleep for teenagers', 'Mental health', 'Phones and life online', 'Alcohol, vaping and drugs',
         'Relationships, sex and consent', 'Periods', 'Spots and acne', 'Food, body image and sport', 'Driving and getting about', 'Growing independence']);
       await P.click('details[data-grp=nmind] > summary'); assert(/take it seriously: stay with them/.test(await P.textContent('details[data-grp=nmind]')));
       assert(/The teenage years/.test(await P.textContent('.nowcard')));
       const tom = await P.evaluate(() => G.age(1, 11, 0, 'Tom')); await P.evaluate(id => G.page(id, 'guide'), tom);
-      assert.deepEqual(await heads(), ['Right now', 'School age', 'Play and activities', 'Health checks', 'Teenagers'], 'at 11: the school years first, the teenage years as what comes next, none of the baby years');
-      await P.evaluate(id => { G.age(1, 7, 0); G.page(id, 'guide'); }, tom); assert(!(await heads()).includes('Teenagers'), 'not at 7');
+      assert.deepEqual(await heads(), ['Right now', 'Puberty', 'School age', 'Play and activities', 'Health checks', 'Teenagers'], 'at 11: puberty and the school years first, the teenage years as what comes next, none of the baby years');
+      await P.evaluate(id => { G.age(1, 7, 0); G.page(id, 'guide'); }, tom); assert(!(await heads()).includes('Teenagers') && !(await heads()).includes('Puberty'), 'not at 7');
     });
 
     await step('the baby days are left out of a teenager\'s pages (no potty in the legends, no formula setting, none of the Guide\'s baby sections), and the Everyone page keeps them all while a younger child is in the family', async () => {
       await P.evaluate(() => G.age(1, 0, 1, 'Tom'));   // (Tom is a baby for this step)
       const legend = () => P.$$eval('#view .clegend span', x => x.map(s => s.textContent.replace(/\s*\d+\s*$/, '').trim()));
       await P.evaluate(id => G.page(id), sophie);
-      assert.deepEqual(await legend(), ['Meals', 'Sleep & night wakings', 'School', 'Vomit', 'Activities & homework', 'Health & meds'], 'no diapers or potty in the clock legend');
+      assert.deepEqual(await legend(), ['Meals', 'Sleep & wake-ups', 'School', 'Vomit', 'Activities & homework', 'Health & meds'], 'no diapers or potty in the clock legend');
       await P.evaluate(id => G.page(id, 'month'), sophie); assert(!/Potty|Diaper/.test(await P.textContent('#view .legend')), 'nor in the month legend');
       await P.evaluate(id => G.page(id, 'more'), sophie);
       assert.deepEqual(await P.evaluate(() => [...document.querySelectorAll('.kidrow')].map(r => [r.querySelector('[data-kn]').value, !!r.querySelector('.fpick')])), [['Sophie', false], ['Tom', true]], 'no formula for the teenager');

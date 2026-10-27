@@ -1,0 +1,25 @@
+<!-- Supabase → Authentication → Email Templates → "Magic link" (and "OTP"): paste this whole file into the message body.
+     Subject: Your Little Log sign-in code -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f2ec;padding:28px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#4a4337">
+  <tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#fffdf9;border:1px solid #e8e1d5;border-radius:18px">
+      <tr><td style="padding:26px 28px 6px;text-align:center">
+        <div style="display:inline-block;width:56px;height:56px;line-height:56px;border-radius:50%;background:#64759f;color:#ffffff;font-size:30px">&#128118;</div>
+        <div style="margin-top:12px;font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:600;color:#4a4337">Little Log</div>
+      </td></tr>
+      <tr><td style="padding:6px 28px 0;text-align:center;font-size:16px;line-height:1.5">
+        Here is your sign-in code. Type it into Little Log on your phone.
+      </td></tr>
+      <tr><td style="padding:18px 28px 0;text-align:center">
+        <div style="display:inline-block;padding:14px 22px;border-radius:14px;background:#f6f2ec;border:1px solid #e8e1d5;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:30px;letter-spacing:.18em;font-weight:700;color:#4a4337">{{ .Token }}</div>
+      </td></tr>
+      <tr><td style="padding:16px 28px 0;text-align:center;font-size:14px;line-height:1.5;color:#6b6354">
+        The code works for 10 minutes and only once. If you didn't ask for it, you can ignore this email: nobody can get in without your phone.
+      </td></tr>
+      <tr><td style="padding:22px 28px 26px;text-align:center;font-size:12px;line-height:1.5;color:#6b6354;border-top:1px solid #e8e1d5;margin-top:18px">
+        Little Log keeps your family's log end-to-end encrypted: the server only ever sees scrambled data.<br>
+        Sent to {{ .Email }} because someone entered this address in Little Log.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>

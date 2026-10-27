@@ -196,6 +196,45 @@ const Guide = (() => {
     { id: 'driving', icon: '🚗', title: N_('Driving and getting about'), body: N_('New drivers have the most crashes in their first year. Practise together in all kinds of weather, agree on rules (no phone, no alcohol, a seat belt on every trip, few friends in the car at first), and keep wearing a helmet on bikes and scooters.') },
     { id: 'own', icon: '🔑', title: N_('Growing independence'), body: N_('Give them more say and more to do: their own money, cooking, booking their own appointments and seeing the doctor on their own for part of the visit. Respect their privacy while keeping them safe, and keep talking: at dinner, in the car, late at night.') },
   ];
+  // Tutorials: short videos worth watching, from public health bodies and children's hospitals (in English), checked to exist when the
+  // list was made. [YouTube id, title, who made it, minutes]; ages is the span of months they are for. They open in YouTube; Little Log did not make them.
+  const TUTORIALS = [
+    { id: 'firstfood', icon: '🥄', title: N_('First meals and starting solids'), ages: [0, 30], videos: [
+      ['vLx716dMhTI', 'How to Prepare First Meals', 'Global Health Media Project', 7], ['xu9XeiypIY8', "When to Start Your Child's Solid Foods", 'Global Health Media Project', 6],
+      ['PugwZP6LHkM', "How to Keep Your Child's First Foods Safe", 'Global Health Media Project', 7], ['z11l0ioZVMU', 'What to Feed Young Children', 'Global Health Media Project', 8],
+      ['d4JOmabDA74', 'Gagging vs. Choking in Babies', 'PedsDocTalk', 3], ['GVPik7a2arY', 'How to Rescue Your Baby From Choking', 'Solid Starts', 1]] },
+    { id: 'snacks', icon: '🍽', title: N_('Healthy snacks'), ages: [10, 156], videos: [
+      ['N5O7ZGopuS4', 'Healthy Snacks for Preschoolers and Young Children', 'Public Health – Seattle & King County', 4], ['7XpcInErWb0', 'Quick & Easy Snacks for Kids', 'Hospital for Special Surgery', 2],
+      ['jDKLb37j6fw', 'After-School Snack Ideas', 'Mayo Clinic', 1]] },
+    { id: 'potty', icon: '🚽', title: N_('Potty training'), ages: [12, 66], videos: [
+      ['ryEeQ7WE8xQ', 'Potty Training Your Child', 'Nemours KidsHealth', 3], ['rCMjewRgkbo', 'Potty Training: How to Know When Your Child Is Ready', 'American Academy of Pediatrics', 21],
+      ['7mJG_3b6dHg', 'What You Need to Know About the First Day of Potty Training', 'Oh Crap! with Jamie Glowacki', 9], ['yZyTvTzEPxU', 'Biggest Potty Training Mistakes', 'Oh Crap! with Jamie Glowacki', 7]] },
+    { id: 'firstaid', icon: '⚠', title: N_('First aid: choking and CPR'), ages: [0, 216], videos: [
+      ['ePodw7L_mFM', 'How to Save a Choking Baby', 'British Red Cross', 3], ['fN_jrMrPLpY', 'How to Save a Choking Child', 'British Red Cross', 3],
+      ['UquZ0ePjowM', 'Unresponsive and Not Breathing Baby: Key Steps', 'British Red Cross', 2], ['Lu0Uw7ixfRk', 'Unresponsive and Not Breathing Child', 'British Red Cross', 2]] },
+    { id: 'safesleep', icon: '😴', title: N_('Safe sleep'), ages: [0, 12], videos: [
+      ['OvLsgXH69rc', 'Safe Sleep for Babies', 'American Academy of Pediatrics', 1], ['NXmjGbBLP60', '5 Safe Sleep Essentials for Your Baby', 'American Academy of Pediatrics', 1]] },
+    { id: 'newborn', icon: '👶', title: N_('Newborn care: bathing, swaddling, burping, breastfeeding'), ages: [0, 6], videos: [
+      ['_9rg-DEkBQQ', 'How Do I Bath My Baby?', 'NHS', 2], ['4uodj5kyqjo', 'Bathing Your Baby', 'HSE Ireland', 7], ['pJCQf2Xxlrk', 'How to Swaddle a Newborn', 'Mount Sinai Parenting Center', 2],
+      ['QhBBqmuP5jg', 'How to Swaddle a Baby', 'UC San Diego Health', 1], ['fgcWOzauLxI', 'How to Burp a Newborn', 'Mount Sinai Parenting Center', 3], ['wjt-Ashodw8', 'Attaching Your Baby at the Breast', 'Global Health Media Project', 10]] },
+    { id: 'teeth', icon: '🌟', title: N_('Teeth'), ages: [4, 96], videos: [
+      ['LVw488a4F4o', 'How to Brush with Your Baby (0 to 18 months)', 'Oral Health Victoria', 1], ['O4wDITXrvrc', 'The Tooth Brushing Song (2 minutes)', 'Queensland Health', 2]] },
+    { id: 'fever', icon: '🩺', title: N_('Fever'), ages: [0, 144], videos: [['MIkO7oZZrtM', 'How to Care for a Child with a Fever', 'NHS', 4]] },
+    { id: 'tantrums', icon: '🧸', title: N_('Tantrums'), ages: [10, 66], videos: [
+      ['vIULng1QDpo', 'What to Do When Your Child Has a Tantrum', "Cook Children's", 4], ['EvE2l0Kc_MQ', 'Temper Tantrums (15-month well-child check)', 'Central Ohio Primary Care', 3]] },
+    { id: 'carseat', icon: '🚗', title: N_('Car seats'), ages: [0, 108], videos: [
+      ['b3c6Pw8kapw', 'Rear-Facing Seat with LATCH', 'NHTSA', 2], ['Bxy_Tf5VKTc', 'Rear-Facing Seat with a Seat Belt', 'NHTSA', 2], ['y6WIdPZNncU', 'Rear-Facing Car Seat Tips', 'NHTSA', 1]] },
+  ];
+  // Puberty, for the parents of 8-to-16-year-olds: what comes and when, how to talk about it, and their privacy.
+  const PUBERTY = [
+    { id: 'pubwhen', icon: '🌱', title: N_('Puberty: what to expect and when'),
+      body: N_("Puberty usually starts between 8 and 13 in girls and 9 and 14 in boys, and takes a few years. In girls the breasts grow first, then hair under the arms and between the legs, a growth spurt, and periods about two years after the breasts started. In boys the testicles grow first, then hair, a deeper voice, a growth spurt later than the girls' and sometimes tender breast tissue for a while, which goes. Everyone sweats more, gets oilier skin and hair, spots, and bigger feelings: moods, tiredness, wanting to be left alone. All of it is normal, and so is being early or late compared with friends."),
+      call: N_('See your doctor if signs of puberty start before 8 in a girl or 9 in a boy, or if there are none by 13 in a girl or 14 in a boy.') },
+    { id: 'pubtalk', icon: '💬', title: N_('Talking about it'),
+      body: N_('Start before it starts, in small everyday conversations rather than one big talk: in the car, cooking, walking. Use the real words for body parts, say what will change and that it happens to everyone, and answer what is asked without adding a lecture. Books written for their age help, and so does a parent or relative of the same sex when they would rather ask them. Deodorant, a shower every day, a bra when they want one, pads or period underwear in their bag before the first period, a razor only if they ask: let them lead on what they are ready for.') },
+    { id: 'pubprivacy', icon: '🔒', title: N_('Their privacy'),
+      body: N_('From now on, some things are theirs to share. Knock before going into their room, keep what they tell you between you unless someone is in danger, and from about 12 let them see the doctor on their own for part of a visit. Little Log is shared with everyone in the family: ask before writing anything here about their body, periods or feelings, and leave it out if they would rather. Health notes are seen by everyone with health access, and the Day page by every helper.') },
+  ];
   // Toys for each age: what children do at that age, the kinds of toy that suit it (kinds, not brands), and what to watch. The Guide
   // shows each child's age and the next one; with Everyone chosen, every age in the family.
   const TOYS = [
@@ -298,6 +337,15 @@ const Guide = (() => {
   // The emergency number where the phone is, for the regions that share one; elsewhere it differs from country to country.
   const SOS = { na: '911', uk: '999', eu: '112', anz: N_('000 (Australia) or 111 (New Zealand)'), br: '192 (SAMU)' };
   const sos = region => SOS[region] || N_('your local emergency number');
+  // Where to call when it is not an emergency: the health advice lines that cover a whole region.
+  const ADVICE = {
+    na: N_("In Canada, 811 is the health advice line in most provinces. In the US, call your pediatrician's nurse line; Poison Control is 1-800-222-1222."),
+    uk: N_('NHS 111 (phone or 111.nhs.uk) in the UK. In Ireland, your GP\'s out-of-hours service.'),
+    eu: N_('116 117 reaches the out-of-hours doctor service in Germany, Austria and several other countries; elsewhere, your doctor\'s out-of-hours number.'),
+    anz: N_('healthdirect 1800 022 222 in Australia, or Healthline 0800 611 116 in New Zealand, 24 hours a day.'),
+    br: N_('Disque Saúde 136 for health information, or your health plan\'s nurse line.'),
+  };
+  const advice = region => ADVICE[region] || N_("Your pediatrician's nurse line, or your health service's advice line.");
   /** Guide text for a region: {sos} becomes its emergency number. */
   const local = (text, region) => text.replace(/\{sos\}/g, sos(region));
   /** Never give a baby these. */
@@ -316,10 +364,10 @@ const Guide = (() => {
   }
   const str = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
   /** The pediatrician's details, kept in the encrypted profile. */
-  const cleanDoctor = d => { d = d && typeof d === 'object' ? d : {}; return { name: str(d.name, 60), practice: str(d.practice, 80), phone: str(d.phone, 30), after: str(d.after, 30), address: str(d.address, 120), notes: str(d.notes, 200) }; };
+  const cleanDoctor = d => { d = d && typeof d === 'object' ? d : {}; return { name: str(d.name, 60), practice: str(d.practice, 80), phone: str(d.phone, 30), nurse: str(d.nurse, 30), after: str(d.after, 30), hospital: str(d.hospital, 80), hospPhone: str(d.hospPhone, 30), address: str(d.address, 120), notes: str(d.notes, 200) }; };
   /** A person's own contact details, sealed with the log's key. */
   const cleanDetails = d => { d = d && typeof d === 'object' ? d : {}; return { relation: str(d.relation, 40), phone: str(d.phone, 30), work: str(d.work, 80), workPhone: str(d.workPhone, 30), notes: str(d.notes, 300) }; };
   /** A tel: link target, or '' when the text has no usable number. */
   const tel = p => { const n = String(p || '').replace(/[^\d+]/g, '').replace(/(?!^)\+/g, ''); return n.replace(/\D/g, '').length >= 3 ? 'tel:' + n : ''; };
-  return { COMMON, PICS, picSrc, credits, MILESTONES, TODDLER, CHECKS, SCHOOL, TEEN, TOYS, SWIM, STAGE_NOTES, MEDS_INTRO, MEDS, NEVER, sos, local, monthsOld, cleanDoctor, cleanDetails, tel };
+  return { COMMON, PICS, picSrc, credits, MILESTONES, TODDLER, CHECKS, SCHOOL, TEEN, PUBERTY, TUTORIALS, TOYS, SWIM, STAGE_NOTES, MEDS_INTRO, MEDS, NEVER, sos, local, monthsOld, cleanDoctor, cleanDetails, tel, advice };
 })();

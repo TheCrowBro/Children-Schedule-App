@@ -1,7 +1,8 @@
 // The day clock, twirl-down groups, month day counts, stats charts, formula, the Guide (pediatrician, milestones) and people's contact
 // details – including that the new private data stays end-to-end encrypted.   node tests/features.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global writes24, openDoctor */
+/* global writes24, openDoctor, applyInsets, openPlan, Cal, dkey, LLPlugins, startOfDay */
+/* global viewDay:writable */
 const { setup } = require('./lib/harness');
 
 let ok = 0, failed = 0;
@@ -161,14 +162,15 @@ const pickFormula = async (page, scope, name) => {
 
     await step('every stats section has a chart drawn to scale, with the numbers in a table', async () => {
       await P.click('[data-tab=stats]');
-      const titles = await P.$$eval('.scard', c => c.map(x => [x.querySelector('b').textContent.trim(), x.querySelectorAll('svg.chart').length]));
+      await P.evaluate(() => document.querySelectorAll('.scard details.chx').forEach(d => { d.open = true; }));   // (each chart is a twirl-down of its own)
+      const titles = await P.$$eval('.scard:not(.hw)', c => c.map(x => [x.querySelector('b').textContent.trim(), x.querySelectorAll('svg.chart').length]));
       assert.deepEqual(titles.map(t => t[0]), ['Feeding', 'Diapers', 'Sleep', 'Vomit', 'Play', 'Health & meds']);
       assert(titles.every(t => t[1] >= 1), 'a chart in each: ' + JSON.stringify(titles));
       // the diaper chart: today's pee bar is twice the poo bar, and the axis top is a round number at or above the largest value
-      const r = await P.evaluate(() => { const c = [...document.querySelectorAll('.scard')][1], bars = c.querySelectorAll('svg.chart .bar'), last = bars[bars.length - 1].querySelectorAll('path'); const h = p => p.getBBox().height; return { pee: h(last[0]), poo: h(last[1]), top: c.querySelector('.ax:nth-of-type(3)') && [...c.querySelectorAll('svg.chart text.ax')].map(t => t.textContent) }; });
+      const r = await P.evaluate(() => { const c = [...document.querySelectorAll('.scard:not(.hw)')][1], bars = c.querySelectorAll('svg.chart .bar'), last = bars[bars.length - 1].querySelectorAll('path'); const h = p => p.getBBox().height; return { pee: h(last[0]), poo: h(last[1]), top: c.querySelector('.ax:nth-of-type(3)') && [...c.querySelectorAll('svg.chart text.ax')].map(t => t.textContent) }; });
       assert(Math.abs(r.pee / r.poo - 2) < 0.15, `pee ${r.pee} vs poo ${r.poo}`);
       assert(r.top.includes('2'), 'axis labels include the top value: ' + r.top);
-      const row = await P.evaluate(() => [...document.querySelectorAll('.scard')][1].querySelector('.tw tbody tr').textContent);
+      const row = await P.evaluate(() => [...document.querySelectorAll('.scard:not(.hw)')][1].querySelector('.tw tbody tr').textContent);
       assert(/2.*1/.test(row), 'the table shows today: ' + row);
     });
 
@@ -372,11 +374,13 @@ const pickFormula = async (page, scope, name) => {
 
     await step('parents save the pediatrician; everyone else sees the number with a Call button but cannot change it', async () => {
       await P.click('#docBtn'); await P.click('#docEdit');
-      await P.fill('#dcName', 'Dr. Rivera'); await P.fill('#dcPractice', 'Oak Street Pediatrics'); await P.fill('#dcPhone', '(555) 010-2299'); await P.fill('#dcAfter', '555 010 3000'); await P.click('#dcSave');
+      await P.fill('#dcName', 'Dr. Rivera'); await P.fill('#dcPractice', 'Oak Street Pediatrics'); await P.fill('#dcPhone', '(555) 010-2299'); await P.fill('#dcNurse', '555 010 4000'); await P.fill('#dcAfter', '555 010 3000'); await P.fill('#dcHosp', "St Mary's Children's"); await P.fill('#dcHospPhone', '555 010 5000'); await P.click('#dcSave');
+      assert(/Not an emergency\?/.test(await P.textContent('.note.calm')) && /St Mary's Children's, non-emergency line/.test(await P.textContent('.note.calm')), 'the Guide lists the non-emergency lines');
+      assert.deepEqual(await P.$$eval('.note.calm a.callbtn', a => a.map(x => x.getAttribute('href'))), ['tel:5550104000', 'tel:5550103000', 'tel:5550105000']);
       assert(/Dr\. Rivera/.test(await P.textContent('#docBtn')));
       await syncNow(P); await syncNow(B); await B.click('[data-tab=guide]'); await B.click('#docBtn');
       assert(/Oak Street Pediatrics/.test(await B.textContent('#sheet')));
-      assert.deepEqual(await B.$$eval('#sheet a.callbtn', a => a.map(x => x.getAttribute('href'))), ['tel:5550102299', 'tel:5550103000']);
+      assert.deepEqual(await B.$$eval('#sheet a.callbtn', a => a.map(x => x.getAttribute('href'))), ['tel:5550102299', 'tel:5550104000', 'tel:5550103000', 'tel:5550105000']);
       assert.equal(await B.$('#docEdit'), null, 'no edit button for a babysitter'); await B.click('[data-close]');
       const prof = JSON.stringify(await q('select profile from babies')); assert(!/Rivera|010-2299|5550102299/.test(prof), 'not readable on the server');
     });
@@ -673,6 +677,70 @@ const pickFormula = async (page, scope, name) => {
       await P.click('[data-tab=family]'); await P.evaluate(() => document.querySelector('#view .pbtn').click()); await P.waitForSelector('#sheet:not([hidden])'); const d = await corner(); assert(d && d.w >= 44 && d.inside, `an account sheet: ${JSON.stringify(d)}`);
       await P.click('#sheet .sheetx'); assert.equal(await P.evaluate(() => $('#sheet').hidden), true, 'closes an account sheet');
       await P.click('[data-tab=day]');
+    });
+
+    await step('the phone\'s status and navigation bars (Android 15 draws the app under them): the page keeps out from under them, the tab bar grows by the bar below, and the bar icons follow the theme', async () => {
+      const px = (sel, prop) => P.evaluate(([s, q]) => parseFloat(getComputedStyle(document.querySelector(s))[q]), [sel, prop]);
+      const tabs0 = await px('#tabs', 'paddingBottom'), body0 = await px('body', 'paddingBottom'), top0 = await px('.top', 'paddingTop');
+      await P.evaluate(() => applyInsets({ top: 24, bottom: 48, left: 0, right: 0 }));
+      assert.equal(await px('#tabs', 'paddingBottom'), tabs0 + 48, 'the tab bar sits above the navigation bar');
+      assert.equal(await px('body', 'paddingBottom'), body0 + 48, 'and the page scrolls clear of it');
+      assert(await px('.top', 'paddingTop') >= top0 + 18, 'the header is below the status bar');
+      await P.evaluate(() => applyInsets({ top: 0, bottom: 0, left: 0, right: 0 }));
+      assert.equal(await px('#tabs', 'paddingBottom'), tabs0);
+      assert(/setBars/.test(JSON.stringify(await P.evaluate(() => window.__calls))), 'the bar icons were set to match the theme');
+    });
+
+    await step('milk in ml or fl oz: the switch in the feed form converts the number typed, the unit is kept for the whole app (list, stats, More → Units), and the amount is stored in ml', async () => {
+      await P.evaluate(() => { db.meta.vol = 'ml'; db.meta.units = 'metric'; viewDay = startOfDay(Date.now()); Store.save(db); render(); });
+      await P.click('[data-tab=day]'); await P.click('[data-add=feed]'); await P.click('[name=kind][value=bottle]');
+      assert.equal(await P.textContent('#volFlip'), '→ fl oz'); await P.fill('#ml', '90'); await P.click('#volFlip');
+      assert.equal(await P.inputValue('#ml'), '3', '90 ml became 3 fl oz'); assert.equal(await P.textContent('#volFlip'), '→ ml');
+      assert.equal(await P.textContent('#fBottle label'), 'Amount (fl oz)');
+      await P.fill('#ml', '4'); await P.click('#save'); await P.waitForFunction(() => $('#sheet').hidden);
+      const stored = await P.evaluate(() => db.events.filter(e => e.type === 'feed' && e.data.kind === 'bottle').map(e => e.data.ml));
+      assert(stored.includes(118), 'stored in ml (4 fl oz): ' + JSON.stringify(stored));
+      assert(/4 fl oz/.test(await P.textContent('#view')), 'the list shows fl oz');
+      await P.click('[data-tab=stats]'); assert(/fl oz per day/.test(await P.textContent('#view')), 'the stats say fl oz');
+      await P.click('[data-tab=more]'); assert.equal(await P.isChecked('[name=vol][value=oz]'), true, 'More → Units shows fl oz');
+      await P.evaluate(() => { document.querySelector('[name=vol][value=ml]').click(); });
+      await P.click('[data-tab=day]'); assert(/118 ml/.test(await P.textContent('#view')), 'back to ml, the same entry reads 118 ml');
+      await P.evaluate(() => { db.events = db.events.filter(e => !(e.type === 'feed' && e.data.ml === 118)); Store.save(db); render(); });
+    });
+
+    await step('the Guide has a twirl-down of tutorial videos (first meals, first aid, safe sleep… for the ages on the page; potty training and tantrums for a toddler) from health bodies, each a tap that opens YouTube', async () => {
+      await P.click('[data-tab=guide]'); await P.evaluate(() => { document.querySelector('details[data-grp=videos]').open = true; });
+      const topics = () => P.$$eval('details[data-grp=videos] details.gd .gt b', x => x.map(b => b.textContent));
+      const baby = await topics();
+      for (const t of ['First meals and starting solids', 'First aid: choking and CPR', 'Safe sleep', 'Newborn care: bathing, swaddling, burping, breastfeeding']) assert(baby.includes(t), t);
+      assert(!baby.includes('Potty training') && !baby.includes('Tantrums'), 'not yet for a baby: ' + baby);
+      const ids = await P.$$eval('[data-yt]', x => x.map(b => b.dataset.yt)); assert(ids.length >= 10 && ids.every(id => /^[A-Za-z0-9_-]{11}$/.test(id)), `${ids.length} videos with YouTube ids`);
+      assert.equal(new Set(ids).size, ids.length, 'no video twice');
+      const birth = await P.evaluate(() => kids()[0].birth);
+      await P.evaluate(() => { const d = new Date(); d.setMonth(d.getMonth() - 30); kids()[0].birth = d.toLocaleDateString('en-CA'); render(); document.querySelector('details[data-grp=videos]').open = true; });
+      const toddler = await topics(); assert(toddler.includes('Potty training') && toddler.includes('Tantrums') && !toddler.includes('Safe sleep'), 'for a toddler: ' + toddler);
+      await P.evaluate(b => { kids()[0].birth = b; render(); $('#sheet').hidden = $('#sheetBack').hidden = true; document.querySelector('details[data-grp=videos]').open = true; }, birth);   // (a change of age brings up the stage sheet: closed)
+      await P.evaluate(() => { window.opened = []; Native.openExternal = u => window.opened.push(u); document.querySelector('details[data-grp=vidfirstfood]').open = true; });
+      await P.click('[data-yt="vLx716dMhTI"]'); assert.deepEqual(await P.evaluate(() => window.opened), ['https://www.youtube.com/watch?v=vLx716dMhTI']);
+      await P.click('[data-tab=day]');
+    });
+
+    await step('the family calendar goes to the phone: an event becomes a calendar file (.ics) that opens in any calendar app, is shared by email or message, and goes straight into the phone\'s calendar where the app can', async () => {
+      const day = await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; return dkey(Date.now() + 3 * 864e5); });
+      await P.evaluate(d => { openPlan(null, { day: new Date(d + 'T00:00').getTime() }); }, day); await P.waitForSelector('#psave');
+      await P.click('[name=pkind][value=Appointment]'); await P.fill('#ptitle', 'Dentist'); await P.fill('#ptime', '14:30'); await P.click('#psave');
+      const ev = await P.evaluate(() => db.events.find(e => e.type === 'plan' && e.data.title === 'Dentist'));
+      const ics = await P.evaluate(id => Cal.ics([Cal.itemOf(db.events.find(e => e.id === id))]), ev.id);
+      assert(/BEGIN:VCALENDAR\r\nVERSION:2\.0/.test(ics) && /SUMMARY:Dentist/.test(ics) && /DTSTART:\d{8}T\d{6}Z/.test(ics) && /UID:/.test(ics) && /END:VEVENT/.test(ics), ics);
+      assert.equal(await P.evaluate(() => new Date(Cal.ics([{ uid: 'x', title: 'a, b; c', start: Date.UTC(2026, 0, 2, 9, 0), end: Date.UTC(2026, 0, 2, 10, 0) }]).match(/DTSTART:(\d{8}T\d{6}Z)/)[1].replace(/(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)Z/, '$1-$2-$3T$4:$5:$6Z')).toISOString()), '2026-01-02T09:00:00.000Z', 'times are written in UTC');
+      assert(/SUMMARY:a\\, b\\; c/.test(await P.evaluate(() => Cal.ics([{ uid: 'x', title: 'a, b; c', start: 0, end: 1 }]))), 'commas and semicolons are escaped');
+      await P.evaluate(() => { window.__calls.length = 0; }); await P.evaluate(id => Cal.addToPhone(db.events.find(e => e.id === id)), ev.id);
+      const taken = await P.evaluate(() => window.__calls.filter(c => c[0] === 'calendar')); assert(taken.length === 1 && /^Dentist( \(.*\))?$/.test(taken[0][1]), 'the phone\'s own calendar takes it: ' + JSON.stringify(taken));
+      await P.evaluate(() => { window.__calls.length = 0; LLPlugins.Calendar = null; }); await P.evaluate(id => Cal.addToPhone(db.events.find(e => e.id === id)), ev.id);
+      assert.deepEqual(await P.evaluate(() => window.__calls.map(c => c[0])), ['writeFile', 'share'], 'without a calendar, the .ics goes to the share sheet');
+      await P.evaluate(() => { window.__calls.length = 0; }); await P.evaluate(() => Cal.shareMonth(new Date(Date.now() + 3 * 864e5)));
+      assert(/\.ics$/.test((await P.evaluate(() => window.__calls[0]))[1]), 'the month goes as one file');
+      await P.evaluate(id => { db.events = db.events.filter(e => e.id !== id); Store.save(db); render(); }, ev.id);
     });
 
     const pageErrs = H.pages.flatMap(p => p.errs.concat(p.csp));

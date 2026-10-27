@@ -57,6 +57,10 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>Little Log adds the events you choose to your calendar.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Little Log adds the events you choose to your calendar.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Little Log uses Face ID to keep your baby's log private when you open the app.</string>
 	<key>NSCameraUsageDescription</key>

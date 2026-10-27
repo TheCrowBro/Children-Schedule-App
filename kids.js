@@ -19,16 +19,22 @@ const Kids = (() => {
   }
   /** Swatches to offer, the child's own group first. */
   const swatches = sex => [...new Set([...group(sex), ...PALETTE.boy, ...PALETTE.girl, ...PALETTE.other])];
-  /** A child's allergies: { food, date (of the first reaction, YYYY-MM-DD), note }, one per food, at most 12 (the whole profile, all
-      children and the pediatrician, has to fit the server's limit for it). */
+  /** A child's allergies: { food (what it is to), date (of the first reaction, YYYY-MM-DD), note }, plus kind (medicine, vaccine, sting,
+      environment, other; a food allergy has none), severity (mild, serious) and epi (carries an adrenaline auto-injector) when set;
+      one per thing, at most 12 (the whole profile, all children and the pediatrician, has to fit the server's limit for it). */
+  const ALLERGY_KINDS = ['medicine', 'vaccine', 'sting', 'environment', 'other'];
   function allergies(list) {
     const out = [];
     for (const a of Array.isArray(list) ? list : []) {
       if (!a || typeof a.food !== 'string' || !a.food.trim() || out.length >= 12) continue;
-      const food = a.food.trim().slice(0, 60), date = isDay(a.date) ? a.date : '';
-      const had = out.find(x => x.food.toLowerCase() === food.toLowerCase());
+      const food = a.food.trim().slice(0, 60), date = isDay(a.date) ? a.date : '', kind = ALLERGY_KINDS.includes(a.kind) ? a.kind : '';
+      const had = out.find(x => x.food.toLowerCase() === food.toLowerCase() && (x.kind || '') === kind);
       if (had) { if (date && (!had.date || date < had.date)) had.date = date; continue; }   // (the first reaction is the one that counts)
-      out.push({ food, date, note: typeof a.note === 'string' ? a.note.slice(0, 120) : '' });
+      const o = { food, date, note: typeof a.note === 'string' ? a.note.slice(0, 120) : '' };
+      if (kind) o.kind = kind;
+      if (a.severity === 'mild' || a.severity === 'serious') o.severity = a.severity;
+      if (a.epi === true) o.epi = true;
+      out.push(o);
     }
     return out;
   }
@@ -52,5 +58,5 @@ const Kids = (() => {
   const mix = (a, b, t) => { const x = rgb(a), y = rgb(b); return '#' + x.map((v, i) => Math.round(v * (1 - t) + y[i] * t).toString(16).padStart(2, '0')).join(''); };
   const rgba = (h, a) => `rgba(${rgb(h).join(',')},${a})`;
   const make = (kids, name = '', sex = '', birth = '') => ({ id: rid(), name, birth, sex, color: auto(kids, sex), formula: '', formulaAt: 0, allergies: [] });
-  return { PALETTE, MAX, auto, swatches, clean, make, group, mix, rgba, allergies };
+  return { PALETTE, MAX, auto, swatches, clean, make, group, mix, rgba, allergies, ALLERGY_KINDS };
 })();

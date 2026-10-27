@@ -40,6 +40,10 @@ const Native = (() => {
     async launchUrl() { if (!is) return null; try { const r = await P().App.getLaunchUrl(); return (r && r.url) || null; } catch (e) { return null; } },
     onBack(cb) { if (is) P().App.addListener('backButton', () => { if (!cb()) P().App.exitApp(); }); },
     onAppState(cb) { if (is) P().App.addListener('appStateChange', e => cb(e.isActive)); },
+    /** An event into the phone's own calendar through its "new event" screen (Android: the calendar app's; iOS: the system's), where the
+        user picks the calendar and saves: true. False when they cancelled there; null when the app can't do that here (a browser, or a
+        build without the plugin), so the caller shares a calendar file instead. */
+    async calendarInsert(item) { const C = is && P().Calendar; if (!C) return null; const r = await C.insert(item); return !(r && r.added === false); },
     /** Share text through the OS share sheet (the Web Share API is missing from Android's WebView). */
     async shareText(title, text) { await P().Share.share({ title, text, dialogTitle: title }); },
     /** Write a file (text, or bytes such as a PDF) and open the OS share sheet (Save to Files / iCloud Drive / Drive / email …). */
@@ -50,6 +54,15 @@ const Native = (() => {
       const { uri } = await P().Filesystem.getUri({ path: name, directory: dir });
       await P().Share.share({ title: name, url: uri, dialogTitle: __('Save or share') });
     },
+    /** The phone's status and navigation bars over the page (Android 15 and later draw the app edge to edge): cb gets { top, bottom,
+        left, right } in CSS pixels now and whenever they change. Elsewhere (iOS, a browser) nothing happens: env(safe-area-inset-*) does it. */
+    watchInsets(cb) {
+      const I = P().Insets; if (!is || !I) return;
+      I.get().then(cb).catch(() => {});
+      try { I.addListener('change', cb); } catch (e) { /* no events: the first answer stands */ }
+    },
+    /** Dark icons on light bars (light: true) or light icons on dark bars, to match the app's theme. */
+    setBarsLight(light) { const I = P().Insets; if (is && I && I.setBars) I.setBars({ light: !!light }).catch(() => {}); },
     /** iOS Keychain / Android Keystore-backed storage for secrets (sign-in tokens, backup passphrase, cloud tokens). */
     Secure: {
       async get(k) { await prep(); try { const v = await P().SecureStorage.get(k); return v == null ? null : String(v); } catch (e) { return null; } },
