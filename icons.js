@@ -64,7 +64,7 @@ const Icons = (() => {
     '📅': 'day', '🗓': 'month', '📊': 'stats', '👨‍👩‍👧': 'family', '⚙': 'more', '🔒': 'lock', '🔐': 'lock', '🔑': 'key', '📷': 'camera', '🔗': 'link',
     '👶': 'baby', '📨': 'mail', '⚠': 'warn', '✅': 'check', '⏳': 'clock', '📴': 'offline', '☁': 'cloud', '📞': 'phone', '📖': 'guide', '🌟': 'star', '🎨': 'palette', '🌗': 'theme',
     '🌿': 'leaf', '☀': 'day', '🚗': 'car', '✈': 'plane', '🚆': 'train', '🚢': 'ship', '🧳': 'trip', '❓': 'help', '📍': 'pin', '🌐': 'globe', '⏰': 'clock', '📄': 'doc', '🥄': 'spoon', '🌳': 'tree' };
-  const RE = new RegExp(Object.keys(MAP).sort((a, b) => b.length - a.length).join('|') + '(?:\\uFE0F)?', 'gu');
+  const RE = new RegExp('(?:' + Object.keys(MAP).sort((a, b) => b.length - a.length).join('|') + ')(?:\\uFE0F)?', 'gu');
   const bare = s => s.replace(/️/g, '');
   /** The icon as an SVG string. `size` is in px (default: 1.15em, so it sits in text). */
   function svg(name, size) {

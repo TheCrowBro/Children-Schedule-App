@@ -2304,5 +2304,41 @@
  "3c4hof": "File kalender tidak bisa dibagikan",
  "1qci05g": "Tidak ditambahkan",
  "k8mpdg": "Tidak ada apa-apa di kalender bulan ini",
- "ljg8xf": "Little Log"
+ "ljg8xf": "Little Log",
+ "s0816k": "Keras",
+ "o4uy6s": "Padat",
+ "wbcyc5": "Lembek",
+ "8tqf2a": "Cair / encer",
+ "8w100k": "Tidur siang {time}",
+ "1pqoale": "Sedang tidur siang…",
+ "1eni85m": "bersama {name}",
+ "j3l6uc": "Kakek atau nenek yang mana? (opsional)",
+ "1mt960h": "Pengasuh yang mana? (opsional)",
+ "1ws7ovf": "Pengasuh harian yang mana? (opsional)",
+ "1jvnol3": "Rumah siapa? (opsional)",
+ "a4m7dn": "Siapa yang menjaganya di sana? (opsional)",
+ "1crdaiq": "Tidur siang sejak {time} ({long})",
+ "9sps25": "Padat atau cair",
+ "1bki7xi": "Tiga kali atau lebih BAB cair dan encer dalam sehari bisa jadi infeksi perut. Sering-seringlah menyusui atau memberi minum, dan hubungi dokter anak jika berlangsung lebih dari sehari, ada darah, atau anak lebih jarang pipis dari biasanya.",
+ "17ryu39": "Hari ini sejauh ini",
+ "715wev": "Juga hari ini",
+ "pm2k9r": "Dicatat hari ini pada waktu yang (belum) menjadi bagian dari rutinitas.",
+ "1kzvs2o": {
+  "other": "{n} topik"
+ },
+ "moia3g": {
+  "other": "{n} usia"
+ },
+ "2d02gm": "Padat atau cair?",
+ "1lxzxt9": "Tidur siang atau tidur malam?",
+ "140i5ei": "Di jam, tidur siang digambar dengan garis putus-putus, tidur malam dengan garis penuh.",
+ "1p39zt2": "Namanya",
+ "1jhplr9": "Lokasi (opsional)",
+ "1a4g4pt": "Alamat, atau cara menemukannya",
+ "jzrxn4": "Hari-hari si kecil, dalam satu catatan kecil.",
+ "1iudbcb": "Seseorang ingin bergabung",
+ "1wsths9": "Nanti",
+ "bnyqa": "Mulai sekarang, hanya wajah, sidik jari, atau kode sandi Anda yang membuka catatan kecil Little Log.",
+ "us92jl": "Wajah, sidik jari, atau kode sandi Anda membuka catatan kecil Little Log.",
+ "1r432a3": "Hanya memastikan ini benar Anda"
 }

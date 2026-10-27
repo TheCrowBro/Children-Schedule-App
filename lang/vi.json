@@ -2304,5 +2304,41 @@
  "3c4hof": "Không thể chia sẻ tệp lịch",
  "1qci05g": "Chưa thêm",
  "k8mpdg": "Tháng này chưa có gì trong lịch",
- "ljg8xf": "Little Log"
+ "ljg8xf": "Little Log",
+ "s0816k": "Cứng",
+ "o4uy6s": "Đặc",
+ "wbcyc5": "Mềm",
+ "8tqf2a": "Lỏng / toàn nước",
+ "8w100k": "Ngủ trưa {time}",
+ "1pqoale": "Đang ngủ trưa…",
+ "1eni85m": "với {name}",
+ "j3l6uc": "Ông bà nào? (không bắt buộc)",
+ "1mt960h": "Người trông trẻ nào? (không bắt buộc)",
+ "1ws7ovf": "Người giữ trẻ nào? (không bắt buộc)",
+ "1jvnol3": "Nhà của ai? (không bắt buộc)",
+ "a4m7dn": "Ai trông bé ở đó? (không bắt buộc)",
+ "1crdaiq": "Ngủ trưa từ {time} ({long})",
+ "9sps25": "Đặc hay lỏng",
+ "1bki7xi": "Đi ngoài lỏng, toàn nước từ ba lần trở lên trong một ngày có thể là nhiễm trùng đường ruột. Hãy cho bú hoặc uống thường xuyên, và gọi bác sĩ nhi nếu kéo dài quá một ngày, có máu, hoặc bé tiểu ít hơn bình thường.",
+ "17ryu39": "Hôm nay đến giờ",
+ "715wev": "Cũng trong hôm nay",
+ "pm2k9r": "Ghi hôm nay vào một giờ (chưa) thuộc nếp sinh hoạt.",
+ "1kzvs2o": {
+  "other": "{n} chủ đề"
+ },
+ "moia3g": {
+  "other": "{n} độ tuổi"
+ },
+ "2d02gm": "Đặc hay lỏng?",
+ "1lxzxt9": "Ngủ trưa hay ngủ đêm?",
+ "140i5ei": "Trên đồng hồ, giấc ngủ trưa được vẽ bằng nét đứt, giấc ngủ đêm bằng nét liền.",
+ "1p39zt2": "Tên",
+ "1jhplr9": "Địa điểm (không bắt buộc)",
+ "1a4g4pt": "Địa chỉ, hoặc cách tìm đến",
+ "jzrxn4": "Những ngày của bé yêu, trong một cuốn nhật ký nhỏ.",
+ "1iudbcb": "Có người muốn tham gia",
+ "1wsths9": "Để sau",
+ "bnyqa": "Từ giờ, chỉ khuôn mặt, vân tay hoặc mật mã của bạn mới mở được cuốn nhật ký nhỏ của Little Log.",
+ "us92jl": "Khuôn mặt, vân tay hoặc mật mã của bạn sẽ mở cuốn nhật ký nhỏ của Little Log.",
+ "1r432a3": "Chỉ kiểm tra xem có đúng là bạn không"
 }

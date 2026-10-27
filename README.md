@@ -23,10 +23,16 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   allergies flagged), and how much was eaten; each meal of the day keeps its own time in the routine
 - **Potty training**: pee, poo, both, nothing yet or stayed dry; on the potty, the toilet or an accident; and whether they asked to go.
   Stats show the potty and the accidents per day
+- **Solid or wet**: a poo says how it was (hard, solid, soft, or wet / runny) on the diaper and potty forms, and as an optional row on the
+  one-tap pop-ups; it shows in the day's list, in Stats (counts per kind) and in the doctor's report, and three or more wet, runny poos in
+  a day get a note in Stats about tummy bugs and when to call
 - **Daycare and school** (from 3 months old; the Day page's Drop-off): where the child was dropped off (the usual place for the age,
   daycare, preschool or school, or the last one used: a childminder's, the grandparents', an after-school club, or one typed in), who
-  dropped them off, and who will pick them up and when ("Grandpa picks up at 3:15 PM"). While the child is there, a banner says where
-  and who is coming, and whoever picks them up taps **Picked up**: the pick-up is an entry of their own, so a grandparent who may not
+  dropped them off, and who will pick them up and when ("Grandpa picks up at 3:15 PM"). At the grandparents', a babysitter's, a
+  childminder's or a friend's house the form asks whose, offering the family's own names (the family tree's grandparents and
+  great-grandparents, as the children call them; the babysitters, caregivers and friends in the log), and every place can have a
+  **location** (an address, or how to find it), remembered for the next drop-off there on every phone. While the child is there, a
+  banner says where, with whom and who is coming, and whoever picks them up taps **Picked up**: the pick-up is an entry of their own, so a grandparent who may not
   change other people's entries can log it too. The stay lights up the clock's outer track; a day can be logged afterwards in one go;
   Stats show the days there and the time there
 - **The family calendar** (Month tab → Add to the calendar): exams, appointments, matches or games, lessons, school holidays and parties
@@ -76,7 +82,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   evening, then the night, which counts with the evening before it: the routine's day runs from 6 AM to 6 AM) with a line at the time now. A feed, a meal of solid food, a nap, a kind of play or a medicine that happened within 45 minutes of the same time
   on most of the last 7 days (and on at least 3) is part of the routine, with what it usually is (how long, how much, which medicine and
   dose). Nothing is set by hand and nothing is stored: it's worked out from the log every time, so it moves when the baby's day does.
-  Today's times are ticked off as they're logged, and the next one is shown on top. Diapers, wake-ups, vomiting and health notes are
+  Today's times are ticked off as they're logged, and the next one is shown on top; what was logged today at another time (a nap at
+  an unusual hour) is listed under **Also today**, and before there is a routine everything logged today shows under **Today so far**,
+  so a nap just added is on the page at once. Diapers, wake-ups, vomiting and health notes are
   left out: they don't keep to a clock. Daycare, school, homework, and lessons and clubs keep to the days of the week instead: they are
   worked out for each day of the week over the last 4 weeks (school at 8:30, Mon – Fri; swimming on Tuesdays), come back on those days
   only, and the other days' times are listed under the day's
@@ -99,7 +107,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   top, the foods list flags them, logging an allergen warns straight away, the medicine form warns when the medicine (or one of its family:
   Augmentin for a penicillin allergy, Tylenol for paracetamol) is one the child is allergic to and asks before logging it, and the doctor's
   report lists them
-- **Guide tab**: for 8-to-16-year-olds, **puberty**: what to expect and when (and when to see the doctor), how to talk about it, and their
+- **Guide tab**: every part of it (the newborn worries, toddlers and preschoolers, school age, teenagers, puberty, food, medicines, play,
+  health checks, month by month, tutorials) is a twirl-down of its own, closed to start with and saying how much is inside; only the
+  pediatrician, the health record and **Right now** stay open on the page. For 8-to-16-year-olds, **puberty**: what to expect and when (and when to see the doctor), how to talk about it, and their
   privacy (some things are theirs to share; ask before writing about their body, periods or feelings in a log the family shares). For
   teenagers, sleep, mental health (and what to do at once if they talk about hurting themselves), phones and life
   online, alcohol, vaping and drugs, relationships, sex and consent, periods, spots and acne, food, body image and sport (and a knock to
@@ -158,12 +168,16 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 - **People's contact details** (phone, work, notes) that each person adds for themselves, visible to those allowed to see the family list
 - **Appearance**: match the phone, light, dark, or automatic by **sunrise and sunset** (worked out from the phone's time zone, no location
   needed); switching plays a short sunset into dark or sunrise into light
-- **Sleep timer**, **month calendar** with coloured dots, **stats** (7/14/30 days)
+- **Sleep timer**, **month calendar** with coloured dots, **stats** (7/14/30 days). A sleep is a **nap or a night's sleep**: the
+  "Fell asleep" pop-up and the sleep form have the two chips, set from the time it began (from 6 AM to 6 PM, a nap) until one is chosen;
+  on the day clock a nap is a dashed ray and a dashed arc, a night's sleep a solid one, and the list and the banner say Napped / Napping
 - **Health checklist** (blue hands/feet, clicking hips, belly bulge, jaundice…) with "call your doctor" prompts
 - **Security and sharing** (Family tab): invites, the activity log, encryption, the security code and your phones in one twirl-down,
   which opens by itself when something needs checking
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters*, *Medical assistants* and *Friends*; per-person check boxes for exactly what
-  they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**. Parents get a private **activity log** of who did what.
+  they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**: a request to join pops up on the
+  parent's phone as it arrives, with the security check and **Approve** / **Deny** there and then, or **Later** (it stays on the Family tab,
+  with the badge). Parents get a private **activity log** of who did what.
 - **Family tree** (Family tab): the family as the tree's **roots**: a detailed tree above the ground (its crown, boughs and birds, the
   sun or the moon, the hill with its flowers) and below it the children as the newest root tips just under the trunk, the parents
   below them, the grandparents deeper and the great-grandparents deepest, aunts and uncles as side roots with their children. Painted as a soft watercolour (washes with pigment edges, paper grain) of
@@ -207,14 +221,16 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   helmets, trampolines, screens). The Guide shows each child's age and the next one, and every age in the family with Everyone.
   **Learning to swim**: when lessons can begin (around 1, and formal lessons by 4), what to look for in a class, and water safety;
   from a child's first birthday a note on the Day page says it is a good time to begin, until closed
-- **The first screen**: a new phone asks how you'd like to use Little Log. **Just this phone** keeps everything on the phone, with no
+- **The first screen**: the first screens (welcome, sign-in, join) look like the rest of the app: the app's badge and a line on top, the
+  choices as painted tiles in the day clock's colours. A new phone asks how you'd like to use Little Log. **Just this phone** keeps everything on the phone, with no
   account; **Share with family** signs in with an email to start a log the family shares, or to join one; **Moving from another phone?**
   restores the backup file made on the old phone, with its passphrase. The choice is remembered. A log kept on the phone only can share
   later from the Family tab (**Share with family**), and its entries wait to be taken into the new log
 - **Locked-down accounts**: email one-time code + security check (CAPTCHA), **two-step verification** (required for parents), an
   **app lock** (More → App lock: Face ID / fingerprint with the phone passcode as fallback, on by default on a phone with a screen lock,
   or a PIN of 4 to 8 digits chosen in the app, kept only as a salted hash in the Keychain / Keystore, with Face ID / fingerprint as an
-  optional shortcut; five wrong PINs start a wait that doubles; it locks when the app opens and after a chosen time away), secrets in
+  optional shortcut; five wrong PINs start a wait that doubles; it locks when the app opens and after a chosen time away; the phone's
+  own prompt says "Just checking it's you" and one warm line naming the app once), secrets in
   the **Keychain / Keystore**, "sign out everywhere", in-app account deletion
 - **End-to-end encryption**: the server can't read the baby's name, entries, notes or health data. Phones hold the keys (Keychain / Keystore); a recovery code
   protects against losing every phone; keys change automatically when someone leaves or loses a phone

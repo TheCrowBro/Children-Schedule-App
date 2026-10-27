@@ -220,9 +220,13 @@ const Sync = (() => {
     await Auth.rpc('set_my_details', { p_baby: b, p_blob: blob, p_epoch: epoch });
     const me = st.people.find(p => p.is_you); if (me) { me.info = Guide.cleanDetails(d); me.details_epoch = epoch; }
   }
+  // (the latest call wins: a list asked for just before a request was decided must not come back after the decision and show it again)
+  let adminGen = 0;
   async function loadAdmin() {   // parents only
+    const gen = ++adminGen;
     const [reqs, inv] = await Promise.all([Auth.rpc('list_requests', { p_baby: db.meta.babyId }), Auth.rpc('list_invites', { p_baby: db.meta.babyId })]);
     for (const r of reqs) { r.baby_id = db.meta.babyId; r.qrVerified = await E2EE.verifyRequest(r); r.fingerprint = r.device_pub ? await E2EE.fingerprint(r.device_pub) : ''; }
+    if (gen !== adminGen) return;
     st.requests = reqs; st.invites = inv;
   }
   /** Phones of people in this log (parents see everyone's) and whether they hold keys yet. Phones without keys are waiting for approval. */

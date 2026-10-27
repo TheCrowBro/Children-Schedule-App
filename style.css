@@ -301,6 +301,15 @@ details.tips ul{margin:0 0 6px;padding-inline-start:20px;line-height:1.5;font-si
 .backupnudge .row{display:flex;flex-direction:column;gap:6px;flex:none;margin:0}
 /* The first screen: three big choices; More → Cloud backup lit for a moment when arrived at from the backup step or the reminder */
 .wbtn{display:flex;text-align:start;width:100%;margin-top:10px;padding:12px 14px}.wbtn small{display:block;font-weight:400;color:var(--mute);margin-top:3px;font-size:13px;line-height:1.35}.wbtn.p small{color:inherit;opacity:.85}
+/* ---- the first screens (welcome, sign-in, join…) look like the rest of the app: the badge and a line on top, the choices as painted tiles */
+.gated .hero{display:flex;flex-direction:column;align-items:center;gap:8px;margin:6px 0 16px;text-align:center}
+.gated .hero svg{width:92px;height:92px;filter:drop-shadow(0 10px 14px rgba(70,50,30,.28))}
+.gated .hero p{margin:0;font-family:var(--serif);font-style:italic;font-size:16px;color:var(--mute)}
+.gated .card>b:first-child{font-family:var(--serif);font-size:20px;font-weight:600;display:flex;align-items:center;gap:8px;line-height:1.25}
+.gated .card>b:first-child .ic{width:1.2em;height:1.2em}
+.wbtn{align-items:center;gap:12px;border-radius:18px 15px 18px 14px/15px 18px 14px 18px;border-inline-start:6px solid var(--c,var(--line));background:radial-gradient(circle at 6% 50%,var(--cw,transparent),transparent 50%),var(--card);color:var(--ink);box-shadow:0 6px 16px -12px rgba(70,50,30,.45)}
+.wbtn .wi{flex:none;width:46px;height:46px;border-radius:50%;background:var(--cw,var(--wash2));display:grid;place-items:center}.wbtn .wi .ic{width:28px;height:28px}
+.wbtn>span:last-child{flex:1;min-width:0}.wbtn b{font-size:17px}
 .card.lit{outline:3px solid #f2b84b;outline-offset:2px}
 /* The PIN pad: on the lock screen and in the sheets that choose or ask for the PIN */
 .pinpad{margin:10px auto 0;max-width:260px}.pinpad .pdots{font-size:22px;letter-spacing:8px;min-height:32px;text-align:center;margin-bottom:8px;color:var(--ink)}
@@ -308,6 +317,8 @@ details.tips ul{margin:0 0 6px;padding-inline-start:20px;line-height:1.5;font-si
 .clock .carc{fill:none;stroke:var(--g-care);stroke-width:5;stroke-linecap:round;opacity:.55}
 .banner .brow.care small{display:block;font-weight:400;opacity:.85}
 .clock .ray.approx path:not(.hitl){stroke-dasharray:3 3}
+/* a nap: a dashed ray and a dashed arc; a night's sleep stays solid */
+.clock .ray.nap path:not(.hitl){stroke-dasharray:6 4}.clock .sarc.nap{stroke-dasharray:9 8}
 .ev .t .approx{color:var(--mute);margin-inline-end:1px}
 .cal button.tripday{border-color:var(--trip);box-shadow:inset 0 -3px 0 var(--trip)}
 .legend .tripkey i{border-radius:2px;background:var(--trip)}
@@ -369,6 +380,11 @@ details.pix figcaption small{display:block;margin-top:4px;color:var(--mute);font
 ul.credits{margin:0 16px 10px;padding-inline-start:18px;font-size:13px;line-height:1.5}ul.credits li{margin-bottom:6px}
 .credits .url{overflow-wrap:anywhere;color:var(--mute)}
 details.gd[data-grp=credits]>.note{margin:0 16px 12px}
+/* the Guide's parts, each a twirl-down headed like a section (its heading stays an h2 for the page's outline) */
+details.sec{margin:0 0 4px}details.sec[open]{margin-bottom:14px}
+details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 2px 6px;min-height:44px;border-bottom:1px dashed var(--line)}
+details.sec>summary::-webkit-details-marker{display:none}details.sec>summary h2{margin:0;flex:1}details.sec>summary small{color:var(--mute);font-size:12px;white-space:nowrap}
+details.sec[open]>summary{border-bottom-color:transparent;margin-bottom:6px}
 .tabs .tl{font-style:normal;max-width:100%;padding:0 1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Right to left (Arabic, Hebrew, Persian, Urdu): the layout above uses start/end, so it mirrors itself; these are the rest */
 [dir=rtl] .ev::before{left:auto;right:6px}
@@ -388,7 +404,9 @@ details.gd[data-grp=credits]>.note{margin:0 16px 12px}
 .rslot .rb{flex:1;min-width:0}.rslot .rb small{display:block;color:var(--mute)}
 .rslot .rs{font-size:13px;font-weight:700;white-space:nowrap;padding:3px 9px;border-radius:99px}
 .rs.ok{color:var(--ink);background:var(--wash1)}.rs.now,.rs.next{background:var(--brand);color:var(--on-brand)}.rs.past{color:var(--mute)}
-.rslot.past{opacity:.62}
+.rslot.past{opacity:.62}.routine.today .rslot{border-inline-start-style:dashed}
+/* the drop-off's names to pick from (the family's own people); the one chosen is marked */
+.mini.names{flex-wrap:wrap}.mini.names button.on{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}.mini.names:empty{display:none}
 .rnow{display:flex;align-items:center;gap:8px;margin:2px 0 10px;color:var(--health-ink);font:700 12px system-ui,-apple-system,sans-serif}
 .rnow::after{content:'';flex:1;border-top:2px solid currentColor}
 .tabs button span{padding:3px 12px}

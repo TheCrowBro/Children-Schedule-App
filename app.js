@@ -59,6 +59,8 @@ const SYMPTOMS = [
 const URGENT = ['Blue lips or face', 'Fever', 'Fast / noisy breathing', 'Very sleepy / hard to wake', 'Refusing feeds'];
 const STOOL = [N_('Black/tarry'), N_('Green'), N_('Yellow'), N_('Brown'), N_('Red-streaked'), N_('White/pale')];
 const STOOL_WARN = ['Red-streaked', 'White/pale'];
+// Solid or wet: how a poo was (hard pellets hint at constipation; a run of wet ones at a tummy bug). Saved in English, like the colours.
+const STOOL_TEXTURE = [N_('Hard'), N_('Solid'), N_('Soft'), N_('Wet / runny')], RUNNY = 'Wet / runny';
 const PLAYS = [N_('Tummy time'), N_('Play'), N_('Walk / outing'), N_('Bath'), N_('Skin-to-skin')];
 const WAKE_WHY = [N_('Hungry'), N_('Diaper'), N_('Gas / fussy'), N_('Pain'), N_('Unknown')];
 const SIDES = [N_('Left'), N_('Right'), N_('Both')], MILKS = [N_('Breast milk'), N_('Formula')], AMOUNTS = [N_('Spit-up'), N_('Medium'), N_('Large')];
@@ -174,8 +176,8 @@ function describeEntry(e) {
       if (d.kind === 'cup') return [d.ml ? __('Cup {amt}', { amt: fmtVol(d.ml) }) : __('Cup'), [d.milk && __(d.milk), d.formula].filter(Boolean).join(' · ')];
       return [d.side ? __('Breast – {side}', { side: __(d.side) }) : __('Breast'), d.min ? min(d.min) : ''];
     case 'diaper':
-      return [d.pee && d.poo ? __('Pee + Poo') : d.pee ? __('Pee') : d.poo ? __('Poo') : __('Dry'), [d.poo && d.color && __(d.color), d.rash && __('rash')].filter(Boolean).join(', ')];
-    case 'sleep': return e.end ? [__('Slept {time}', { time: fmtDur((e.end - e.ts) / MIN) }), __('until {time}', { time: fmtTime(e.end) })] : [__('Sleeping now…'), __('tap to set wake time')];
+      return [d.pee && d.poo ? __('Pee + Poo') : d.pee ? __('Pee') : d.poo ? __('Poo') : __('Dry'), [d.poo && d.texture && __(d.texture), d.poo && d.color && __(d.color), d.rash && __('rash')].filter(Boolean).join(', ')];
+    case 'sleep': { const t = { time: fmtDur((e.end - e.ts) / MIN) }; return e.end ? [isNap(e) ? __('Napped {time}', t) : __('Slept {time}', t), __('until {time}', { time: fmtTime(e.end) })] : [isNap(e) ? __('Napping now…') : __('Sleeping now…'), __('tap to set wake time')]; }
     case 'wake': return [d.min ? __('Awake {n} min', { n: d.min }) : __('Awake'), d.why ? __(d.why) : ''];
     case 'vomit': return [__('Vomit – {amount}', { amount: __(d.amount || N_('small')) }), d.projectile ? __('projectile') : ''];
     case 'play': return [__(d.activity || 'Play'), d.min ? min(d.min) : ''];
@@ -184,13 +186,13 @@ function describeEntry(e) {
     case 'meal': return [__(d.meal || 'Meal'), [(d.foods || []).map(f => __(f)).join(', '), d.amount && __(d.amount)].filter(Boolean).join(' · ')];
     case 'potty': {
       const what = d.dry ? __('Stayed dry') : d.pee && d.poo ? __('Pee + Poo') : d.pee ? __('Pee') : d.poo ? __('Poo') : d.accident ? '' : __('Nothing yet');
-      return [d.accident ? (what ? __('Accident: {what}', { what }) : __('Accident')) : what, [!d.dry && !d.accident && __(d.where || 'Potty'), d.asked && __('asked to go')].filter(Boolean).join(' · ')];
+      return [d.accident ? (what ? __('Accident: {what}', { what }) : __('Accident')) : what, [!d.dry && !d.accident && __(d.where || 'Potty'), d.poo && d.texture && __(d.texture), d.asked && __('asked to go')].filter(Boolean).join(' · ')];
     }
     case 'moment': return [d.own ? d.what || '' : __(d.what || 'Big moment'), ''];
     case 'vaccine': return [d.own ? d.name || '' : __(d.name || 'Vaccine'), [d.dose && __('dose {n}', { n: d.dose }), d.place].filter(Boolean).join(' · ')];
     case 'visit': return [__(d.kind || 'Checkup'), [d.who, d.why].filter(Boolean).join(' · ')];
     case 'growth': return [[d.weight && fmtWeight(d.weight), d.height && fmtLength(d.height)].filter(Boolean).join(' · ') || __('Measurement'), d.head ? __('head {size}', { size: fmtLength(d.head) }) : ''];
-    case 'care': { const out = pickupAfter(e); return [placeName(d), [out ? __('until {time}', { time: fmtTime(out.ts) }) : '', d.who && __('dropped off by {name}', { name: d.who }), out ? '' : planText(d)].filter(Boolean).join(' · ')]; }
+    case 'care': { const out = pickupAfter(e); return [placeName(d), [out ? __('until {time}', { time: fmtTime(out.ts) }) : '', withText(d), d.who && __('dropped off by {name}', { name: d.who }), out ? '' : planText(d), d.location].filter(Boolean).join(' · ')]; }
     case 'pickup': return [d.place ? __('Picked up from {place}', { place: placeName(d) }) : __('Picked up'), d.who ? __('by {name}', { name: d.who }) : ''];
     case 'plan': return [d.title || __(d.kind || 'Other'), [planWhen(e), d.title && __(d.kind || 'Other')].filter(Boolean).join(' · ')];
     case 'study': return [__(d.kind || 'Homework'), [d.subject, d.min && __('{n} min', { n: d.min }), d.pages && __n('{n} page', '{n} pages', d.pages)].filter(Boolean).join(' · ')];
@@ -224,6 +226,9 @@ const dayKid = () => (tab === 'day' ? curKid() : viewKid());
 const scoped = () => { const k = dayKid(), log = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'moment' && e.type !== 'plan'); return k === 'all' ? log : log.filter(e => childOf(e) === k); };   // (big moments are kept apart)
 const eventsOnDay = day => scoped().filter(e => e.ts >= day && e.ts < day + DAY).sort((a, b) => a.ts - b.ts);
 const activeSleep = id => db.events.find(e => e.type === 'sleep' && !e.end && (!id || childOf(e) === id));
+/** A nap or a night's sleep: as marked on the entry, or else by when it began (from 6 AM to 6 PM, a nap). Naps are drawn dashed on the clock. */
+const napTime = ts => { const h = new Date(ts).getHours(); return h >= 6 && h < 18; };
+const isNap = e => (e.data && typeof e.data.nap === 'boolean' ? e.data.nap : napTime(e.ts));
 const initial = k => esc([...kidName(k)][0] || '?').toUpperCase();
 const avatar = (k, cls = '') => `<span class="av ${cls}" style="--k:${k.color}">${initial(k)}</span>`;
 
@@ -282,6 +287,9 @@ const clockAt = m => { const t = new Date(); t.setHours(0, m, 0, 0); return fmtT
 /** Who will pick up, and when, as the drop-off says. */
 const planText = d => (d.plan && Number.isInteger(d.at) ? __('{name} picks up at {time}', { name: d.plan, time: clockAt(d.at) }) : d.plan ? __('{name} picks up', { name: d.plan })
   : Number.isInteger(d.at) ? __('pick-up at {time}', { time: clockAt(d.at) }) : '');
+/** Who has the child there (the grandparent, the babysitter…), and the rest of a drop-off's line: the pick-up plan and the place's location. */
+const withText = d => (d.with ? __('with {name}', { name: d.with }) : '');
+const careLine = d => [withText(d), planText(d), d.location].filter(Boolean).join(' · ');
 /** The names of the people in the family's log (to choose who drops off and who picks up), and this phone's own. */
 const people = () => (Sync.st && Sync.st.people) || [];
 const peopleNames = () => [...new Set(people().map(p => (p.display_name || '').trim()).filter(Boolean))].slice(0, 8);
@@ -469,6 +477,26 @@ function openPlan(ev, pre = {}) {
 /** Names to choose from for who drops off or picks up: the family's people, then the names used lately. */
 const whoNames = () => [...new Set([...peopleNames(), ...db.events.filter(e => e.type === 'care' || e.type === 'pickup').sort((a, b) => b.ts - a.ts).slice(0, 40)
   .flatMap(e => [e.data.who, e.data.plan]).map(x => (x || '').trim()).filter(Boolean)])].slice(0, 8);
+/** The places where someone of the family's own has the child: whose names to offer (the tree's grandparents and great-grandparents; the
+    babysitters, caregivers and friends in the log), and how to ask. */
+const CARE_WITH = {
+  Grandparents: { tree: ['gp', 'ggp'], roles: ['family'], label: N_('Which grandparent? (optional)') },
+  Babysitter: { roles: ['babysitter'], label: N_('Which babysitter? (optional)') },
+  Childminder: { roles: ['caregiver'], label: N_('Which childminder? (optional)') },
+  "Friend's house": { roles: ['friend'], label: N_('Whose house? (optional)') },
+};
+const careWithLabel = pl => (CARE_WITH[pl] ? CARE_WITH[pl].label : N_('Who looks after them there? (optional)'));
+/** The names to offer for a place: from the family tree first, else the people of that role in the log; and whoever was named for the
+    place before. */
+const careNames = pl => {
+  const c = CARE_WITH[pl] || {}, t = (Sync.st && Sync.st.tree) || db.meta.tree;
+  const tree = c.tree && t && Array.isArray(t.parents) ? FamilyTree.walk(t).filter(w => c.tree.includes(w.kind) && !w.p.gone).map(w => w.p.call || w.p.name) : [];
+  const log = tree.length && c.tree ? [] : people().filter(p => (c.roles || []).includes(p.role) && !p.is_you).map(p => p.display_name);
+  const before = db.events.filter(e => e.type === 'care' && e.data.place === pl && e.data.with).sort((a, b) => b.ts - a.ts).map(e => e.data.with);
+  return [...new Set([...tree, ...log, ...before].map(x => (x || '').trim()).filter(Boolean))].slice(0, 8);
+};
+/** Where a place is, as typed the last time a child was dropped off there (the log is shared, so every phone offers it). */
+const lastLocation = (place, own) => { const e = db.events.filter(e => e.type === 'care' && e.data.location && !!e.data.own === !!own && e.data.place === place).sort((a, b) => b.ts - a.ts)[0]; return e ? e.data.location : ''; };
 /** The pick-up after a drop-off (the banner's button): who picked the child up (the one planned, this phone's person, or another) and when. */
 function openPickup(c) {
   if (!Sync.can('add')) return toast(__("You don't have permission to do that"));
@@ -546,7 +574,7 @@ function render() {
   const g = Acct.gate();
   document.body.classList.toggle('gated', !!g); $('#helpBtn').hidden = !!g;
   if (g) {
-    $('#sleepBanner').hidden = true; $('#syncLine').textContent = ''; $('#kidBar').hidden = true; $('#av').hidden = true; $('#famSw').hidden = true; $('#view').innerHTML = g.html + langMini(); g.bind(); Icons.paint($('#view'));
+    $('#sleepBanner').hidden = true; $('#syncLine').textContent = ''; $('#kidBar').hidden = true; $('#av').hidden = true; $('#famSw').hidden = true; $('#view').innerHTML = (g.plain ? '' : Acct.heroHtml()) + g.html + langMini(); g.bind(); Icons.paint($('#view'));
     $('#langMini').onchange = e => setLanguage(e.target.value); lastScreen = 'signin';
     return;
   }
@@ -566,8 +594,8 @@ function render() {
   const sleepers = kids().map(k => [k, activeSleep(k.id)]).filter(x => x[1]), away = kids().map(k => [k, atCare(k.id)]).filter(x => x[1]), bn = $('#sleepBanner');
   bn.hidden = !sleepers.length && !away.length;
   if (!bn.hidden) {
-    bn.innerHTML = sleepers.map(([k, s], i) => `<div class="brow"><span>😴 ${multi ? `<b>${esc(kidName(k))}</b> ` : ''}${__h('Asleep since {time} ({long})', { time: fmtTime(s.ts), long: fmtDur((Date.now() - s.ts) / MIN) })}</span><button ${i ? '' : 'id="wakeBtn"'} data-wake="${s.id}">${__h('Woke up')}</button></div>`).join('')
-      + away.map(([k, c]) => `<div class="brow care"><span>🏫 ${multi ? `<b>${esc(kidName(k))}</b> ` : ''}${__h('At {place} since {time}', { place: placeName(c.data), time: fmtTime(c.ts) })}${planText(c.data) ? `<small>${esc(planText(c.data))}</small>` : ''}</span>${Sync.can('add') ? `<button data-pickup="${c.id}">${__h('Picked up')}</button>` : ''}</div>`).join('');
+    bn.innerHTML = sleepers.map(([k, s], i) => `<div class="brow"><span>😴 ${multi ? `<b>${esc(kidName(k))}</b> ` : ''}${isNap(s) ? __h('Napping since {time} ({long})', { time: fmtTime(s.ts), long: fmtDur((Date.now() - s.ts) / MIN) }) : __h('Asleep since {time} ({long})', { time: fmtTime(s.ts), long: fmtDur((Date.now() - s.ts) / MIN) })}</span><button ${i ? '' : 'id="wakeBtn"'} data-wake="${s.id}">${__h('Woke up')}</button></div>`).join('')
+      + away.map(([k, c]) => `<div class="brow care"><span>🏫 ${multi ? `<b>${esc(kidName(k))}</b> ` : ''}${__h('At {place} since {time}', { place: placeName(c.data), time: fmtTime(c.ts) })}${careLine(c.data) ? `<small>${esc(careLine(c.data))}</small>` : ''}</span>${Sync.can('add') ? `<button data-pickup="${c.id}">${__h('Picked up')}</button>` : ''}</div>`).join('');
     bn.querySelectorAll('[data-wake]').forEach(b => b.onclick = () => { const s = db.events.find(x => x.id === b.dataset.wake); if (!s) return; if (!Sync.can('edit', s)) return toast(__("You can't change this entry")); s.end = Date.now(); s.updated = stamp(); save(); render(); toast(__('Sleep saved')); });
     bn.querySelectorAll('[data-pickup]').forEach(b => b.onclick = () => { const c = db.events.find(x => x.id === b.dataset.pickup); if (c) openPickup(c); });
     Icons.paint(bn);
@@ -697,7 +725,7 @@ function clockSvg(evs, day) {
   let data = RING.map(g => `<circle class="ring" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RR[g])}"/>`).join('');
   for (const e of scoped()) if (e.type === 'sleep') {   // every sleep that overlaps what the dial shows, even one that began before it
     const s0 = Math.max(0, frac(e.ts)), s1 = Math.min(1, frac(e.end || Date.now()));
-    if (s1 > s0) data += `<path class="sarc" d="${arc(ang(s0), ang(Math.max(s1, s0 + 0.004)), RR.sleep)}"/>`;
+    if (s1 > s0) data += `<path class="sarc${isNap(e) ? ' nap' : ''}" d="${arc(ang(s0), ang(Math.max(s1, s0 + 0.004)), RR.sleep)}"/>`;   // (a nap: dashed)
   }
   // the journey: time on the move lights up the outer (railway) track of the dial, in the travel colour
   if (trip) for (const l of Travel.legs(db.events, sp.start, sp.start + sp.len, Date.now())) {
@@ -714,7 +742,7 @@ function clockSvg(evs, day) {
     // (a drop-off and a pick-up are dots on the outer track, without a ray)
     const g = groupOf(e.type).id, a = ang(frac(e.ts)), pin = g === 'care', r = pin ? rr(115) : RR[g], [x, y] = P(a, r), [d] = describe(e), k = all ? kidById(childOf(e)) : null;
     const approx = !!(e.data && e.data.approx), when = approx ? __('about {time}', { time: fmtTime(e.ts) }) : fmtTime(e.ts);
-    data += `<g class="ray${approx ? ' approx' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
+    data += `<g class="ray${approx ? ' approx' : ''}${e.type === 'sleep' && isNap(e) ? ' nap' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
       <title>${esc(when + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
       ${pin ? '' : `<path d="M${xy(a, rr(17))}L${xy(a, r - rr(5))}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
   }
@@ -904,7 +932,7 @@ function dayStats(day) {
   const feeds = of('feed').filter(e => e.data.kind !== 'solids'), diapers = of('diaper'), sleeps = scoped().filter(e => e.type === 'sleep' && e.end && e.ts >= day && e.ts < day + DAY);   // (milk feeds: a meal of solid food is counted on its own)
   return {
     day, feeds: feeds.length, solids: of('feed').length - feeds.length, ml: feeds.reduce((a, e) => a + (+e.data.ml || 0), 0),
-    pee: diapers.filter(e => e.data.pee).length, poo: diapers.filter(e => e.data.poo).length,
+    pee: diapers.filter(e => e.data.pee).length, poo: diapers.filter(e => e.data.poo).length, runny: [...diapers, ...of('potty')].filter(e => e.data.poo && e.data.texture === RUNNY).length,
     sleep: sleepMinutesOn(day), longest: Math.max(0, ...sleeps.map(e => (e.end - e.ts) / MIN)), naps: sleeps.length,
     wakes: of('wake').length, vomit: of('vomit').length, play: of('play').reduce((a, e) => a + (+e.data.min || 0), 0), health: of('health').length, meds: of('med').length,
     feedTimes: feeds.map(e => e.ts),
@@ -980,6 +1008,9 @@ function statsView() {
   const flagged = mine.filter(e => e.type === 'health' && e.ts >= addDays(today, -statDays + 1) && (e.data.symptoms || []).length).sort((a, b) => b.ts - a.ts);
   const sym = {}; flagged.forEach(e => e.data.symptoms.forEach(s => sym[s] = (sym[s] || 0) + 1));
   const poo = {}; mine.filter(e => e.type === 'diaper' && e.data.poo && e.ts >= addDays(today, -statDays + 1) && e.data.color).forEach(e => poo[e.data.color] = (poo[e.data.color] || 0) + 1);
+  // solid or wet, for the diapers and for the potty (a row each, when it was noted)
+  const tex = t => { const o = {}; mine.filter(e => e.type === t && e.data.poo && e.ts >= addDays(today, -statDays + 1) && e.data.texture).forEach(e => o[e.data.texture] = (o[e.data.texture] || 0) + 1); return Object.keys(o).length ? [[N_('Solid or wet'), Object.entries(o).map(([k, v]) => `${__(k)} ×${v}`).join(', ')]] : []; };
+  const runny = used.some(s => s.runny >= 3);
   const lowWet = used.length && per('pee') < 6 && ageDays() >= 5 && !allFrom('toddler');
   const older = allFrom('toddler'), has = k => sum(k) > 0, pct = x => new Intl.NumberFormat(I18n.locale(), { style: 'percent' }).format(x);
   return `
@@ -991,14 +1022,15 @@ function statsView() {
   ${heightWeightCard(kidById(viewKid()))}
   ${mine.length ? '' : `<div class="empty">${__h('Log a few entries and your stats will show up here.')}</div>`}
   ${lowWet ? `<div class="card alert">⚠️ ${__h('Fewer than 6 wet diapers/day on average. After the first week this can signal low intake – worth mentioning to your pediatrician.')}</div>` : ''}
+  ${runny ? `<div class="card alert">⚠️ ${__h('Three or more wet, runny poos in one day can be a tummy bug. Offer feeds or drinks often, and call your pediatrician if it goes on past a day, there is blood, or they are peeing less than usual.')}</div>` : ''}
   ${older ? card('🍽', N_('Meals'), [[N_('Meals per day'), per('meals')], [N_('Snacks per day'), per('snacks')], ...(sum('rated') ? [[N_('Ate most or all of it'), pct(sum('ateWell') / sum('rated'))]] : [])],
     [[N_('Meals and snacks per day'), chart(X, [{ name: __('meals'), color: 'var(--g-feed)', values: vals(s => s.meals) }, { name: __('snacks'), color: 'var(--g-snack)', values: vals(s => s.snacks) }], opts())]]) : ''}
   ${!older || has('feeds') ? card('🍼', older ? N_('Milk') : N_('Feeding'), older ? [[N_('Milk feeds per day'), per('feeds')], [volOz() ? N_('Milk fl oz per day') : N_('Milk ml per day'), perVol()]]
     : [[N_('Feeds per day'), per('feeds')], [N_('Avg time between feeds'), gaps.length ? fmtDur(avg(gaps)) : '–'], [volOz() ? N_('Bottle fl oz per day') : N_('Bottle ml per day'), perVol()], ...(sum('solids') ? [[N_('Solid meals per day'), per('solids')]] : [])],
     [[N_('Feeds per day'), chart(X, [{ name: __('feeds'), color: 'var(--g-feed)', values: vals(s => s.feeds) }], opts())], ...(sum('ml') ? [[older ? (volOz() ? N_('Milk fl oz per day') : N_('Milk ml per day')) : (volOz() ? N_('Bottle fl oz per day') : N_('Bottle ml per day')), chart(X, [{ name: volOz() ? __('fl oz') : __('ml'), color: 'var(--g-feed)', values: vals(s => (volOz() ? s.ml / OZ : s.ml)) }], opts())]] : [])]) : ''}
-  ${(older && !allFrom('school')) || has('potty') || has('accidents') || has('dry') ? card('🚽', N_('Potty'), [[N_('On the potty per day'), per('potty')], [N_('Accidents per day'), per('accidents')], [N_('Asked to go'), sum('asked')], ...(has('dry') ? [[N_('Stayed dry'), sum('dry')]] : [])],
+  ${(older && !allFrom('school')) || has('potty') || has('accidents') || has('dry') ? card('🚽', N_('Potty'), [[N_('On the potty per day'), per('potty')], [N_('Accidents per day'), per('accidents')], [N_('Asked to go'), sum('asked')], ...(has('dry') ? [[N_('Stayed dry'), sum('dry')]] : []), ...tex('potty')],
     [[N_('Potty and accidents per day'), chart(X, [{ name: __('on the potty'), color: 'var(--g-diaper)', values: vals(s => s.potty) }, { name: __('accidents'), color: 'var(--g-oops)', values: vals(s => s.accidents) }], opts({ mode: 'group' }))]]) : ''}
-  ${!older || has('pee') || has('poo') ? card('💧', N_('Diapers'), [[N_('Pee per day'), per('pee')], [N_('Poo per day'), per('poo')], ...(Object.keys(poo).length ? [[N_('Poo colours'), Object.entries(poo).map(([k, v]) => `${__(k)} ×${v}`).join(', ')]] : [])],
+  ${!older || has('pee') || has('poo') ? card('💧', N_('Diapers'), [[N_('Pee per day'), per('pee')], [N_('Poo per day'), per('poo')], ...tex('diaper'), ...(Object.keys(poo).length ? [[N_('Poo colours'), Object.entries(poo).map(([k, v]) => `${__(k)} ×${v}`).join(', ')]] : [])],
     [[N_('Pee and poo per day'), chart(X, [{ name: __('pee'), color: 'var(--g-diaper)', values: vals(s => s.pee) }, { name: __('poo'), color: 'var(--g-poo)', values: vals(s => s.poo) }], opts({ mode: 'group' }))]]) : ''}
   ${card('😴', N_('Sleep'), [[N_('Sleep per day'), fmtDur(avg(used.map(s => s.sleep)))], [N_('Longest stretch (avg)'), fmtDur(avg(used.map(s => s.longest)))], [N_('Naps/sleeps per day'), per('naps')], [N_('Wake-ups per night'), per('wakes')]],
     [[N_('Hours asleep per day'), chart(X, [{ name: __('hours asleep'), color: 'var(--g-sleep)', values: vals(s => s.sleep / 60) }], opts({ fmt: v => __('{h}h', { h: v }) }))], [N_('Wake-ups per night'), chart(X, [{ name: __('wake-ups'), color: 'var(--g-sleep)', values: vals(s => s.wakes) }], opts())]])}
@@ -1043,8 +1075,17 @@ function routineView(now = Date.now()) {
   const head = kids().length > 1 ? `<h2>${esc(kidName(kidById(k)))}</h2>` : '';
   const how = `<p class="note rhow">${allFrom('toddler') ? __h('Worked out from the last {days} days: meals, milk, sleep, play and medicines that happen within {minutes} minutes of the same time on more than half of the days logged. It updates by itself as the routine changes. Diapers and the potty are left out.', { days: Routine.DAYS, minutes: Routine.WINDOW })
     : __h('Worked out from the last {days} days: feeds, sleep, play and medicines that happen within {minutes} minutes of the same time on more than half of the days logged. It updates by itself as the routine changes. Diapers are left out.', { days: Routine.DAYS, minutes: Routine.WINDOW })}</p>`;
-  if (!R.enough) return `${head}<div class="empty">⏰ ${__h('Your routine will show up here after a few days of logging.')}<br><small>${__hn('{n} day logged in the last week so far.', '{n} days logged in the last week so far.', R.logged)}</small></div>${how}`;
-  if (!R.slots.length) return `${head}<div class="empty">⏰ ${__h('No regular times yet.')}<br><small>${__h('Anything that happens at about the same time on most days will show up here.')}</small></div>${how}`;
+  // today's entries no routine time accounts for (a nap just logged, a feed at an unusual hour), and before there is a routine everything
+  // logged today, so the page shows the day as it happens (the routine's day starts at 6 AM)
+  const d0 = (() => { const d = new Date(now); d.setHours(0, Routine.DAY_START, 0, 0); return d.getTime() <= now ? d.getTime() : d.getTime() - DAY; })();
+  const matched = new Set(T.list.map(o => o.entry).filter(Boolean));
+  const extra = mine.filter(e => e.ts >= d0 && e.ts <= now && Routine.keyOf(e) && !matched.has(e)).sort((a, b) => a.ts - b.ts);
+  const todayHtml = (title, note) => (extra.length ? `<h2>${__h(title)}</h2>${note ? `<p class="note rhow">${__h(note)}</p>` : ''}<div class="routine today">${extra.map(e => {
+    const [t, w] = describe(e), detail = e.type === 'sleep' && !e.end ? '' : w;
+    return `<div class="card rslot rtoday" style="--c:var(--${e.type})" data-entry="${esc(e.id)}"><div class="rt">${esc(fmtTime(e.ts))}</div><div class="rb"><b>${e.data && e.data.kind === 'solids' ? '🥄' : TYPES[e.type].icon} ${esc(t)}</b>${detail ? `<small>${esc(detail)}</small>` : ''}</div></div>`;
+  }).join('')}</div>` : '');
+  if (!R.enough) return `${head}${todayHtml(N_('Today so far'))}<div class="empty">⏰ ${__h('Your routine will show up here after a few days of logging.')}<br><small>${__hn('{n} day logged in the last week so far.', '{n} days logged in the last week so far.', R.logged)}</small></div>${how}`;
+  if (!R.slots.length) return `${head}${todayHtml(N_('Today so far'))}<div class="empty">⏰ ${__h('No regular times yet.')}<br><small>${__h('Anything that happens at about the same time on most days will show up here.')}</small></div>${how}`;
   const nx = T.next, ni = nx && TYPES[nx.slot.type];
   const next = nx ? `<div class="card rnext" style="--c:var(--${nx.slot.type})"><span class="rni">${nx.slot.key === 'solids' ? '🥄' : ni.icon}</span><span><small>${__h('Next in the routine')}</small><b>${esc(name(nx.slot))}</b><small>${esc(nx.tomorrow && startOfDay(nx.at) > startOfDay(now) ? __('tomorrow at about {time}', { time: fmtTime(nx.at) })
     : nx.state === 'now' ? __('about now ({time})', { time: fmtTime(nx.at) }) : __('at about {time}, in {wait}', { time: fmtTime(nx.at), wait: fmtDur((nx.at - now) / MIN) }))}</small></span></div>` : '';
@@ -1069,7 +1110,7 @@ function routineView(now = Date.now()) {
   const weekHtml = week.length ? `<h2>${__h('Other days of the week')}</h2><div class="routine week">${week.map(s => `<div class="card rslot" style="--c:var(--${s.type})" data-slot="${esc(s.key)}">
     <div class="rt">${esc(clock(s.at))}</div><div class="rb"><b>${TYPES[s.type].icon} ${esc(name(s))}</b>${what(s) ? `<small>${esc(what(s))}</small>` : ''}<small>${esc(weekdaysText(s.weekdays))}</small></div></div>`).join('')}</div>` : '';
   const weekly = R.slots.some(s => s.weekdays) ? `<p class="note rhow">${__h('Daycare, school, homework, and lessons and clubs are worked out from the last 4 weeks, for each day of the week.')}</p>` : '';
-  return `${head}${next}<div class="routine">${rows}</div>${weekHtml}${how}${weekly}`;
+  return `${head}${next}<div class="routine">${rows}</div>${todayHtml(N_('Also today'), N_('Logged today at a time that is not part of the routine (yet).'))}${weekHtml}${how}${weekly}`;
 }
 
 // ---------- Report for the doctor ----------
@@ -1127,6 +1168,7 @@ function reportBlocks(kidId, { days, every, notes }, now = Date.now()) {
       ...(anyOf('potty') || anyOf('accidents') ? [[__('On the potty per day'), String(avg('potty'))], [__('Accidents per day'), String(avg('accidents'))]] : []),
       ...(!older || anyOf('pee') || anyOf('poo') ? [[__('Pee per day'), String(avg('pee'))], [__('Poo per day'), String(avg('poo'))]] : []),
       ...(R.evs.some(e => e.type === 'diaper' && e.data.poo && e.data.color) ? [[__('Poo colours'), count(R.evs.filter(e => e.type === 'diaper' && e.data.poo && e.data.color).map(e => __(e.data.color)))]] : []),
+      ...(R.evs.some(e => (e.type === 'diaper' || e.type === 'potty') && e.data.poo && e.data.texture) ? [[__('Solid or wet'), count(R.evs.filter(e => (e.type === 'diaper' || e.type === 'potty') && e.data.poo && e.data.texture).map(e => __(e.data.texture)))]] : []),
       [__('Sleep per day'), fmtDur(avg('sleep'))], [__('Longest stretch (avg)'), fmtDur(avg('longest'))], [__('Wake-ups per night'), String(avg('wakes'))],
       [__('Vomit'), vomits.length ? __n('{n} time', '{n} times', vomits.length) + (vomits.some(e => e.data.projectile) ? ` (${__('projectile')}: ${vomits.filter(e => e.data.projectile).length})` : '') : __('none')],
       ...(hot ? [[__('Highest temperature'), `${hot.data.temp}° · ${when(hot)}`]] : []),
@@ -1631,8 +1673,11 @@ function guideView() {
   };
   const card = (grp, c) => `<details class="gd" data-grp="${grp}${c.id}" ${openGroups.has(grp + c.id) ? 'open' : ''}><summary><span class="gi">${c.icon}</span><span class="gt"><b>${__h(c.title)}</b></span><span class="chev" aria-hidden="true">›</span></summary>
     <p>${__h(c.body)}</p>${c.call ? `<p class="call">${__h(c.call, { sos })}</p>` : ''}${grp === 'g' ? picsHtml(c.id) : ''}</details>`;
-  const newborn = `<h2>${__h('Common with newborns')}</h2>${Guide.COMMON.map(c => card('g', c)).join('')}`;
-  const toddler = `<h2>${__h('Toddlers and preschoolers')}</h2>${Guide.TODDLER.map(c => card('t', c)).join('')}`;
+  // each part of the Guide folds (the pediatrician, the health record and Right now stay on the page); open ones stay open while the app runs
+  const sec = (id, title, inner, count) => `<details class="sec" data-grp="sec${id}" ${openGroups.has('sec' + id) ? 'open' : ''}><summary><h2>${title}</h2>${count ? `<small>${count}</small>` : ''}<span class="chev" aria-hidden="true">›</span></summary>${inner}</details>`;
+  const topics = n => __hn('{n} topic', '{n} topics', n);
+  const newborn = sec('newborn', __h('Common with newborns'), Guide.COMMON.map(c => card('g', c)).join(''), topics(Guide.COMMON.length));
+  const toddler = sec('toddler', __h('Toddlers and preschoolers'), Guide.TODDLER.map(c => card('t', c)).join(''), topics(Guide.TODDLER.length));
   // tutorials: one twirl-down of videos, a twirl-down per topic inside it, for the ages on the page (every age, when no child has a birth date)
   const tutAges = who.filter(k => k.birth).map(k => months(k)), tuts = Guide.TUTORIALS.filter(t => !tutAges.length || tutAges.some(m => m >= t.ages[0] && m <= t.ages[1]));
   const tutorials = !tuts.length ? '' : `<details class="gd tut" data-grp="videos" ${openGroups.has('videos') ? 'open' : ''}><summary><span class="gi">▶️</span><span class="gt"><b>${__h('Tutorials: videos worth watching')}</b><small>${__h("First meals, snacks, potty training, first aid, safe sleep and more, from health services and children's hospitals")}</small></span><span class="chev" aria-hidden="true">›</span></summary>
@@ -1640,23 +1685,21 @@ function guideView() {
     ${tuts.map(t => `<details class="gd med" data-grp="vid${t.id}" ${openGroups.has('vid' + t.id) ? 'open' : ''}><summary><span class="gi">${t.icon}</span><span class="gt"><b>${__h(t.title)}</b><small>${__hn('{n} video', '{n} videos', t.videos.length)}</small></span><span class="chev" aria-hidden="true">›</span></summary>
       ${t.videos.map(([id, title, who, mins]) => `<button class="vrow video" data-yt="${id}"><b>${esc(title)}</b><small>${esc(who)} · ${__h('{n} min', { n: mins })}</small></button>`).join('')}</details>`).join('')}</details>`;
   // puberty: from 8 (it can start then) until 16, before the teenage topics
-  const puberty = some(k => months(k) >= 96 && months(k) < 192) ? `<h2>${__h('Puberty')}</h2>${Guide.PUBERTY.map(c => card('pb', c)).join('')}` : '';
-  const school = `<h2>${__h('School age')}</h2>${Guide.SCHOOL.map(c => card('s', c)).join('')}`;
-  const teens = `<h2>${__h('Teenagers')}</h2>${Guide.TEEN.map(c => card('n', c)).join('')}`;
-  const food = `<h2>${__h('Food')}</h2>
-  <details class="gd" data-grp="gsolids" ${openGroups.has('gsolids') ? 'open' : ''}><summary><span class="gi">🥄</span><span class="gt"><b>${__h('Starting solid foods')}</b><small>${__h('From around 6 months, with the key allergens early')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
-    ${solidsGuideHtml(sos)}</details>`;
-  const meds = `<h2>${__h('Medicines')}</h2>
-  ${medsHtml()}`, checks = `<h2>${__h('Health checks')}</h2>${Guide.CHECKS.map(c => card('h', c)).join('')}`;
+  const puberty = some(k => months(k) >= 96 && months(k) < 192) ? sec('puberty', __h('Puberty'), Guide.PUBERTY.map(c => card('pb', c)).join(''), topics(Guide.PUBERTY.length)) : '';
+  const school = sec('school', __h('School age'), Guide.SCHOOL.map(c => card('s', c)).join(''), topics(Guide.SCHOOL.length));
+  const teens = sec('teens', __h('Teenagers'), Guide.TEEN.map(c => card('n', c)).join(''), topics(Guide.TEEN.length));
+  const food = sec('food', __h('Food'), `<details class="gd" data-grp="gsolids" ${openGroups.has('gsolids') ? 'open' : ''}><summary><span class="gi">🥄</span><span class="gt"><b>${__h('Starting solid foods')}</b><small>${__h('From around 6 months, with the key allergens early')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    ${solidsGuideHtml(sos)}</details>`, topics(1));
+  const meds = sec('meds', __h('Medicines'), medsHtml(), topics(Guide.MEDS.length + 1)), checks = sec('checks', __h('Health checks'), Guide.CHECKS.map(c => card('h', c)).join(''), topics(Guide.CHECKS.length));
   // toys for the ages in the family: each child's age and the one after it (what suits them now, and what comes next); with Everyone, every age in it
   const toyIds = Guide.TOYS.map(t => t.id), want = new Set();
   for (const k of who) { const i = toyIds.indexOf(stg(k) === 'grown' ? 'teen' : stg(k)); if (i >= 0) { want.add(toyIds[i]); if (toyIds[i + 1]) want.add(toyIds[i + 1]); } }
   if (!want.size) { want.add('newborn'); want.add('baby'); }
   const toyCard = t => `<details class="gd" data-grp="y${t.id}" ${openGroups.has('y' + t.id) ? 'open' : ''}><summary><span class="gi">${t.icon}</span><span class="gt"><b>${__h(t.title)}</b></span><span class="chev" aria-hidden="true">›</span></summary>
     <p>${__h(t.body)}</p><ul>${t.toys.map(x => `<li>${__h(x)}</li>`).join('')}</ul><p class="call">${__h(t.safety)}</p></details>`;
-  const play = `<h2>${__h('Play and activities')}</h2>${Guide.TOYS.filter(t => want.has(t.id)).map(toyCard).join('')}${card('a', Guide.SWIM)}`;
-  const milestones = `<h2>${__h('Month by month')}</h2>
-  ${msList.map(([n, M]) => milestoneDetails(+n, M)).join('')}`;
+  const toys = Guide.TOYS.filter(t => want.has(t.id));
+  const play = sec('play', __h('Play and activities'), `${toys.map(toyCard).join('')}${card('a', Guide.SWIM)}`, topics(toys.length + 1));
+  const milestones = sec('months', __h('Month by month'), msList.map(([n, M]) => milestoneDetails(+n, M)).join(''), __hn('{n} age', '{n} ages', msList.length));
   const head = `${doctorHtml()}
   ${Sync.can('health') && kidById(viewKid()) ? recordButton(kidById(viewKid())) : ''}
   <p class="note emer"><b>${__h('Emergency?')}</b> ${older ? __h('Call {sos} for blue lips or face, trouble breathing, a child who is hard to wake, or a seizure.', { sos }) : __h('Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.', { sos })}</p>
@@ -2051,12 +2094,13 @@ function openQuick(type) {
   if (type === 'feed') body += `
     <div id="qBreast"><label class="f">${__h('Side')}${ifYouLike}</label>${big('qside', SIDES.map(v => [v, __h(v)]), '')}
       <label class="f">${__h('About how long?')}${ifYouLike}</label>${big('qmin', [5, 10, 15, 20, 30].map(v => [v, __h('{n} min', { n: v })]), '')}</div>`;
-  if (type === 'diaper') { instant = true; body = `<label class="f">${__h('Tap one to save')}</label>${big('qdia', [['pee', '💧 ' + __h('Pee')], ['poo', '💩 ' + __h('Poo')], ['both', __h('Pee + Poo')]], '', 'save')}`; }
+  const texRow = `<label class="f">${__h('Solid or wet?')}${ifYouLike}</label>${big('qtex', STOOL_TEXTURE.map(v => [v, __h(v)]), '')}`;   // (noted for a poo; a pee ignores it)
+  if (type === 'diaper') { instant = true; body = `${texRow}<label class="f">${__h('Tap one to save')}</label>${big('qdia', [['pee', '💧 ' + __h('Pee')], ['poo', '💩 ' + __h('Poo')], ['both', __h('Pee + Poo')]], '', 'save')}`; }
   if (type === 'meal') body = `<label class="f">${__h('Which meal?')}</label>${big('qmeal', MEALS.map(v => [v, __h(v)]), mealAt(Date.now()))}
     <label class="f">${__h('How much did they eat?')}${ifYouLike}</label>${big('qeat', EATEN.map(v => [v, __h(v)]), '')}`;
-  if (type === 'potty') { instant = true; body = `<label class="f">${__h('Tap one to save')}</label>${big('qpot', [['pee', '💧 ' + __h('Pee')], ['poo', '💩 ' + __h('Poo')], ['both', __h('Pee + Poo')], ['accident', __h('Accident')]], '', 'save')}`; }
+  if (type === 'potty') { instant = true; body = `${texRow}<label class="f">${__h('Tap one to save')}</label>${big('qpot', [['pee', '💧 ' + __h('Pee')], ['poo', '💩 ' + __h('Poo')], ['both', __h('Pee + Poo')], ['accident', __h('Accident')]], '', 'save')}`; }
   if (type === 'vomit') { instant = true; title = older ? __('Vomit') : __('Spit-up'); body = `<label class="f">${__h('Tap one to save')}</label>${big('qvom', [['Spit-up', __h('A little')], ['Large', __h('More than usual')]], '', 'save')}`; }
-  if (type === 'sleep') title = __('Fell asleep');
+  if (type === 'sleep') { title = __('Fell asleep'); body = `<label class="f">${__h('Nap or night sleep?')}</label>${big('qnap', [['1', '☀️ ' + __h('Nap')], ['0', '🌙 ' + __h('Night sleep')]], napTime(Date.now()) ? '1' : '0')}<p class="note">${__h('A nap is drawn as a dashed line on the clock, night sleep as a solid one.')}</p>`; }
   const close = popup(`<h3>${T.icon} ${esc(title)}</h3>${who}<label class="f">${__h('When?')}</label>${big('qago', [[0, __h('Just now')], [15, __h('~{n} min ago', { n: 15 })], [30, __h('~{n} min ago', { n: 30 })], [60, __h('~1 hr ago')]], 0)}
     ${body}<div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Cancel')}</button>${instant ? '' : `<button class="btn p" id="qSave">${__h('Save')}</button>`}</div>`);
   const S = $('#sheet'), val = n => { const c = S.querySelector(`[name=${n}]:checked`); return c ? c.value : ''; };
@@ -2069,10 +2113,10 @@ function openQuick(type) {
     let data = { ...est };
     if (type === 'feed') data = val('qkind') === 'breast' ? { kind: 'breast', ...(val('qside') ? { side: val('qside') } : {}), ...(val('qmin') ? { min: +val('qmin') } : {}), ...est } : { kind: val('qkind') === 'cup' ? 'cup' : 'bottle', ml: +val('qml') || 90, milk: val('qmilk') || 'Formula', ...est };
     if (type === 'meal') data = { meal: val('qmeal') || mealAt(ts), foods: [], ...(val('qeat') ? { amount: val('qeat') } : {}), ...est };
-    if (type === 'potty') { const v = val('qpot'); data = v === 'accident' ? { pee: false, poo: false, accident: true, ...est } : { pee: v !== 'poo', poo: v !== 'pee', where: 'Potty', ...est }; }
-    if (type === 'diaper') { const v = val('qdia'); data = { pee: v !== 'poo', poo: v !== 'pee', rash: false, ...est }; }
+    if (type === 'potty') { const v = val('qpot'); data = v === 'accident' ? { pee: false, poo: false, accident: true, ...est } : { pee: v !== 'poo', poo: v !== 'pee', where: 'Potty', ...(v !== 'pee' && val('qtex') ? { texture: val('qtex') } : {}), ...est }; }
+    if (type === 'diaper') { const v = val('qdia'); data = { pee: v !== 'poo', poo: v !== 'pee', rash: false, ...(v !== 'pee' && val('qtex') ? { texture: val('qtex') } : {}), ...est }; }
     if (type === 'vomit') data = { amount: val('qvom') || 'Spit-up', projectile: false, ...est };
-    if (type === 'sleep') { const busy = ids.find(id => activeSleep(id)); if (busy) return toast(__('{name} is already asleep', { name: kidName(kidById(busy)) })); }
+    if (type === 'sleep') { const busy = ids.find(id => activeSleep(id)); if (busy) return toast(__('{name} is already asleep', { name: kidName(kidById(busy)) })); data = { nap: val('qnap') === '1', ...est }; }
     for (const id of ids) {
       const d = structuredClone(data);
       if (type === 'feed' && d.kind !== 'breast' && d.milk === 'Formula') { const f = usualFormula(kidById(id)); if (f) d.formula = f; }
@@ -2154,16 +2198,16 @@ const TOURS = {
     { sel: '#view .recbtn', title: N_('The health record'), why: N_('Vaccines, doctor visits and growth charts for each child, on a page of their own.') },
     { sel: '.emer', title: N_('Emergencies'), why: N_('The signs that need emergency help straight away.') },
     { sel: '.nowcard', title: N_('Right now'), why: N_('What is common at your child\'s age: the milestones until 5, then what the school and teenage years are about.') },
-    { sel: '#view details.gd[data-grp^=t]', title: N_('Toddlers and preschoolers'), why: N_('Potty training, picky eating, tantrums, sleep, teeth, screens and car seats, for 1 to 5 year olds.') },
-    { sel: '#view details.gd[data-grp^=s]', title: N_('School age'), why: N_('Sleep, screens and staying safe online, homework and reading, friends and bullying, teeth, bedwetting, worries, puberty, head lice and getting about safely, for 6 to 12 year olds.') },
-    { sel: '#view details.gd[data-grp^=n]', title: N_('Teenagers'), why: N_('Sleep, mental health, life online, alcohol, vaping and drugs, relationships and consent, periods, skin, food and sport, driving, and growing independence. Shown from 10, as what comes next.') },
-    { sel: 'details[data-grp=gsolids]', title: N_('Food'), why: N_('Starting solid foods from around 6 months, the key allergens early, and what to do about a reaction.') },
-    { sel: '#view details.gd[data-grp^=g]:not([data-grp=gsolids])', title: N_('Common worries'), why: N_('What is normal with a newborn, and when to call. Some have pictures, kept out of sight until you tap them.') },
-    { sel: 'details[data-grp=omenu]', title: N_('Medicines'), why: N_('Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.') },
-    { sel: '#view details.gd[data-grp^=y]', title: N_('Toys and play'), why: N_('The kinds of toy that suit your child\'s age and the next one, with what to watch for.') },
+    { sel: '#view details.sec[data-grp=sectoddler]', title: N_('Toddlers and preschoolers'), why: N_('Potty training, picky eating, tantrums, sleep, teeth, screens and car seats, for 1 to 5 year olds.') },
+    { sel: '#view details.sec[data-grp=secschool]', title: N_('School age'), why: N_('Sleep, screens and staying safe online, homework and reading, friends and bullying, teeth, bedwetting, worries, puberty, head lice and getting about safely, for 6 to 12 year olds.') },
+    { sel: '#view details.sec[data-grp=secteens]', title: N_('Teenagers'), why: N_('Sleep, mental health, life online, alcohol, vaping and drugs, relationships and consent, periods, skin, food and sport, driving, and growing independence. Shown from 10, as what comes next.') },
+    { sel: '#view details.sec[data-grp=secfood]', title: N_('Food'), why: N_('Starting solid foods from around 6 months, the key allergens early, and what to do about a reaction.') },
+    { sel: '#view details.sec[data-grp=secnewborn]', title: N_('Common worries'), why: N_('What is normal with a newborn, and when to call. Some have pictures, kept out of sight until you tap them.') },
+    { sel: '#view details.sec[data-grp=secmeds]', title: N_('Medicines'), why: N_('Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.') },
+    { sel: '#view details.sec[data-grp=secplay]', title: N_('Toys and play'), why: N_('The kinds of toy that suit your child\'s age and the next one, with what to watch for.') },
     { sel: 'details[data-grp=aswim]', title: N_('Learning to swim'), why: N_('When swim lessons can begin, what to look for in a class, and staying safe around water.') },
-    { sel: '#view details.gd[data-grp^=h]', title: N_('Health checks'), why: N_('Vaccines and when to call, what checkups look at, and what the growth chart percentiles mean.') },
-    { sel: '#view details.gd[data-grp^=m]', title: N_('Month by month'), why: N_('Milestones for every month. A reminder pops up on each month birthday.') },
+    { sel: '#view details.sec[data-grp=secchecks]', title: N_('Health checks'), why: N_('Vaccines and when to call, what checkups look at, and what the growth chart percentiles mean.') },
+    { sel: '#view details.sec[data-grp=secmonths]', title: N_('Month by month'), why: N_('Milestones for every month. A reminder pops up on each month birthday.') },
   ],
   health: [
     { sel: '.backbar', title: N_('Back'), why: N_('This page is a step away from the rest: tap here to go back to where you came from, or "Today" for today\'s page. The tabs below work as always.') },
@@ -2499,8 +2543,11 @@ function openSheet(type, ev, pre) {
     <div id="fSolids">${foodsPicker(d.foods || [], ev ? [childOf(ev)] : dayKid() === 'all' ? kids().map(k => k.id) : [dayKid()])}${L(N_('How much'))}${radios('amount', Foods.PORTIONS, d.amount)}</div>`;
   if (type === 'diaper') body = `
     ${L(N_('What was in it?'))}<div class="chips">${chip('pee', 1, '💧 ' + __h('Pee'), d.pee ?? !editing)}${chip('poo', 1, '💩 ' + __h('Poo'), d.poo)}${chip('rash', 1, __h('Rash'), d.rash, 'warn')}</div>
-    <div id="dColor">${L(N_('Poo colour'))}${radios('color', STOOL, d.color, '')}</div>`;
+    <div id="dColor">${L(N_('Solid or wet?'))}${radios('texture', STOOL_TEXTURE, d.texture, '')}${L(N_('Poo colour'))}${radios('color', STOOL, d.color, '')}</div>`;
+  // a nap or a night's sleep (a new entry follows the time it began until one is chosen); a nap is drawn dashed on the clock
   if (type === 'sleep') body = `
+    ${L(N_('Nap or night sleep?'))}<div class="chips">${chip('nap', '1', '☀️ ' + __h('Nap'), editing && typeof d.nap === 'boolean' ? d.nap : napTime(defTs), '', true)}${chip('nap', '0', '🌙 ' + __h('Night sleep'), editing && typeof d.nap === 'boolean' ? !d.nap : !napTime(defTs), '', true)}</div>
+    <p class="note">${__h('A nap is drawn as a dashed line on the clock, night sleep as a solid one.')}</p>
     <label class="f">${__h('Woke up at')} <small>${__h('(leave empty if still asleep)')}</small></label><input id="end" type="datetime-local" value="${ev && ev.end ? toLocalInput(ev.end) : ''}">
     <div class="mini"><button type="button" data-endnow>${__h('Now')}</button></div>`;
   if (type === 'wake') body = `${L(N_('Awake for (minutes)'))}${num('min', d.min, N_('e.g. 20'))}${L(N_('Why?'))}${radios('why', WAKE_WHY, d.why)}`;
@@ -2514,6 +2561,8 @@ function openSheet(type, ev, pre) {
     const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
     body = `${L(type === 'care' ? N_('Where?') : N_('From where?'))}<div class="chips">${Stages.CARE.map(x => chip('cplace', x, __h(x), x === cur, '', true)).join('')}${chip('cplace', '__other', __h('Somewhere else'), cur === '__other', '', true)}</div>
       <input id="cother" type="text" maxlength="40" value="${esc(p.own ? p.place || '' : '')}" placeholder="${__h('Name of the place')}" aria-label="${__h('Name of the place')}"${cur === '__other' ? '' : ' hidden'}>
+      ${type === 'care' ? `<div id="cWith"${CARE_WITH[cur] ? '' : ' hidden'}><label class="f" id="cwithL">${__h(careWithLabel(cur))}</label><input id="cwith" type="text" maxlength="60" value="${esc(editing ? d.with || '' : '')}" placeholder="${__h('Their name')}"><div class="mini names" id="cwithNames"></div></div>
+      ${L(N_('Location (optional)'))}<input id="cloc" type="text" maxlength="120" value="${esc(editing ? d.location || '' : '')}" placeholder="${__h('Address, or how to find it')}">` : ''}
       ${L(type === 'care' ? N_('Dropped off by (optional)') : N_('Picked up by (optional)'))}<input id="cwho" type="text" maxlength="60" list="cnames" value="${esc(editing ? d.who || '' : myName())}">
       ${type === 'care' ? `${L(N_('Who picks up? (optional)'))}<input id="cplan" type="text" maxlength="60" list="cnames" value="${esc(editing ? d.plan || '' : '')}" placeholder="${__h('e.g. Grandpa')}">
       ${L(N_('Pick-up time (optional)'))}<input id="cat" type="time" value="${editing && Number.isInteger(d.at) ? hhmm(d.at) : ''}">
@@ -2533,6 +2582,7 @@ function openSheet(type, ev, pre) {
     const cur = d.dry ? 'dry' : d.pee && d.poo ? 'both' : d.pee ? 'pee' : d.poo ? 'poo' : editing ? 'none' : 'pee';
     body = `${L(N_('What happened?'))}<div class="chips">${POTTY.map(([v, ic, l]) => chip('pwhat', v, ic + __h(l), v === cur, '', true)).join('')}</div>
     <div id="pWhere">${L(N_('Where?'))}${radios('where', POTTY_WHERE, d.accident ? 'Accident' : d.where || 'Potty')}</div>
+    <div id="pTexture">${L(N_('Solid or wet?'))}${radios('texture', STOOL_TEXTURE, d.texture, '')}</div>
     <div class="chips" style="margin-top:12px">${chip('asked', 1, __h('Asked to go'), d.asked)}</div>`;
   }
   if (type === 'vaccine') {
@@ -2583,9 +2633,19 @@ function openSheet(type, ev, pre) {
   const val = n => { const c = checked(n); return c ? c.value : ''; };
   const sync = () => {
     if (S.querySelector('.fsum')) S.querySelector('.fsum').textContent = [...S.querySelectorAll('[name=food]:checked')].map(c => __(c.value)).join(', ');
-    if (type === 'potty') $('#pWhere').hidden = val('pwhat') === 'dry';
+    if (type === 'potty') { $('#pWhere').hidden = val('pwhat') === 'dry'; $('#pTexture').hidden = !/^(poo|both)$/.test(val('pwhat')); }
+    if (type === 'sleep' && !editing && !S.dataset.napPicked) { const n = napTime(fromLocalInput($('#ts').value) || defTs); S.querySelector('[name=nap][value="1"]').checked = n; S.querySelector('[name=nap][value="0"]').checked = !n; }
     if (type === 'vaccine') $('#vother').hidden = $('#vname').value !== '__other';
     if (type === 'care' || type === 'pickup') $('#cother').hidden = val('cplace') !== '__other';
+    if (type === 'care') {   // at the grandparents', a babysitter's, a childminder's or a friend's: whose, from the family's own names; and where the place is, as typed last time
+      const pl = val('cplace'), own = pl === '__other', w = $('#cWith'); w.hidden = !CARE_WITH[pl];
+      if (!w.hidden) {
+        $('#cwithL').textContent = __(careWithLabel(pl));
+        $('#cwithNames').innerHTML = careNames(pl).map(n => `<button type="button" data-cwith="${esc(n)}" class="${n === $('#cwith').value.trim() ? 'on' : ''}">${esc(n)}</button>`).join('');
+        $('#cwithNames').querySelectorAll('[data-cwith]').forEach(b => b.onclick = () => { $('#cwith').value = b.dataset.cwith; sync(); });
+      }
+      if (!editing && !$('#cloc').dataset.typed) $('#cloc').value = lastLocation(own ? $('#cother').value.trim() : pl, own);
+    }
     if (type === 'study') $('#sPages').hidden = val('skind') !== 'Reading';
     if (type === 'growth') {   // (head size until 3 years old, the age of the charts)
       const k = growthKid(), at = fromLocalInput($('#ts').value) || defTs; $('#gHead').hidden = !(d.head || !k || !k.birth || Stages.months(k.birth, at) < 36);
@@ -2606,8 +2666,9 @@ function openSheet(type, ev, pre) {
     }
     if (type === 'diaper' && $('#dColor')) $('#dColor').hidden = !checked('poo');
   };
-  S.onchange = e => { if (e && e.target && (e.target.id === 'formulaSel' || e.target.id === 'formula')) S.dataset.formulaPicked = '1'; sync(); };
-  delete S.dataset.formulaPicked; sync();
+  S.onchange = e => { if (e && e.target && (e.target.id === 'formulaSel' || e.target.id === 'formula')) S.dataset.formulaPicked = '1'; if (e && e.target && e.target.name === 'nap') S.dataset.napPicked = '1'; sync(); };
+  delete S.dataset.formulaPicked; delete S.dataset.napPicked; sync();
+  if ($('#cloc')) { delete $('#cloc').dataset.typed; $('#cloc').oninput = () => { $('#cloc').dataset.typed = '1'; }; }
   // ml ⇄ fl oz: the switch changes the unit for the whole app and converts the number already typed
   if ($('#volFlip')) $('#volFlip').onclick = () => {
     const v = $('#ml').value, ml = v === '' ? '' : volOut(+v); db.meta.vol = volOz() ? 'ml' : 'oz'; Store.save(db);
@@ -2633,10 +2694,10 @@ function openSheet(type, ev, pre) {
     if (data.kind === 'solids' && !data.foods.length) return toast(__('Choose at least one food'));
     if (type === 'diaper') {
       data = { pee: !!checked('pee'), poo: !!checked('poo'), rash: !!checked('rash') };
-      if (data.poo) data.color = val('color');
+      if (data.poo) { data.color = val('color'); if (val('texture')) data.texture = val('texture'); }
       if (!data.pee && !data.poo && !confirm(__('Save as a dry diaper?'))) return;
     }
-    if (type === 'sleep') { end = $('#end').value ? fromLocalInput($('#end').value) : undefined; if (end && end <= ts) return toast(__('Wake time must be after bedtime')); }
+    if (type === 'sleep') { end = $('#end').value ? fromLocalInput($('#end').value) : undefined; if (end && end <= ts) return toast(__('Wake time must be after bedtime')); data = { nap: val('nap') === '1' }; }
     if (type === 'wake') data = { min: n('#min'), why: val('why') };
     if (type === 'vomit') data = { amount: val('amount'), projectile: !!checked('projectile') };
     if (type === 'play') data = { activity: val('activity'), min: n('#min') };
@@ -2666,6 +2727,8 @@ function openSheet(type, ev, pre) {
       if (!pl || (pl === '__other' && !other)) return toast(__('Choose where'));
       data = { place: pl === '__other' ? other : pl, ...(pl === '__other' ? { own: true } : {}), ...(person ? { who: person } : {}) };
       if (type === 'care') {
+        const w = $('#cWith').hidden ? '' : $('#cwith').value.trim().slice(0, 60), loc = $('#cloc').value.trim().slice(0, 120);
+        if (w) data.with = w; if (loc) data.location = loc;
         const plan = $('#cplan').value.trim().slice(0, 60), at = $('#cat').value;
         if (plan) data.plan = plan;
         if (/^\d\d:\d\d$/.test(at)) data.at = +at.slice(0, 2) * 60 + +at.slice(3);
@@ -2677,6 +2740,7 @@ function openSheet(type, ev, pre) {
     if (type === 'potty') {
       const w = val('pwhat') || 'none', where = val('where') || 'Potty';
       data = { pee: w === 'pee' || w === 'both', poo: w === 'poo' || w === 'both', ...(w === 'dry' ? { dry: true } : where === 'Accident' ? { accident: true } : { where }), ...(checked('asked') ? { asked: true } : {}) };
+      if (data.poo && val('texture')) data.texture = val('texture');
     }
     if (ev && ev.data && ev.data.approx && Math.floor(ts / MIN) === Math.floor(ev.ts / MIN)) data.approx = true;   // still the estimated time
     const who = multi ? [...S.querySelectorAll('[name=kid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
@@ -2713,7 +2777,7 @@ Sync.onChange = () => {
   const a = document.activeElement;
   if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return syncLine();
   if (!$('#sheet').hidden) return syncLine();
-  render();
+  render(); Acct.promptRequests();   // (a request to join the log, on a parent's phone: a sheet with Approve)
 };
 // Phone app: links opened by the OS (invite links, cloud sign-in returns) and the Android back button.
 Native.onUrl(async url => {

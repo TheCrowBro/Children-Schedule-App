@@ -72,8 +72,9 @@ const Native = (() => {
     /** Face ID / fingerprint, with the device passcode as fallback. */
     Biometric: {
       async available() { try { const r = await P().BiometricAuth.checkBiometry(); return !!(r.isAvailable || r.deviceIsSecure); } catch (e) { return false; } },
-      async authenticate(reason) {
-        try { await P().BiometricAuth.authenticate({ reason, cancelTitle: __('Cancel'), allowDeviceCredential: true, iosFallbackTitle: __('Use passcode'), androidTitle: 'Little Log', androidSubtitle: reason }); return true; }
+      /** `reason` is the line under the title (Android) or the prompt's text (iOS, which adds the app's name itself); `title` the Android title. */
+      async authenticate(reason, title) {
+        try { await P().BiometricAuth.authenticate({ reason, cancelTitle: __('Cancel'), allowDeviceCredential: true, iosFallbackTitle: __('Use passcode'), androidTitle: title || __("Just checking it's you") }); return true; }
         catch (e) { return false; }
       },
     },

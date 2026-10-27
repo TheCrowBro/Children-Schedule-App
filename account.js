@@ -110,7 +110,7 @@ const Acct = (() => {
     if (!Native.is) return { html: appOnlyHtml(), bind() {} };
     if (!Auth.configured) { if (!db.meta.localOnly) return { html: setupHtml(), bind: bindSetup }; }
     else if (!Auth.signedIn && !db.meta.localOnly) return welcomed() ? { html: loginHtml(), bind: bindLogin } : { html: welcomeHtml(), bind: bindWelcome };
-    if (Lock.locked) return { html: lockHtml(), bind: bindLock };
+    if (Lock.locked) return { html: lockHtml(), bind: bindLock, plain: true };   // (no badge over the lock)
     if (db.meta.backupStep && !Auth.signedIn) return { html: backupHtml(), bind: bindBackupStep };
     if (Auth.configured && Auth.signedIn) {   // (a log kept on this phone only skips the account's screens)
       if (!F.loaded || F.loading) return { html: `<div class="card"><div class="empty">${__h('Loading…')}</div></div>`, bind() {} };
@@ -122,6 +122,15 @@ const Acct = (() => {
     }
     return null;
   }
+  /** The app's badge (the baby with the day clock's rays, as on the icon) and a line about the app, at the top of the first screens, so
+      they look like the rest of the app from the first tap. */
+  const RAYS = ['#d9a066', '#7fb0a6', '#8a94c0', '#a89bc4', '#d49aa6', '#c9756e', '#7fa6c4', '#a3b17a'];
+  const heroHtml = () => `<div class="hero"><svg viewBox="0 0 512 512" width="92" height="92" aria-hidden="true">${RAYS.map((c, i) => [0, 8, 16].map(j => `<rect x="245" y="10" width="22" height="76" rx="11" fill="${c}" transform="rotate(${(i + j) * 15} 256 256)"/>`).join('')).join('')}
+    <circle cx="256" cy="256" r="128" fill="#ffffff" stroke="#e8e1d5" stroke-width="5"/><circle cx="196" cy="282" r="17" fill="#f3b9b2" opacity=".75"/><circle cx="316" cy="282" r="17" fill="#f3b9b2" opacity=".75"/>
+    <circle cx="212" cy="246" r="13" fill="#4a4337"/><circle cx="300" cy="246" r="13" fill="#4a4337"/><path d="M216 292q40 36 80 0" stroke="#4a4337" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M256 130q-18-24 12-34" stroke="#4a4337" stroke-width="11" fill="none" stroke-linecap="round"/></svg>
+    <p>${__h("Your little one's days, in one little log.")}</p></div>`;
+  /** A choice on the first screen: a painted icon in a soft wash of one of the day clock's colours, like the Day page's buttons. */
+  const tile = (id, icon, group, title, sub, cls = '') => { const c = GCOLOR[Theme.isDark() ? 'dark' : 'light'][group]; return `<button class="btn wbtn ${cls}" id="${id}" style="--c:${c};--cw:${Kids.rgba(c, 0.28)}"><span class="wi">${icon}</span><span><b>${__h(title)}</b><small>${__h(sub)}</small></span></button>`; };
   const appOnlyHtml = () => `<div class="card"><b>${__h('Little Log is a phone app')}</b><p class="note">${__h('This screen only runs inside the Little Log app for iPhone and Android. Please install it from the App Store or Google Play.')}</p></div>`;
   const setupHtml = () => `<div class="card"><b>${__h("Sign-in isn't set up yet")}</b>
     <p class="note">${__h('This copy of Little Log has no account service configured, so family sync and sign-in are unavailable. See {file} to turn them on.', { file: 'SETUP.md' })}</p>
@@ -135,10 +144,10 @@ const Acct = (() => {
   const markWelcome = () => { try { localStorage.setItem('ll.welcome', '1'); } catch (e) { /* storage blocked: it may show again */ } };
   const SHARE_WHY = N_("Sign in with your email to start a log the family shares, or to join one. It is kept safe in the family's cloud, end-to-end encrypted, so a new phone just signs in.");
   const welcomeHtml = () => (W.step === 'restore' ? restoreHtml() : `<div class="card welcome"><b>${__h('How would you like to use Little Log?')}</b>
-    <button class="btn p wbtn" id="wLocal"><span><b>${__h('Just this phone')}</b><small>${__h('Everything stays on this phone. You can share it with the family later, from the Family tab.')}</small></span></button>
-    <button class="btn wbtn" id="wShare"><span><b>${__h('Share with family')}</b><small>${__h(SHARE_WHY)}</small></span></button>
-    <button class="btn wbtn" id="wRestore"><span><b>${__h('Moving from another phone?')}</b><small>${__h('Restore the backup you made there.')}</small></span></button></div>`);
-  const restoreHtml = () => `<div class="card"><b>${__h('Restore a backup')}</b>
+    ${tile('wLocal', '🔒', 'sleep', N_('Just this phone'), N_('Everything stays on this phone. You can share it with the family later, from the Family tab.'))}
+    ${tile('wShare', '👨‍👩‍👧', 'feed', N_('Share with family'), SHARE_WHY)}
+    ${tile('wRestore', '☁️', 'diaper', N_('Moving from another phone?'), N_('Restore the backup you made there.'))}</div>`);
+  const restoreHtml = () => `<div class="card"><b>☁️ ${__h('Restore a backup')}</b>
     <p class="note">${__h('Type the passphrase you chose when you made the backup, then choose the backup file (from iCloud Drive, Google Drive, Dropbox, OneDrive or wherever you saved it).')}</p>
     <label class="f">${__h('Backup passphrase ({n}+ characters)', { n: Cloud.MIN_PASS })}</label><input id="rsPass" type="password" autocomplete="off">
     <button class="btn p" id="rsFile" style="width:100%;margin-top:12px">${__h('Choose the backup file')}</button><input type="file" id="rsFileIn" accept="application/json,.json" hidden>
@@ -278,7 +287,7 @@ const Acct = (() => {
   }
 
   // ---- sign-in (email code + optional CAPTCHA) -------------------------------------------------
-  const loginHtml = () => `<div class="card"><b>${L.step === 'email' ? __h('Sign in') : __h('Check your email')}</b>
+  const loginHtml = () => `<div class="card"><b>${L.step === 'email' ? '📨 ' + __h('Sign in') : '🔑 ' + __h('Check your email')}</b>
     ${L.step === 'email'
       ? `<p class="note">${__h("Enter your email and we'll send you a one-time code. No password needed. First time? This creates your account.")}</p>
          <label class="f">${__h('Email')}</label><input id="lEmail" type="email" inputmode="email" autocomplete="email" value="${esc(L.email)}" placeholder="${__h('you@example.com')}">
@@ -310,7 +319,7 @@ const Acct = (() => {
         await Auth.sendCode(L.email, cap); L.step = 'code'; L.fails = 0;
       });
     };
-    if (L.step === 'email') { $('#lSend').onclick = send; $('#lEmail').onkeydown = e => e.key === 'Enter' && send(); renderCaptcha(); }
+    if (L.step === 'email') { $('#lSend').onclick = send; $('#lEmail').onkeydown = e => { if (e.key === 'Enter') send(); }; renderCaptcha(); }
     else {
       const verify = () => {
         const code = $('#lCode').value.replace(/\s/g, '');
@@ -323,7 +332,7 @@ const Acct = (() => {
           L.step = 'email'; await afterSignIn();
         });
       };
-      $('#lVerify').onclick = verify; $('#lCode').onkeydown = e => e.key === 'Enter' && verify();
+      $('#lVerify').onclick = verify; $('#lCode').onkeydown = e => { if (e.key === 'Enter') verify(); };
       $('#lBack').onclick = () => { L.step = 'email'; L.err = ''; render(); };
     }
   }
@@ -347,7 +356,7 @@ const Acct = (() => {
         M.busy = false; render(); Sync.run(true); if (pendingJoin) processPending().then(render);
       } catch (e) { M.busy = false; M.err = /invalid|expired/i.test(err(e)) ? N_('That code is not right. Try the newest one.') : err(e); render(); }
     };
-    $('#mGo').onclick = go; $('#mCode').onkeydown = e => e.key === 'Enter' && go(); $('#mOut').onclick = () => signOut(false);
+    $('#mGo').onclick = go; $('#mCode').onkeydown = e => { if (e.key === 'Enter') go(); }; $('#mOut').onclick = () => signOut(false);
   }
   function enrollHtml() {
     if (!M.enroll && !M.busy) beginEnroll();
@@ -387,7 +396,7 @@ const Acct = (() => {
   // ---- onboarding: create a log or join one ----------------------------------------------------
   const onboardHtml = () => {
     const n = db.events.length;
-    return `<div class="card"><b>${__h('Welcome, {email}', { email: Auth.email })}</b><p class="note">${__h('Create a log for your baby, or join one a family member shared with you.')}</p>
+    return `<div class="card"><b>🌳 ${__h('Welcome, {email}', { email: Auth.email })}</b><p class="note">${__h('Create a log for your baby, or join one a family member shared with you.')}</p>
       <label class="f">${__h('Your name (shown to the family)')}</label><input id="oMine" type="text" maxlength="60" value="${esc(O.mine)}" placeholder="${__h('e.g. Mum')}"></div>
     <div class="card"><b>👶 ${__h('New baby log')}</b>
       <p class="note">${__h('You become a parent (admin). Parents use two-step verification.')}</p>
@@ -539,6 +548,29 @@ const Acct = (() => {
     const s = Sync.st;
     const base = s.state === 'syncing' ? '⏳ ' + __('Syncing…') : s.state === 'ok' ? '✅ ' + __('Synced {when}', { when: ago(s.at) }) : s.state === 'offline' ? '📴 ' + __('Offline – will sync when connected') : s.state === 'error' ? '⚠️ ' + __('Sync problem') : __('Not synced yet');
     return base + (Sync.isParent() ? '' : ` · ${roleName(db.meta.role)}`);
+  }
+  /** The Approve and Deny buttons of the request cards in `root` (the Family tab, or the pop-up): requests to join any family you are
+      a parent in (the tree shows those of the families not shown). `after` runs once a decision is made. */
+  function bindRequests(root, after) {
+    const anyReq = id => Sync.st.requests.find(x => x.id === id) || Object.values(Sync.st.familyRequests).flat().find(x => x.id === id);
+    const checked = (name, v) => { const c = root.querySelector(`input[name=${name}][value="${v}"]`); return !!(c && c.checked); };
+    root.querySelectorAll('[data-approve]').forEach(b => b.onclick = async () => {
+      const r = anyReq(b.dataset.approve); if (!r) return;
+      if (!r.qrVerified && !checked('vchk', r.id)) return toast(__('Compare the security code with their phone, then tick "It matches"'));
+      try { await Sync.decide(r, true, { manualOk: checked('vchk', r.id) }); toast(__('Approved')); } catch (e) { toast(err(e)); }
+      after();
+    });
+    root.querySelectorAll('[data-deny]').forEach(b => b.onclick = async () => { const r = anyReq(b.dataset.deny); if (!r || !confirm(__('Deny this request?'))) return; try { await Sync.decide(r, false); } catch (e) { toast(err(e)); } after(); });
+  }
+  /** A request to join pops up on a parent's phone as it arrives (once per request while the app runs), to approve or deny there and
+      then, or leave for later: it stays on the Family tab, with the badge. Not over a sheet, the tour or the sign-in and lock screens. */
+  const prompted = new Set();
+  function promptRequests() {
+    if (!Sync.isParent() || !Sync.st.requests.length || gate() || Tour.active() || !$('#sheet').hidden) return;
+    const r = Sync.st.requests.find(x => !prompted.has(x.id)); if (!r) return;
+    prompted.add(r.id);
+    const close = popup(`<h3>👨‍👩‍👧 ${__h('Someone wants to join')}</h3>${reqCard(r)}<div class="row" style="margin-top:12px"><button class="btn" data-close>${__h('Later')}</button></div>`);
+    bindRequests($('#sheet'), () => { close(); render(); });
   }
   /** A request to join a family log, to approve or deny (`family`: its name, when it is not the log shown). */
   function reqCard(r, family) {
@@ -933,15 +965,7 @@ const Acct = (() => {
     document.querySelectorAll('[data-famopen]').forEach(b => b.onclick = () => openFamily(b.dataset.famopen, b));
     clearInterval(F.treeTimer);   // while one of your requests waits, look every 15 s for the approval
     if (Sync.st.myRequests.some(r => r.status === 'pending')) F.treeTimer = setInterval(() => { if (tab !== 'family') return clearInterval(F.treeTimer); refreshTree(); }, 15000);
-    // requests to join any family you are a parent in (the tree shows those of the families not shown)
-    const anyReq = id => Sync.st.requests.find(x => x.id === id) || Object.values(Sync.st.familyRequests).flat().find(x => x.id === id);
-    const checked = (name, v) => { const c = document.querySelector(`input[name=${name}][value="${v}"]`); return !!(c && c.checked); };
-    document.querySelectorAll('[data-approve]').forEach(b => b.onclick = async () => {
-      const r = anyReq(b.dataset.approve); if (!r) return;
-      if (!r.qrVerified && !checked('vchk', r.id)) return toast(__('Compare the security code with their phone, then tick "It matches"'));
-      try { await Sync.decide(r, true, { manualOk: checked('vchk', r.id) }); toast(__('Approved')); render(); } catch (e) { toast(err(e)); render(); }
-    });
-    document.querySelectorAll('[data-deny]').forEach(b => b.onclick = async () => { const r = anyReq(b.dataset.deny); if (!r || !confirm(__('Deny this request?'))) return; try { await Sync.decide(r, false); render(); } catch (e) { toast(err(e)); render(); } });
+    bindRequests(document, render);
     el('leave').onclick = async () => {
       if (!confirm(__('Leave this log? You will lose access unless invited again.'))) return;
       try { await Sync.removeMember(Auth.id); membersLoadedFor = null; render(); } catch (e) { toast(err(e)); }
@@ -958,6 +982,7 @@ const Acct = (() => {
       if (!confirm(__('Rescind this invite? The code stops working immediately.'))) return;
       try { await Sync.rescind(b.dataset.rescind); if (invite && invite.code === b.dataset.rescind) invite = null; render(); } catch (e) { toast(err(e)); }
     });
+    const checked = (name, v) => { const c = document.querySelector(`input[name=${name}][value="${v}"]`); return !!(c && c.checked); };
     document.querySelectorAll('[data-approvephone]').forEach(b => b.onclick = async () => {
       const d = Sync.st.devices.find(x => x.grantee === b.dataset.approvephone); if (!d) return;
       if (!checked('vchkp', d.grantee)) return toast(__('Compare the security code with that phone, then tick "It matches"'));
@@ -1160,5 +1185,5 @@ const Acct = (() => {
   /** Called by app.js after each render/sync to keep the Family tab badge current. */
   function updateBadge() { const b = $('#famBadge'); if (!b) return; const n = Sync.isParent() ? Sync.st.requests.length : 0; b.hidden = !n || tab === 'family'; b.textContent = n; }
 
-  return { init, gate, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, accountSub, cloudHtml, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, parseJoin, sessionLost };
+  return { init, gate, heroHtml, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, accountSub, cloudHtml, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, promptRequests, parseJoin, sessionLost };
 })();

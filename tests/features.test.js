@@ -1,7 +1,7 @@
 // The day clock, twirl-down groups, month day counts, stats charts, formula, the Guide (pediatrician, milestones) and people's contact
 // details – including that the new private data stays end-to-end encrypted.   node tests/features.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global writes24, openDoctor, applyInsets, openPlan, Cal, dkey, LLPlugins, startOfDay */
+/* global writes24, openDoctor, applyInsets, openPlan, Cal, dkey, LLPlugins, startOfDay, openQuick, reportBlocks, toLocalInput, napTime, saveProfile */
 /* global viewDay:writable */
 const { setup } = require('./lib/harness');
 
@@ -741,6 +741,110 @@ const pickFormula = async (page, scope, name) => {
       await P.evaluate(() => { window.__calls.length = 0; }); await P.evaluate(() => Cal.shareMonth(new Date(Date.now() + 3 * 864e5)));
       assert(/\.ics$/.test((await P.evaluate(() => window.__calls[0]))[1]), 'the month goes as one file');
       await P.evaluate(id => { db.events = db.events.filter(e => e.id !== id); Store.save(db); render(); }, ev.id);
+    });
+
+    await step('a poo says whether it was solid or wet: chips on the diaper form (shown for a poo), on the potty form, and as an optional row on the one-tap pop-ups; it shows in the list, the stats and the doctor\'s report', async () => {
+      await P.evaluate(() => { viewDay = startOfDay(Date.now()); tab = 'day'; render(); });
+      await P.evaluate(() => openSheet('diaper')); assert.equal(await P.isVisible('#dColor'), false, 'a pee-only diaper asks nothing more');
+      await P.click('#sheet [name=poo]'); assert(await P.isVisible('#dColor'));
+      assert.deepEqual(await P.$$eval('#sheet [name=texture]', x => x.map(i => i.value)), ['Hard', 'Solid', 'Soft', 'Wet / runny']);
+      assert.deepEqual(await P.$$eval('#sheet #dColor label.f', x => x.map(l => l.textContent)), ['Solid or wet?', 'Poo colour']);
+      await P.click('#sheet [name=texture][value=Soft]'); await P.click('#sheet [name=color][value=Yellow]'); await P.click('#save'); await P.waitForFunction(() => $('#sheet').hidden);
+      const d1 = await P.evaluate(() => db.events.filter(e => e.type === 'diaper').sort((a, b) => b.ts - a.ts)[0].data);
+      assert.deepEqual([d1.poo, d1.texture, d1.color], [true, 'Soft', 'Yellow']);
+      assert(/Soft, Yellow/.test(await P.textContent('#view')), 'the list says "Soft, Yellow"');
+      // the one-tap pop-up: the row is optional, and ignored for a pee
+      await P.evaluate(() => openQuick('diaper')); assert.equal(await P.textContent('#sheet label.f:has(+ .chips.big [name=qtex])'), 'Solid or wet? (if you like)');
+      await P.click('#sheet [name=qtex][value="Wet / runny"]'); await P.click('#sheet [name=qdia][value=poo]'); await P.waitForFunction(() => $('#sheet').hidden);
+      const d2 = await P.evaluate(() => db.events.filter(e => e.type === 'diaper').sort((a, b) => b.ts - a.ts)[0].data); assert.deepEqual([d2.poo, d2.texture], [true, 'Wet / runny']);
+      await P.evaluate(() => openQuick('diaper')); await P.click('#sheet [name=qtex][value=Hard]'); await P.click('#sheet [name=qdia][value=pee]'); await P.waitForFunction(() => $('#sheet').hidden);
+      assert.equal(await P.evaluate(() => db.events.filter(e => e.type === 'diaper').sort((a, b) => b.ts - a.ts)[0].data.texture), undefined, 'a pee keeps no texture');
+      await P.click('[data-tab=stats]'); assert(/Solid or wet\s*(Soft ×1, Wet \/ runny ×1|Wet \/ runny ×1, Soft ×1)/.test(await P.textContent('#view')), 'the stats count them');
+      const rep = await P.evaluate(() => reportBlocks(db.baby.kids[0].id, { days: 7 }).blocks.flatMap(b => (b.kv || []).map(kv => kv.join(': '))).join('\n'));
+      assert(/Solid or wet: (Soft ×1, Wet \/ runny ×1|Wet \/ runny ×1, Soft ×1)/.test(rep), 'and so does the doctor\'s report: ' + rep.split('\n').filter(l => /Solid/.test(l)).join(' | '));
+      // the potty form (a toddler's): the chips come with a poo and go with a pee
+      await P.click('[data-tab=day]'); await P.evaluate(() => openSheet('potty')); assert.equal(await P.isVisible('#pTexture'), false, 'a pee: no texture');
+      await P.click('#sheet [name=pwhat][value=poo]'); assert(await P.isVisible('#pTexture')); await P.click('#sheet [name=texture][value=Solid]'); await P.click('#save'); await P.waitForFunction(() => $('#sheet').hidden);
+      const d3 = await P.evaluate(() => db.events.filter(e => e.type === 'potty').sort((a, b) => b.ts - a.ts)[0].data); assert.deepEqual([d3.poo, d3.texture], [true, 'Solid']);
+      assert(/Potty · Solid/.test(await P.textContent('#view')), 'the list says where and how');
+      await P.evaluate(() => { db.events = db.events.filter(e => !(e.type === 'potty') && !(e.type === 'diaper' && e.data.texture)); Store.save(db); render(); });
+    });
+
+    await step('three or more wet, runny poos in a day: the Stats page suggests a tummy bug and when to call', async () => {
+      await P.evaluate(() => { const t = Date.now() - 3600e3; for (let i = 0; i < 3; i++) db.events.push({ id: 'runny' + i, type: 'diaper', ts: t + i * 600e3, data: { pee: false, poo: true, texture: 'Wet / runny' }, note: '', updated: stamp(), by: Auth.id, child: db.baby.kids[0].id }); Store.save(db); });
+      await P.click('[data-tab=stats]'); assert(/Three or more wet, runny poos in one day can be a tummy bug/.test(await P.textContent('#view')));
+      await P.evaluate(() => { db.events = db.events.filter(e => !/^runny/.test(e.id)); Store.save(db); render(); }); assert(!/tummy bug/.test(await P.textContent('#view')));
+    });
+
+    await step('a sleep is a nap or a night\'s sleep: the chips follow the time it began until one is chosen (6 AM to 6 PM: a nap), on the sheet and on the "Fell asleep" pop-up; a nap is a dashed ray and arc on the clock, a night\'s sleep a solid one', async () => {
+      await P.click('[data-tab=day]');
+      const napAt = h => P.evaluate(h => { openSheet('sleep'); const d = new Date(); d.setHours(h, 0, 0, 0); $('#ts').value = toLocalInput(d.getTime()); $('#ts').dispatchEvent(new Event('change', { bubbles: true })); return $('#sheet [name=nap][value="1"]').checked; }, h);
+      assert.equal(await napAt(14), true, '2 PM: a nap'); assert.equal(await napAt(20), false, '8 PM: night sleep'); assert.equal(await napAt(3), false, '3 AM: night sleep');
+      assert.deepEqual(await P.$$eval('#sheet [name=nap] + span', x => x.map(s => s.textContent.trim())), ['Nap', 'Night sleep'], 'the painted icon leaves no stray character');
+      assert(/dashed line on the clock/.test(await P.textContent('#sheet')), 'the sheet says what the toggle changes');
+      await P.click('#sheet [name=nap][value="1"]');   // chosen by hand: the time no longer decides
+      await P.evaluate(() => { const d = new Date(); d.setHours(22, 0, 0, 0); $('#ts').value = toLocalInput(d.getTime()); $('#ts').dispatchEvent(new Event('change', { bubbles: true })); });
+      assert.equal(await P.isChecked('#sheet [name=nap][value="1"]'), true, 'stays a nap once chosen');
+      await P.evaluate(() => { const d = new Date(); d.setHours(13, 0, 0, 0); $('#ts').value = toLocalInput(d.getTime()); $('#end').value = toLocalInput(d.getTime() + 90 * 60e3); });
+      await P.click('#save'); await P.waitForFunction(() => $('#sheet').hidden);
+      const nap = await P.evaluate(() => db.events.filter(e => e.type === 'sleep').sort((a, b) => b.ts - a.ts)[0]);
+      assert.equal(nap.data.nap, true); assert(/Napped 1h 30m/.test(await P.textContent('#view')), 'the list says Napped');
+      const dash = await P.evaluate(id => ({ ray: getComputedStyle(document.querySelector(`.ray[data-info="${id}"] path`)).strokeDasharray, arc: getComputedStyle(document.querySelector('.clock .sarc.nap')).strokeDasharray, night: getComputedStyle(document.querySelector('.clock .sarc:not(.nap)')).strokeDasharray }), nap.id);
+      assert(dash.ray !== 'none' && dash.arc !== 'none', 'the nap is dashed: ' + JSON.stringify(dash)); assert.equal(dash.night, 'none', 'the night\'s sleep (2 to 4 AM, no flag: by its time) stays solid');
+      // the pop-up from the Sleep button
+      await P.evaluate(() => openQuick('sleep')); assert(/Fell asleep/.test(await P.textContent('#sheet h3')));
+      const napNow = await P.evaluate(() => napTime(Date.now())); assert.equal(await P.isChecked('#sheet [name=qnap][value="1"]'), napNow, 'the pop-up follows the time of day');
+      await P.click('#sheet [name=qnap][value="0"]'); await P.click('#qSave'); await P.waitForFunction(() => $('#sheet').hidden);
+      const s2 = await P.evaluate(() => db.events.filter(e => e.type === 'sleep' && !e.end)[0]); assert.equal(s2.data.nap, false, 'night sleep, as chosen');
+      assert(/Asleep since/.test(await P.textContent('#sleepBanner')), 'the banner says Asleep (Napping for a nap)');
+      await P.evaluate(id => { const s = db.events.find(e => e.id === id); s.data.nap = true; Store.save(db); render(); }, s2.id); assert(/Napping since/.test(await P.textContent('#sleepBanner')));
+      await P.evaluate(() => { db.events = db.events.filter(e => !(e.type === 'sleep' && (!e.end || e.data.nap === true))); Store.save(db); render(); });
+    });
+
+    await step('the Routine page shows a nap as soon as it is logged: under "Today so far" before there is a routine, and under "Also today" when it is not one of the routine\'s times', async () => {
+      await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; });
+      const kid = await P.evaluate(() => { const k = Kids.make(kids(), 'Zoe'); k.birth = '2025-03-01'; kids().push(k); (db.meta.ms || (db.meta.ms = {}))[k.id] = 999; saveProfile(); setKid(k.id); return k.id; });
+      await P.click('[data-tab=routine]'); assert(/Your routine will show up here after a few days/.test(await P.textContent('#view')));
+      assert.equal(await P.$$eval('#view h2', h => h.map(x => x.textContent.trim()).filter(t => /today/i.test(t))).then(x => x.length), 0, 'nothing logged yet');
+      await P.evaluate(k => { const t = Date.now() - 50 * 60e3; db.events.push({ id: 'znap', type: 'sleep', ts: t, end: t + 40 * 60e3, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: k }); db.events.push({ id: 'zdia', type: 'diaper', ts: t, data: { pee: true, poo: false }, note: '', updated: stamp(), by: Auth.id, child: k }); Store.save(db); render(); }, kid);
+      assert(/Today so far/.test(await P.textContent('#view')), 'the nap shows at once');
+      const rows = await P.$$eval('.routine.today .rslot .rb b', x => x.map(b => b.textContent.trim())); assert(rows.length === 1 && /Napped 40m/.test(rows[0]), 'the nap, not the diaper (the routine leaves diapers out): ' + rows);
+      // with a routine: a sleep at a time that is part of it is ticked on its row; one at another time is listed under Also today
+      await P.evaluate(k => { const h = (new Date().getHours() + 20) % 24; for (let d = 1; d <= 4; d++) { const t = startOfDay(Date.now()) - d * 864e5 + h * 3600e3; db.events.push({ id: 'zr' + d, type: 'sleep', ts: t, end: t + 3600e3, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: k }); } Store.save(db); render(); }, kid);
+      assert(/Also today/.test(await P.textContent('#view')) && /Logged today at a time that is not part of the routine/.test(await P.textContent('#view')), 'the routine (a nap four hours before now) and today\'s nap at another time');
+      assert.equal(await P.$$eval('.routine.today .rslot', x => x.length), 1);
+      await P.evaluate(k => { db.events = db.events.filter(e => e.child !== k); db.baby.kids = db.baby.kids.filter(x => x.id !== k); setKid(db.baby.kids[0].id); saveProfile(); }, kid);
+    });
+
+    await step('a drop-off at the grandparents\', a babysitter\'s, a childminder\'s or a friend\'s offers the family\'s own names (the tree\'s grandparents; the babysitters, caregivers and friends in the log), and every place can have a location, remembered for next time', async () => {
+      await P.evaluate(() => { db.meta.tree = FamilyTree.clean({ parents: [{ id: 'p1', name: 'Mum', gp: [{ id: 'g1', name: 'Rose', call: 'Nana', gp: [] }, { id: 'g2', name: 'Bill', gp: [{ id: 'gg', name: 'Edith', call: 'Great-nan' }] }], sibs: [{ id: 's1', name: 'Jo', kids: [] }] }] }); Sync.st.tree = db.meta.tree; Store.save(db); });
+      await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; Sync.st.people = [{ id: 'me', display_name: 'Mum', role: 'parent', is_you: true }, { id: 'b1', display_name: 'Tasha', role: 'babysitter' }, { id: 'c1', display_name: 'Kim', role: 'caregiver' }, { id: 'f1', display_name: 'Priya', role: 'friend' }]; });
+      await P.click('[data-tab=day]'); await P.evaluate(() => openSheet('care'));
+      assert.equal(await P.isVisible('#cWith'), false, 'daycare: no one to pick'); assert(await P.isVisible('#cloc'), 'but a location');
+      const names = () => P.$$eval('#cwithNames button', b => b.map(x => x.textContent));
+      await P.click('#sheet [name=cplace][value=Grandparents]'); assert.equal(await P.textContent('#cwithL'), 'Which grandparent? (optional)'); assert.deepEqual(await names(), ['Nana', 'Bill', 'Great-nan'], 'the tree\'s grandparents, as the children call them');
+      await P.click('#sheet [name=cplace][value=Babysitter]'); assert.equal(await P.textContent('#cwithL'), 'Which babysitter? (optional)'); assert.deepEqual(await names(), ['Tasha']);
+      await P.click('#sheet [name=cplace][value=Childminder]'); assert.equal(await P.textContent('#cwithL'), 'Which childminder? (optional)'); assert.deepEqual(await names(), ['Kim']);
+      await P.click(`#sheet [name=cplace][value="Friend's house"]`); assert.equal(await P.textContent('#cwithL'), 'Whose house? (optional)'); assert.deepEqual(await names(), ['Priya']);
+      await P.click('#sheet [name=cplace][value=Grandparents]'); await P.click('#cwithNames button:has-text("Nana")'); assert.equal(await P.inputValue('#cwith'), 'Nana');
+      await P.fill('#cloc', '12 Orchard Lane'); await P.click('#save'); await P.waitForFunction(() => $('#sheet').hidden);
+      const c = await P.evaluate(() => db.events.filter(e => e.type === 'care').sort((a, b) => b.ts - a.ts)[0].data); assert.deepEqual([c.place, c.with, c.location], ['Grandparents', 'Nana', '12 Orchard Lane']);
+      assert(/At Grandparents since/.test(await P.textContent('#sleepBanner')) && /with Nana · 12 Orchard Lane/.test(await P.textContent('#sleepBanner')), 'the banner says with whom and where');
+      await P.evaluate(() => openSheet('care')); assert.equal(await P.inputValue('#cloc'), '12 Orchard Lane', 'the location comes back for the same place');
+      await P.click('#sheet [name=cplace][value=Daycare]'); assert.equal(await P.inputValue('#cloc'), '', 'another place: nothing yet'); await P.click('#cancel');
+      await P.evaluate(() => { db.events = db.events.filter(e => e.type !== 'care' && e.type !== 'pickup'); Sync.st.people = []; delete db.meta.tree; Sync.st.tree = undefined; Store.save(db); render(); });
+    });
+
+    await step('every part of the Guide folds into a twirl-down of its own, closed to start with, except the pediatrician, the health record and Right now', async () => {
+      await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; openGroups.clear(); }); await P.click('[data-tab=guide]');
+      const secs = await P.$$eval('#view details.sec', d => d.map(x => [x.dataset.grp, x.open, x.querySelector('summary h2').textContent, x.querySelector('summary small').textContent]));
+      assert.deepEqual(secs.map(s => s[2]), ['Food', 'Common with newborns', 'Medicines', 'Play and activities', 'Health checks', 'Toddlers and preschoolers', 'Month by month'], JSON.stringify(secs));
+      assert(secs.every(s => !s[1]), 'all closed'); assert(secs.every(s => /^\d+ (topics?|ages?)$/.test(s[3])), 'each says how much is inside: ' + secs.map(s => s[3]).join(', '));
+      const open = await P.$$eval('#view h2', h => h.filter(x => !x.closest('details')).map(x => x.textContent.trim()));
+      assert(open.every(h => h === 'Right now'), 'the only heading left on the page is Right now: ' + open); assert(await P.isVisible('#docBtn'), 'the pediatrician stays'); assert(await P.isVisible('.recbtn'), 'and the health record');
+      await P.click('details.sec[data-grp=secnewborn] > summary'); assert(await P.isVisible('details[data-grp=gfever] > summary'), 'open, the cards inside show');
+      await P.click('[data-tab=day]'); await P.click('[data-tab=guide]'); assert.equal(await P.evaluate(() => document.querySelector('details.sec[data-grp=secnewborn]').open), true, 'and it stays open while the app runs');
+      await P.evaluate(() => { ['secnewborn', 'sectoddler', 'secschool', 'secteens', 'secpuberty', 'secfood', 'secmeds', 'secplay', 'secchecks', 'secmonths'].forEach(g => openGroups.add(g)); });
     });
 
     const pageErrs = H.pages.flatMap(p => p.errs.concat(p.csp));

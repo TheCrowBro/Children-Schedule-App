@@ -36,7 +36,7 @@ const server = http.createServer((req, res) => {
     const ctx = await (opts.br || browser).newContext({ viewport: { width: 390, height: 800 } });
     if (opts.native !== false) await installFakeNative(ctx, opts);
     await ctx.addInitScript(() => { try { if (!localStorage.getItem('ll.tours')) localStorage.setItem('ll.tours', '{"day":1}'); localStorage.setItem('ll.welcome', '1'); } catch (e) { /* no storage */ } });   // (the first-time tour is tested in features, the first screen in start)
-    await ctx.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { try { ['mlang', 'macct', 'mkids', 'mregion', 'munits', 'mlook', 'mcloud', 'mdata', 'mapp'].forEach(g => openGroups.add(g)); } catch (e) { /* not the app */ } }));   // (the More page's twirl-downs start closed)
+    await ctx.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { try { ['mlang', 'macct', 'mkids', 'mregion', 'munits', 'mlook', 'mcloud', 'mdata', 'mapp', 'secnewborn', 'sectoddler', 'secschool', 'secteens', 'secpuberty', 'secfood', 'secmeds', 'secplay', 'secchecks', 'secmonths'].forEach(g => openGroups.add(g)); } catch (e) { /* not the app */ } }));   // (the More page's twirl-downs start closed)
     await shim.install(ctx);
     await ctx.route('https://challenges.cloudflare.com/**', r => r.fulfill({ contentType: 'text/javascript', body: turnstile }));
     await ctx.route('https://api.dropboxapi.com/oauth2/token', r => { (opts.tokenCalls || (opts.tokenCalls = [])).push(r.request().postData()); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ access_token: 'dbx-at', refresh_token: 'dbx-rt', expires_in: 14400 }) }); });
@@ -96,6 +96,7 @@ const server = http.createServer((req, res) => {
     const refused = await A.evaluate(() => Auth.sendCode('mum@x.com', '').then(() => 'sent', e => e.message));
     assert(/captcha/.test(refused), 'server must refuse a code request without a CAPTCHA token: ' + refused);
     assert.equal(shim.o.sent || 0, 0);
+    await A.type('#lEmail', 'mum@x.comm'); await A.press('#lEmail', 'Backspace'); assert.equal(await A.inputValue('#lEmail'), 'mum@x.com', 'Backspace takes one letter off (Enter sends; the key used to be swallowed)');
     await A.fill('#lEmail', 'mum@x.com'); await sleep(300);                  // let the security check complete
     await A.click('#lSend'); await A.waitForSelector('#lCode'); assert.equal(shim.o.sent, 1);
   });
@@ -212,6 +213,9 @@ const server = http.createServer((req, res) => {
   });
   await step('the parent sees the request (badge + list) and approves it', async () => {
     await goTab(A, 'day'); await syncNow(A);
+    await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Someone wants to join/.test(await A.textContent('#sheet')) && /dad@x.com/.test(await A.textContent('#sheet')), 'the request pops up on the parent\'s phone as it arrives');
+    await A.click('#sheet [data-close]'); await A.waitForFunction(() => $('#sheet').hidden);
+    await syncNow(A); await sleep(100); assert(await A.evaluate(() => $('#sheet').hidden), 'put off with Later, it does not pop up again while the app runs');
     assert.equal(await A.evaluate(() => document.querySelector('#famBadge').textContent), '1'); assert(await A.isVisible('#famBadge'));
     await goTab(A, 'family'); await A.waitForSelector('[data-approve]'); assert(/dad@x.com/.test(await A.textContent('#view')));
     assert(/did not use your QR code/.test(await A.textContent('#view')), 'typed code: manual comparison required');
@@ -277,9 +281,9 @@ const server = http.createServer((req, res) => {
     C = await device({ br: b2 }); await signIn(C, 'nan@x.com'); await C.waitForSelector('#oScan');
     await C.fill('#oMine', 'Nan'); await C.click('#oScan'); await C.waitForSelector('#wCheck', { timeout: 20000 });
     assert.equal((await pendingFor('nan@x.com')).length, 1); assert.equal((await q('select used_by from invites where code=$1', [inviteC]))[0].used_by !== null, true, 'invite is single-use');
-    await syncNow(A); await goTab(A, 'family'); await A.waitForSelector('[data-approve]');
-    assert(/Verified: they scanned your QR code/.test(await A.textContent('#view')) && !(await A.$('input[name=vchk]')), 'QR proof checked automatically: nothing to compare');
-    await A.click('[data-approve]'); await A.waitForFunction(() => !document.querySelector('[data-approve]'));
+    await syncNow(A); await A.waitForSelector('#sheet:not([hidden]) [data-approve]');   // (the request pops up on the parent's phone; approved from there)
+    assert(/Verified: they scanned your QR code/.test(await A.textContent('#sheet')) && !(await A.$('input[name=vchk]')), 'QR proof checked automatically: nothing to compare');
+    await A.click('#sheet [data-approve]'); await A.waitForFunction(() => $('#sheet').hidden && !document.querySelector('[data-approve]'));
     await C.click('#wCheck'); await C.waitForSelector('#tabs');
     assert.equal(await C.evaluate(() => !!db.meta.unverified), false, 'the grant carried the parent\'s QR proof, so no manual check is needed');
     assert((await q(`select g.auth from key_grants g join devices d on 'd:'||d.id::text = g.grantee join auth.users u on u.id=d.user_id where u.email='nan@x.com'`))[0].auth, 'grant is authenticated with the QR secret');
@@ -384,7 +388,7 @@ const server = http.createServer((req, res) => {
     await goTab(A, 'family'); const code = await mkInvite(A, 'friend'), secret = await A.evaluate(c => E2EE.inviteSecret(c), code); secrets.push(secret);
     const E = await device({ launchUrl: `app.littlelog.newborn://join?join=${code}&s=${secret}` });   // opened from the link: the secret rides along
     await signIn(E, 'eve@x.com'); await E.waitForSelector('#wCheck');
-    await goTab(A, 'day'); await syncNow(A); await goTab(A, 'family'); await A.waitForSelector('[data-approve]'); assert(/Verified: they scanned your QR code/.test(await A.textContent('#view'))); await A.click('[data-approve]'); await A.waitForFunction(() => !document.querySelector('[data-approve]'));
+    await goTab(A, 'day'); await syncNow(A); await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Verified: they scanned your QR code/.test(await A.textContent('#sheet'))); await A.click('#sheet [data-approve]'); await A.waitForFunction(() => $('#sheet').hidden && !document.querySelector('[data-approve]'));
     await su.query(`update key_grants set auth=null where grantee in (select 'd:'||d.id::text from devices d join auth.users u on u.id=d.user_id where u.email='eve@x.com')`);   // the server strips the proof
     await E.click('#wCheck'); await E.waitForFunction(() => /did not come from the parent who invited you/.test((Sync.st.err || '') + document.body.textContent), null, { timeout: 15000 });
     assert.equal(await E.evaluate(() => E2EE.hasKeys(db.meta.babyId)), false, 'no keys were accepted');
@@ -439,6 +443,9 @@ const server = http.createServer((req, res) => {
     assert(/Locked/.test(await A.textContent('#view')) && (await A.textContent('#view')).split('Little Log').length <= 2, 'says Locked, and names the app at most once');
     await A.evaluate(() => localStorage.removeItem('MOCK_BIO_FAIL')); await A.click('#unlock'); await A.waitForSelector('#tabs');
     assert.equal(await A.textContent('#title'), "Leo's Log");
+    const words = await A.evaluate(() => window.__bio.last);   // the phone's prompt: a title, and one warm line that names the app once (not the name twice and Unlock twice)
+    assert.equal(words.androidTitle, "Just checking it's you"); assert.equal(words.androidSubtitle, undefined, 'no subtitle repeating the title');
+    assert(/Little Log's little log/.test(words.reason) && words.reason.split('Little Log').length === 2, 'one line, the app named once: ' + words.reason);
   });
   await step('app lock: the screen is covered in the app switcher, and re-locks after the chosen time away', async () => {
     await A.evaluate(() => window.__emit('appStateChange', { isActive: false })); assert(await A.isVisible('#cover'), 'cover shown while in background');

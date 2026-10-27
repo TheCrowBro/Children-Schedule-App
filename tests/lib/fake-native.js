@@ -16,7 +16,7 @@ async function installFakeNative(ctx, { launchUrl = null, biometric = true } = {
       },
       BiometricAuth: {
         checkBiometry: async () => ({ isAvailable: window.__bio.available, deviceIsSecure: window.__bio.available }),
-        authenticate: async () => { window.__bio.prompts++; if (!window.__bio.ok || localStorage.getItem('MOCK_BIO_FAIL') === '1') throw new Error('cancelled'); },
+        authenticate: async o => { window.__bio.prompts++; window.__bio.last = o; if (!window.__bio.ok || localStorage.getItem('MOCK_BIO_FAIL') === '1') throw new Error('cancelled'); },
       },
       Browser: { open: async o => calls.push(['Browser.open', o.url]), close: async () => calls.push(['Browser.close']) },
       App: { addListener: (ev, f) => (listeners[ev] = listeners[ev] || []).push(f), exitApp: () => calls.push(['App.exitApp']), getLaunchUrl: async () => (launchUrl ? { url: launchUrl } : null) },
