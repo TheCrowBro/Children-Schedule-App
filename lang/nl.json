@@ -2389,5 +2389,28 @@
  "1gxia0c": "Voor meer dan één telefoon: meld je aan met je e-mail, nodig de andere ouder, de grootouders of de oppas uit, en iedereen ziet hetzelfde logboek, end-to-end versleuteld.",
  "1rs66rh": "Zet het back-upbestand terug dat je op de oude telefoon maakte, met de wachtwoordzin.",
  "n8g70c": "Je taal",
- "19589yq": "Little Log spreekt 32 talen. Verander het hier, of later in Meer → Taal."
+ "19589yq": "Little Log spreekt 32 talen. Verander het hier, of later in Meer → Taal.",
+ "fki4un": "Meldingen",
+ "xy5pvf": "Zolang een kind als slapend genoteerd staat, vraagt de telefoon of het nog slaapt, met 'Wakker geworden' meteen op de melding. Stel in wanneer hij vraagt, en de stille uren die hij overslaat.",
+ "1bfd4p6": "Slaapcheck na {time} · stil {from}–{to}",
+ "ouzlc0": "In de telefoon-app.",
+ "jjuyqo": "Slaapcheck",
+ "1a65i1c": "Zolang een kind als slapend genoteerd staat, vraagt de telefoon of het nog slaapt, met 'Wakker geworden' meteen op de melding, zodat een slaapje dat niemand afsloot niet urenlang doorloopt.",
+ "y70e58": "Vragen na",
+ "whj34l": "Daarna opnieuw elke",
+ "1i6il94": {
+  "one": "In totaal tot {n} keer, tot je op 'Wakker geworden' tikt.",
+  "other": "In totaal tot {n} keer, tot je op 'Wakker geworden' tikt."
+ },
+ "zwtfoa": "Niet storen",
+ "rg2a5r": "Tot",
+ "1snl3n3": "Geen slaapchecks tussen deze tijden (de nacht); een check die erin valt komt als ze voorbij zijn, zo valt ook een slaapje van de avond ervoor op. Blijft op deze telefoon: elke ouder stelt het zelf in.",
+ "nipe5m": "Meldingen toestaan",
+ "q7keni": "Toegestaan op deze telefoon.",
+ "10pd2cg": "Uitgezet in de instellingen van de telefoon: sta daar de meldingen van Little Log toe.",
+ "84v6jt": "Nog niet toegestaan: de telefoon vraagt het de eerste keer dat er iets te sturen is, of tik hieronder.",
+ "xixiho": "je kind",
+ "1b6wrmn": "Slaapt {name} nog?",
+ "zo1csq": "Slaapt sinds {time} ({long}). Tik op 'Wakker geworden' als het wakker is.",
+ "1po8mcp": "Slaapt nog"
 }

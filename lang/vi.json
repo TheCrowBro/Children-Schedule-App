@@ -2345,5 +2345,27 @@
  "1gxia0c": "Cho nhiều điện thoại: đăng nhập bằng email, mời bố/mẹ kia, ông bà hoặc người trông trẻ, và mọi người cùng xem một nhật ký, mã hóa đầu cuối.",
  "1rs66rh": "Khôi phục tệp sao lưu bạn đã tạo trên điện thoại cũ, bằng cụm mật khẩu của nó.",
  "n8g70c": "Ngôn ngữ của bạn",
- "19589yq": "Little Log nói 32 ngôn ngữ. Đổi tại đây, hoặc sau này trong Thêm → Ngôn ngữ."
+ "19589yq": "Little Log nói 32 ngôn ngữ. Đổi tại đây, hoặc sau này trong Thêm → Ngôn ngữ.",
+ "fki4un": "Thông báo",
+ "xy5pvf": "Khi một bé được ghi là đang ngủ, điện thoại sẽ hỏi bé còn ngủ không, với nút 'Đã dậy' ngay trên thông báo. Đặt thời điểm hỏi và khung giờ yên tĩnh mà nó không làm phiền.",
+ "1bfd4p6": "Kiểm tra giấc ngủ sau {time} · yên tĩnh {from}–{to}",
+ "ouzlc0": "Trong ứng dụng điện thoại.",
+ "jjuyqo": "Kiểm tra giấc ngủ",
+ "1a65i1c": "Khi một bé được ghi là đang ngủ, điện thoại sẽ hỏi bé còn ngủ không, với nút 'Đã dậy' ngay trên thông báo, để một giấc ngủ không ai kết thúc không chạy mãi hàng giờ.",
+ "y70e58": "Hỏi sau",
+ "whj34l": "Rồi hỏi lại mỗi",
+ "1i6il94": {
+  "other": "Tổng cộng tối đa {n} lần, cho đến khi chạm 'Đã dậy'."
+ },
+ "zwtfoa": "Không làm phiền",
+ "rg2a5r": "Đến",
+ "1snl3n3": "Không kiểm tra giấc ngủ trong khung giờ này (ban đêm); lần kiểm tra rơi vào đó sẽ gửi khi khung giờ kết thúc, nhờ vậy cũng phát hiện giấc ngủ từ tối hôm trước. Lưu trên điện thoại này: mỗi phụ huynh tự đặt.",
+ "nipe5m": "Cho phép thông báo",
+ "q7keni": "Đã được phép trên điện thoại này.",
+ "10pd2cg": "Đã tắt trong cài đặt điện thoại: hãy cho phép thông báo của Little Log ở đó.",
+ "84v6jt": "Chưa được phép: điện thoại sẽ hỏi lần đầu có gì cần gửi, hoặc chạm bên dưới.",
+ "xixiho": "con bạn",
+ "1b6wrmn": "{name} còn ngủ không?",
+ "zo1csq": "Ngủ từ {time} ({long}). Chạm 'Đã dậy' khi bé thức.",
+ "1po8mcp": "Còn ngủ"
 }

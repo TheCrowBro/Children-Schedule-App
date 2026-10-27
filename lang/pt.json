@@ -2433,5 +2433,29 @@
  "1gxia0c": "Para mais do que um telemóvel: inicie sessão com o seu e-mail, convide o outro progenitor, os avós ou a babysitter, e todos veem o mesmo diário, cifrado de ponta a ponta.",
  "1rs66rh": "Restaure o ficheiro de cópia de segurança que fez no telemóvel antigo, com a sua frase-passe.",
  "n8g70c": "O seu idioma",
- "19589yq": "O Little Log fala 32 idiomas. Mude-o aqui, ou mais tarde em Mais → Idioma."
+ "19589yq": "O Little Log fala 32 idiomas. Mude-o aqui, ou mais tarde em Mais → Idioma.",
+ "fki4un": "Notificações",
+ "xy5pvf": "Enquanto uma criança está registada a dormir, o telemóvel pergunta se ainda dorme, com «Acordou» logo na notificação. Escolha quando pergunta e as horas de silêncio que respeita.",
+ "1bfd4p6": "Verificação do sono após {time} · silêncio {from}–{to}",
+ "ouzlc0": "Na app do telemóvel.",
+ "jjuyqo": "Verificação do sono",
+ "1a65i1c": "Enquanto uma criança está registada a dormir, o telemóvel pergunta se ainda dorme, com «Acordou» logo na notificação, para que um sono que ninguém fechou não continue durante horas.",
+ "y70e58": "Perguntar após",
+ "whj34l": "Depois de novo a cada",
+ "1i6il94": {
+  "one": "Até {n} vez no total, até tocar em «Acordou».",
+  "many": "Até {n} vezes no total, até tocar em «Acordou».",
+  "other": "Até {n} vezes no total, até tocar em «Acordou»."
+ },
+ "zwtfoa": "Não incomodar",
+ "rg2a5r": "Até",
+ "1snl3n3": "Sem verificações do sono entre estas horas (a noite); uma que caia nelas é enviada quando terminam, o que também apanha um sono da véspera à noite. Fica neste telemóvel: cada progenitor define o seu.",
+ "nipe5m": "Permitir notificações",
+ "q7keni": "Permitidas neste telemóvel.",
+ "10pd2cg": "Desligadas nas definições do telemóvel: permita lá as notificações do Little Log.",
+ "84v6jt": "Ainda não permitidas: o telemóvel pergunta na primeira vez que houver algo a enviar, ou toque abaixo.",
+ "xixiho": "o seu filho",
+ "1b6wrmn": "{name} ainda dorme?",
+ "zo1csq": "A dormir desde as {time} ({long}). Toque em «Acordou» quando estiver acordado.",
+ "1po8mcp": "Ainda dorme"
 }

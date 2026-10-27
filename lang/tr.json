@@ -2389,5 +2389,28 @@
  "1gxia0c": "Birden fazla telefon için: e-postanızla giriş yapın, diğer ebeveyni, büyükanne ve büyükbabayı ya da bakıcıyı davet edin; herkes uçtan uca şifreli aynı günlüğü görsün.",
  "1rs66rh": "Eski telefonda aldığınız yedek dosyasını, parolasıyla birlikte geri yükleyin.",
  "n8g70c": "Diliniz",
- "19589yq": "Little Log 32 dil konuşur. Burada ya da daha sonra Diğer → Dil bölümünden değiştirin."
+ "19589yq": "Little Log 32 dil konuşur. Burada ya da daha sonra Diğer → Dil bölümünden değiştirin.",
+ "fki4un": "Bildirimler",
+ "xy5pvf": "Bir çocuk uyuyor olarak kayıtlıyken telefon hâlâ uyuyup uyumadığını sorar; 'Uyandı' doğrudan bildirimin üzerindedir. Ne zaman soracağını ve sessiz kalacağı saatleri siz belirleyin.",
+ "1bfd4p6": "{time} sonra uyku kontrolü · sessiz {from}–{to}",
+ "ouzlc0": "Telefon uygulamasında.",
+ "jjuyqo": "Uyku kontrolü",
+ "1a65i1c": "Bir çocuk uyuyor olarak kayıtlıyken telefon hâlâ uyuyup uyumadığını sorar; 'Uyandı' doğrudan bildirimin üzerindedir, böylece kimsenin kapatmadığı bir uyku saatlerce sürmez.",
+ "y70e58": "Şu kadar süre sonra sor",
+ "whj34l": "Sonra tekrar her",
+ "1i6il94": {
+  "one": "'Uyandı'ya dokunulana kadar toplam en fazla {n} kez.",
+  "other": "'Uyandı'ya dokunulana kadar toplam en fazla {n} kez."
+ },
+ "zwtfoa": "Rahatsız etme",
+ "rg2a5r": "Bitiş",
+ "1snl3n3": "Bu saatler arasında (gece) uyku kontrolü yok; bu aralığa denk gelen, saatler bitince gönderilir; böylece bir önceki akşamdan kalan uyku da yakalanır. Bu telefonda kalır: her ebeveyn kendininkini ayarlar.",
+ "nipe5m": "Bildirimlere izin ver",
+ "q7keni": "Bu telefonda izinli.",
+ "10pd2cg": "Telefon ayarlarında kapalı: Little Log bildirimlerine oradan izin verin.",
+ "84v6jt": "Henüz izin verilmedi: telefon, gönderilecek bir şey olduğunda ilk kez sorar; ya da aşağıya dokunun.",
+ "xixiho": "çocuğunuz",
+ "1b6wrmn": "{name} hâlâ uyuyor mu?",
+ "zo1csq": "{time} saatinden beri uyuyor ({long}). Uyanınca 'Uyandı'ya dokunun.",
+ "1po8mcp": "Hâlâ uyuyor"
 }

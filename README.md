@@ -149,6 +149,13 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   estimates and drawn dashed, a journey timer per way of travelling (time on the move lights up the clock's outer track; long drives get a
   reminder to take the baby out of the car seat), and tips for each kind of trip. Travel days stay outlined in the month view. Leaving
   and coming home play a short journey across the screen (from the house, or back to it) while the page changes under it
+- **Notifications** (the phone app): while a child is logged asleep, the phone asks whether they are still asleep ("Is Leo still
+  asleep? Asleep since 1:10 PM (2h)"), with **Woke up** and **Still asleep** right on the notification, so a sleep nobody closed does
+  not run on for hours. It asks after a while (1 to 3 hours, 2 to start with), then again every 30 minutes or an hour, up to three
+  times, and never in the **do-not-disturb** hours each parent sets on their own phone (7 PM to 7 AM to start with): a check that falls
+  in them is sent when they end, which also catches a sleep from the evening before. Woke up on the notification ends the sleep then
+  and opens the day; the checks are planned from the log on the phone and cancelled when the sleep ends on any phone. More →
+  Notifications has the settings and asks the phone for permission (it is asked the first time there is something to send)
 - **Tutorial**: a ? on every screen starts a short tour of it: a highlight box glides from button to button with a line on why it's there.
   The home screen's tour starts by itself the first time, and so does the first screen's: what Just this phone, Share with family and
   Moving from another phone mean, and that Just this phone is not a one-way door (the Family tab's Share with family signs you in later,

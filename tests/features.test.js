@@ -1,7 +1,7 @@
 // The day clock, twirl-down groups, month day counts, stats charts, formula, the Guide (pediatrician, milestones) and people's contact
 // details – including that the new private data stays end-to-end encrypted.   node tests/features.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global writes24, openDoctor, applyInsets, openPlan, Cal, dkey, LLPlugins, startOfDay, openQuick, reportBlocks, toLocalInput, napTime, saveProfile */
+/* global writes24, openDoctor, applyInsets, openPlan, Cal, dkey, LLPlugins, startOfDay, openQuick, reportBlocks, toLocalInput, napTime, saveProfile, Notify */
 /* global viewDay:writable */
 const { setup } = require('./lib/harness');
 
@@ -844,7 +844,52 @@ const pickFormula = async (page, scope, name) => {
       assert(open.every(h => h === 'Right now'), 'the only heading left on the page is Right now: ' + open); assert(await P.isVisible('#docBtn'), 'the pediatrician stays'); assert(await P.isVisible('.recbtn'), 'and the health record');
       await P.click('details.sec[data-grp=secnewborn] > summary'); assert(await P.isVisible('details[data-grp=gfever] > summary'), 'open, the cards inside show');
       await P.click('[data-tab=day]'); await P.click('[data-tab=guide]'); assert.equal(await P.evaluate(() => document.querySelector('details.sec[data-grp=secnewborn]').open), true, 'and it stays open while the app runs');
-      await P.evaluate(() => { ['secnewborn', 'sectoddler', 'secschool', 'secteens', 'secpuberty', 'secfood', 'secmeds', 'secplay', 'secchecks', 'secmonths'].forEach(g => openGroups.add(g)); });
+      await P.evaluate(() => { ['secnewborn', 'sectoddler', 'secschool', 'secteens', 'secpuberty', 'secfood', 'secmeds', 'secplay', 'secchecks', 'secmonths', 'mlang', 'macct', 'mkids', 'mregion', 'munits', 'mlook', 'mcloud', 'mdata', 'mapp', 'mnotify'].forEach(g => openGroups.add(g)); });
+    });
+
+    await step('notifications: while a child is logged asleep the phone is asked to check ("Is Leo still asleep?"), after 2 hours then every 30 minutes up to 3 times, never in the quiet hours (7 PM to 7 AM to start with; a check that falls in them waits for their end), with Woke up and Still asleep on it; the sleep ending cancels them', async () => {
+      const at = (h, m = 0) => { const x = new Date(); x.setHours(h, m, 0, 0); return x.getTime(); };
+      const plan = (ts, now, extra = {}) => P.evaluate(([ts, now, extra]) => Notify.plan([{ id: 's1', type: 'sleep', ts, data: {}, child: 'k' }], now, { on: true, after: 120, every: 30, times: 3, quiet: ['19:00', '07:00'], ...extra }).map(n => { const d = new Date(n.at); return d.getHours() * 60 + d.getMinutes(); }), [ts, now, extra]);
+      assert.deepEqual(await plan(at(13), at(13)), [15 * 60, 15 * 60 + 30, 16 * 60], 'a nap at 1 PM: 3, 3:30 and 4 PM');
+      assert.deepEqual(await plan(at(13), at(15, 10)), [15 * 60 + 30, 16 * 60], 'only the checks still to come');
+      assert.deepEqual(await plan(at(18), at(18)), [7 * 60, 7 * 60 + 30, 8 * 60], 'a sleep at 6 PM: 8 PM is in the quiet hours, so 7 AM, then 7:30 and 8');
+      assert.deepEqual(await plan(at(23), at(23)), [7 * 60, 7 * 60 + 30, 8 * 60], 'a night sleep: the morning');
+      assert.deepEqual(await plan(at(18), at(18), { quiet: ['22:00', '22:00'] }), [20 * 60, 20 * 60 + 30, 21 * 60], 'the same time twice: no quiet hours');
+      assert.deepEqual(await plan(at(13), at(13), { on: false }), [], 'off');
+      assert.deepEqual(await plan(at(13), at(13), { after: 60, every: 60, quiet: ['00:00', '00:00'] }), [14 * 60, 15 * 60, 16 * 60], 'the settings');
+      // through the (fake) phone: logging a sleep asks for permission the first time, and sets the checks
+      await P.evaluate(() => { Notify.set({ on: true, after: 120, every: 30, quiet: ['19:00', '07:00'] }); window.__ntf.pending = []; window.__ntf.asked = 0; window.__ntf.perm = 'prompt'; });
+      await P.evaluate(() => { const t = Date.now() - 30 * 60e3; db.events.push({ id: 'ntfs1', type: 'sleep', ts: t, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: db.baby.kids[0].id }); save(); render(); });
+      await P.waitForFunction(() => window.__ntf.pending.length === 3, null, { timeout: 5000 });
+      const r = await P.evaluate(() => ({ asked: window.__ntf.asked, perm: window.__ntf.perm, types: window.__ntf.types, p: window.__ntf.pending.map(n => ({ title: n.title, body: n.body, type: n.actionTypeId, extra: n.extra, at: new Date(n.schedule.at).getTime(), idle: n.schedule.allowWhileIdle })) }));
+      assert.equal(r.asked, 1, 'asked once, when there was something to send'); assert.equal(r.perm, 'granted');
+      assert.deepEqual(r.types[0].actions.map(a => a.id + ':' + a.title), ['woke:Woke up', 'still:Still asleep'], 'the buttons on the notification');
+      assert(r.p.every(n => n.title === 'Is Leo still asleep?' && /^Asleep since .+ \(.+\)\. Tap Woke up when they are awake\.$/.test(n.body) && n.type === 'll-sleep' && n.extra.sleep === 'ntfs1' && n.idle), JSON.stringify(r.p));
+      assert(r.p[1].at - r.p[0].at === 30 * 60e3 && r.p[2].at - r.p[1].at === 30 * 60e3, 'half an hour apart: ' + r.p.map(n => n.at));
+      await P.click('[data-tab=day]'); await P.click('#wakeBtn'); await P.waitForFunction(() => window.__ntf.pending.length === 0, null, { timeout: 5000 });   // Woke up in the app: nothing left to send
+      // the buttons on the notification: Still asleep changes nothing; Woke up ends the sleep now and opens the day
+      await P.evaluate(() => { const t = Date.now() - 30 * 60e3; db.events.push({ id: 'ntfs2', type: 'sleep', ts: t, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: db.baby.kids[0].id }); save(); render(); });
+      await P.waitForFunction(() => window.__ntf.pending.length === 3, null, { timeout: 5000 });
+      await P.evaluate(() => window.__emit('ntf.localNotificationActionPerformed', { actionId: 'still', notification: { extra: { ll: 'sleep', sleep: 'ntfs2', child: db.baby.kids[0].id } } }));
+      assert.equal(await P.evaluate(() => [db.events.find(e => e.id === 'ntfs2').end === undefined, window.__ntf.pending.length].join()), 'true,3');
+      await P.click('[data-tab=month]');
+      await P.evaluate(() => window.__emit('ntf.localNotificationActionPerformed', { actionId: 'woke', notification: { extra: { ll: 'sleep', sleep: 'ntfs2', child: db.baby.kids[0].id } } }));
+      await P.waitForFunction(() => window.__ntf.pending.length === 0, null, { timeout: 5000 });
+      const w = await P.evaluate(() => ({ end: db.events.find(e => e.id === 'ntfs2').end, tab, now: Date.now() })); assert(w.end && w.now - w.end < 5000, 'woke up now'); assert.equal(w.tab, 'day', 'and the day page opens');
+      await P.evaluate(() => { db.events = db.events.filter(e => !/^ntfs/.test(e.id)); Store.save(db); render(); });
+    });
+
+    await step('More → Notifications: the sleep check on or off, ask after 1 to 3 hours, then every 30 minutes or an hour, and the do-not-disturb hours, kept on this phone; the phone\'s answer is shown', async () => {
+      await P.click('[data-tab=more]'); await P.evaluate(() => { document.querySelector('details[data-grp=mnotify]').open = true; });
+      await P.waitForFunction(() => /Allowed on this phone/.test(document.querySelector('#ntfState').textContent), null, { timeout: 3000 });
+      assert.equal(await P.isChecked('[name=ntfOn][value="1"]'), true); assert.equal(await P.isChecked('[name=ntfAfter][value="120"]'), true); assert.equal(await P.isChecked('[name=ntfEvery][value="30"]'), true);
+      assert.equal(await P.inputValue('#ntfFrom'), '19:00'); assert.equal(await P.inputValue('#ntfTo'), '07:00');
+      assert(/Sleep check after 2h · quiet 7:00 PM–7:00 AM/.test(await P.textContent('details[data-grp=mnotify] > summary')), await P.textContent('details[data-grp=mnotify] > summary'));
+      await P.click('[name=ntfAfter][value="60"]'); await P.fill('#ntfFrom', '20:30'); await P.fill('#ntfTo', '06:30');
+      assert.deepEqual(await P.evaluate(() => [Notify.cfg.after, Notify.cfg.quiet, JSON.parse(localStorage.getItem('ll.notify')).after]), [60, ['20:30', '06:30'], 60], 'kept on the phone');
+      assert(/after 1h · quiet 8:30 PM–6:30 AM/.test(await P.textContent('details[data-grp=mnotify] > summary')));
+      await P.click('[name=ntfOn][value="0"]'); assert.equal(await P.evaluate(() => Notify.cfg.on), false); assert(/Off/.test(await P.textContent('details[data-grp=mnotify] > summary'))); assert.equal(await P.isVisible('#ntfMore'), false);
+      await P.evaluate(() => Notify.set({ on: true, after: 120, every: 30, quiet: ['19:00', '07:00'] }));
     });
 
     const pageErrs = H.pages.flatMap(p => p.errs.concat(p.csp));

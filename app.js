@@ -108,6 +108,7 @@ function save(quiet) {
   schoolDays = null;   // (a first day of school may have been saved or deleted)
   Store.save(db);
   if (!quiet) Sync.schedule();
+  Notify.sync(db.events);   // (a sleep begun or ended: the phone's "still asleep?" checks follow)
 }
 /** A timestamp for an edit that is always newer than anything this phone has seen, even if its clock is behind
     (last-write-wins compares these, so a slow clock must not make a fresh edit look old). */
@@ -604,6 +605,7 @@ function render() {
   $('#view').innerHTML = { day: dayView, routine: routineView, month: monthView, stats: statsView, guide: guideView, family: Acct.familyHtml, more: moreView, health: recordView }[tab]();
   bind(); Icons.paint($('#view')); Acct.updateBadge();
   if (!solidsCheck()) { milestoneCheck(); graduationCheck(); } autoTour();
+  Notify.sync(db.events);
 }
 
 /** Whoever is feeding the baby sees their allergies at the top of the day. */
@@ -2244,6 +2246,7 @@ const TOURS = {
     { sel: 'details[data-grp=macct]', title: N_('Security & account'), why: N_('Who you are signed in as, two-step verification, the app lock with a PIN, Face ID or a fingerprint, and signing out.') },
     { sel: 'details[data-grp=mkids]', title: N_('Your children'), why: N_('Names, birth dates, boy or girl and colours, the usual formula, allergies and the health record. "Add a child" for twins or triplets.') },
     { sel: 'details[data-grp=mregion]', title: N_('Where you are'), why: N_('Formulas sold here come first, and the Guide gives your emergency number and medicine names first.') },
+    { sel: 'details[data-grp=mnotify]', title: N_('Notifications'), why: N_('While a child is logged asleep, the phone asks whether they are still asleep, with Woke up on the notification. Set when it asks, and the quiet hours it keeps out of.') },
     { sel: 'details[data-grp=munits]', title: N_('Units'), why: N_('Kilograms and centimetres or pounds and inches for the health record, and ml or fl oz for milk.') },
     { sel: 'details[data-grp=mlook]', title: N_('Appearance and clock art'), why: N_('Light or dark: match your phone, pick one, or follow sunrise and sunset. And the painting around each child\'s clock.') },
     { sel: 'details[data-grp=mcloud]', title: N_('Cloud backup'), why: N_('A private, encrypted copy in your own cloud storage, scrambled with a passphrase only you know.') },
@@ -2388,6 +2391,7 @@ function moreView() {
   ${fold('kids', '👶', ks.length > 1 ? N_('Children') : N_('Baby'), ks.map(kidName).join(', '), kidsHtml())}
   ${fold('region', '📍', N_('Where you are'), region ? __(region.name) : __('Automatic: {region}', { region: __(Formulas.name(Formulas.regionFor())).replace(/ \(.*\)$/, '') }), regionHtml())}
   ${fold('units', '📏', N_('Units'), `${usUnits() ? __('pounds and inches') : __('kg and cm')} · ${volOz() ? __('fl oz') : __('ml')}`, unitsHtml())}
+  ${fold('notify', '🔔', N_('Notifications'), Notify.cfg.on ? __('Sleep check after {time} · quiet {from}–{to}', { time: fmtDur(Notify.cfg.after), from: clockAt(ntfMins(Notify.cfg.quiet[0])), to: clockAt(ntfMins(Notify.cfg.quiet[1])) }) : __('Off'), notifyHtml())}
   ${fold('look', '🌗', N_('Appearance and clock art'), `${__(THEME_NAMES[Theme.mode] || THEME_NAMES.system)} · ${arts.join(', ')}`, appearanceHtml() + artHtml())}
   ${fold('cloud', '☁️', N_('Cloud backup'), cloudOn.length ? cloudOn.join(', ') + (Cloud.auto ? ' · ' + __('daily') : '') : __('Not set up'), Acct.cloudHtml())}
   ${fold('data', '📄', N_('Your data'), __('Backup, export, the report for the doctor, restore'), `<div class="card"><b>${__h('Your data')}</b><p class="note">${Sync.linked() ? __h('Entries are saved on this device and synced to your family log.') : __h('Everything is stored only on this device.')} ${__h('Export a plain-text copy to share with your pediatrician.')}</p>
@@ -2398,6 +2402,22 @@ function moreView() {
   ${fold('app', '🌟', N_('App updates'), appVersion ? __('Version {version}', { version: appVersion }) : __('Through the app store'), `<div class="card" id="appCard"><b>${__h('App updates')}</b><p class="note"><span id="appVer"></span>${__h('New versions of Little Log come through the app store.')}</p>
     <div class="row"><button class="btn" id="appUpdate">${__h('Update app')}</button></div></div>`)}
   ${Sync.isParent() ? `<div class="card"><button class="btn d" id="wipe" style="width:100%">${__h('Delete all entries')}</button></div>` : ''}`;
+}
+/** More → Notifications: the sleep check ("Is Leo still asleep?" after a while, then again a few times) and the quiet hours it keeps
+    out of, kept on this phone. The phone's answer on notifications is filled in once it is known (bindMore). */
+const NTF_AFTER = [60, 90, 120, 180], NTF_EVERY = [30, 60], ntfMins = t => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+function notifyHtml() {
+  const c = Notify.cfg;
+  return `<div class="card"><b>${__h('Notifications')}</b>
+    <p class="note" id="ntfState">${Native.is ? '' : __h('In the phone app.')}</p>
+    <div class="stat"><span>${__h('Sleep check')}<br><small>${__h('While a child is logged asleep, the phone asks whether they are still asleep, with Woke up right on the notification, so a sleep nobody closed does not run on for hours.')}</small></span><span class="chips">${[['1', __('On')], ['0', __('Off')]].map(([v, l]) => chip('ntfOn', v, esc(l), (c.on ? '1' : '0') === v, '', true)).join('')}</span></div>
+    <div id="ntfMore"${c.on ? '' : ' hidden'}>
+      <label class="f">${__h('Ask after')}</label><div class="chips">${NTF_AFTER.map(m => chip('ntfAfter', m, esc(fmtDur(m)), c.after === m, '', true)).join('')}</div>
+      <label class="f">${__h('Then again every')}</label><div class="chips">${NTF_EVERY.map(m => chip('ntfEvery', m, esc(fmtDur(m)), c.every === m, '', true)).join('')}</div>
+      <p class="note">${__hn('Up to {n} time in all, until Woke up is tapped.', 'Up to {n} times in all, until Woke up is tapped.', c.times)}</p>
+      <label class="f">${__h('Do not disturb')}</label><div class="row"><input type="time" id="ntfFrom" value="${esc(c.quiet[0])}" aria-label="${__h('From')}"><input type="time" id="ntfTo" value="${esc(c.quiet[1])}" aria-label="${__h('Until')}"></div>
+      <p class="note">${__h('No sleep checks between these times (the night); one that falls in them is sent when they end, which also catches a sleep from the evening before. Kept on this phone: each parent sets their own.')}</p></div>
+    <div class="row" id="ntfAllowRow" hidden><button class="btn p" id="ntfAllow">${__h('Allow notifications')}</button></div></div>`;
 }
 /** More → Update app: the app's page in its store, where an update is one tap (the phone app can't replace itself). */
 function updateApp() {
@@ -2468,6 +2488,18 @@ function bindMore() {
   document.querySelectorAll('[name=themeMode]').forEach(r => r.onchange = () => { if (r.checked) { Theme.set(r.value); render(); } });
   document.querySelectorAll('[name=units]').forEach(r => r.onchange = () => { if (r.checked) { db.meta.units = r.value; Store.save(db); render(); } });
   document.querySelectorAll('[name=vol]').forEach(r => r.onchange = () => { if (r.checked) { db.meta.vol = r.value; Store.save(db); render(); } });
+  // notifications: the setting is kept on the phone, the phone's checks follow it; the phone's answer on notifications, once known
+  const ntfSet = o => { Notify.set(o); render(); Notify.sync(db.events); };
+  document.querySelectorAll('[name=ntfOn]').forEach(r => r.onchange = () => { if (r.checked) ntfSet({ on: r.value === '1' }); });
+  document.querySelectorAll('[name=ntfAfter]').forEach(r => r.onchange = () => { if (r.checked) ntfSet({ after: +r.value }); });
+  document.querySelectorAll('[name=ntfEvery]').forEach(r => r.onchange = () => { if (r.checked) ntfSet({ every: +r.value }); });
+  document.querySelectorAll('#ntfFrom, #ntfTo').forEach(el => el.onchange = () => { const q = [$('#ntfFrom').value, $('#ntfTo').value]; if (q.every(t => /^\d\d:\d\d$/.test(t))) ntfSet({ quiet: q }); });
+  if ($('#ntfAllow')) $('#ntfAllow').onclick = async () => { await Notify.ask(); render(); Notify.sync(db.events); };
+  Notify.permission().then(p => {
+    const el = $('#ntfState'), row = $('#ntfAllowRow'); if (!el || !row) return;
+    el.textContent = p === 'granted' ? __('Allowed on this phone.') : p === 'denied' ? __("Turned off in the phone's settings: allow Little Log's notifications there.") : p === 'none' ? __('In the phone app.') : __('Not allowed yet: the phone asks the first time there is something to send, or tap below.');
+    row.hidden = p !== 'prompt' && p !== 'prompt-with-rationale';
+  });
   $('#regionSel').onchange = e => { if (e.target.value) db.meta.region = e.target.value; else delete db.meta.region; Store.save(db); render(); toast(__('Where you are: {region}', { region: __(Formulas.name(myRegion())) })); };
   $('#langSel').onchange = e => setLanguage(e.target.value);
   if ($('#langReport')) $('#langReport').onclick = openLanguageReport;
@@ -2826,6 +2858,15 @@ Sync.onSessionLost = () => Acct.sessionLost();
   if (Native.is) {
     await Promise.all([Auth.init(), Cloud.init(), Acct.init()]);   // secrets come from the Keychain / Keystore
     await Lock.init();
+    await Notify.init();
+    // a tap on the "still asleep?" notification, or on its Woke up / Still asleep buttons
+    Notify.onAction((action, x) => {
+      const s = db.events.find(e => e.id === x.sleep);
+      if (action === 'still') return;
+      if (action === 'woke' && s && !s.end) { if (!Sync.can('edit', s)) toast(__("You can't change this entry")); else { s.end = Date.now(); s.updated = stamp(); save(); toast(__('Sleep saved')); } }
+      tab = 'day'; viewDay = startOfDay(Date.now()); if (s && s.child && kidById(s.child)) setKid(s.child); render();
+    });
+    Native.onAppState(active => { if (active) Notify.sync(db.events); });
   }
   render();                                            // the gate decides what to show: sign-in, two-step check, lock, or the app
   if (!Native.is) return;

@@ -2433,5 +2433,29 @@
  "1gxia0c": "Para más de un teléfono: inicia sesión con tu correo, invita al otro progenitor, a los abuelos o a la canguro, y todos ven el mismo diario, cifrado de extremo a extremo.",
  "1rs66rh": "Restaura el archivo de copia de seguridad que hiciste en el teléfono antiguo, con su frase de contraseña.",
  "n8g70c": "Tu idioma",
- "19589yq": "Little Log habla 32 idiomas. Cámbialo aquí, o más tarde en Más → Idioma."
+ "19589yq": "Little Log habla 32 idiomas. Cámbialo aquí, o más tarde en Más → Idioma.",
+ "fki4un": "Notificaciones",
+ "xy5pvf": "Mientras un niño está registrado durmiendo, el teléfono pregunta si sigue dormido, con «Se despertó» en la propia notificación. Elige cuándo pregunta y las horas de silencio que respeta.",
+ "1bfd4p6": "Control del sueño tras {time} · silencio {from}–{to}",
+ "ouzlc0": "En la app del teléfono.",
+ "jjuyqo": "Control del sueño",
+ "1a65i1c": "Mientras un niño está registrado durmiendo, el teléfono pregunta si sigue dormido, con «Se despertó» en la propia notificación, para que un sueño que nadie cerró no siga corriendo durante horas.",
+ "y70e58": "Preguntar después de",
+ "whj34l": "Y luego cada",
+ "1i6il94": {
+  "one": "Hasta {n} vez en total, hasta que se toque «Se despertó».",
+  "many": "Hasta {n} veces en total, hasta que se toque «Se despertó».",
+  "other": "Hasta {n} veces en total, hasta que se toque «Se despertó»."
+ },
+ "zwtfoa": "No molestar",
+ "rg2a5r": "Hasta",
+ "1snl3n3": "Sin controles del sueño entre estas horas (la noche); uno que caiga en ellas se envía cuando terminan, lo que también detecta un sueño de la tarde anterior. Se guarda en este teléfono: cada progenitor configura el suyo.",
+ "nipe5m": "Permitir notificaciones",
+ "q7keni": "Permitidas en este teléfono.",
+ "10pd2cg": "Desactivadas en los ajustes del teléfono: permite allí las notificaciones de Little Log.",
+ "84v6jt": "Aún no permitidas: el teléfono pregunta la primera vez que haya algo que enviar, o toca abajo.",
+ "xixiho": "tu peque",
+ "1b6wrmn": "¿{name} sigue dormido?",
+ "zo1csq": "Dormido desde las {time} ({long}). Toca «Se despertó» cuando esté despierto.",
+ "1po8mcp": "Sigue dormido"
 }

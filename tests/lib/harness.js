@@ -34,7 +34,7 @@ async function setup({ port = 8126 } = {}) {
     if (opts.skew) await ctx.addInitScript(off => { const real = Date.now.bind(Date); Date.now = () => real() + off; }, opts.skew);
     if (!opts.tour) await ctx.addInitScript(() => { try { if (!localStorage.getItem('ll.tours')) localStorage.setItem('ll.tours', '{"day":1,"welcome":1}'); } catch (e) { /* no storage */ } });   // (the first-time tour has its own test)
     if (!opts.welcome) await ctx.addInitScript(() => { try { localStorage.setItem('ll.welcome', '1'); } catch (e) { /* no storage */ } });
-    await ctx.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { try { ['mlang', 'macct', 'mkids', 'mregion', 'munits', 'mlook', 'mcloud', 'mdata', 'mapp', 'secnewborn', 'sectoddler', 'secschool', 'secteens', 'secpuberty', 'secfood', 'secmeds', 'secplay', 'secchecks', 'secmonths'].forEach(g => openGroups.add(g)); } catch (e) { /* not the app */ } }));   // (the More page's twirl-downs start closed; the tests click inside them)   // (the first screen has its own test: start.test.js)
+    await ctx.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { try { ['mlang', 'macct', 'mkids', 'mregion', 'munits', 'mlook', 'mcloud', 'mdata', 'mapp', 'mnotify', 'secnewborn', 'sectoddler', 'secschool', 'secteens', 'secpuberty', 'secfood', 'secmeds', 'secplay', 'secchecks', 'secmonths'].forEach(g => openGroups.add(g)); } catch (e) { /* not the app */ } }));   // (the More page's twirl-downs start closed; the tests click inside them)   // (the first screen has its own test: start.test.js)
     await shim.install(ctx);
     const p = await ctx.newPage(); p.errs = []; p.csp = [];
     p.on('pageerror', e => p.errs.push(e.message));

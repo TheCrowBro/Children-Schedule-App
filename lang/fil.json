@@ -2389,5 +2389,28 @@
  "1gxia0c": "Para sa higit sa isang telepono: mag-sign in gamit ang iyong email, anyayahan ang isa pang magulang, ang mga lolo at lola, o ang babysitter, at lahat ay makikita ang iisang talaan, naka-encrypt end-to-end.",
  "1rs66rh": "Ibalik ang backup file na ginawa mo sa lumang telepono, gamit ang passphrase nito.",
  "n8g70c": "Ang iyong wika",
- "19589yq": "Nagsasalita ang Little Log ng 32 wika. Baguhin ito rito, o mamaya sa Higit pa → Wika."
+ "19589yq": "Nagsasalita ang Little Log ng 32 wika. Baguhin ito rito, o mamaya sa Higit pa → Wika.",
+ "fki4un": "Mga notification",
+ "xy5pvf": "Habang nakatala na tulog ang bata, tinatanong ng telepono kung tulog pa siya, na may 'Nagising' mismo sa notification. Itakda kung kailan ito magtatanong, at ang mga tahimik na oras na iginagalang nito.",
+ "1bfd4p6": "Sleep check pagkatapos ng {time} · tahimik {from}–{to}",
+ "ouzlc0": "Sa app sa telepono.",
+ "jjuyqo": "Sleep check",
+ "1a65i1c": "Habang nakatala na tulog ang bata, tinatanong ng telepono kung tulog pa siya, na may 'Nagising' mismo sa notification, para hindi tumakbo nang ilang oras ang tulog na walang nagsara.",
+ "y70e58": "Magtanong pagkatapos ng",
+ "whj34l": "Pagkatapos ay muli bawat",
+ "1i6il94": {
+  "one": "Hanggang {n} beses sa kabuuan, hanggang mapindot ang 'Nagising'.",
+  "other": "Hanggang {n} beses sa kabuuan, hanggang mapindot ang 'Nagising'."
+ },
+ "zwtfoa": "Huwag istorbohin",
+ "rg2a5r": "Hanggang",
+ "1snl3n3": "Walang sleep check sa pagitan ng mga oras na ito (gabi); ang tumapat dito ay ipapadala pagkatapos ng mga oras na ito, kaya nahuhuli rin ang tulog mula sa nakaraang gabi. Nananatili sa teleponong ito: bawat magulang ang nagtatakda ng kanya.",
+ "nipe5m": "Payagan ang mga notification",
+ "q7keni": "Pinapayagan sa teleponong ito.",
+ "10pd2cg": "Naka-off sa mga setting ng telepono: payagan doon ang mga notification ng Little Log.",
+ "84v6jt": "Hindi pa pinapayagan: magtatanong ang telepono sa unang pagkakataong may ipapadala, o pindutin sa ibaba.",
+ "xixiho": "ang iyong anak",
+ "1b6wrmn": "Tulog pa ba si {name}?",
+ "zo1csq": "Tulog mula {time} ({long}). Pindutin ang 'Nagising' kapag gising na.",
+ "1po8mcp": "Tulog pa"
 }

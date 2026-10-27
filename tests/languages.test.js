@@ -264,7 +264,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       const INTERNAL = new Set(['no key', 'storage blocked', 'write aborted', 'shape', 'cancelled']);   // (caught inside the app, never shown)
       const words = t => /\p{L}{2,}/u.test(String(t).replace(/<[^>]*>/g, ' ').replace(/&\w+;/g, ' '));
       const literal = n => n && ((n.type === 'Literal' && typeof n.value === 'string' && words(n.value) && !INTERNAL.has(n.value)) || (n.type === 'TemplateLiteral' && words(n.quasis.map(q => q.value.cooked).join('§'))));
-      for (const f of ['app.js', 'account.js', 'sync.js', 'e2ee.js', 'cloud.js', 'auth.js', 'lock.js', 'native.js', 'tour.js', 'store.js', 'travel.js']) {
+      for (const f of ['app.js', 'account.js', 'sync.js', 'e2ee.js', 'cloud.js', 'auth.js', 'lock.js', 'native.js', 'notify.js', 'tour.js', 'store.js', 'travel.js']) {
         const ast = espree.parse(fs.readFileSync(path.join(root, f), 'utf8'), { ecmaVersion: 2023, loc: true });
         (function walk(n) {
           if (!n || typeof n.type !== 'string') return;

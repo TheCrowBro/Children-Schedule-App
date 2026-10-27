@@ -2433,5 +2433,29 @@
  "1gxia0c": "Pentru mai multe telefoane: conectează-te cu e-mailul, invită celălalt părinte, bunicii sau babysitterul, și toți văd același jurnal, criptat de la un capăt la altul.",
  "1rs66rh": "Restaurează fișierul de backup făcut pe telefonul vechi, cu fraza lui de acces.",
  "n8g70c": "Limba ta",
- "19589yq": "Little Log vorbește 32 de limbi. Schimb-o aici sau mai târziu în Mai mult → Limbă."
+ "19589yq": "Little Log vorbește 32 de limbi. Schimb-o aici sau mai târziu în Mai mult → Limbă.",
+ "fki4un": "Notificări",
+ "xy5pvf": "Cât timp un copil e notat ca dormind, telefonul întreabă dacă mai doarme, cu „S-a trezit” chiar pe notificare. Alege când întreabă și orele de liniște pe care le respectă.",
+ "1bfd4p6": "Verificarea somnului după {time} · liniște {from}–{to}",
+ "ouzlc0": "În aplicația de pe telefon.",
+ "jjuyqo": "Verificarea somnului",
+ "1a65i1c": "Cât timp un copil e notat ca dormind, telefonul întreabă dacă mai doarme, cu „S-a trezit” chiar pe notificare, ca un somn pe care nu l-a închis nimeni să nu curgă ore întregi.",
+ "y70e58": "Întreabă după",
+ "whj34l": "Apoi din nou la fiecare",
+ "1i6il94": {
+  "one": "Până la {n} dată în total, până apeși „S-a trezit”.",
+  "few": "Până la {n} ori în total, până apeși „S-a trezit”.",
+  "other": "Până la {n} de ori în total, până apeși „S-a trezit”."
+ },
+ "zwtfoa": "Nu deranja",
+ "rg2a5r": "Până la",
+ "1snl3n3": "Fără verificări ale somnului între aceste ore (noaptea); una care cade în ele se trimite când se termină, ceea ce prinde și un somn din seara dinainte. Rămâne pe acest telefon: fiecare părinte își setează ale lui.",
+ "nipe5m": "Permite notificările",
+ "q7keni": "Permise pe acest telefon.",
+ "10pd2cg": "Dezactivate în setările telefonului: permite acolo notificările Little Log.",
+ "84v6jt": "Încă nepermise: telefonul întreabă prima dată când are ceva de trimis, sau apasă mai jos.",
+ "xixiho": "copilul tău",
+ "1b6wrmn": "{name} mai doarme?",
+ "zo1csq": "Doarme de la {time} ({long}). Apasă „S-a trezit” când e treaz.",
+ "1po8mcp": "Mai doarme"
 }

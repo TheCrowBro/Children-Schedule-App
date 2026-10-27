@@ -2433,5 +2433,29 @@
  "1gxia0c": "Per più di un telefono: accedi con la tua email, invita l'altro genitore, i nonni o la baby-sitter, e tutti vedono lo stesso diario, cifrato end-to-end.",
  "1rs66rh": "Ripristina il file di backup fatto sul vecchio telefono, con la sua passphrase.",
  "n8g70c": "La tua lingua",
- "19589yq": "Little Log parla 32 lingue. Cambiala qui, o più tardi in Altro → Lingua."
+ "19589yq": "Little Log parla 32 lingue. Cambiala qui, o più tardi in Altro → Lingua.",
+ "fki4un": "Notifiche",
+ "xy5pvf": "Mentre un bambino risulta addormentato, il telefono chiede se dorme ancora, con «Fine nanna» direttamente sulla notifica. Scegli quando chiede e le ore di silenzio che rispetta.",
+ "1bfd4p6": "Controllo del sonno dopo {time} · silenzio {from}–{to}",
+ "ouzlc0": "Nell'app del telefono.",
+ "jjuyqo": "Controllo del sonno",
+ "1a65i1c": "Mentre un bambino risulta addormentato, il telefono chiede se dorme ancora, con «Fine nanna» direttamente sulla notifica, così un sonno che nessuno ha chiuso non va avanti per ore.",
+ "y70e58": "Chiedi dopo",
+ "whj34l": "Poi di nuovo ogni",
+ "1i6il94": {
+  "one": "Fino a {n} volta in tutto, finché non tocchi «Fine nanna».",
+  "many": "Fino a {n} volte in tutto, finché non tocchi «Fine nanna».",
+  "other": "Fino a {n} volte in tutto, finché non tocchi «Fine nanna»."
+ },
+ "zwtfoa": "Non disturbare",
+ "rg2a5r": "Fino a",
+ "1snl3n3": "Nessun controllo del sonno tra questi orari (la notte); quello che ci cade dentro arriva quando finiscono, e così si nota anche un sonno della sera prima. Resta su questo telefono: ogni genitore imposta il suo.",
+ "nipe5m": "Consenti le notifiche",
+ "q7keni": "Consentite su questo telefono.",
+ "10pd2cg": "Disattivate nelle impostazioni del telefono: consenti lì le notifiche di Little Log.",
+ "84v6jt": "Non ancora consentite: il telefono chiede la prima volta che c'è qualcosa da inviare, oppure tocca qui sotto.",
+ "xixiho": "il tuo bambino",
+ "1b6wrmn": "{name} dorme ancora?",
+ "zo1csq": "Dorme dalle {time} ({long}). Tocca «Fine nanna» quando è sveglio.",
+ "1po8mcp": "Dorme ancora"
 }

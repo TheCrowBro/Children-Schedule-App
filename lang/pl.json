@@ -2477,5 +2477,30 @@
  "1gxia0c": "Dla więcej niż jednego telefonu: zaloguj się e-mailem, zaproś drugiego rodzica, dziadków lub opiekunkę, a wszyscy zobaczą ten sam dzienniczek, szyfrowany od końca do końca.",
  "1rs66rh": "Przywróć plik kopii zapasowej zrobiony na starym telefonie, podając jego hasło.",
  "n8g70c": "Twój język",
- "19589yq": "Little Log mówi w 32 językach. Zmień go tutaj albo później w Więcej → Język."
+ "19589yq": "Little Log mówi w 32 językach. Zmień go tutaj albo później w Więcej → Język.",
+ "fki4un": "Powiadomienia",
+ "xy5pvf": "Gdy dziecko jest zapisane jako śpiące, telefon pyta, czy nadal śpi – z „Pobudka” wprost na powiadomieniu. Ustaw, kiedy pyta, i ciche godziny, w których milczy.",
+ "1bfd4p6": "Kontrola snu po {time} · cisza {from}–{to}",
+ "ouzlc0": "W aplikacji na telefonie.",
+ "jjuyqo": "Kontrola snu",
+ "1a65i1c": "Gdy dziecko jest zapisane jako śpiące, telefon pyta, czy nadal śpi – z „Pobudka” wprost na powiadomieniu, żeby sen, którego nikt nie zamknął, nie ciągnął się godzinami.",
+ "y70e58": "Pytaj po",
+ "whj34l": "Potem znów co",
+ "1i6il94": {
+  "one": "Łącznie do {n} razu, aż dotkniesz „Pobudka”.",
+  "few": "Łącznie do {n} razy, aż dotkniesz „Pobudka”.",
+  "many": "Łącznie do {n} razy, aż dotkniesz „Pobudka”.",
+  "other": "Łącznie do {n} raza, aż dotkniesz „Pobudka”."
+ },
+ "zwtfoa": "Nie przeszkadzać",
+ "rg2a5r": "Do",
+ "1snl3n3": "Bez kontroli snu między tymi godzinami (noc); ta, która w nie wypada, przyjdzie, gdy się skończą – tak wychwycisz też sen z poprzedniego wieczoru. Zostaje na tym telefonie: każdy rodzic ustawia swoje.",
+ "nipe5m": "Zezwól na powiadomienia",
+ "q7keni": "Dozwolone na tym telefonie.",
+ "10pd2cg": "Wyłączone w ustawieniach telefonu: zezwól tam na powiadomienia Little Log.",
+ "84v6jt": "Jeszcze niedozwolone: telefon zapyta, gdy pierwszy raz będzie co wysłać, albo dotknij poniżej.",
+ "xixiho": "Twoje dziecko",
+ "1b6wrmn": "Czy {name} nadal śpi?",
+ "zo1csq": "Śpi od {time} ({long}). Dotknij „Pobudka”, gdy się obudzi.",
+ "1po8mcp": "Nadal śpi"
 }

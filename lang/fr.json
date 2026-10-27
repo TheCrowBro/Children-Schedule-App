@@ -2433,5 +2433,29 @@
  "1gxia0c": "Pour plusieurs téléphones : connectez-vous avec votre e-mail, invitez l'autre parent, les grands-parents ou le baby-sitter, et tout le monde voit le même journal, chiffré de bout en bout.",
  "1rs66rh": "Restaurez le fichier de sauvegarde fait sur l'ancien téléphone, avec sa phrase secrète.",
  "n8g70c": "Votre langue",
- "19589yq": "Little Log parle 32 langues. Changez-la ici, ou plus tard dans Plus → Langue."
+ "19589yq": "Little Log parle 32 langues. Changez-la ici, ou plus tard dans Plus → Langue.",
+ "fki4un": "Notifications",
+ "xy5pvf": "Tant qu'un enfant est noté endormi, le téléphone demande s'il dort encore, avec « Réveillé » directement sur la notification. Choisissez quand il demande, et les heures calmes qu'il respecte.",
+ "1bfd4p6": "Vérification du sommeil après {time} · calme {from}–{to}",
+ "ouzlc0": "Dans l'application du téléphone.",
+ "jjuyqo": "Vérification du sommeil",
+ "1a65i1c": "Tant qu'un enfant est noté endormi, le téléphone demande s'il dort encore, avec « Réveillé » directement sur la notification, pour qu'un sommeil que personne n'a clos ne dure pas des heures.",
+ "y70e58": "Demander après",
+ "whj34l": "Puis à nouveau toutes les",
+ "1i6il94": {
+  "one": "Jusqu'à {n} fois en tout, jusqu'à ce que « Réveillé » soit touché.",
+  "many": "Jusqu'à {n} fois en tout, jusqu'à ce que « Réveillé » soit touché.",
+  "other": "Jusqu'à {n} fois en tout, jusqu'à ce que « Réveillé » soit touché."
+ },
+ "zwtfoa": "Ne pas déranger",
+ "rg2a5r": "Jusqu'à",
+ "1snl3n3": "Aucune vérification du sommeil entre ces heures (la nuit) ; celle qui y tombe est envoyée à leur fin, ce qui rattrape aussi un sommeil de la veille au soir. Gardé sur ce téléphone : chaque parent règle le sien.",
+ "nipe5m": "Autoriser les notifications",
+ "q7keni": "Autorisées sur ce téléphone.",
+ "10pd2cg": "Désactivées dans les réglages du téléphone : autorisez-y les notifications de Little Log.",
+ "84v6jt": "Pas encore autorisées : le téléphone demande la première fois qu'il y a quelque chose à envoyer, ou touchez ci-dessous.",
+ "xixiho": "votre enfant",
+ "1b6wrmn": "{name} dort-il encore ?",
+ "zo1csq": "Endormi depuis {time} ({long}). Touchez « Réveillé » quand il est réveillé.",
+ "1po8mcp": "Dort encore"
 }

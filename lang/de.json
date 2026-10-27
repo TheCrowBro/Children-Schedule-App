@@ -2389,5 +2389,28 @@
  "1gxia0c": "Für mehr als ein Handy: Melde dich mit deiner E-Mail an, lade den anderen Elternteil, die Großeltern oder den Babysitter ein, und alle sehen dasselbe Logbuch, Ende-zu-Ende-verschlüsselt.",
  "1rs66rh": "Stelle die Sicherungsdatei wieder her, die du auf dem alten Handy gemacht hast, mit ihrer Passphrase.",
  "n8g70c": "Deine Sprache",
- "19589yq": "Little Log spricht 32 Sprachen. Ändere sie hier oder später unter Mehr → Sprache."
+ "19589yq": "Little Log spricht 32 Sprachen. Ändere sie hier oder später unter Mehr → Sprache.",
+ "fki4un": "Benachrichtigungen",
+ "xy5pvf": "Während ein Kind als schlafend eingetragen ist, fragt das Handy, ob es noch schläft – mit „Aufgewacht“ direkt auf der Benachrichtigung. Lege fest, wann es fragt, und die Ruhezeiten, in denen es schweigt.",
+ "1bfd4p6": "Schlaf-Check nach {time} · Ruhe {from}–{to}",
+ "ouzlc0": "In der Handy-App.",
+ "jjuyqo": "Schlaf-Check",
+ "1a65i1c": "Während ein Kind als schlafend eingetragen ist, fragt das Handy, ob es noch schläft – mit „Aufgewacht“ direkt auf der Benachrichtigung, damit ein Schlaf, den niemand beendet hat, nicht stundenlang weiterläuft.",
+ "y70e58": "Fragen nach",
+ "whj34l": "Dann wieder alle",
+ "1i6il94": {
+  "one": "Insgesamt bis zu {n} Mal, bis „Aufgewacht“ angetippt wird.",
+  "other": "Insgesamt bis zu {n} Mal, bis „Aufgewacht“ angetippt wird."
+ },
+ "zwtfoa": "Nicht stören",
+ "rg2a5r": "Bis",
+ "1snl3n3": "Keine Schlaf-Checks zwischen diesen Zeiten (nachts); einer, der hineinfällt, kommt, wenn sie enden – so fällt auch ein Schlaf vom Vorabend auf. Bleibt auf diesem Handy: jeder Elternteil stellt es selbst ein.",
+ "nipe5m": "Benachrichtigungen erlauben",
+ "q7keni": "Auf diesem Handy erlaubt.",
+ "10pd2cg": "In den Handy-Einstellungen ausgeschaltet: Erlaube dort die Benachrichtigungen von Little Log.",
+ "84v6jt": "Noch nicht erlaubt: Das Handy fragt, sobald es zum ersten Mal etwas zu senden gibt – oder tippe unten.",
+ "xixiho": "dein Kind",
+ "1b6wrmn": "Schläft {name} noch?",
+ "zo1csq": "Schläft seit {time} ({long}). Tippe auf „Aufgewacht“, wenn es wach ist.",
+ "1po8mcp": "Schläft noch"
 }

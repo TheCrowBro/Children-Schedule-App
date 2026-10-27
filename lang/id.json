@@ -2345,5 +2345,27 @@
  "1gxia0c": "Untuk lebih dari satu ponsel: masuk dengan email Anda, undang orang tua yang lain, kakek-nenek, atau pengasuh, dan semua melihat catatan yang sama, terenkripsi ujung ke ujung.",
  "1rs66rh": "Pulihkan berkas cadangan yang Anda buat di ponsel lama, dengan frasa sandinya.",
  "n8g70c": "Bahasa Anda",
- "19589yq": "Little Log berbicara 32 bahasa. Ubah di sini, atau nanti di Lainnya → Bahasa."
+ "19589yq": "Little Log berbicara 32 bahasa. Ubah di sini, atau nanti di Lainnya → Bahasa.",
+ "fki4un": "Notifikasi",
+ "xy5pvf": "Selama seorang anak tercatat tidur, ponsel menanyakan apakah ia masih tidur, dengan 'Sudah bangun' langsung di notifikasi. Atur kapan ia bertanya, dan jam tenang yang ia hormati.",
+ "1bfd4p6": "Cek tidur setelah {time} · tenang {from}–{to}",
+ "ouzlc0": "Di aplikasi ponsel.",
+ "jjuyqo": "Cek tidur",
+ "1a65i1c": "Selama seorang anak tercatat tidur, ponsel menanyakan apakah ia masih tidur, dengan 'Sudah bangun' langsung di notifikasi, supaya tidur yang tidak ditutup siapa pun tidak terus berjalan berjam-jam.",
+ "y70e58": "Tanya setelah",
+ "whj34l": "Lalu lagi setiap",
+ "1i6il94": {
+  "other": "Paling banyak {n} kali, sampai 'Sudah bangun' diketuk."
+ },
+ "zwtfoa": "Jangan ganggu",
+ "rg2a5r": "Sampai",
+ "1snl3n3": "Tidak ada cek tidur di antara jam-jam ini (malam); yang jatuh di dalamnya dikirim saat jam itu berakhir, sehingga tidur dari sore sebelumnya pun tertangkap. Disimpan di ponsel ini: setiap orang tua mengatur miliknya sendiri.",
+ "nipe5m": "Izinkan notifikasi",
+ "q7keni": "Diizinkan di ponsel ini.",
+ "10pd2cg": "Dimatikan di pengaturan ponsel: izinkan notifikasi Little Log di sana.",
+ "84v6jt": "Belum diizinkan: ponsel akan bertanya saat pertama kali ada yang perlu dikirim, atau ketuk di bawah.",
+ "xixiho": "anak Anda",
+ "1b6wrmn": "Apakah {name} masih tidur?",
+ "zo1csq": "Tidur sejak {time} ({long}). Ketuk 'Sudah bangun' saat ia bangun.",
+ "1po8mcp": "Masih tidur"
 }

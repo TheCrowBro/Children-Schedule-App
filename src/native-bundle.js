@@ -6,9 +6,10 @@ import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { registerPlugin } from '@capacitor/core';
 
 const Insets = registerPlugin('Insets');
 const Calendar = registerPlugin('Calendar');   // the app's own Android plugin (InsetsPlugin.java): the system bars over the page
 
-window.LLPlugins = window.LLPlugins || { SecureStorage, KeychainAccess, BiometricAuth, App, Browser, Filesystem, Share, Insets, Calendar };
+window.LLPlugins = window.LLPlugins || { SecureStorage, KeychainAccess, BiometricAuth, App, Browser, Filesystem, Share, LocalNotifications, Insets, Calendar };
