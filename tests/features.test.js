@@ -901,7 +901,7 @@ const pickFormula = async (page, scope, name) => {
       assert.deepEqual(await plan(evs.concat(open), at(13, 10)), [[15 * 60 + 35, 90], [16 * 60 + 5, 90], [16 * 60 + 35, 90]], 'usually 1h 30m: an hour after 2:35, then every half hour');
       assert.deepEqual(await plan(evs.concat(open), at(13, 10), { routine: false }), [[15 * 60 + 5, null], [15 * 60 + 35, null], [16 * 60 + 5, null]], 'turned off: ask after 2 hours');
       assert.deepEqual(await plan(evs.concat({ ...open, ts: at(10, 0) }), at(10, 10)), [[12 * 60, null], [12 * 60 + 30, null], [13 * 60, null]], 'a sleep at 10, not a routine time: ask after 2 hours');
-      assert.deepEqual(await plan([open], at(13, 10)), [[15 * 60 + 5, null], [15 * 60 + 35, null], [16 * 60 + 5, null]], 'no routine yet: ask after 2 hours');
+      assert.deepEqual(await plan([open], at(13, 11)), [[15 * 60 + 5, null], [15 * 60 + 35, null], [16 * 60 + 5, null]], 'no routine yet: ask after 2 hours (another minute: the routine is looked at again)');
       const text = await P.evaluate(([list, open]) => { const n = Notify.plan(list, open.ts + 60e3, { on: true, after: 120, every: 30, times: 3, quiet: ['19:00', '07:00'], routine: true })[0]; return Notify.text(list, n).body; }, [evs.concat(open), open]);
       assert(/^Asleep since 1:05 PM \(2h 30m\)\. Usually up by about 2:35 PM\. Tap Woke up when they are awake\.$/.test(text), text);
       await P.click('[data-tab=more]'); await P.evaluate(() => { document.querySelector('details[data-grp=mnotify]').open = true; });

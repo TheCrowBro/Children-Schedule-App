@@ -38,19 +38,28 @@ const Notify = (() => {
   }
   // a number the phone keeps for each check: from the entry's id and the check's number
   const idFor = (sid, i) => { let h = 7; for (const ch of String(sid)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return 100000 + (h % 100000) * 10 + i; };
-  /** How long a sleep begun at this time of day usually lasts, from the child's routine (the sleep time within 45 minutes of it): the
-      minutes, or null when the routine does not know (yet). */
-  const memo = new Map();   // (working a child's routine out is a scan of the log: once per child and day, not on every redraw)
+  /** How long a sleep begun at this time of day usually lasts: the median of the child's sleeps at about that time (within 45 minutes)
+      over the last 7 days, one per day, when they come on days enough for the routine's own rule (3, and more than half of the days
+      logged); null when the routine does not know (yet). A straight pass over the log: the routine's full search is slow on a big one. */
+  const memo = new Map();   // (once per sleep and minute, not on every redraw)
+  const minutesOf = t => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes(); };
+  const dayOf = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
   function usual(events, e, now = Date.now()) {
-    const child = childOf(e), day = new Date(now); day.setHours(0, 0, 0, 0);
-    const key = `${child}|${day.getTime()}|${events.length}`;
-    let R = memo.get(key);
-    if (!R) { R = Routine.find(events.filter(x => x.type !== 'plan' && !Travel.isTravel(x.type) && childOf(x) === child), now); if (memo.size > 20) memo.clear(); memo.set(key, R); }
-    if (!R.enough) return null;
-    const d = new Date(e.ts), m = d.getHours() * 60 + d.getMinutes();
+    const key = `${e.id}|${Math.floor(now / MIN)}`;
+    if (memo.has(key)) return memo.get(key);
+    const child = childOf(e), from = now - Routine.DAYS * 24 * 60 * MIN, m = minutesOf(e.ts);
     const near = (a, b) => Math.min(Math.abs(a - b), 1440 - Math.abs(a - b)) <= Routine.WINDOW;
-    const s = R.slots.find(x => x.type === 'sleep' && x.minutes > 0 && near(x.at, m));
-    return s ? s.minutes : null;
+    const days = new Set(), hits = new Map();   // the days with entries; the length of the sleep at about this time on each (the longest)
+    for (const x of events) {
+      if (x.ts < from || x.ts >= now || x.id === e.id || x.type === 'plan' || Travel.isTravel(x.type) || childOf(x) !== child) continue;
+      const d = dayOf(x.ts); days.add(d);
+      if (x.type === 'sleep' && x.end > x.ts && near(minutesOf(x.ts), m)) { const len = (x.end - x.ts) / MIN; if (!hits.has(d) || hits.get(d) < len) hits.set(d, len); }
+    }
+    const need = Math.max(Routine.MIN_DAYS, Math.floor(days.size / 2) + 1);
+    let v = null;
+    if (hits.size >= need) { const a = [...hits.values()].sort((p, q) => p - q); v = Math.round(a.length % 2 ? a[(a.length - 1) / 2] : (a[a.length / 2 - 1] + a[a.length / 2]) / 2); }
+    if (memo.size > 50) memo.clear();
+    memo.set(key, v); return v;
   }
   /** The checks for the sleeps still open: { id, at, sleep, child, i, usual }, in time order. `after` minutes from the start (or an
       hour after the usual end, once the routine knows it), then every `every` minutes after the one before, `times` in all; each
