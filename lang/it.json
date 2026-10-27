@@ -2456,6 +2456,10 @@
  "84v6jt": "Non ancora consentite: il telefono chiede la prima volta che c'è qualcosa da inviare, oppure tocca qui sotto.",
  "xixiho": "il tuo bambino",
  "1b6wrmn": "{name} dorme ancora?",
- "zo1csq": "Dorme dalle {time} ({long}). Tocca «Fine nanna» quando è sveglio.",
- "1po8mcp": "Dorme ancora"
+ "1po8mcp": "Dorme ancora",
+ "1af8tei": "Quando la routine è nota",
+ "1aqdhru": "Chiedi invece un'ora dopo la fine abituale del sonno: un pisolino che di solito finisce alle 14:30 viene chiesto alle 15:30. La notifica dice quando di solito è sveglio.",
+ "wooms1": "Dorme dalle {time} ({long}).",
+ "daeire": "Di solito sveglio verso le {time}.",
+ "1p7goiw": "Tocca «Fine nanna» quando è sveglio."
 }

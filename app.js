@@ -2413,6 +2413,7 @@ function notifyHtml() {
     <div class="stat"><span>${__h('Sleep check')}<br><small>${__h('While a child is logged asleep, the phone asks whether they are still asleep, with Woke up right on the notification, so a sleep nobody closed does not run on for hours.')}</small></span><span class="chips">${[['1', __('On')], ['0', __('Off')]].map(([v, l]) => chip('ntfOn', v, esc(l), (c.on ? '1' : '0') === v, '', true)).join('')}</span></div>
     <div id="ntfMore"${c.on ? '' : ' hidden'}>
       <label class="f">${__h('Ask after')}</label><div class="chips">${NTF_AFTER.map(m => chip('ntfAfter', m, esc(fmtDur(m)), c.after === m, '', true)).join('')}</div>
+      <div class="stat"><span>${__h('Once the routine is known')}<br><small>${__h('Ask an hour after the sleep usually ends instead: a nap that usually ends at 2:30 is asked about at 3:30. The notification says when they are usually up.')}</small></span><span class="chips">${[['1', __('On')], ['0', __('Off')]].map(([v, l]) => chip('ntfRoutine', v, esc(l), (c.routine !== false ? '1' : '0') === v, '', true)).join('')}</span></div>
       <label class="f">${__h('Then again every')}</label><div class="chips">${NTF_EVERY.map(m => chip('ntfEvery', m, esc(fmtDur(m)), c.every === m, '', true)).join('')}</div>
       <p class="note">${__hn('Up to {n} time in all, until Woke up is tapped.', 'Up to {n} times in all, until Woke up is tapped.', c.times)}</p>
       <label class="f">${__h('Do not disturb')}</label><div class="row"><input type="time" id="ntfFrom" value="${esc(c.quiet[0])}" aria-label="${__h('From')}"><input type="time" id="ntfTo" value="${esc(c.quiet[1])}" aria-label="${__h('Until')}"></div>
@@ -2492,6 +2493,7 @@ function bindMore() {
   const ntfSet = o => { Notify.set(o); render(); Notify.sync(db.events); };
   document.querySelectorAll('[name=ntfOn]').forEach(r => r.onchange = () => { if (r.checked) ntfSet({ on: r.value === '1' }); });
   document.querySelectorAll('[name=ntfAfter]').forEach(r => r.onchange = () => { if (r.checked) ntfSet({ after: +r.value }); });
+  document.querySelectorAll('[name=ntfRoutine]').forEach(r => r.onchange = () => { if (r.checked) ntfSet({ routine: r.value === '1' }); });
   document.querySelectorAll('[name=ntfEvery]').forEach(r => r.onchange = () => { if (r.checked) ntfSet({ every: +r.value }); });
   document.querySelectorAll('#ntfFrom, #ntfTo').forEach(el => el.onchange = () => { const q = [$('#ntfFrom').value, $('#ntfTo').value]; if (q.every(t => /^\d\d:\d\d$/.test(t))) ntfSet({ quiet: q }); });
   if ($('#ntfAllow')) $('#ntfAllow').onclick = async () => { await Notify.ask(); render(); Notify.sync(db.events); };

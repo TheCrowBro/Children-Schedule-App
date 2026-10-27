@@ -2366,6 +2366,10 @@
  "84v6jt": "Belum diizinkan: ponsel akan bertanya saat pertama kali ada yang perlu dikirim, atau ketuk di bawah.",
  "xixiho": "anak Anda",
  "1b6wrmn": "Apakah {name} masih tidur?",
- "zo1csq": "Tidur sejak {time} ({long}). Ketuk 'Sudah bangun' saat ia bangun.",
- "1po8mcp": "Masih tidur"
+ "1po8mcp": "Masih tidur",
+ "1af8tei": "Setelah rutinitas diketahui",
+ "1aqdhru": "Sebaliknya tanya satu jam setelah tidur biasanya berakhir: tidur siang yang biasanya berakhir pukul 2.30 ditanyakan pukul 3.30. Notifikasi menyebutkan kapan anak biasanya sudah bangun.",
+ "wooms1": "Tidur sejak {time} ({long}).",
+ "daeire": "Biasanya sudah bangun sekitar {time}.",
+ "1p7goiw": "Ketuk 'Sudah bangun' saat ia bangun."
 }

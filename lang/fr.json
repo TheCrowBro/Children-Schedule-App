@@ -2456,6 +2456,10 @@
  "84v6jt": "Pas encore autorisées : le téléphone demande la première fois qu'il y a quelque chose à envoyer, ou touchez ci-dessous.",
  "xixiho": "votre enfant",
  "1b6wrmn": "{name} dort-il encore ?",
- "zo1csq": "Endormi depuis {time} ({long}). Touchez « Réveillé » quand il est réveillé.",
- "1po8mcp": "Dort encore"
+ "1po8mcp": "Dort encore",
+ "1af8tei": "Une fois la routine connue",
+ "1aqdhru": "Demander plutôt une heure après la fin habituelle du sommeil : une sieste qui finit d'habitude à 14 h 30 est demandée à 15 h 30. La notification dit quand il est réveillé d'habitude.",
+ "wooms1": "Endormi depuis {time} ({long}).",
+ "daeire": "D'habitude réveillé vers {time}.",
+ "1p7goiw": "Touchez « Réveillé » quand il est réveillé."
 }

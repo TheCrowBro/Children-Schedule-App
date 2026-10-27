@@ -2411,6 +2411,10 @@
  "84v6jt": "Noch nicht erlaubt: Das Handy fragt, sobald es zum ersten Mal etwas zu senden gibt – oder tippe unten.",
  "xixiho": "dein Kind",
  "1b6wrmn": "Schläft {name} noch?",
- "zo1csq": "Schläft seit {time} ({long}). Tippe auf „Aufgewacht“, wenn es wach ist.",
- "1po8mcp": "Schläft noch"
+ "1po8mcp": "Schläft noch",
+ "1af8tei": "Sobald die Routine bekannt ist",
+ "1aqdhru": "Stattdessen eine Stunde nach dem üblichen Ende des Schlafs fragen: Bei einem Nickerchen, das sonst um 14:30 endet, wird um 15:30 gefragt. Die Benachrichtigung sagt, wann das Kind sonst wach ist.",
+ "wooms1": "Schläft seit {time} ({long}).",
+ "daeire": "Normalerweise gegen {time} wach.",
+ "1p7goiw": "Tippe auf „Aufgewacht“, wenn es wach ist."
 }

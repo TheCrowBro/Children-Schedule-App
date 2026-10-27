@@ -2411,6 +2411,10 @@
  "84v6jt": "Nog niet toegestaan: de telefoon vraagt het de eerste keer dat er iets te sturen is, of tik hieronder.",
  "xixiho": "je kind",
  "1b6wrmn": "Slaapt {name} nog?",
- "zo1csq": "Slaapt sinds {time} ({long}). Tik op 'Wakker geworden' als het wakker is.",
- "1po8mcp": "Slaapt nog"
+ "1po8mcp": "Slaapt nog",
+ "1af8tei": "Zodra het ritme bekend is",
+ "1aqdhru": "Vraag in plaats daarvan een uur nadat het slaapje gewoonlijk eindigt: een dutje dat meestal om 14:30 eindigt wordt om 15:30 gevraagd. De melding zegt wanneer het kind meestal wakker is.",
+ "wooms1": "Slaapt sinds {time} ({long}).",
+ "daeire": "Meestal wakker rond {time}.",
+ "1p7goiw": "Tik op 'Wakker geworden' als het wakker is."
 }

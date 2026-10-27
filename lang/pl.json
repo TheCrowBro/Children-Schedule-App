@@ -2501,6 +2501,10 @@
  "84v6jt": "Jeszcze niedozwolone: telefon zapyta, gdy pierwszy raz będzie co wysłać, albo dotknij poniżej.",
  "xixiho": "Twoje dziecko",
  "1b6wrmn": "Czy {name} nadal śpi?",
- "zo1csq": "Śpi od {time} ({long}). Dotknij „Pobudka”, gdy się obudzi.",
- "1po8mcp": "Nadal śpi"
+ "1po8mcp": "Nadal śpi",
+ "1af8tei": "Gdy rutyna jest już znana",
+ "1aqdhru": "Pytaj zamiast tego godzinę po zwykłym końcu snu: o drzemkę, która zwykle kończy się o 14:30, pyta o 15:30. Powiadomienie mówi, kiedy dziecko zwykle już nie śpi.",
+ "wooms1": "Śpi od {time} ({long}).",
+ "daeire": "Zwykle budzi się około {time}.",
+ "1p7goiw": "Dotknij „Pobudka”, gdy się obudzi."
 }

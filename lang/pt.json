@@ -2456,6 +2456,10 @@
  "84v6jt": "Ainda não permitidas: o telemóvel pergunta na primeira vez que houver algo a enviar, ou toque abaixo.",
  "xixiho": "o seu filho",
  "1b6wrmn": "{name} ainda dorme?",
- "zo1csq": "A dormir desde as {time} ({long}). Toque em «Acordou» quando estiver acordado.",
- "1po8mcp": "Ainda dorme"
+ "1po8mcp": "Ainda dorme",
+ "1af8tei": "Quando a rotina for conhecida",
+ "1aqdhru": "Perguntar antes uma hora depois de o sono costumar acabar: uma soneca que costuma acabar às 14:30 é perguntada às 15:30. A notificação diz a que horas costuma estar acordado.",
+ "wooms1": "A dormir desde as {time} ({long}).",
+ "daeire": "Costuma estar acordado por volta das {time}.",
+ "1p7goiw": "Toque em «Acordou» quando estiver acordado."
 }

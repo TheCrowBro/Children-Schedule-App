@@ -2411,6 +2411,10 @@
  "84v6jt": "Henüz izin verilmedi: telefon, gönderilecek bir şey olduğunda ilk kez sorar; ya da aşağıya dokunun.",
  "xixiho": "çocuğunuz",
  "1b6wrmn": "{name} hâlâ uyuyor mu?",
- "zo1csq": "{time} saatinden beri uyuyor ({long}). Uyanınca 'Uyandı'ya dokunun.",
- "1po8mcp": "Hâlâ uyuyor"
+ "1po8mcp": "Hâlâ uyuyor",
+ "1af8tei": "Rutin öğrenildikten sonra",
+ "1aqdhru": "Bunun yerine uykunun genellikle bittiği saatten bir saat sonra sor: genellikle 14:30'da biten bir şekerleme 15:30'da sorulur. Bildirim, çocuğun genellikle ne zaman uyanık olduğunu söyler.",
+ "wooms1": "{time} saatinden beri uyuyor ({long}).",
+ "daeire": "Genellikle {time} civarında uyanık olur.",
+ "1p7goiw": "Uyanınca 'Uyandı'ya dokunun."
 }

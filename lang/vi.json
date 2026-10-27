@@ -2366,6 +2366,10 @@
  "84v6jt": "Chưa được phép: điện thoại sẽ hỏi lần đầu có gì cần gửi, hoặc chạm bên dưới.",
  "xixiho": "con bạn",
  "1b6wrmn": "{name} còn ngủ không?",
- "zo1csq": "Ngủ từ {time} ({long}). Chạm 'Đã dậy' khi bé thức.",
- "1po8mcp": "Còn ngủ"
+ "1po8mcp": "Còn ngủ",
+ "1af8tei": "Khi đã biết nếp sinh hoạt",
+ "1aqdhru": "Thay vào đó, hỏi một giờ sau khi giấc ngủ thường kết thúc: giấc ngủ trưa thường kết thúc lúc 2:30 sẽ được hỏi lúc 3:30. Thông báo cho biết bé thường dậy lúc nào.",
+ "wooms1": "Ngủ từ {time} ({long}).",
+ "daeire": "Thường dậy khoảng {time}.",
+ "1p7goiw": "Chạm 'Đã dậy' khi bé thức."
 }

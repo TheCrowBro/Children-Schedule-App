@@ -2456,6 +2456,10 @@
  "84v6jt": "Încă nepermise: telefonul întreabă prima dată când are ceva de trimis, sau apasă mai jos.",
  "xixiho": "copilul tău",
  "1b6wrmn": "{name} mai doarme?",
- "zo1csq": "Doarme de la {time} ({long}). Apasă „S-a trezit” când e treaz.",
- "1po8mcp": "Mai doarme"
+ "1po8mcp": "Mai doarme",
+ "1af8tei": "Odată ce rutina e cunoscută",
+ "1aqdhru": "Întreabă în schimb la o oră după sfârșitul obișnuit al somnului: despre un somn de zi care se termină de obicei la 14:30 întreabă la 15:30. Notificarea spune când e treaz de obicei.",
+ "wooms1": "Doarme de la {time} ({long}).",
+ "daeire": "De obicei treaz pe la {time}.",
+ "1p7goiw": "Apasă „S-a trezit” când e treaz."
 }

@@ -892,6 +892,23 @@ const pickFormula = async (page, scope, name) => {
       await P.evaluate(() => Notify.set({ on: true, after: 120, every: 30, quiet: ['19:00', '07:00'] }));
     });
 
+    await step('once the routine knows how long a sleep at that time usually lasts, the first check comes an hour after the usual end (a nap that usually ends at 2:30 is asked about at 3:30, and the notification says so); a sleep at a time the routine does not know keeps "ask after"; the rule can be turned off', async () => {
+      const at = (h, m = 0, d = 0) => { const x = new Date(); x.setDate(x.getDate() - d); x.setHours(h, m, 0, 0); return x.getTime(); };
+      const kid = await P.evaluate(() => db.baby.kids[0].id);
+      const evs = []; for (let d = 1; d <= 4; d++) evs.push({ id: 'rn' + d, type: 'sleep', ts: at(13, 0, d), end: at(14, 30, d), data: { nap: true }, child: kid }, { id: 'rf' + d, type: 'feed', ts: at(8, 0, d), data: { kind: 'bottle', ml: 120 }, child: kid });
+      const open = { id: 'rtoday', type: 'sleep', ts: at(13, 5), data: { nap: true }, child: kid };
+      const plan = (list, now, extra = {}) => P.evaluate(([list, now, extra]) => Notify.plan(list, now, { on: true, after: 120, every: 30, times: 3, quiet: ['19:00', '07:00'], routine: true, ...extra }).map(n => { const d = new Date(n.at); return [d.getHours() * 60 + d.getMinutes(), n.usual]; }), [list, now, extra]);
+      assert.deepEqual(await plan(evs.concat(open), at(13, 10)), [[15 * 60 + 35, 90], [16 * 60 + 5, 90], [16 * 60 + 35, 90]], 'usually 1h 30m: an hour after 2:35, then every half hour');
+      assert.deepEqual(await plan(evs.concat(open), at(13, 10), { routine: false }), [[15 * 60 + 5, null], [15 * 60 + 35, null], [16 * 60 + 5, null]], 'turned off: ask after 2 hours');
+      assert.deepEqual(await plan(evs.concat({ ...open, ts: at(10, 0) }), at(10, 10)), [[12 * 60, null], [12 * 60 + 30, null], [13 * 60, null]], 'a sleep at 10, not a routine time: ask after 2 hours');
+      assert.deepEqual(await plan([open], at(13, 10)), [[15 * 60 + 5, null], [15 * 60 + 35, null], [16 * 60 + 5, null]], 'no routine yet: ask after 2 hours');
+      const text = await P.evaluate(([list, open]) => { const n = Notify.plan(list, open.ts + 60e3, { on: true, after: 120, every: 30, times: 3, quiet: ['19:00', '07:00'], routine: true })[0]; return Notify.text(list, n).body; }, [evs.concat(open), open]);
+      assert(/^Asleep since 1:05 PM \(2h 30m\)\. Usually up by about 2:35 PM\. Tap Woke up when they are awake\.$/.test(text), text);
+      await P.click('[data-tab=more]'); await P.evaluate(() => { document.querySelector('details[data-grp=mnotify]').open = true; });
+      assert.equal(await P.isChecked('[name=ntfRoutine][value="1"]'), true, 'on to start with'); await P.click('[name=ntfRoutine][value="0"]'); assert.equal(await P.evaluate(() => Notify.cfg.routine), false);
+      await P.evaluate(() => Notify.set({ routine: true }));
+    });
+
     const pageErrs = H.pages.flatMap(p => p.errs.concat(p.csp));
     if (pageErrs.length) { failed++; console.log('✗ page errors:', pageErrs); } else { ok++; console.log('✓ no page errors or content-security-policy violations on any phone'); }
   } finally { await H.close(); }

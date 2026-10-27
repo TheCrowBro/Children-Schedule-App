@@ -152,7 +152,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 - **Notifications** (the phone app): while a child is logged asleep, the phone asks whether they are still asleep ("Is Leo still
   asleep? Asleep since 1:10 PM (2h)"), with **Woke up** and **Still asleep** right on the notification, so a sleep nobody closed does
   not run on for hours. It asks after a while (1 to 3 hours, 2 to start with), then again every 30 minutes or an hour, up to three
-  times, and never in the **do-not-disturb** hours each parent sets on their own phone (7 PM to 7 AM to start with): a check that falls
+  times; once the routine knows how long a sleep at that time usually lasts, the first check comes an hour after the usual end instead
+  (a nap that usually ends at 2:30 is asked about at 3:30, and the notification says when they are usually up; More → Notifications can
+  turn that off), and never in the **do-not-disturb** hours each parent sets on their own phone (7 PM to 7 AM to start with): a check that falls
   in them is sent when they end, which also catches a sleep from the evening before. Woke up on the notification ends the sleep then
   and opens the day; the checks are planned from the log on the phone and cancelled when the sleep ends on any phone. More →
   Notifications has the settings and asks the phone for permission (it is asked the first time there is something to send)

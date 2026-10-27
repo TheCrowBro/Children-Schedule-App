@@ -2456,6 +2456,10 @@
  "84v6jt": "Aún no permitidas: el teléfono pregunta la primera vez que haya algo que enviar, o toca abajo.",
  "xixiho": "tu peque",
  "1b6wrmn": "¿{name} sigue dormido?",
- "zo1csq": "Dormido desde las {time} ({long}). Toca «Se despertó» cuando esté despierto.",
- "1po8mcp": "Sigue dormido"
+ "1po8mcp": "Sigue dormido",
+ "1af8tei": "Cuando se conozca la rutina",
+ "1aqdhru": "Preguntar en cambio una hora después de que el sueño suela terminar: una siesta que suele acabar a las 2:30 se pregunta a las 3:30. La notificación dice a qué hora suele estar despierto.",
+ "wooms1": "Dormido desde las {time} ({long}).",
+ "daeire": "Suele estar despierto hacia las {time}.",
+ "1p7goiw": "Toca «Se despertó» cuando esté despierto."
 }

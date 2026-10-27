@@ -2411,6 +2411,10 @@
  "84v6jt": "Hindi pa pinapayagan: magtatanong ang telepono sa unang pagkakataong may ipapadala, o pindutin sa ibaba.",
  "xixiho": "ang iyong anak",
  "1b6wrmn": "Tulog pa ba si {name}?",
- "zo1csq": "Tulog mula {time} ({long}). Pindutin ang 'Nagising' kapag gising na.",
- "1po8mcp": "Tulog pa"
+ "1po8mcp": "Tulog pa",
+ "1af8tei": "Kapag alam na ang rutina",
+ "1aqdhru": "Sa halip, magtanong isang oras pagkatapos ng karaniwang pagtatapos ng tulog: ang idlip na karaniwang natatapos ng 2:30 ay tatanungin ng 3:30. Sinasabi ng notification kung kailan karaniwang gising na ang bata.",
+ "wooms1": "Tulog mula {time} ({long}).",
+ "daeire": "Karaniwang gising na bandang {time}.",
+ "1p7goiw": "Pindutin ang 'Nagising' kapag gising na."
 }

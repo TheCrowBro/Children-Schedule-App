@@ -5782,702 +5782,714 @@
    "note": "Label of the chips 1h / 1h 30m / 2h / 3h: how long after the sleep began the phone asks."
   },
   {
+   "id": "1af8tei",
+   "en": "Once the routine is known",
+   "where": "app.js:2416",
+   "note": "A setting (On / Off) in More → Notifications: the sleep check follows the routine's usual sleep length."
+  },
+  {
+   "id": "1aqdhru",
+   "en": "Ask an hour after the sleep usually ends instead: a nap that usually ends at 2:30 is asked about at 3:30. The notification says when they are usually up.",
+   "where": "app.js:2416",
+   "note": "Under that setting."
+  },
+  {
    "id": "whj34l",
    "en": "Then again every",
-   "where": "app.js:2416",
+   "where": "app.js:2417",
    "note": "Label of the chips 30m / 1h: how often it asks again."
   },
   {
    "id": "1i6il94",
    "one": "Up to {n} time in all, until Woke up is tapped.",
    "other": "Up to {n} times in all, until Woke up is tapped.",
-   "where": "app.js:2417",
+   "where": "app.js:2418",
    "note": "Under those chips; {n} is 3. 'Woke up' is a button in the app."
   },
   {
    "id": "zwtfoa",
    "en": "Do not disturb",
-   "where": "app.js:2418",
+   "where": "app.js:2419",
    "note": "Label of the two clock times (from, until) in which no sleep check is sent."
   },
   {
    "id": "rg2a5r",
    "en": "Until",
-   "where": "app.js:2418",
+   "where": "app.js:2419",
    "note": "The second of the two do-not-disturb times (spoken label of the field)."
   },
   {
    "id": "1snl3n3",
    "en": "No sleep checks between these times (the night); one that falls in them is sent when they end, which also catches a sleep from the evening before. Kept on this phone: each parent sets their own.",
-   "where": "app.js:2419",
+   "where": "app.js:2420",
    "note": "Under the do-not-disturb times."
   },
   {
    "id": "nipe5m",
    "en": "Allow notifications",
-   "where": "app.js:2420",
+   "where": "app.js:2421",
    "note": "Button: asks the phone for permission to show notifications."
   },
   {
    "id": "f7nw84",
    "en": "Open the App Store, tap your picture at the top, and update Little Log from the list there.",
-   "where": "app.js:2426"
+   "where": "app.js:2427"
   },
   {
    "id": "6jtfo4",
    "en": "In the phone app, this opens the app store to update Little Log.",
-   "where": "app.js:2426"
+   "where": "app.js:2427"
   },
   {
    "id": "2s5mib",
    "en": "You can't change entries added by {name}",
-   "where": "app.js:2432"
+   "where": "app.js:2433"
   },
   {
    "id": "1wavbac",
    "en": "someone else",
-   "where": "app.js:2432",
+   "where": "app.js:2433",
    "note": "Used as a name: 'You can't change entries added by someone else'."
   },
   {
    "id": "1crqpdj",
    "en": "You can't change entries",
-   "where": "app.js:2432"
+   "where": "app.js:2433"
   },
   {
    "id": "q7keni",
    "en": "Allowed on this phone.",
-   "where": "app.js:2500",
+   "where": "app.js:2502",
    "note": "The phone's answer on notifications, in More → Notifications."
   },
   {
    "id": "10pd2cg",
    "en": "Turned off in the phone's settings: allow Little Log's notifications there.",
-   "where": "app.js:2500",
+   "where": "app.js:2502",
    "note": "The phone's answer on notifications when they were refused."
   },
   {
    "id": "84v6jt",
    "en": "Not allowed yet: the phone asks the first time there is something to send, or tap below.",
-   "where": "app.js:2500",
+   "where": "app.js:2502",
    "note": "The phone's answer on notifications before it was asked."
   },
   {
    "id": "1prezo3",
    "en": "Where you are: {region}",
-   "where": "app.js:2503"
+   "where": "app.js:2505"
   },
   {
    "id": "2z1h0d",
    "en": "Remove {food} from {name}'s allergies?",
-   "where": "app.js:2512",
+   "where": "app.js:2514",
    "note": "{food} is a food, {name} a child's name."
   },
   {
    "id": "v92oor",
    "en": "Removed",
-   "where": "app.js:2513",
+   "where": "app.js:2515",
    "note": "Message after a child is removed."
   },
   {
    "id": "2pa6xa",
    "en": "{name} still has entries – open one and move it to another child, or delete them first",
-   "where": "app.js:2534"
+   "where": "app.js:2536"
   },
   {
    "id": "1x439ex",
    "en": "Remove {name} from this log?",
-   "where": "app.js:2535"
+   "where": "app.js:2537"
   },
   {
    "id": "1m2zofh",
    "en": "Type",
-   "where": "app.js:2542",
+   "where": "app.js:2544",
    "note": "Kind of feed (breast, bottle or solids) in the feed form; also a column of the spreadsheet (CSV) export: the kind of entry. A general word for 'type' or 'kind'."
   },
   {
    "id": "i4c62b",
    "en": "Summary",
-   "where": "app.js:2542",
+   "where": "app.js:2544",
    "note": "Column of the spreadsheet (CSV) export: the entry in short, such as 'Bottle 90 ml'."
   },
   {
    "id": "1llf32i",
    "en": "End",
-   "where": "app.js:2542",
+   "where": "app.js:2544",
    "note": "Column of the spreadsheet (CSV) export: when the entry ended (the end of a sleep)."
   },
   {
    "id": "y2rbpc",
    "en": "That file is not a valid backup",
-   "where": "app.js:2551"
+   "where": "app.js:2553"
   },
   {
    "id": "mne0pi",
    "en": "Delete ALL entries?",
-   "where": "app.js:2555"
+   "where": "app.js:2557"
   },
   {
    "id": "1mu6012",
    "en": "This also deletes them for everyone sharing this log.",
-   "where": "app.js:2555"
+   "where": "app.js:2557"
   },
   {
    "id": "1x7m3fy",
    "en": "This cannot be undone.",
-   "where": "app.js:2555"
+   "where": "app.js:2557"
   },
   {
    "id": "qtyd93",
    "en": "Really delete everything?",
-   "where": "app.js:2556"
+   "where": "app.js:2558"
   },
   {
    "id": "161k76n",
    "en": "Could not share the file",
-   "where": "app.js:2560"
+   "where": "app.js:2562"
   },
   {
    "id": "11w0wwy",
    "en": "milk",
-   "where": "app.js:2582",
+   "where": "app.js:2584",
    "note": "Fills {what} in \"Add {what}\" / \"Edit {what}\" for a toddler's drink of milk (Add milk)."
   },
   {
    "id": "1gwxv0",
    "en": "breast",
-   "where": "app.js:2586",
+   "where": "app.js:2588",
    "note": "Kind of feed in the feed form: breastfeed."
   },
   {
    "id": "shh409",
    "en": "bottle",
-   "where": "app.js:2586",
+   "where": "app.js:2588",
    "note": "Kind of feed in the feed form: bottle feed."
   },
   {
    "id": "1xgjksv",
    "en": "cup",
-   "where": "app.js:2586",
+   "where": "app.js:2588",
    "note": "How the milk was drunk: from a cup (the other choices are breast and bottle). Lower case, like \"breast\" and \"bottle\"."
   },
   {
    "id": "13tez5x",
    "en": "solids",
-   "where": "app.js:2586",
+   "where": "app.js:2588",
    "note": "Kind of feed in the feed form, next to 'breast' and 'bottle': solid food."
   },
   {
    "id": "f7vpn2",
    "en": "Minutes",
-   "where": "app.js:2587",
+   "where": "app.js:2589",
    "note": "How long the breastfeed lasted, in minutes."
   },
   {
    "id": "1liy0e7",
    "en": "e.g. 15",
-   "where": "app.js:2587",
+   "where": "app.js:2589",
    "note": "Example in an empty field (minutes). Keep the number."
   },
   {
    "id": "1oyfw83",
    "en": "Amount (fl oz)",
-   "where": "app.js:2588"
+   "where": "app.js:2590"
   },
   {
    "id": "wovk63",
    "en": "Amount (ml)",
-   "where": "app.js:2588",
+   "where": "app.js:2590",
    "note": "How much milk was in the bottle, in millilitres."
   },
   {
    "id": "1itrd2u",
    "en": "e.g. 3",
-   "where": "app.js:2588"
+   "where": "app.js:2590"
   },
   {
    "id": "1oll2mg",
    "en": "e.g. 90",
-   "where": "app.js:2588",
+   "where": "app.js:2590",
    "note": "Example in an empty field (millilitres). Keep the number."
   },
   {
    "id": "ab5n14",
    "en": "Switch between ml and fl oz",
-   "where": "app.js:2588"
+   "where": "app.js:2590"
   },
   {
    "id": "3l93dq",
    "en": "→ ml",
-   "where": "app.js:2588"
+   "where": "app.js:2590"
   },
   {
    "id": "tmlcgu",
    "en": "→ fl oz",
-   "where": "app.js:2588"
+   "where": "app.js:2590"
   },
   {
    "id": "bfb6pk",
    "en": "Which formula",
-   "where": "app.js:2589",
+   "where": "app.js:2591",
    "note": "Which brand of infant formula."
   },
   {
    "id": "1o7xf8q",
    "en": "How much",
-   "where": "app.js:2590",
+   "where": "app.js:2592",
    "note": "Label above how much of a solid meal was eaten."
   },
   {
    "id": "jzr8pf",
    "en": "What was in it?",
-   "where": "app.js:2592"
+   "where": "app.js:2594"
   },
   {
    "id": "76t153",
    "en": "Poo colour",
-   "where": "app.js:2593",
+   "where": "app.js:2595",
    "note": "The colour of the baby's poo (stool)."
   },
   {
    "id": "druf3h",
    "en": "Woke up at",
-   "where": "app.js:2598"
+   "where": "app.js:2600"
   },
   {
    "id": "1opv11x",
    "en": "(leave empty if still asleep)",
-   "where": "app.js:2598"
+   "where": "app.js:2600"
   },
   {
    "id": "12mubvb",
    "en": "Now",
-   "where": "app.js:2599",
+   "where": "app.js:2601",
    "note": "Button: set the time to now."
   },
   {
    "id": "111llgb",
    "en": "Awake for (minutes)",
-   "where": "app.js:2600"
+   "where": "app.js:2602"
   },
   {
    "id": "pmjdq3",
    "en": "e.g. 20",
-   "where": "app.js:2600",
+   "where": "app.js:2602",
    "note": "Example in an empty field (minutes). Keep the number."
   },
   {
    "id": "mfl4pe",
    "en": "Why?",
-   "where": "app.js:2600",
+   "where": "app.js:2602",
    "note": "Why the baby woke in the night (answers: Hungry, Diaper, Gas / fussy, Unknown)."
   },
   {
    "id": "a2ky21",
    "en": "Amount",
-   "where": "app.js:2601",
+   "where": "app.js:2603",
    "note": "How much the baby vomited."
   },
   {
    "id": "vf7262",
    "en": "Projectile",
-   "where": "app.js:2601",
+   "where": "app.js:2603",
    "note": "Projectile vomiting (forceful): a checkbox in the vomit form."
   },
   {
    "id": "1k4zzxc",
    "en": "e.g. 10",
-   "where": "app.js:2602",
+   "where": "app.js:2604",
    "note": "Example in an empty field (minutes). Keep the number."
   },
   {
    "id": "rbivyd",
    "en": "Where?",
-   "where": "app.js:2609",
+   "where": "app.js:2611",
    "note": "A field: where it happened (the potty, the toilet…), and in the drop-off sheet where the child was dropped off. A neutral question that fits both."
   },
   {
    "id": "6c4t63",
    "en": "From where?",
-   "where": "app.js:2609",
+   "where": "app.js:2611",
    "note": "In the pick-up sheet: where the child was picked up from."
   },
   {
    "id": "rl24jv",
    "en": "Name of the place",
-   "where": "app.js:2610",
+   "where": "app.js:2612",
    "note": "A field: the name of a place typed in (where the child was dropped off)."
   },
   {
    "id": "1p39zt2",
    "en": "Their name",
-   "where": "app.js:2611",
+   "where": "app.js:2613",
    "note": "Placeholder of the name field on the drop-off form (the grandparent's, the babysitter's… name)."
   },
   {
    "id": "1jhplr9",
    "en": "Location (optional)",
-   "where": "app.js:2612",
+   "where": "app.js:2614",
    "note": "Label of the field for where the place is (an address, or how to find it), on the drop-off form."
   },
   {
    "id": "1a4g4pt",
    "en": "Address, or how to find it",
-   "where": "app.js:2612",
+   "where": "app.js:2614",
    "note": "Placeholder of that field."
   },
   {
    "id": "paxzho",
    "en": "Dropped off by (optional)",
-   "where": "app.js:2613",
+   "where": "app.js:2615",
    "note": "A field in the drop-off sheet: who dropped the child off."
   },
   {
    "id": "ye5flq",
    "en": "Picked up by (optional)",
-   "where": "app.js:2613",
+   "where": "app.js:2615",
    "note": "A field in the pick-up sheet: who picked the child up."
   },
   {
    "id": "13hilgu",
    "en": "Who picks up? (optional)",
-   "where": "app.js:2614",
+   "where": "app.js:2616",
    "note": "A field in the drop-off sheet: who will pick the child up later."
   },
   {
    "id": "1fp7wzi",
    "en": "e.g. Grandpa",
-   "where": "app.js:2614",
+   "where": "app.js:2616",
    "note": "An example name for who picks the child up: your language's everyday word for a grandfather."
   },
   {
    "id": "1g91yq",
    "en": "Pick-up time (optional)",
-   "where": "app.js:2615",
+   "where": "app.js:2617",
    "note": "A field in the drop-off sheet: when the child will be picked up."
   },
   {
    "id": "1u6t2hq",
    "en": "Already picked up? (optional)",
-   "where": "app.js:2616",
+   "where": "app.js:2618",
    "note": "A field in the drop-off sheet, for a day logged afterwards: when the child was picked up."
   },
   {
    "id": "bimt74",
    "en": "What?",
-   "where": "app.js:2619",
+   "where": "app.js:2621",
    "note": "In the homework sheet: homework, reading or practising."
   },
   {
    "id": "98wc8q",
    "en": "Subject (optional)",
-   "where": "app.js:2620",
+   "where": "app.js:2622",
    "note": "A field in the homework sheet: the school subject."
   },
   {
    "id": "1i6llj6",
    "en": "e.g. maths, spelling",
-   "where": "app.js:2620",
+   "where": "app.js:2622",
    "note": "An example of school subjects."
   },
   {
    "id": "9jmtk",
    "en": "Pages read (optional)",
-   "where": "app.js:2622",
+   "where": "app.js:2624",
    "note": "A field in the homework sheet, for reading."
   },
   {
    "id": "wbgc",
    "en": "Check anything you noticed",
-   "where": "app.js:2624"
+   "where": "app.js:2626"
   },
   {
    "id": "a6rzg2",
    "en": "Temperature (°)",
-   "where": "app.js:2624",
+   "where": "app.js:2626",
    "note": "Body temperature in degrees (whatever unit the parent uses)."
   },
   {
    "id": "kgw9o9",
    "en": "optional",
-   "where": "app.js:2624",
+   "where": "app.js:2626",
    "note": "Example in an empty field: it may be left empty."
   },
   {
    "id": "1mztl7a",
    "en": "Which vaccine?",
-   "where": "app.js:2637"
+   "where": "app.js:2639"
   },
   {
    "id": "8di8ug",
    "en": "Choose a vaccine",
-   "where": "app.js:2637"
+   "where": "app.js:2639"
   },
   {
    "id": "1x6kah3",
    "en": "Another vaccine",
-   "where": "app.js:2637"
+   "where": "app.js:2639"
   },
   {
    "id": "1f1j24j",
    "en": "Name of the vaccine",
-   "where": "app.js:2638"
+   "where": "app.js:2640"
   },
   {
    "id": "1u5ani3",
    "en": "Dose (if you know it)",
-   "where": "app.js:2639"
+   "where": "app.js:2641"
   },
   {
    "id": "1do4kkf",
    "en": "Where (optional)",
-   "where": "app.js:2640"
+   "where": "app.js:2642"
   },
   {
    "id": "1ptmqlo",
    "en": "e.g. the clinic",
-   "where": "app.js:2640"
+   "where": "app.js:2642"
   },
   {
    "id": "lfk0tf",
    "en": "Batch number (optional)",
-   "where": "app.js:2641"
+   "where": "app.js:2643"
   },
   {
    "id": "1e7decw",
    "en": "What kind of visit?",
-   "where": "app.js:2643"
+   "where": "app.js:2645"
   },
   {
    "id": "19kug8q",
    "en": "Who (optional)",
-   "where": "app.js:2644"
+   "where": "app.js:2646"
   },
   {
    "id": "wuwyoz",
    "en": "e.g. Dr Patel",
-   "where": "app.js:2644"
+   "where": "app.js:2646"
   },
   {
    "id": "iizw5w",
    "en": "Why (optional)",
-   "where": "app.js:2645",
+   "where": "app.js:2647",
    "note": "Label above the reasons for retiring someone (Moved away, No longer helps, Passed away, Other)."
   },
   {
    "id": "eaqju7",
    "en": "e.g. an ear infection",
-   "where": "app.js:2645"
+   "where": "app.js:2647"
   },
   {
    "id": "nn2orw",
    "en": "oz",
-   "where": "app.js:2648",
+   "where": "app.js:2650",
    "note": "The unit ounces (weight), as a short label."
   },
   {
    "id": "13tiu6m",
    "en": "Weight (kg)",
-   "where": "app.js:2648"
+   "where": "app.js:2650"
   },
   {
    "id": "102elfp",
    "en": "e.g. 9.5",
-   "where": "app.js:2648"
+   "where": "app.js:2650"
   },
   {
    "id": "v4kba9",
    "en": "Length or height (in)",
-   "where": "app.js:2649"
+   "where": "app.js:2651"
   },
   {
    "id": "1gy9nx4",
    "en": "Length or height (cm)",
-   "where": "app.js:2649"
+   "where": "app.js:2651"
   },
   {
    "id": "zcaelv",
    "en": "e.g. 30.5",
-   "where": "app.js:2649"
+   "where": "app.js:2651"
   },
   {
    "id": "7zpho9",
    "en": "e.g. 76.5",
-   "where": "app.js:2649"
+   "where": "app.js:2651"
   },
   {
    "id": "kfxn0b",
    "en": "Head (in)",
-   "where": "app.js:2650"
+   "where": "app.js:2652"
   },
   {
    "id": "5z7516",
    "en": "Head (cm)",
-   "where": "app.js:2650"
+   "where": "app.js:2652"
   },
   {
    "id": "1g3aa42",
    "en": "A vaccine, a doctor visit or a measurement? They go in the health record:",
-   "where": "app.js:2653"
+   "where": "app.js:2655"
   },
   {
    "id": "1894f8m",
    "en": "Medicine / vitamin",
-   "where": "app.js:2654"
+   "where": "app.js:2656"
   },
   {
    "id": "16mbxhd",
    "en": "e.g. Vitamin D",
-   "where": "app.js:2654",
+   "where": "app.js:2656",
    "note": "Example in an empty field: a medicine or vitamin."
   },
   {
    "id": "xr0o9s",
    "en": "Dose",
-   "where": "app.js:2654",
+   "where": "app.js:2656",
    "note": "How much medicine was given."
   },
   {
    "id": "m8m4tt",
    "en": "e.g. 1 ml",
-   "where": "app.js:2654",
+   "where": "app.js:2656",
    "note": "Example in an empty field: a dose. Keep the number and unit."
   },
   {
    "id": "6lrz0j",
    "en": "Fell asleep at",
-   "where": "app.js:2663"
+   "where": "app.js:2665"
   },
   {
    "id": "88cuie",
    "en": "{n} min ago",
-   "where": "app.js:2664"
+   "where": "app.js:2666"
   },
   {
    "id": "zq8egr",
    "en": "1 hr ago",
-   "where": "app.js:2664"
+   "where": "app.js:2666"
   },
   {
    "id": "19h22py",
    "en": "Anything worth remembering",
-   "where": "app.js:2666"
+   "where": "app.js:2668"
   },
   {
    "id": "r8h42j",
    "en": "{child} is allergic to {what}",
-   "where": "app.js:2705"
+   "where": "app.js:2707"
   },
   {
    "id": "1luu5h8",
    "en": "Please pick a time",
-   "where": "app.js:2735"
+   "where": "app.js:2737"
   },
   {
    "id": "5apcy8",
    "en": "Choose at least one food",
-   "where": "app.js:2741"
+   "where": "app.js:2743"
   },
   {
    "id": "1npc9wk",
    "en": "Save as a dry diaper?",
-   "where": "app.js:2745"
+   "where": "app.js:2747"
   },
   {
    "id": "k9bwto",
    "en": "Wake time must be after bedtime",
-   "where": "app.js:2747"
+   "where": "app.js:2749"
   },
   {
    "id": "1rr6v7r",
    "en": "Tick a symptom or add a note",
-   "where": "app.js:2753"
+   "where": "app.js:2755"
   },
   {
    "id": "1g4bzph",
    "en": "Enter a name",
-   "where": "app.js:2755"
+   "where": "app.js:2757"
   },
   {
    "id": "1kfx6e8",
    "en": "{child} is allergic to this medicine. Log it anyway?",
-   "where": "app.js:2755"
+   "where": "app.js:2757"
   },
   {
    "id": "c4ab68",
    "en": "Choose the vaccine",
-   "where": "app.js:2759"
+   "where": "app.js:2761"
   },
   {
    "id": "x0w8t7",
    "en": "Enter at least one measurement",
-   "where": "app.js:2765"
+   "where": "app.js:2767"
   },
   {
    "id": "15fo3sb",
    "en": "That doesn't look right: check the numbers and the units",
-   "where": "app.js:2769"
+   "where": "app.js:2771"
   },
   {
    "id": "1ypo263",
    "en": "Choose where",
-   "where": "app.js:2774",
+   "where": "app.js:2776",
    "note": "An error: no place was chosen for a drop-off or a pick-up."
   },
   {
    "id": "1ifs5kd",
    "en": "{name} is sleeping – tap “Woke up” first",
-   "where": "app.js:2795"
+   "where": "app.js:2797"
   },
   {
    "id": "qpequ0",
    "en": "Already sleeping – tap “Woke up” first",
-   "where": "app.js:2795"
+   "where": "app.js:2797"
   },
   {
    "id": "1n9x36p",
    "en": "{formula} is now {names}'s usual formula",
-   "where": "app.js:2807"
+   "where": "app.js:2809"
   },
   {
    "id": "1acl8im",
    "en": "{name} is allergic to {food}. Watch closely, and call {sos} for trouble breathing, or swelling of the lips, tongue or face.",
-   "where": "app.js:2811"
+   "where": "app.js:2813"
   },
   {
    "id": "xsldcz",
    "en": "{name} is allergic to {food}. Watch closely, and call {sos} for trouble breathing, swelling of the lips, tongue or face, or if your baby goes floppy or pale.",
-   "where": "app.js:2812"
+   "where": "app.js:2814"
   },
   {
    "id": "1qdig2e",
    "en": "Red-streaked or pale / white stools can be a sign of a problem. Please tell your pediatrician (and call straight away if your baby seems unwell).",
-   "where": "app.js:2814"
+   "where": "app.js:2816"
   },
   {
    "id": "2fut9o",
    "en": "One of these symptoms can be urgent. If {name} has trouble breathing, blue lips or face, or is very hard to wake, call {sos} now.",
-   "where": "app.js:2815"
+   "where": "app.js:2817"
   },
   {
    "id": "r363d1",
    "en": "One of these symptoms can be urgent. If your baby has blue lips/face, trouble breathing, a fever (38°C / 100.4°F+ in a newborn) or is hard to wake, call your pediatrician or emergency services now.",
-   "where": "app.js:2816"
+   "where": "app.js:2818"
   },
   {
    "id": "plvxbk",
    "en": "Cannot save on this phone – free up space",
-   "where": "app.js:2856"
+   "where": "app.js:2858"
   },
   {
    "id": "x3k3ic",
    "en": "Your saved log was damaged and has been restored from a recent backup",
-   "where": "app.js:2857"
+   "where": "app.js:2859"
   },
   {
    "id": "1faqwbi",
    "en": "A damaged copy of the log was set aside; it will be re-downloaded from your family log",
-   "where": "app.js:2857"
+   "where": "app.js:2859"
   },
   {
    "id": "16pr4dg",
@@ -12237,25 +12249,37 @@
   {
    "id": "xixiho",
    "en": "your child",
-   "where": "notify.js:56",
+   "where": "notify.js:71",
    "note": "In the notification's title when the child's name is not known ('Is your child still asleep?')."
+  },
+  {
+   "id": "wooms1",
+   "en": "Asleep since {time} ({long}).",
+   "where": "notify.js:72",
+   "note": "The notification's first sentence; {time} a clock time, {long} how long, e.g. '2h'."
+  },
+  {
+   "id": "daeire",
+   "en": "Usually up by about {time}.",
+   "where": "notify.js:73",
+   "note": "The notification's second sentence when the routine knows the usual end of that sleep; {time} a clock time."
   },
   {
    "id": "1b6wrmn",
    "en": "Is {name} still asleep?",
-   "where": "notify.js:57",
+   "where": "notify.js:74",
    "note": "The notification's title; {name} is the child's name."
   },
   {
-   "id": "zo1csq",
-   "en": "Asleep since {time} ({long}). Tap Woke up when they are awake.",
-   "where": "notify.js:57",
-   "note": "The notification's text; {time} a clock time, {long} how long, e.g. '2h'. 'Woke up' is the button on the notification (translate it the same)."
+   "id": "1p7goiw",
+   "en": "Tap Woke up when they are awake.",
+   "where": "notify.js:74",
+   "note": "The notification's last sentence. 'Woke up' is the button on the notification (translate it the same)."
   },
   {
    "id": "1po8mcp",
    "en": "Still asleep",
-   "where": "notify.js:87",
+   "where": "notify.js:104",
    "note": "A button on the notification: the child is still asleep (nothing changes; the next check comes as set)."
   }
  ]
