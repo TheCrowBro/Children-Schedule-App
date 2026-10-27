@@ -166,6 +166,8 @@ const server = http.createServer((req, res) => {
 
   // ================= part 2: invites, approval, roles, permissions =================
   const goTab = async (p, t) => { await p.click(`[data-tab=${t}]`); await sleep(50); };
+  /** Waits until no request card is on the page (and no sheet is open); on a timeout, says what the page shows instead. */
+  const noRequest = async p => { try { await p.waitForFunction(() => $('#sheet').hidden && !document.querySelector('#view [data-approve]')); } catch (e) { throw new Error('still showing: ' + await p.evaluate(() => JSON.stringify({ tab, sheet: $('#sheet').hidden ? null : $('#sheet').textContent.trim().slice(0, 160), requests: Sync.st.requests.map(r => r.email), card: !!document.querySelector('#view [data-approve]') }))); } };
   const openSec = async p => { await p.waitForSelector('details[data-grp=secshare]'); await p.evaluate(() => { document.querySelector('details[data-grp=secshare]').open = true; }); };   // (Security and sharing is a twirl-down)
   const mkInvite = async (p, role, ticks = [], unticks = []) => {
     await goTab(p, 'family'); await openSec(p); await p.waitForSelector('#invCard');
@@ -214,14 +216,14 @@ const server = http.createServer((req, res) => {
   await step('the parent sees the request (badge + list) and approves it', async () => {
     await goTab(A, 'day'); await syncNow(A);
     await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Someone wants to join/.test(await A.textContent('#sheet')) && /dad@x.com/.test(await A.textContent('#sheet')), 'the request pops up on the parent\'s phone as it arrives');
-    await A.click('#sheet [data-close]'); await A.waitForFunction(() => $('#sheet').hidden);
+    await A.click('#sheet [data-close]'); await A.waitForFunction(() => $('#sheet').hidden, null, { timeout: 5000 });
     await syncNow(A); await sleep(100); assert(await A.evaluate(() => $('#sheet').hidden), 'put off with Later, it does not pop up again while the app runs');
     assert.equal(await A.evaluate(() => document.querySelector('#famBadge').textContent), '1'); assert(await A.isVisible('#famBadge'));
     await goTab(A, 'family'); await A.waitForSelector('[data-approve]'); assert(/dad@x.com/.test(await A.textContent('#view')));
     assert(/did not use your QR code/.test(await A.textContent('#view')), 'typed code: manual comparison required');
     assert.equal((await A.textContent('#view .code.mono')).trim(), fpB, 'the parent sees the same security code the joiner sees');
     await A.click('[data-approve]'); assert(/Compare the security code/.test(await toastText(A)), 'cannot approve without comparing'); assert.equal((await q(`select count(*)::int c from members where email='dad@x.com'`))[0].c, 0);
-    await A.click('input[name=vchk]'); await A.click('[data-approve]'); await A.waitForFunction(() => !document.querySelector('[data-approve]'));
+    await A.click('input[name=vchk]'); await A.click('[data-approve]'); await noRequest(A);
     const g = (await q(`select g.auth, g.tag from key_grants g join devices d on 'd:'||d.id::text = g.grantee join auth.users u on u.id = d.user_id where u.email='dad@x.com'`))[0];
     assert.equal(g.auth, null, 'no QR, so no QR proof on this grant'); assert(g.tag, 'but it carries the key holder\'s MAC');
     const [m] = await q(`select role, display_name from members where email='dad@x.com'`); assert.deepEqual([m.role, m.display_name], ['family', 'Dad']);
@@ -283,7 +285,7 @@ const server = http.createServer((req, res) => {
     assert.equal((await pendingFor('nan@x.com')).length, 1); assert.equal((await q('select used_by from invites where code=$1', [inviteC]))[0].used_by !== null, true, 'invite is single-use');
     await syncNow(A); await A.waitForSelector('#sheet:not([hidden]) [data-approve]');   // (the request pops up on the parent's phone; approved from there)
     assert(/Verified: they scanned your QR code/.test(await A.textContent('#sheet')) && !(await A.$('input[name=vchk]')), 'QR proof checked automatically: nothing to compare');
-    await A.click('#sheet [data-approve]'); await A.waitForFunction(() => $('#sheet').hidden && !document.querySelector('[data-approve]'));
+    await A.click('#sheet [data-approve]'); await noRequest(A);
     await C.click('#wCheck'); await C.waitForSelector('#tabs');
     assert.equal(await C.evaluate(() => !!db.meta.unverified), false, 'the grant carried the parent\'s QR proof, so no manual check is needed');
     assert((await q(`select g.auth from key_grants g join devices d on 'd:'||d.id::text = g.grantee join auth.users u on u.id=d.user_id where u.email='nan@x.com'`))[0].auth, 'grant is authenticated with the QR secret');
@@ -388,7 +390,7 @@ const server = http.createServer((req, res) => {
     await goTab(A, 'family'); const code = await mkInvite(A, 'friend'), secret = await A.evaluate(c => E2EE.inviteSecret(c), code); secrets.push(secret);
     const E = await device({ launchUrl: `app.littlelog.newborn://join?join=${code}&s=${secret}` });   // opened from the link: the secret rides along
     await signIn(E, 'eve@x.com'); await E.waitForSelector('#wCheck');
-    await goTab(A, 'day'); await syncNow(A); await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Verified: they scanned your QR code/.test(await A.textContent('#sheet'))); await A.click('#sheet [data-approve]'); await A.waitForFunction(() => $('#sheet').hidden && !document.querySelector('[data-approve]'));
+    await goTab(A, 'day'); await syncNow(A); await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Verified: they scanned your QR code/.test(await A.textContent('#sheet'))); await A.click('#sheet [data-approve]'); await noRequest(A);
     await su.query(`update key_grants set auth=null where grantee in (select 'd:'||d.id::text from devices d join auth.users u on u.id=d.user_id where u.email='eve@x.com')`);   // the server strips the proof
     await E.click('#wCheck'); await E.waitForFunction(() => /did not come from the parent who invited you/.test((Sync.st.err || '') + document.body.textContent), null, { timeout: 15000 });
     assert.equal(await E.evaluate(() => E2EE.hasKeys(db.meta.babyId)), false, 'no keys were accepted');

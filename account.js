@@ -566,11 +566,13 @@ const Acct = (() => {
       then, or leave for later: it stays on the Family tab, with the badge. Not over a sheet, the tour or the sign-in and lock screens. */
   const prompted = new Set();
   function promptRequests() {
-    if (!Sync.isParent() || !Sync.st.requests.length || gate() || Tour.active() || !$('#sheet').hidden) return;
+    if (!Sync.isParent() || !Sync.st.requests.length || document.body.classList.contains('gated') || Tour.active() || !$('#sheet').hidden) return;
     const r = Sync.st.requests.find(x => !prompted.has(x.id)); if (!r) return;
     prompted.add(r.id);
     const close = popup(`<h3>👨‍👩‍👧 ${__h('Someone wants to join')}</h3>${reqCard(r)}<div class="row" style="margin-top:12px"><button class="btn" data-close>${__h('Later')}</button></div>`);
-    bindRequests($('#sheet'), () => { close(); render(); });
+    const done = () => { close(); $('#sheet').innerHTML = ''; };   // (nothing of the card lingers in the hidden sheet)
+    $('#sheetBack').onclick = done; $('#sheet').querySelectorAll('[data-close]').forEach(b => b.onclick = done);
+    bindRequests($('#sheet'), () => { done(); render(); });
   }
   /** A request to join a family log, to approve or deny (`family`: its name, when it is not the log shown). */
   function reqCard(r, family) {

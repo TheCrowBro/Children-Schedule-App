@@ -63,6 +63,7 @@ async function setup({ port = 8126 } = {}) {
     await parent.evaluate(() => Sync.loadAdmin());
     const req = await parent.evaluate(e => Sync.st.requests.find(r => r.email === e), email);
     await parent.evaluate(r => Sync.decide(r, true, { manualOk: true }), req);
+    await parent.evaluate(() => { if (/data-approve/.test($('#sheet').innerHTML)) { $('#sheet').hidden = $('#sheetBack').hidden = true; $('#sheet').innerHTML = ''; } });   // (the request may have popped up meanwhile: decided here, so away with it)
     assert_(await p.evaluate(() => Sync.checkApproval()), email + ' was approved');
     await p.evaluate(() => { tab = 'day'; render(); }); await p.waitForSelector('#tabs');
     await H.syncNow(p); return p;

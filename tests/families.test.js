@@ -18,7 +18,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     const { page: S } = await H.createLog('sarah@x.com', 'Ava', 'Sarah');  // your sister
     const { page: T } = await H.createLog('tom@x.com', 'Noah', 'Tom');     // your brother-in-law
     const invite = (P, role, perms) => P.evaluate(([r, p]) => Sync.createInvite(r, p).then(x => x.code), [role, perms]);
-    const approveAll = async P => { await P.evaluate(() => Sync.loadAdmin()); for (const r of await P.evaluate(() => Sync.st.requests)) await P.evaluate(x => Sync.decide(x, true, { manualOk: true }), r); };
+    const approveAll = async P => { await P.evaluate(() => Sync.loadAdmin()); for (const r of await P.evaluate(() => Sync.st.requests)) await P.evaluate(x => Sync.decide(x, true, { manualOk: true }), r); await P.evaluate(() => { if (/data-approve/.test($('#sheet').innerHTML)) { $('#sheet').hidden = $('#sheetBack').hidden = true; $('#sheet').innerHTML = ''; } }); };   // (a request may have popped up meanwhile: decided here)
     // the families listed in the twirl-down, then any request still waiting (under the picture)
     const tree = () => J.evaluate(() => [...document.querySelectorAll('details.famlist .fam'), ...document.querySelectorAll('.ftreeimg .fam.pending')].map(f => ({
       name: f.querySelector('.fhead b') ? f.querySelector('.fhead b').textContent : '', pending: f.classList.contains('pending'), on: f.classList.contains('on'),
