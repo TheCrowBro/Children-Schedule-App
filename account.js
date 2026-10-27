@@ -177,14 +177,103 @@ const Acct = (() => {
   }
 
   // ---- app lock -------------------------------------------------------------------------------
-  const lockHtml = () => `<div class="card" style="text-align:center"><div style="font-size:48px">🔒</div><b>${__h('Little Log is locked')}</b>
-    <p class="note">${__h('Use Face ID, your fingerprint or your phone passcode to continue.')}</p>
-    <button class="btn p" id="unlock" style="width:100%">${__h('Unlock')}</button>
-    <button class="btn" id="lockOut" style="width:100%;margin-top:8px">${__h('Sign out')}</button></div>`;
+  /** A PIN pad (digits, delete, ✓) with dots for what was typed, in the element `id`; `idMsg` under it says what went wrong. */
+  const padHtml = (id, msg = '') => `<div class="pinpad" id="${id}"><div class="pdots" aria-live="polite"></div>
+    <div class="pkeys">${['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'].map(k => `<button type="button" class="pk${k === 'ok' ? ' p' : ''}" data-k="${k}" aria-label="${k === 'del' ? __h('Delete') : k === 'ok' ? __h('Done') : k}">${k === 'del' ? '⌫' : k === 'ok' ? '✓' : k}</button>`).join('')}</div>
+    <p class="note" id="${id}Msg" role="alert" style="min-height:1.4em;color:var(--health)">${__h(msg)}</p></div>`;
+  /** Wires a pad: onDone(code) runs on ✓, and by itself once `auto` digits are in (the length of the PIN being asked for). */
+  function bindPad(id, onDone, auto = 0) {
+    const el = $('#' + id); if (!el) return null;
+    const typed = bindPad.typed || (bindPad.typed = {}), keys = bindPad.keys || (bindPad.keys = {});
+    let code = typed[id] || '';   // (what was typed survives a redraw of the screen, e.g. by a sync)
+    const dots = () => { typed[id] = code; el.querySelector('.pdots').textContent = '●'.repeat(code.length) + '○'.repeat(Math.max(0, 4 - code.length)); };
+    const done = () => { const c = code; code = ''; dots(); onDone(c); };
+    const press = k => {
+      if (k === 'del') code = code.slice(0, -1);
+      else if (k === 'ok') return done();
+      else if (/^\d$/.test(k) && code.length < 8) code += k;
+      dots(); if (auto && code.length === auto) done();
+    };
+    el.querySelectorAll('.pk').forEach(b => b.onclick = () => press(b.dataset.k));
+    if (keys[id]) document.removeEventListener('keydown', keys[id], true);   // (the pad drawn before this one)
+    const key = e => {   // (a keyboard too: digits, Backspace, Enter)
+      if (!document.getElementById(id)) { delete keys[id]; return document.removeEventListener('keydown', key, true); }
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName)) return;
+      if (/^\d$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') press('del'); else if (e.key === 'Enter') press('ok'); else return;
+      e.preventDefault();
+    };
+    keys[id] = key; document.addEventListener('keydown', key, true);
+    dots();
+    return { say: m => { const x = $('#' + id + 'Msg'); if (x) x.textContent = m; } };
+  }
+  /** Forgets what was typed into a pad (a sheet closed, a screen left). */
+  const clearPad = id => { if (bindPad.typed) delete bindPad.typed[id]; };
+  const waitMsg = ms => __n('Too many tries. Try again in {n} second.', 'Too many tries. Try again in {n} seconds.', Math.max(1, Math.ceil(ms / 1000)));
+  const lockHtml = () => {
+    const pinMode = Lock.mode === 'pin', bio = Lock.bioAllowed;
+    return `<div class="card" style="text-align:center"><div style="font-size:48px">🔒</div><b>${__h('Little Log is locked')}</b>
+    ${pinMode ? `<p class="note">${__h('Enter your PIN to continue.')}</p>${padHtml('ul', Lock.wait ? waitMsg(Lock.wait) : '')}` : `<p class="note">${__h('Use Face ID, your fingerprint or your phone passcode to continue.')}</p>`}
+    ${bio ? `<button class="btn${pinMode ? '' : ' p'}" id="unlock" style="width:100%">${pinMode ? __h('Use Face ID / fingerprint instead') : __h('Unlock')}</button>` : ''}
+    <button class="btn" id="lockOut" style="width:100%;margin-top:8px">${pinMode ? __h('Forgot your PIN?') : __h('Sign out')}</button></div>`;
+  };
   function bindLock() {
     const go = async () => { if (await Lock.unlock()) render(); };
-    $('#unlock').onclick = go; $('#lockOut').onclick = () => signOut(false);
+    if ($('#unlock')) $('#unlock').onclick = go;
+    $('#lockOut').onclick = lockOut;
+    if (Lock.mode === 'pin') {
+      const pad = bindPad('ul', async code => {
+        const r = await Lock.checkPin(code);
+        if (r.ok) { clearPad('ul'); return render(); }
+        pad.say(r.wait ? waitMsg(r.wait) : __('That PIN is not right.')); if (r.wait) tick();
+      }, Lock.pinLength);
+      const tick = () => {   // (the wait counts down on the screen)
+        clearInterval(bindLock.timer);
+        bindLock.timer = setInterval(() => { if (!$('#ulMsg')) return clearInterval(bindLock.timer); const w = Lock.wait; pad.say(w ? waitMsg(w) : ''); if (!w) clearInterval(bindLock.timer); }, 1000);
+      };
+      if (Lock.wait) tick();
+      if (!Lock.bioAllowed) return;
+    }
     if (!bindLock.auto) { bindLock.auto = true; setTimeout(() => { bindLock.auto = false; if (Lock.locked) go(); }, 150); }
+  }
+  /** The way out of the lock screen without the PIN or Face ID: this phone is cleared (the log is safe in the cloud, or in a backup). */
+  async function lockOut() {
+    const msg = Sync.linked() ? __("Sign out? This clears the log from this phone. It stays safe in the family's cloud and comes back when you sign in again.")
+      : __('This clears the log on this phone. It comes back only from a backup you made (More → Cloud backup). Continue?');
+    if (!confirm(msg)) return;
+    if (Sync.linked()) { try { await Sync.run(true); } catch (e) { /* offline: what is unsent is lost, as the message said */ } }
+    try { await Auth.signOut(false); } catch (e) { /* not signed in, or offline: the phone is cleared all the same */ }
+    await wipeLocal(); render();
+  }
+  // ---- choosing and changing the PIN (More → App lock) ----
+  /** Asks for the current PIN in a sheet, then runs `then`. */
+  function askPin(then) {
+    const close = showSheet(`<h3>${__h('Enter your current PIN')}</h3>${padHtml('pinPad', Lock.wait ? waitMsg(Lock.wait) : '')}<button class="btn" id="pinCancel" style="width:100%;margin-top:10px">${__h('Cancel')}</button>`);
+    $('#pinCancel').onclick = () => { close(); clearPad('pinPad'); render(); };
+    const pad = bindPad('pinPad', async code => { const r = await Lock.checkPin(code); if (r.ok) { close(); clearPad('pinPad'); then(); } else pad.say(r.wait ? waitMsg(r.wait) : __('That PIN is not right.')); }, Lock.pinLength);
+  }
+  /** Chooses a PIN: typed, then typed again. */
+  function choosePin(title) {
+    let first = '', close = null;
+    const show = (note, msg) => { close = showSheet(`<h3>${esc(title)}</h3><p class="note">${__h(note)}</p>${padHtml('pinPad', msg)}<button class="btn" id="pinCancel" style="width:100%;margin-top:10px">${__h('Cancel')}</button>`); $('#pinCancel').onclick = () => { close(); clearPad('pinPad'); render(); }; };
+    const step1 = (msg = '') => {
+      show(__('4 to 8 digits, known only to you. If you forget it, the only way back in is to clear this phone: a family log comes back from the cloud, a phone-only log from its backup.'), msg);
+      bindPad('pinPad', code => { if (!/^\d{4,8}$/.test(code)) return step1(__('A PIN is 4 to 8 digits.')); first = code; step2(); });
+    };
+    const step2 = () => {
+      show(__('Enter it again.'), '');
+      bindPad('pinPad', async code => { if (code !== first) return step1(__('The two did not match. Start again.')); const m = await Lock.setPin(code); close(); clearPad('pinPad'); toast(m ? __(m) : __('PIN set')); render(); });
+    };
+    step1();
+  }
+  /** More → App lock: Off, the phone's lock, or a PIN (leaving the PIN, or changing it, asks for it first). */
+  async function setLockMode(v) {
+    const was = Lock.mode; if (v === was) return;
+    const apply = async () => {
+      if (v === 'pin') return choosePin(__('Choose a PIN'));
+      const m = v === 'bio' ? await Lock.useBio() : (await Lock.off(), null);
+      if (m) toast(__(m)); render();
+    };
+    if (was === 'pin') askPin(apply); else apply();
   }
 
   // ---- sign-in (email code + optional CAPTCHA) -------------------------------------------------
@@ -392,7 +481,7 @@ const Acct = (() => {
     forgetTree();
     db = { baby: { name: '', birth: '', kids: Kids.clean([]) }, events: [], deleted: [], meta: {} };
     save(true); tab = 'day'; invite = null; F.loaded = false; F.verified = false; F.enrollRequested = F.enrollForCreate = false; M.enroll = null;
-    Sync.st.people = []; Sync.st.requests = []; Sync.st.invites = []; Sync.st.memberships = []; Sync.st.myRequests = []; Lock.reset();
+    Sync.st.people = []; Sync.st.requests = []; Sync.st.invites = []; Sync.st.memberships = []; Sync.st.myRequests = []; await Lock.clear();
   }
   /** The server ended this session (signed out everywhere, or the refresh token was revoked): clear this phone. */
   async function sessionLost() { await wipeLocal(); L.step = 'email'; L.err = N_('You were signed out. Please sign in again.'); render(); }
@@ -995,7 +1084,9 @@ const Acct = (() => {
       ${Sync.linked() ? `<label class="f" style="display:block;margin:8px 0 4px;color:var(--mute);font-size:13px">${__h('Your name (shown to the family)')}</label><input id="myName" type="text" maxlength="60" value="${esc(me ? me.display_name : '')}">` : ''}
       <div class="stat"><span>${__h('Two-step verification')}<br><small>${F.verified ? (parent ? __h('On (required for parents)') : __h('On')) : __h('Off')}</small></span>
         ${F.verified ? (parent ? '' : `<button class="btn" id="mfaOff" style="padding:6px 12px">${__h('Turn off')}</button>`) : `<button class="btn p" id="mfaOn" style="padding:6px 12px">${__h('Turn on')}</button>`}</div>
-      <div class="stat"><span>${__h('App lock')}<br><small>${__h('Face ID / fingerprint / passcode')}</small></span><span class="chips"><label class="chip"><input type="checkbox" id="lockOn" ${Lock.enabled ? 'checked' : ''}><span>${Lock.enabled ? __h('On') : __h('Off')}</span></label></span></div>
+      <div class="stat"><span>${__h('App lock')}<br><small>${__h('When Little Log opens, and after time away')}</small></span><span class="chips">${[['off', __('Off')], ['bio', __('Face ID / fingerprint')], ['pin', __('PIN')]].map(([v, l]) => `<label class="chip"><input type="radio" name="lockMode" value="${v}" ${(Lock.mode || 'off') === v ? 'checked' : ''}><span>${esc(l)}</span></label>`).join('')}</span></div>
+      ${Lock.mode === 'pin' ? `<div class="stat"><span>${__h('PIN')}<br><small>${__h('4 to 8 digits, known only to you')}</small></span><span class="btns"><button class="btn" id="pinChange" style="padding:6px 10px">${__h('Change PIN')}</button></span></div>
+      ${Lock.bioAvailable ? `<div class="stat"><span>${__h('Also unlock with Face ID / fingerprint')}</span><span class="chips"><label class="chip"><input type="checkbox" id="bioToo" ${Lock.bioToo ? 'checked' : ''}><span>${Lock.bioToo ? __h('On') : __h('Off')}</span></label></span></div>` : ''}` : ''}
       ${Lock.enabled ? `<div class="stat"><span>${__h('Lock after')}<br><small>${__h('when you leave the app')}</small></span><select id="lockMin" style="padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">${[[0, __('Immediately')], [1, __n('{n} minute', '{n} minutes', 1)], [5, __n('{n} minute', '{n} minutes', 5)], [15, __n('{n} minute', '{n} minutes', 15)]].map(([v, l]) => `<option value="${v}" ${Lock.minutes === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>` : ''}
       <div class="row"><button class="btn" id="signOut">${__h('Sign out')}</button><button class="btn" id="signOutAll">${__h('Sign out everywhere')}</button></div>
       <div class="row"><button class="btn d" id="delAcct">${__h('Delete account')}</button></div></div>`;
@@ -1038,7 +1129,9 @@ const Acct = (() => {
       try { for (const f of await Auth.factors()) await Auth.mfaRemove(f.id); F.verified = false; render(); toast(__('Turned off')); } catch (e) { toast(err(e)); }
     });
     if ($('#myName')) $('#myName').onchange = async e => { try { await Sync.setDisplayName(e.target.value); toast(__('Saved')); } catch (x) { toast(err(x)); } };
-    if ($('#lockOn')) $('#lockOn').onchange = async e => { const m = await Lock.set(e.target.checked); if (m) toast(__(m)); render(); };
+    document.querySelectorAll('[name=lockMode]').forEach(r => r.onchange = () => setLockMode(r.value));
+    if ($('#pinChange')) $('#pinChange').onclick = () => askPin(() => choosePin(__('Choose a new PIN')));
+    if ($('#bioToo')) $('#bioToo').onchange = e => { Lock.setBioToo(e.target.checked); render(); };
     if ($('#lockMin')) $('#lockMin').onchange = e => { Lock.setMinutes(+e.target.value); toast(__('Saved')); };
     if (!$('#cPass')) return;
     on('#cSavePass', () => { const m = Cloud.setPass($('#cPass').value); toast(m ? __(m) : __('Passphrase saved in secure storage')); });

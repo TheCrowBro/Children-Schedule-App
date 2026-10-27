@@ -431,7 +431,7 @@ const server = http.createServer((req, res) => {
   });
 
   await step('app lock: on by default, locks on a cold start, stays locked if Face ID fails, unlocks when it succeeds', async () => {
-    assert.equal(JSON.parse(await A.evaluate(() => localStorage.getItem('ll.lock'))).enabled, true);
+    assert.equal(JSON.parse(await A.evaluate(() => localStorage.getItem('ll.lock'))).mode, 'bio', 'the phone\'s own lock, by default');
     await A.evaluate(() => localStorage.setItem('MOCK_BIO_FAIL', '1')); await A.reload();
     await A.waitForSelector('#unlock'); await sleep(500); assert(await A.isVisible('#unlock'), 'still locked after a failed prompt'); assert(!(await A.isVisible('#tabs')));
     assert(/locked/.test(await A.textContent('#view')));
@@ -445,6 +445,34 @@ const server = http.createServer((req, res) => {
     await A.evaluate(() => { window.__bio.ok = false; window.__emit('appStateChange', { isActive: false }); window.__emit('appStateChange', { isActive: true }); });
     await A.waitForSelector('#unlock'); assert.equal(await A.evaluate(() => Lock.locked), true, 'locked immediately when set to "Immediately"');
     await A.evaluate(() => { window.__bio.ok = true; }); await A.click('#unlock'); await A.waitForSelector('#tabs');
+  });
+  await step('app lock with a PIN: 4 to 8 digits typed twice in More, kept only as a salted hash in secure storage, asked for on a cold start, wrong PINs refused and slowed down after five, Face ID still offered, and the PIN needed to turn the lock off', async () => {
+    const tap = async (digits, pad = '#sheet') => { for (const d of digits) await A.click(`${pad} .pk[data-k="${d}"]`); };
+    await goTab(A, 'more'); await A.click('[name=lockMode][value=pin]'); await A.waitForSelector('#pinPad');
+    await tap('123'); await A.click('#sheet .pk[data-k=ok]'); assert(/4 to 8 digits/.test(await A.textContent('#pinPadMsg')), 'too short');
+    await tap('2468'); await A.click('#sheet .pk[data-k=ok]'); assert(/Enter it again/.test(await A.textContent('#sheet')), 'typed twice');
+    await tap('2469'); await A.click('#sheet .pk[data-k=ok]'); assert(/did not match/.test(await A.textContent('#pinPadMsg')));
+    await tap('2468'); await A.click('#sheet .pk[data-k=ok]'); await tap('2468'); await A.click('#sheet .pk[data-k=ok]');
+    await A.waitForFunction(() => $('#sheet').hidden && Lock.mode === 'pin');
+    const kept = await A.evaluate(() => localStorage.getItem('MOCKSECURE:ll.pin'));
+    assert(kept && /"hash"/.test(kept) && /"salt"/.test(kept) && !/2468/.test(kept), 'a salted hash in secure storage, never the PIN itself');
+    assert.equal(await A.evaluate(() => Object.entries(localStorage).some(([k, v]) => !k.startsWith('MOCKSECURE:') && /2468/.test(v))), false, 'and nothing in ordinary storage');
+    assert.equal(JSON.parse(await A.evaluate(() => localStorage.getItem('ll.lock'))).mode, 'pin');
+    assert(await A.$('#bioToo'), 'Face ID / fingerprint can stay as a shortcut');
+    await A.evaluate(() => localStorage.setItem('MOCK_BIO_FAIL', '1')); await A.reload(); await A.waitForSelector('#ul .pk'); assert(!(await A.isVisible('#tabs')), 'locked on a cold start');
+    assert(await A.$('#unlock'), 'the shortcut is offered on the lock screen');
+    const said = re => A.waitForFunction(r => new RegExp(r).test($('#ulMsg').textContent), re.source);   // (checking a PIN takes a moment: it is hashed)
+    for (let i = 0; i < 4; i++) { await A.evaluate(() => { $('#ulMsg').textContent = ''; }); await tap('1111', '#ul'); await said(/not right/); }
+    await A.evaluate(() => { $('#ulMsg').textContent = ''; }); await tap('1111', '#ul'); await said(/Try again in \d+ seconds/);
+    await A.evaluate(() => { $('#ulMsg').textContent = ''; }); await tap('2468', '#ul'); await said(/Try again in/);   // the right PIN has to wait too
+    assert(!(await A.isVisible('#tabs')), 'still locked');
+    await A.evaluate(() => { const p = JSON.parse(localStorage.getItem('MOCKSECURE:ll.pin')); p.until = Date.now() - 1; localStorage.setItem('MOCKSECURE:ll.pin', JSON.stringify(p)); });
+    await A.reload(); await A.waitForSelector('#ul .pk'); await tap('2468', '#ul'); await A.waitForSelector('#tabs'); assert.equal(await A.textContent('#title'), "Leo's Log");
+    await A.evaluate(() => localStorage.removeItem('MOCK_BIO_FAIL'));
+    await goTab(A, 'more'); await A.click('[name=lockMode][value=off]'); await A.waitForSelector('#pinPad'); assert(/current PIN/.test(await A.textContent('#sheet')), 'turning the lock off asks for the PIN');
+    await tap('2468'); await A.waitForFunction(() => $('#sheet').hidden && Lock.mode === 'off');
+    assert.equal(await A.evaluate(() => localStorage.getItem('MOCKSECURE:ll.pin')), null, 'the PIN goes with the lock');
+    await A.click('[name=lockMode][value=bio]'); await A.waitForFunction(() => Lock.mode === 'bio');   // (as the later steps expect)
   });
 
   await step('backup passphrase: 12+ characters, kept in secure storage; a generated one is offered', async () => {

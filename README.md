@@ -181,8 +181,11 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   account; **Share with family** signs in with an email to start a log the family shares, or to join one; **Moving from another phone?**
   restores the backup file made on the old phone, with its passphrase. The choice is remembered. A log kept on the phone only can share
   later from the Family tab (**Share with family**), and its entries wait to be taken into the new log
-- **Locked-down accounts**: email one-time code + security check (CAPTCHA), **two-step verification** (required for parents), Face ID / fingerprint
-  **app lock**, secrets in the **Keychain / Keystore**, "sign out everywhere", in-app account deletion
+- **Locked-down accounts**: email one-time code + security check (CAPTCHA), **two-step verification** (required for parents), an
+  **app lock** (More → App lock: Face ID / fingerprint with the phone passcode as fallback, on by default on a phone with a screen lock,
+  or a PIN of 4 to 8 digits chosen in the app, kept only as a salted hash in the Keychain / Keystore, with Face ID / fingerprint as an
+  optional shortcut; five wrong PINs start a wait that doubles; it locks when the app opens and after a chosen time away), secrets in
+  the **Keychain / Keystore**, "sign out everywhere", in-app account deletion
 - **End-to-end encryption**: the server can't read the baby's name, entries, notes or health data. Phones hold the keys (Keychain / Keystore); a recovery code
   protects against losing every phone; keys change automatically when someone leaves or loses a phone
 - **Encrypted cloud backup** (More → Cloud backup) to Google Drive, Dropbox, OneDrive, or iCloud Drive / Files, with a passphrase only
