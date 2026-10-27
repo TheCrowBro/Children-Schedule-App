@@ -179,7 +179,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('the Guide: the school-age topics first for a school child (no toddler topics), after the milestones for a preschooler, none for a toddler', async () => {
       const heads = () => P.$$eval('#view h2', x => x.map(h => h.textContent.trim()));
       await P.evaluate(id => G.page(id, 'guide'), noah);
-      assert.deepEqual(await heads(), ['Right now', 'School age', 'Play and activities', 'Health checks'], 'a school child\'s Guide has none of the baby years');
+      assert.deepEqual(await heads(), ['Right now', 'Puberty', 'School age', 'Play and activities', 'Health checks'], 'a school child\'s Guide has none of the baby years (puberty from 8)');
       assert.deepEqual(await P.$$eval('#view details.gd[data-grp^=s] .gt b', x => x.map(b => b.textContent)), ['Sleep for school children', 'Screens and staying safe online', 'Homework and reading', 'Friends and bullying',
         'Food and staying active', 'Teeth', 'Bedwetting', 'Worries and feelings', 'Puberty', 'Head lice', 'Out and about']);
       await P.click('details[data-grp=sworries] > summary'); assert(/take it seriously/.test(await P.textContent('details[data-grp=sworries]')));
@@ -196,7 +196,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await P.evaluate(() => { G.age(0, 6, 1); G.page(kids()[0].id, 'guide'); });
       assert.deepEqual(await heads(), ['Right now', 'School age', 'Play and activities', 'Health checks'], 'at 6: no month-by-month list either');
       await P.evaluate(() => G.page('all', 'guide'));   // Leo (1), Ella (6) and Noah (8) together
-      assert.deepEqual(await heads(), ['Right now', 'Common with newborns', 'Food', 'Medicines', 'Toddlers and preschoolers', 'School age', 'Play and activities', 'Health checks', 'Month by month'], 'everyone: every key part for the ages in the family, youngest first');
+      assert.deepEqual(await heads(), ['Right now', 'Common with newborns', 'Food', 'Medicines', 'Toddlers and preschoolers', 'School age', 'Puberty', 'Play and activities', 'Health checks', 'Month by month'], 'everyone: every key part for the ages in the family, youngest first');
       assert.equal(await P.$$eval('#view .nowcard', x => x.length), 3, 'a card for each child');
       assert.equal(await P.$$eval('#view details.gd[data-grp^=m]', x => x.length), 19, 'all the months, for the toddler');
       await P.evaluate(() => { G.age(0, 3, 4); G.page(kids()[0].id); });
