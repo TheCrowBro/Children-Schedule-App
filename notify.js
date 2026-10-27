@@ -40,9 +40,13 @@ const Notify = (() => {
   const idFor = (sid, i) => { let h = 7; for (const ch of String(sid)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return 100000 + (h % 100000) * 10 + i; };
   /** How long a sleep begun at this time of day usually lasts, from the child's routine (the sleep time within 45 minutes of it): the
       minutes, or null when the routine does not know (yet). */
+  const memo = new Map();   // (working a child's routine out is a scan of the log: once per child and day, not on every redraw)
   function usual(events, e, now = Date.now()) {
-    const child = childOf(e), mine = events.filter(x => x.type !== 'plan' && !Travel.isTravel(x.type) && childOf(x) === child);
-    const R = Routine.find(mine, now); if (!R.enough) return null;
+    const child = childOf(e), day = new Date(now); day.setHours(0, 0, 0, 0);
+    const key = `${child}|${day.getTime()}|${events.length}`;
+    let R = memo.get(key);
+    if (!R) { R = Routine.find(events.filter(x => x.type !== 'plan' && !Travel.isTravel(x.type) && childOf(x) === child), now); if (memo.size > 20) memo.clear(); memo.set(key, R); }
+    if (!R.enough) return null;
     const d = new Date(e.ts), m = d.getHours() * 60 + d.getMinutes();
     const near = (a, b) => Math.min(Math.abs(a - b), 1440 - Math.abs(a - b)) <= Routine.WINDOW;
     const s = R.slots.find(x => x.type === 'sleep' && x.minutes > 0 && near(x.at, m));
@@ -53,9 +57,9 @@ const Notify = (() => {
       moved past the quiet hours; only ones still to come. */
   function plan(events, now = Date.now(), c = cfg) {
     if (!c.on) return [];
-    const out = [];
-    for (const e of events || []) {
-      if (e.type !== 'sleep' || e.end) continue;
+    const out = [], latest = new Map();   // one sleep per child: the latest still open (a child sleeps once at a time; older ones left open are stale)
+    for (const e of events || []) if (e.type === 'sleep' && !e.end) { const k = e.child || '', cur = latest.get(k); if (!cur || e.ts > cur.ts) latest.set(k, e); }
+    for (const e of latest.values()) {
       const u = c.routine !== false ? usual(events, e, now) : null;
       let t = e.ts + (u ? u + 60 : c.after) * MIN;
       for (let i = 0; i < c.times; i++) {
