@@ -196,6 +196,44 @@ const Guide = (() => {
     { id: 'driving', icon: '🚗', title: N_('Driving and getting about'), body: N_('New drivers have the most crashes in their first year. Practise together in all kinds of weather, agree on rules (no phone, no alcohol, a seat belt on every trip, few friends in the car at first), and keep wearing a helmet on bikes and scooters.') },
     { id: 'own', icon: '🔑', title: N_('Growing independence'), body: N_('Give them more say and more to do: their own money, cooking, booking their own appointments and seeing the doctor on their own for part of the visit. Respect their privacy while keeping them safe, and keep talking: at dinner, in the car, late at night.') },
   ];
+  // Toys for each age: what children do at that age, the kinds of toy that suit it (kinds, not brands), and what to watch. The Guide
+  // shows each child's age and the next one; with Everyone chosen, every age in the family.
+  const TOYS = [
+    { id: 'newborn', icon: '👶', title: N_('Newborn: the first 3 months'),
+      body: N_('Newborns play with their eyes and ears. They see best about 8 to 12 inches (20 to 30 cm) away and like strong contrast, faces and slow movement. The best toy is you: your face, your voice, and a little tummy time every day.'),
+      toys: [N_('High-contrast cards, or a black-and-white mobile out of reach'), N_('A soft rattle or a wrist rattle'), N_('A play mat or gym with toys hanging over it, for tummy time'), N_('An unbreakable baby mirror'),
+        N_('Soft or board books with faces and bold patterns'), N_('Songs and gentle music: yours, or a music box')],
+      safety: N_('Nothing goes in the crib for sleep: no soft toys, pillows, bumpers or loose blankets until 1 year. No cords, ribbons or strings within reach, and a mobile comes down once the baby can push up on hands and knees.') },
+    { id: 'baby', icon: '🧸', title: N_('Baby: 3 to 12 months'),
+      body: N_('From about 3 months babies reach, grab and put everything in their mouths; from 6 they sit up and pass things from hand to hand; from 9 they crawl, point and drop things on purpose to see what happens. Toys that do something when they act (a sound, a pop-up, a roll) teach cause and effect.'),
+      toys: [N_('Teething rings and soft blocks they can chew'), N_('Stacking cups and rings, and a shape sorter towards 1'), N_('A ball that rolls slowly, to chase once they crawl'), N_('Board books with flaps and textures to feel'),
+        N_('An activity centre with buttons, flaps and spinners'), N_('Household things: a wooden spoon, a plastic cup, a cardboard box'), N_('A sturdy push toy once they pull up to stand')],
+      safety: N_('Anything that fits through a toilet-paper tube can choke a baby: check for small parts, loose eyes and button batteries, and keep older children\'s toys apart. Skip baby walkers (the AAP has called for a ban: falls down stairs), and keep bouncers and jumpers to 15 to 20 minutes.') },
+    { id: 'toddler', icon: '🧱', title: N_('Toddler: 1 to 3 years'),
+      body: N_('Toddlers walk, climb, carry and empty everything, and begin to pretend. Open-ended toys (blocks, boxes, a doll, a toy kitchen) keep their interest far longer than a toy that does one thing; add something to push or ride and something to scribble with.'),
+      toys: [N_('Push and pull toys, then a ride-on without pedals'), N_('Large blocks, nesting cups and chunky puzzles with knobs'), N_('A doll, toy animals, a toy phone or a play kitchen'), N_('Chunky crayons, washable markers and big sheets of paper'),
+        N_('Balls of different sizes, a small slide or a play tunnel'), N_('Board books with simple stories, and songs with actions'), N_('Bath toys: cups to pour, and things that float or squirt')],
+      safety: N_('Keep checking for small parts until 3 (nothing that fits through a toilet-paper tube), and keep magnets and button batteries well away: swallowed, they can do serious harm within hours. A helmet on any ride-on outdoors, and anchor furniture and TVs a climber could pull over.') },
+    { id: 'preschool', icon: '🎨', title: N_('Preschooler: 3 to 5 years'),
+      body: N_('Preschoolers build, draw, dress up and play together, with longer stories and first rules. Toys for making things and acting out roles grow with them; this is also the age for a bike (a balance bike first, then pedals) and for games with simple turns.'),
+      toys: [N_('Building sets: large interlocking bricks, smaller ones from 4 or 5'), N_('Dress-up clothes, puppets, a doctor\'s kit, a play kitchen or shop'), N_('Paints, play dough, scissors with rounded tips, glue and stickers'), N_('A balance bike or tricycle, then a bike with pedals, with a helmet'),
+        N_('Simple board games and memory games (taking turns, and losing)'), N_('Puzzles of 20 to 50 pieces, big beads to thread, lacing cards'), N_('Picture books, and a library card of their own')],
+      safety: N_('A helmet on anything with wheels, every time. Trampolines, above all with more than one child on them, cause many broken bones: if you have one, one child at a time and a net. Keep screens mostly to shows watched together, and out of the bedroom.') },
+    { id: 'school', icon: '🚲', title: N_('School age: 5 to 12 years'),
+      body: N_('School children want to get good at things: a sport, a craft, a game with real rules, a collection. Hobbies that take practice beat gadgets that do it for them, and the best toys get them moving, making, or playing with other children.'),
+      toys: [N_('Smaller building sets, model kits, science and magnet kits'), N_('Board games and card games the whole family can play'), N_('A bike, a scooter or skates (with a helmet), a ball for their sport, a jump rope'), N_('Craft and art supplies, a sewing or jewellery kit, a simple camera'),
+        N_('Chapter books, comics, joke books and puzzle books'), N_('A musical instrument, a sketchbook, a cookbook for children'), N_('For outdoors: a kite, a magnifying glass, binoculars, a bug jar')],
+      safety: N_('Helmets stay on for bikes, scooters and skates, and wrist guards for skates. Keep magnets, chemistry sets and anything that shoots small projectiles away from younger brothers and sisters. For video games, check the age rating, play some together, and agree time limits before the console arrives.') },
+    { id: 'teen', icon: '🎸', title: N_('Teenager: 12 and up'),
+      body: N_('Teenagers play through hobbies, sport, music, games and friends. A gift that feeds a real interest (gear for their sport, an instrument, an art or electronics kit, a game to play together) means more than the latest gadget, and games played as a family are a good way to stay close.'),
+      toys: [N_('Gear for the sport they chose, or a gym or pool pass'), N_('A musical instrument, or lessons'), N_('Strategy board games, card games and puzzles to play as a family'), N_('Craft, electronics, coding or robotics kits'),
+        N_('Books they choose themselves, or a bookshop voucher'), N_('A bike or skateboard (with a helmet), a camera, a journal')],
+      safety: N_('Helmets still matter: head injuries peak in the teenage years. Talk about the age ratings, chat features and in-game spending of the games they play, and let phones and consoles charge outside the bedroom at night.') },
+  ];
+  // Learning to swim: when lessons can begin, what to look for, and water safety. The Day page says when the time comes (around 1).
+  const SWIM = { id: 'swim', icon: '🏊', title: N_('Learning to swim'),
+    body: N_('Babies can enjoy the water with you from a few months old (a warm pool, short sessions, you holding them), and parent-and-baby classes build water confidence, not safety. The AAP says swim lessons can begin around age 1, when they lower a toddler\'s risk of drowning, and that most children are ready for formal lessons by 4; some countries\' programmes start water familiarisation from 6 months. Look for small groups, a warm pool and teachers trained in water safety and CPR, and keep going until your child can float, tread water, swim a length and climb out on their own.'),
+    call: N_('In many countries drowning is the leading cause of death for children of 1 to 4, and it is silent and quick. Stay within arm\'s reach of a child under 5 near any water, fence pools on all four sides, empty paddling pools and buckets after use, and put life jackets on at the lake or on a boat. Lessons never replace watching.') };
   const STAGE_NOTES = {
     school: N_('The school years: friends, learning and growing independence. Children of 6 to 12 need 9 to 12 hours of sleep and at least an hour of active play a day. A yearly checkup, the dentist every 6 months, and the vaccines on your country\'s schedule.'),
     teen: N_('The teenage years: growing fast, more independence, and big changes in body and mood. Teenagers need 8 to 10 hours of sleep and at least an hour of activity a day. A yearly checkup, the dentist every 6 months, and the vaccines due on your country\'s schedule. Talk openly, and give them more say as they grow.'),
@@ -283,5 +321,5 @@ const Guide = (() => {
   const cleanDetails = d => { d = d && typeof d === 'object' ? d : {}; return { relation: str(d.relation, 40), phone: str(d.phone, 30), work: str(d.work, 80), workPhone: str(d.workPhone, 30), notes: str(d.notes, 300) }; };
   /** A tel: link target, or '' when the text has no usable number. */
   const tel = p => { const n = String(p || '').replace(/[^\d+]/g, '').replace(/(?!^)\+/g, ''); return n.replace(/\D/g, '').length >= 3 ? 'tel:' + n : ''; };
-  return { COMMON, PICS, picSrc, credits, MILESTONES, TODDLER, CHECKS, SCHOOL, TEEN, STAGE_NOTES, MEDS_INTRO, MEDS, NEVER, sos, local, monthsOld, cleanDoctor, cleanDetails, tel };
+  return { COMMON, PICS, picSrc, credits, MILESTONES, TODDLER, CHECKS, SCHOOL, TEEN, TOYS, SWIM, STAGE_NOTES, MEDS_INTRO, MEDS, NEVER, sos, local, monthsOld, cleanDoctor, cleanDetails, tel };
 })();

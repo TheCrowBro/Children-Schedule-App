@@ -312,14 +312,42 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('the Guide grows too: toddler topics first, milestones to 5, then what the school and teenage years are about', async () => {
       const heads = () => P.$$eval('#view h2', x => x.map(h => h.textContent.trim()));
       await P.evaluate(id => G.page(id, 'guide'), leo);
-      assert.deepEqual(await heads(), ['Right now', 'Toddlers and preschoolers', 'Food', 'Medicines', 'Health checks', 'Month by month', 'Common with newborns']);
+      assert.deepEqual(await heads(), ['Right now', 'Toddlers and preschoolers', 'Food', 'Medicines', 'Play and activities', 'Health checks', 'Month by month', 'Common with newborns']);
       assert.deepEqual(await P.$$eval('#view details.gd[data-grp^=t] .gt b', x => x.map(b => b.textContent)), ['Potty training', 'Picky eating', 'Tantrums', 'Toddler sleep', 'Teeth and the dentist', 'Screens', 'Car seats']);
       assert(/Leo is 2 years 3 months old/.test(await P.textContent('.nowcard')) && /Around 2 years/.test(await P.textContent('.nowcard')));
       const ms = await P.$$eval('#view details.gd[data-grp^=m] .gt b', x => x.map(b => b.textContent)); for (const m of ['30 months', '3 years', '4 years', '5 years']) assert(ms.includes(m), m);
       await P.evaluate(() => { G.age(0, 8, 1); G.page(kids()[0].id, 'guide'); }); assert(/The school years/.test(await P.textContent('.nowcard')));
       await P.evaluate(() => { G.age(0, 13, 1); G.page(kids()[0].id, 'guide'); }); assert(/The teenage years/.test(await P.textContent('.nowcard')));
       await P.evaluate(() => { G.age(0, 0, 2); G.page(kids()[0].id, 'guide'); });
-      assert.deepEqual(await heads(), ['Right now', 'Food', 'Common with newborns', 'Medicines', 'Health checks', 'Toddlers and preschoolers', 'Month by month'], 'a baby\'s Guide starts with the baby topics');
+      assert.deepEqual(await heads(), ['Right now', 'Food', 'Common with newborns', 'Medicines', 'Play and activities', 'Health checks', 'Toddlers and preschoolers', 'Month by month'], 'a baby\'s Guide starts with the baby topics');
+    });
+
+    await step('Play and activities in the Guide: the toys that suit each child\'s age and the next one (every age in the family with Everyone), and learning to swim', async () => {
+      const toys = () => P.$$eval('#view details.gd[data-grp^=y] .gt b', x => x.map(b => b.textContent));
+      await P.evaluate(() => { G.age(0, 0, 2); G.page(kids()[0].id, 'guide'); });   // Leo, 2 months
+      assert.deepEqual(await toys(), ['Newborn: the first 3 months', 'Baby: 3 to 12 months'], 'a newborn: now, and what comes next; got ' + (await toys()).join(' | '));
+      assert(/Play and activities/.test(await P.textContent('#view')) && await P.$('details[data-grp=aswim]'), 'with learning to swim');
+      await P.click('details[data-grp=ynewborn] > summary');
+      assert.equal(await P.$$eval('details[data-grp=ynewborn] li', l => l.length), 6); assert(/Nothing goes in the crib for sleep/.test(await P.textContent('details[data-grp=ynewborn] .call')));
+      await P.evaluate(() => { G.age(1, 2, 3); G.page(kids()[1].id, 'guide'); }); assert.deepEqual(await toys(), ['Toddler: 1 to 3 years', 'Preschooler: 3 to 5 years']);   // Mia, 2 years 3 months
+      await P.evaluate(() => { G.age(0, 13, 1); G.page(kids()[0].id, 'guide'); }); assert.deepEqual(await toys(), ['Teenager: 12 and up'], 'a teenager: nothing comes after');   // Leo, 13
+      await P.evaluate(() => G.page('all', 'guide')); assert.deepEqual(await toys(), ['Toddler: 1 to 3 years', 'Preschooler: 3 to 5 years', 'School age: 5 to 12 years', 'Teenager: 12 and up'], 'everyone: every age in the family (Mia 2, Ella 4, Leo 13), and the next');
+      await P.click('details[data-grp=aswim] > summary'); const swim = await P.textContent('details[data-grp=aswim]');
+      assert(/swim lessons can begin around age 1/.test(swim) && /arm's reach/.test(swim), swim);
+    });
+
+    await step('around the first birthday the Day page says it is a good time to begin swim lessons, until closed; not for a baby, and not from 6', async () => {
+      const note = () => P.evaluate(() => (document.querySelector('#view .agenote') || {}).textContent || '');
+      await P.evaluate(() => { db.meta.noteSeen = {}; G.age(0, 0, 6); G.age(1, 0, 6); G.page(kids()[0].id); }); assert.equal(await note(), '', 'not at 6 months');
+      await P.evaluate(() => { G.age(0, 1, 0); G.page(kids()[0].id); }); assert(/good time to begin swim lessons for Leo/.test(await note()), await note());   // Leo, just 1
+      await P.evaluate(() => { G.age(1, 2, 0); G.page(kids()[1].id); }); assert(/for Mia/.test(await note()), 'a 2-year-old too, until closed');   // Mia, 2
+      await P.evaluate(() => G.page('all')); assert(/for Leo, Mia, and Ella/.test(await note()), 'everyone: all three (Ella is 4), in one note');
+      await P.click('#view [data-noteok]'); assert.equal(await note(), '', 'closed for all three');
+      assert.deepEqual(await P.evaluate(() => kids().map(k => !!(db.meta.noteSeen[k.id] || {}).swim)), [true, true, true]);
+      await P.evaluate(() => G.page(kids()[1].id)); assert.equal(await note(), '', 'stays closed');
+      await P.evaluate(() => { db.meta.noteSeen = {}; G.age(0, 6, 0); G.page(kids()[0].id); }); assert.equal(await note(), '', 'not from 6: it is in the Guide');
+      await P.evaluate(() => { G.age(0, 5, 11); G.page(kids()[0].id); }); assert(/for Leo/.test(await note()), 'still at 5');
+      assert.equal(await P.$eval('#view .agenote', e => e.classList.contains('grownote')), false, 'a note of its own, apart from the stage notes');
     });
 
     if (process.env.DEBUG) console.log('page errors:', P.errs, 'dialogs:', P.dialogs);

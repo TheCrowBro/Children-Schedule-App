@@ -172,6 +172,11 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   helper who moved away, stopped, or died: their access ends at once (as if removed, and the log changes its keys), but they stay on a
   **Retired** list with their role, dates, the reason and their details (still end-to-end encrypted), and their past entries still say
   who added them. To have them back, invite them again; a parent can also delete the note
+- **Play and activities** (Guide): the kinds of toy that suit each age, from the first 3 months to the teenage years, with what
+  children do at that age, kinds rather than brands, and what to watch for (small parts, magnets and button batteries, baby walkers,
+  helmets, trampolines, screens). The Guide shows each child's age and the next one, and every age in the family with Everyone.
+  **Learning to swim**: when lessons can begin (around 1, and formal lessons by 4), what to look for in a class, and water safety;
+  from a child's first birthday a note on the Day page says it is a good time to begin, until closed
 - **The first screen**: a new phone asks how you'd like to use Little Log. **Just this phone** keeps everything on the phone, with no
   account; **Share with family** signs in with an email to start a log the family shares, or to join one; **Moving from another phone?**
   restores the backup file made on the old phone, with its passphrase. The choice is remembered. A log kept on the phone only can share

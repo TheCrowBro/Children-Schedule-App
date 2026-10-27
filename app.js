@@ -288,6 +288,17 @@ function stageNote() {
   const st = stageOf(ks[0]), same = ks.filter(k => stageOf(k) === st), [icon, text] = STAGE_NOTE[st];
   return `<div class="card grownote"><p>${icon} ${__h(text, { name: andList(same.map(kidName)) })}</p><button class="btn" data-stageok="${same.map(k => k.id).join(' ')}" data-stage="${st}">${__h('Close')}</button></div>`;
 }
+// Notes that come with an age rather than a stage, shown on the Day page until closed: a good time to begin swim lessons, from the first
+// birthday (not from 6: by then it is a Guide topic). Closing is kept per child on this phone, like the stage notes.
+const AGE_NOTES = [{ id: 'swim', from: 12, until: 72, icon: '🏊', text: N_("A good time to begin swim lessons for {name}: lessons from around age 1 can lower a toddler's risk of drowning, and most children can learn real water skills by 4. Lessons never replace watching: stay within arm's reach near any water. More under Play and activities in the Guide.") }];
+function ageNote() {
+  const seen = db.meta.noteSeen || {}, now = Date.now();
+  for (const n of AGE_NOTES) {
+    const ks = pageKids().filter(k => { const m = k.birth ? Stages.months(k.birth, now) : -1; return m >= n.from && m < n.until && !(seen[k.id] || {})[n.id]; });
+    if (ks.length) return `<div class="card agenote"><p>${n.icon} ${__h(n.text, { name: andList(ks.map(kidName)) })}</p><button class="btn" data-noteok="${ks.map(k => k.id).join(' ')}" data-note="${n.id}">${__h('Close')}</button></div>`;
+  }
+  return '';
+}
 
 // ---------- 18: Little Log's work is done ----------
 // When a child turns 18, a sheet celebrates it (once) and offers to keep it as a big moment; their Day page then says so, with their
@@ -570,7 +581,7 @@ function dayView() {
     <div class="d">${isToday ? __h('Today') : esc(fmtDate(viewDay))}<small>${isToday ? esc(fmtDate(viewDay)) : ''}${esc(ageText(viewDay))}</small></div>
     <button data-nav="1" aria-label="${__h('Next day')}" ${isToday ? 'disabled' : ''}>›</button></div>
   ${allergyLine()}
-  ${isToday ? stageNote() + grownCard() + backupNudge() : ''}
+  ${isToday ? stageNote() + ageNote() + grownCard() + backupNudge() : ''}
   ${momentCards(viewDay)}
   ${isToday ? comingUp() : ''}
   ${trip && isToday ? travelQuick() : quickButtons()}
@@ -1528,6 +1539,13 @@ function guideView() {
     ${solidsGuideHtml(sos)}</details>`;
   const meds = `<h2>${__h('Medicines')}</h2>
   ${medsHtml()}`, checks = `<h2>${__h('Health checks')}</h2>${Guide.CHECKS.map(c => card('h', c)).join('')}`;
+  // toys for the ages in the family: each child's age and the one after it (what suits them now, and what comes next); with Everyone, every age in it
+  const toyIds = Guide.TOYS.map(t => t.id), want = new Set();
+  for (const k of who) { const i = toyIds.indexOf(stg(k) === 'grown' ? 'teen' : stg(k)); if (i >= 0) { want.add(toyIds[i]); if (toyIds[i + 1]) want.add(toyIds[i + 1]); } }
+  if (!want.size) { want.add('newborn'); want.add('baby'); }
+  const toyCard = t => `<details class="gd" data-grp="y${t.id}" ${openGroups.has('y' + t.id) ? 'open' : ''}><summary><span class="gi">${t.icon}</span><span class="gt"><b>${__h(t.title)}</b></span><span class="chev" aria-hidden="true">›</span></summary>
+    <p>${__h(t.body)}</p><ul>${t.toys.map(x => `<li>${__h(x)}</li>`).join('')}</ul><p class="call">${__h(t.safety)}</p></details>`;
+  const play = `<h2>${__h('Play and activities')}</h2>${Guide.TOYS.filter(t => want.has(t.id)).map(toyCard).join('')}${card('a', Guide.SWIM)}`;
   const milestones = `<h2>${__h('Month by month')}</h2>
   ${msList.map(([n, M]) => milestoneDetails(+n, M)).join('')}`;
   const head = `${doctorHtml()}
@@ -1544,6 +1562,7 @@ function guideView() {
     ${some(k => !Stages.from(stg(k), 'school')) ? toddler : ''}
     ${some(k => Stages.from(stg(k), 'school') && !Stages.from(stg(k), 'teen')) || some(k => stg(k) === 'preschool') ? school : ''}
     ${some(k => Stages.from(stg(k), 'teen')) || ten ? teens : ''}
+    ${play}
     ${checks}
     ${under6 ? milestones : ''}
     ${foot}`;
@@ -1555,6 +1574,7 @@ function guideView() {
   ${babyDays ? food : ''}
   ${older ? '' : newborn}
   ${babyDays ? meds : ''}
+  ${play}
   ${checks}
   ${older ? '' : toddler}
   ${under6 ? milestones : ''}
@@ -2024,6 +2044,8 @@ const TOURS = {
     { sel: 'details[data-grp=gsolids]', title: N_('Food'), why: N_('Starting solid foods from around 6 months, the key allergens early, and what to do about a reaction.') },
     { sel: '#view details.gd[data-grp^=g]:not([data-grp=gsolids])', title: N_('Common worries'), why: N_('What is normal with a newborn, and when to call. Some have pictures, kept out of sight until you tap them.') },
     { sel: 'details[data-grp=omenu]', title: N_('Medicines'), why: N_('Over-the-counter medicines that are safe from what age, remedies parents mention, and what never to give.') },
+    { sel: '#view details.gd[data-grp^=y]', title: N_('Toys and play'), why: N_('The kinds of toy that suit your child\'s age and the next one, with what to watch for.') },
+    { sel: 'details[data-grp=aswim]', title: N_('Learning to swim'), why: N_('When swim lessons can begin, what to look for in a class, and staying safe around water.') },
     { sel: '#view details.gd[data-grp^=h]', title: N_('Health checks'), why: N_('Vaccines and when to call, what checkups look at, and what the growth chart percentiles mean.') },
     { sel: '#view details.gd[data-grp^=m]', title: N_('Month by month'), why: N_('Milestones for every month. A reminder pops up on each month birthday.') },
   ],
@@ -2233,6 +2255,7 @@ function bind() {
   document.querySelectorAll('[data-backupgo]').forEach(b => b.onclick = () => Acct.goCloudCard());
   document.querySelectorAll('[data-backuplater]').forEach(b => b.onclick = () => { db.meta.backupNudgeAt = Date.now(); save(true); render(); });
   document.querySelectorAll('[data-stageok]').forEach(b => b.onclick = () => { const m = db.meta.stageSeen || (db.meta.stageSeen = {}); for (const id of b.dataset.stageok.split(' ')) m[id] = b.dataset.stage; Store.save(db); render(); });
+  document.querySelectorAll('[data-noteok]').forEach(b => b.onclick = () => { const m = db.meta.noteSeen || (db.meta.noteSeen = {}); for (const id of b.dataset.noteok.split(' ')) (m[id] || (m[id] = {}))[b.dataset.note] = true; Store.save(db); render(); });
   document.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { const ev = db.events.find(e => e.id === b.dataset.plan); if (ev) openPlan(ev); });
   document.querySelectorAll('[data-plannew]').forEach(b => b.onclick = () => openPlan(null, { day: viewDay }));
   document.querySelectorAll('[data-book]').forEach(b => b.onclick = () => makeBook(b.dataset.book));
