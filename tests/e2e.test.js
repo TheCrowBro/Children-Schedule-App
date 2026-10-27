@@ -390,8 +390,11 @@ const server = http.createServer((req, res) => {
     await goTab(A, 'family'); const code = await mkInvite(A, 'friend'), secret = await A.evaluate(c => E2EE.inviteSecret(c), code); secrets.push(secret);
     const E = await device({ launchUrl: `app.littlelog.newborn://join?join=${code}&s=${secret}` });   // opened from the link: the secret rides along
     await signIn(E, 'eve@x.com'); await E.waitForSelector('#wCheck');
-    await A.evaluate(() => { tab = 'day'; render(); }); await syncNow(A);   // (not a click: the request may already have popped up) await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Verified: they scanned your QR code/.test(await A.textContent('#sheet'))); await A.click('#sheet [data-approve]'); await noRequest(A);
+    await E.evaluate(() => { Sync.heldCheck = Sync.checkApproval; Sync.checkApproval = async () => false; });   // (the waiting screen polls every 8 s: it must not pick the keys up before the server strips the proof)
+    await A.evaluate(() => { tab = 'day'; render(); }); await syncNow(A);   // (not a click: the request may already have popped up)
+    await A.waitForSelector('#sheet:not([hidden]) [data-approve]'); assert(/Verified: they scanned your QR code/.test(await A.textContent('#sheet'))); await A.click('#sheet [data-approve]'); await noRequest(A);
     await su.query(`update key_grants set auth=null where grantee in (select 'd:'||d.id::text from devices d join auth.users u on u.id=d.user_id where u.email='eve@x.com')`);   // the server strips the proof
+    await E.evaluate(() => { Sync.checkApproval = Sync.heldCheck; });
     await E.click('#wCheck'); await E.waitForFunction(() => /did not come from the parent who invited you/.test((Sync.st.err || '') + document.body.textContent), null, { timeout: 15000 });
     assert.equal(await E.evaluate(() => E2EE.hasKeys(db.meta.babyId)), false, 'no keys were accepted');
     const eve = (await q(`select user_id from members where email='eve@x.com'`))[0].user_id; await A.evaluate(u => Sync.removeMember(u), eve); await syncNow(A);   // tidy up
