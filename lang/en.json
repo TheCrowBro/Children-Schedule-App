@@ -141,7 +141,8 @@
   {
    "id": "wz8a99",
    "en": "wake-up",
-   "where": "app.js:30"
+   "where": "app.js:30",
+   "note": "Noun: one time the child woke in the night, lower-case: the name of that kind of entry, in \"Add {what}\" / \"Edit {what}\" and lists."
   },
   {
    "id": "m0og6g",
@@ -967,7 +968,8 @@
   {
    "id": "1wmnryd",
    "en": "Bottle {amt}",
-   "where": "app.js:173"
+   "where": "app.js:173",
+   "note": "A bottle feed; {amt} is the amount already formatted with its unit, like \"90 ml\" or \"3 fl oz\"."
   },
   {
    "id": "gaje09",
@@ -978,7 +980,8 @@
   {
    "id": "i6sq5r",
    "en": "Cup {amt}",
-   "where": "app.js:174"
+   "where": "app.js:174",
+   "note": "A feed from a cup; {amt} is the amount already formatted with its unit, like \"90 ml\" or \"3 fl oz\"."
   },
   {
    "id": "prsm9b",
@@ -1451,13 +1454,13 @@
    "id": "76y2ad",
    "en": "Edit {what}",
    "where": "app.js:437",
-   "note": "Title of the form for changing an entry. {what} is one of: feed, diaper, sleep, night wake, vomit, play, health note, meds (translated)."
+   "note": "Title of the form for changing an entry. {what} is one of: feed, diaper, sleep, wake-up, vomit, play, health note, meds (translated)."
   },
   {
    "id": "1ohn8hi",
    "en": "Add {what}",
    "where": "app.js:437",
-   "note": "Title of the form for a new entry. {what} is one of: feed, diaper, sleep, night wake, vomit, play, health note, meds (translated)."
+   "note": "Title of the form for a new entry. {what} is one of: feed, diaper, sleep, wake-up, vomit, play, health note, meds (translated)."
   },
   {
    "id": "1rf4err",
@@ -3647,12 +3650,14 @@
   {
    "id": "dtcel0",
    "en": "Nurse advice line",
-   "where": "app.js:1611"
+   "where": "app.js:1611",
+   "note": "The pediatrician's nurse line, for questions that are not emergencies. Label of a field and of a line in the Guide with a Call button."
   },
   {
    "id": "zlhite",
    "en": "After hours",
-   "where": "app.js:1611"
+   "where": "app.js:1611",
+   "note": "The pediatrician's number for evenings, nights and weekends. Label of a field and of a line in the Guide with a Call button."
   },
   {
    "id": "cob4kk",
@@ -3662,7 +3667,8 @@
   {
    "id": "pw9tde",
    "en": "Hospital non-emergency line",
-   "where": "app.js:1611"
+   "where": "app.js:1611",
+   "note": "The hospital's number for advice and for asking whether to come in, as opposed to the emergency number. Label of a field and of a line in the Guide."
   },
   {
    "id": "1cm3uwh",
@@ -4170,7 +4176,7 @@
    "id": "13rqoua",
    "en": "More: {list}",
    "where": "app.js:1927",
-   "note": "Travel mode's button for the other kinds of entry; {list} is their buttons' names with dots between them, like \"Potty · Health · Meds · Night wake\"."
+   "note": "Travel mode's button for the other kinds of entry; {list} is their buttons' names with dots between them, like \"Potty · Health · Meds · Woke up\"."
   },
   {
    "id": "1lcpnl1",
@@ -11904,7 +11910,7 @@
   {
    "id": "pgpbj8",
    "en": "Use passcode",
-   "where": "native.js:75",
+   "where": "native.js:76",
    "note": "Button on the phone's fingerprint or face prompt: use the phone's passcode instead."
   }
  ]
