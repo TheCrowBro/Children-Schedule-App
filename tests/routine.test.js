@@ -181,7 +181,8 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('each child has their own routine; a child with only a couple of days logged is told it will show up', async () => {
       await P.evaluate(() => {
         db.baby.kids.push({ id: 'k2', name: 'Mia', sex: 'girl', color: '#d0507a' });   // (no birth date: no month-birthday sheet in the way)
-        db.events.push({ id: 'mia1', type: 'feed', ts: T.at(1, 10), data: {}, note: '', by: Auth.id, child: 'k2', updated: stamp() }, { id: 'mia2', type: 'feed', ts: T.at(2, 10), data: {}, note: '', by: Auth.id, child: 'k2', updated: stamp() });
+        // (two and three days ago: before 6 AM the routine's day is still yesterday, and a feed logged then would show under "Today so far")
+        db.events.push({ id: 'mia1', type: 'feed', ts: T.at(2, 10), data: {}, note: '', by: Auth.id, child: 'k2', updated: stamp() }, { id: 'mia2', type: 'feed', ts: T.at(3, 10), data: {}, note: '', by: Auth.id, child: 'k2', updated: stamp() });
         save(); render();
       });
       await P.click('#kidBar [data-kid="k2"]');

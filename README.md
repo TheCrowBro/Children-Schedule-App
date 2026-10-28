@@ -71,7 +71,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 - **Day clock**: a French carriage clock (a frame of thin soft-gold lines, a painted panel, a white face
   with a black rim, Roman numerals, a moon at midnight and a sun at noon, a blued spade hand at the current time). A **24 h / 12 h** switch: the 12-hour face shows the morning or the afternoon half (AM / PM) with all
   twelve numerals and an hour and a minute hand. A **XII / 123** switch beside it swaps the Roman numerals for plain, easy-to-read
-  numbers (kept on the phone). Every entry is a ray from the centre to the hour it happened, coloured by group, with a dot: tapping a dot
+  numbers (kept on the phone). Every entry is a ray from the centre to the hour it happened, coloured by group (a snack's ray is dashed,
+  a poo's a squiggle, a nap's dashed, an estimated time's dotted; the app icon's rays show the same kinds of line), with a dot: tapping a dot
   shows that entry's details (editing stays in the list below, where "Show in the list" takes you); tap a quarter of
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
@@ -256,7 +257,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   that's installed
 - **Edge to edge on Android 15 and later**: the page keeps clear of the status and navigation bars (a plugin reports their size), the tab
   bar grows by the bar below it, and the bar icons follow light or dark mode
-- **The app icon**: the baby in the centre, rays in the day clock's colours around it, on soft creamy white (`npm run icons` draws every size)
+- **The app icon**: the baby in the centre, rays in the day clock's colours around it, on soft creamy white; the rays are drawn in the
+  clock's kinds of line: most plain, some dashed, dotted, a squiggle, a zigzag or ending in a dot (`npm run icons` draws every size)
 - **32 languages**: the app follows the phone's language, or one chosen in More → Language:
   - English, Spanish, Portuguese (Brazilian Portuguese, which a phone set to European Portuguese gets too), French, German, Italian,
     Dutch, Polish, Romanian, Russian, Ukrainian and Turkish;

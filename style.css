@@ -319,6 +319,8 @@ details.tips ul{margin:0 0 6px;padding-inline-start:20px;line-height:1.5;font-si
 .clock .ray.approx path:not(.hitl){stroke-dasharray:3 3}
 /* a nap: a dashed ray and a dashed arc; a night's sleep stays solid */
 .clock .ray.nap path:not(.hitl){stroke-dasharray:6 4}.clock .sarc.nap{stroke-dasharray:9 8}
+/* a snack: a dashed ray; a poo: a squiggle (its path is a wave), drawn a touch finer so the waves read */
+.clock .ray.snack path:not(.hitl){stroke-dasharray:5 3}.clock .ray.poo path:not(.hitl){stroke-width:1.7;stroke-linejoin:round}
 .ev .t .approx{color:var(--mute);margin-inline-end:1px}
 .cal button.tripday{border-color:var(--trip);box-shadow:inset 0 -3px 0 var(--trip)}
 .legend .tripkey i{border-radius:2px;background:var(--trip)}

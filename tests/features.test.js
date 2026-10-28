@@ -43,6 +43,16 @@ const pickFormula = async (page, scope, name) => {
       assert(/Diapers\s*2/.test(await P.textContent('.clegend')), 'the legend counts each group');
     });
 
+    await step('the kinds of line: a poo\'s ray is a squiggle, a snack\'s dashed, a pee\'s plain (a nap\'s dashed and an estimate dotted elsewhere)', async () => {
+      await P.evaluate(t => { db.events.push({ id: 'fsnack', type: 'meal', ts: t, data: { meal: 'Snack', foods: [] }, note: '', updated: stamp(), by: Auth.id, child: db.baby.kids[0].id }); save(); render(); }, at(16));
+      const line = id => P.evaluate(id => { const g = document.querySelector(`.ray[data-info="${id}"]`), p = g.querySelector('path:not(.hitl)'); return { cls: g.className.baseVal, points: (p.getAttribute('d').match(/L/g) || []).length, dash: getComputedStyle(p).strokeDasharray }; }, id);
+      const poo = await line('fdiaper' + at(13)), pee = await line('fdiaper' + at(7.5)), snack = await line('fsnack');
+      assert(/\bpoo\b/.test(poo.cls) && poo.points >= 20, 'a poo: a squiggle of many points: ' + JSON.stringify(poo));
+      assert(!/\bpoo\b/.test(pee.cls) && pee.points === 1 && pee.dash === 'none', 'a pee: one straight line: ' + JSON.stringify(pee));
+      assert(/\bsnack\b/.test(snack.cls) && snack.points === 1 && snack.dash !== 'none', 'a snack: dashed: ' + JSON.stringify(snack));
+      await P.evaluate(() => { db.events = db.events.filter(e => e.id !== 'fsnack'); Store.save(db); render(); });
+    });
+
     await step('tapping a dot shows that entry without a way to change it (that is in the list below); it also works from the keyboard', async () => {
       await P.click(`.ray[data-info="fvomit${at(19)}"]`); await P.waitForSelector('#infoList');
       const r = await P.evaluate(() => ({ h: $('#sheet h3').textContent, body: $('#sheet').textContent, fields: $('#sheet').querySelectorAll('input, textarea, select, #save, #del').length }));
@@ -750,15 +760,16 @@ const pickFormula = async (page, scope, name) => {
       assert.deepEqual(await P.$$eval('#sheet [name=texture]', x => x.map(i => i.value)), ['Hard', 'Solid', 'Soft', 'Wet / runny']);
       assert.deepEqual(await P.$$eval('#sheet #dColor label.f', x => x.map(l => l.textContent)), ['Solid or wet?', 'Poo colour']);
       await P.click('#sheet [name=texture][value=Soft]'); await P.click('#sheet [name=color][value=Yellow]'); await P.click('#save'); await P.waitForFunction(() => $('#sheet').hidden);
-      const d1 = await P.evaluate(() => db.events.filter(e => e.type === 'diaper').sort((a, b) => b.ts - a.ts)[0].data);
+      // (the diaper just saved is the latest saved one: the day's fixtures sit later in the day than a test run in the small hours)
+      const d1 = await P.evaluate(() => db.events.filter(e => e.type === 'diaper').sort((a, b) => b.updated - a.updated)[0].data);
       assert.deepEqual([d1.poo, d1.texture, d1.color], [true, 'Soft', 'Yellow']);
       assert(/Soft, Yellow/.test(await P.textContent('#view')), 'the list says "Soft, Yellow"');
       // the one-tap pop-up: the row is optional, and ignored for a pee
       await P.evaluate(() => openQuick('diaper')); assert.equal(await P.textContent('#sheet label.f:has(+ .chips.big [name=qtex])'), 'Solid or wet? (if you like)');
       await P.click('#sheet [name=qtex][value="Wet / runny"]'); await P.click('#sheet [name=qdia][value=poo]'); await P.waitForFunction(() => $('#sheet').hidden);
-      const d2 = await P.evaluate(() => db.events.filter(e => e.type === 'diaper').sort((a, b) => b.ts - a.ts)[0].data); assert.deepEqual([d2.poo, d2.texture], [true, 'Wet / runny']);
+      const d2 = await P.evaluate(() => db.events.filter(e => e.type === 'diaper').sort((a, b) => b.updated - a.updated)[0].data); assert.deepEqual([d2.poo, d2.texture], [true, 'Wet / runny']);
       await P.evaluate(() => openQuick('diaper')); await P.click('#sheet [name=qtex][value=Hard]'); await P.click('#sheet [name=qdia][value=pee]'); await P.waitForFunction(() => $('#sheet').hidden);
-      assert.equal(await P.evaluate(() => db.events.filter(e => e.type === 'diaper').sort((a, b) => b.ts - a.ts)[0].data.texture), undefined, 'a pee keeps no texture');
+      assert.equal(await P.evaluate(() => db.events.filter(e => e.type === 'diaper').sort((a, b) => b.updated - a.updated)[0].data.texture), undefined, 'a pee keeps no texture');
       await P.click('[data-tab=stats]'); assert(/Solid or wet\s*(Soft ×1, Wet \/ runny ×1|Wet \/ runny ×1, Soft ×1)/.test(await P.textContent('#view')), 'the stats count them');
       const rep = await P.evaluate(() => reportBlocks(db.baby.kids[0].id, { days: 7 }).blocks.flatMap(b => (b.kv || []).map(kv => kv.join(': '))).join('\n'));
       assert(/Solid or wet: (Soft ×1, Wet \/ runny ×1|Wet \/ runny ×1, Soft ×1)/.test(rep), 'and so does the doctor\'s report: ' + rep.split('\n').filter(l => /Solid/.test(l)).join(' | '));

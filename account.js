@@ -125,7 +125,19 @@ const Acct = (() => {
   /** The app's badge (the baby with the day clock's rays, as on the icon) and a line about the app, at the top of the first screens, so
       they look like the rest of the app from the first tap. */
   const RAYS = ['#d9a066', '#7fb0a6', '#8a94c0', '#a89bc4', '#d49aa6', '#c9756e', '#7fa6c4', '#a3b17a'];
-  const heroHtml = () => `<div class="hero"><svg viewBox="0 0 512 512" width="92" height="92" aria-hidden="true">${RAYS.map((c, i) => [0, 8, 16].map(j => `<rect x="245" y="10" width="22" height="76" rx="11" fill="${c}" transform="rotate(${(i + j) * 15} 256 256)"/>`).join('')).join('')}
+  // (the same rays as the app icon, scripts/make-icons.js: most plain, some dashed, dotted, a squiggle, a zigzag or ending in a dot, the
+  // kinds of line the day clock draws; KIND says which ray is which)
+  const KIND = { 1: 'wave', 4: 'dots', 6: 'tip', 8: 'dash', 10: 'dash', 13: 'zig', 15: 'dots', 17: 'wave', 19: 'tip', 22: 'zig' };
+  const ray = (i, c) => {
+    const t = `transform="rotate(${i * 15} 256 256)"`, k = KIND[i] || 'plain';
+    if (k === 'dash') return `<rect x="245" y="10" width="22" height="32" rx="11" fill="${c}" ${t}/><rect x="245" y="54" width="22" height="32" rx="11" fill="${c}" ${t}/>`;
+    if (k === 'dots') return [20, 48, 76].map(y => `<circle cx="256" cy="${y}" r="10" fill="${c}" ${t}/>`).join('');
+    if (k === 'wave') return `<path d="M256 16q11 9 0 18t0 18t0 18t0 12" fill="none" stroke="${c}" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" ${t}/>`;
+    if (k === 'zig') return `<path d="M256 16l9 12-18 14 18 14-18 14 9 10" fill="none" stroke="${c}" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" ${t}/>`;
+    if (k === 'tip') return `<circle cx="256" cy="23" r="13" fill="${c}" ${t}/><rect x="248" y="42" width="16" height="44" rx="8" fill="${c}" ${t}/>`;
+    return `<rect x="245" y="10" width="22" height="76" rx="11" fill="${c}" ${t}/>`;
+  };
+  const heroHtml = () => `<div class="hero"><svg viewBox="0 0 512 512" width="92" height="92" aria-hidden="true">${Array.from({ length: 24 }, (_, i) => ray(i, RAYS[i % 8])).join('')}
     <circle cx="256" cy="256" r="128" fill="#ffffff" stroke="#e8e1d5" stroke-width="5"/><circle cx="196" cy="282" r="17" fill="#f3b9b2" opacity=".75"/><circle cx="316" cy="282" r="17" fill="#f3b9b2" opacity=".75"/>
     <circle cx="212" cy="246" r="13" fill="#4a4337"/><circle cx="300" cy="246" r="13" fill="#4a4337"/><path d="M216 292q40 36 80 0" stroke="#4a4337" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M256 130q-18-24 12-34" stroke="#4a4337" stroke-width="11" fill="none" stroke-linecap="round"/></svg>
     <p>${__h("Your little one's days, in one little log.")}</p></div>`;

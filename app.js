@@ -685,6 +685,8 @@ function clockSvg(evs, day) {
   const RR = { sleep: rr(90), feed: rr(78), diaper: rr(66), vomit: rr(54), play: rr(42), health: rr(30) };
   const sp = clockSpan(day), twelve = face12(), frac = t => (t - sp.start) / sp.len, ang = fr => fr * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C.x + r * Math.cos(a), C.y + r * Math.sin(a)];
   const f1 = n => n.toFixed(1), xy = (a, r) => P(a, r).map(f1).join(' ');
+  // a poo's ray is a squiggle: a wave along the ray from the centre to its dot (five waves, drawn as a fine polyline)
+  const wavy = (a, r0, r1) => { const n = 30, amp = rr(2.2), ux = Math.cos(a), uy = Math.sin(a); let d = ''; for (let i = 0; i <= n; i++) { const t = i / n, r = r0 + (r1 - r0) * t, o = amp * Math.sin(t * 10 * Math.PI); d += (i ? 'L' : 'M') + f1(C.x + r * ux - o * uy) + ' ' + f1(C.y + r * uy + o * ux); } return d; };
   const arc = (a0, a1, r) => `M${xy(a0, r)}A${f1(r)} ${f1(r)} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${xy(a1, r)}`;
   const ink = '#1f1b16', gilt = '#b8862b', gold = dk ? '#8f7c55' : '#c8aa6e';
   const pic = (cls, attr, u) => `<image class="${cls}" ${attr} preserveAspectRatio="none"${u ? ` href="${u}" xlink:href="${u}"` : ''}/>`;
@@ -745,9 +747,11 @@ function clockSvg(evs, day) {
     // (a drop-off and a pick-up are dots on the outer track, without a ray)
     const g = groupOf(e.type).id, a = ang(frac(e.ts)), pin = g === 'care', r = pin ? rr(115) : RR[g], [x, y] = P(a, r), [d] = describe(e), k = all ? kidById(childOf(e)) : null;
     const approx = !!(e.data && e.data.approx), when = approx ? __('about {time}', { time: fmtTime(e.ts) }) : fmtTime(e.ts);
-    data += `<g class="ray${approx ? ' approx' : ''}${e.type === 'sleep' && isNap(e) ? ' nap' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
+    // the kinds of line: a nap and a snack dashed, a poo a squiggle, an estimated time dotted
+    const snack = e.type === 'meal' && !!(e.data && e.data.meal === 'Snack'), poo = (e.type === 'diaper' || e.type === 'potty') && !!(e.data && e.data.poo);
+    data += `<g class="ray${approx ? ' approx' : ''}${e.type === 'sleep' && isNap(e) ? ' nap' : ''}${snack ? ' snack' : ''}${poo ? ' poo' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
       <title>${esc(when + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
-      ${pin ? '' : `<path d="M${xy(a, rr(17))}L${xy(a, r - rr(5))}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
+      ${pin ? '' : `<path d="${poo ? wavy(a, rr(17), r - rr(5)) : `M${xy(a, rr(17))}L${xy(a, r - rr(5))}`}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
   }
   // blued-steel hands at the current time, when it is on the dial: one 24-hour hand, or an hour and a minute hand; then the centre boss
   let hand = '';

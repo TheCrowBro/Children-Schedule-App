@@ -20,6 +20,8 @@ const ungated = p => p.waitForFunction(() => !document.body.classList.contains('
     await step('a new phone starts with a choice: just this phone, share with family, or restore a backup; sharing leads to sign-in, which remembers the choice and still offers just this phone', async () => {
       await P.waitForSelector('#wLocal');
       assert.deepEqual(await P.evaluate(() => [!!$('#wShare'), !!$('#wRestore'), !!$('#lEmail'), document.body.classList.contains('gated')]), [true, true, false, true]);
+      // the badge at the top is the app icon's: rays in the day clock's kinds of line (plain, dashed, dotted, a squiggle, a zigzag, one ending in its dot)
+      assert.deepEqual(await P.evaluate(() => { const h = $('.hero svg').innerHTML; return ['height="76"', 'height="32"', 'r="10"', 'q11 9', 'l9 12', 'r="13"'].map(k => h.includes(k)); }), Array(6).fill(true), 'the welcome badge carries every kind of ray');
       await P.click('#wShare'); await P.waitForSelector('#lEmail');
       await P.reload(); await P.waitForSelector('#lEmail'); assert.equal(await P.$('#wLocal'), null, 'the choice is remembered: straight to sign-in');
       await P.click('#lLocal'); await P.waitForSelector('#bsGo');
