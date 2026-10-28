@@ -252,11 +252,13 @@ create function my_devices() returns table (id uuid, name text, created_at times
 language sql security definer stable set search_path = public as $$
   select d.id, d.name, d.created_at, d.pubkey from devices d where d.user_id = auth.uid() order by d.created_at $$;
 
--- Removing a phone (lost or stolen) deletes its keys; every log you belong to must then change its keys.
+-- Removing a phone (lost or stolen) deletes its keys; every log you belong to must then change its keys. With two-step verification set
+-- up, only a session that passed it may do this (an email code alone must not be able to cut a parent's phones off).
 create function remove_device(p_id uuid) returns void
 language plpgsql security definer set search_path = public as $$
 declare me uuid := auth.uid();
 begin
+  if jwt_aal() <> 'aal2' and exists (select 1 from auth.mfa_factors where user_id = me and status = 'verified') then raise exception 'Two-step verification is required'; end if;
   if not exists (select 1 from devices where id = p_id and user_id = me) then return; end if;
   delete from key_grants where grantee = 'd:' || p_id::text;
   delete from devices where id = p_id;
@@ -593,7 +595,9 @@ begin
   if (select count(*) from invites where baby_id = p_baby and used_by is null and expires_at > now()) >= 10 then
     raise exception 'Too many open invites – rescind some first';
   end if;
-  c := (select string_agg(substr('ABCDEFGHJKMNPQRSTUVWXYZ23456789', 1 + floor(random() * 31)::int, 1), '') from generate_series(1, 10));
+  -- 10 symbols from the random bytes of a v4 UUID (gen_random_uuid is cryptographic; random() is not), skipping its two fixed bytes
+  c := (select string_agg(substr('ABCDEFGHJKMNPQRSTUVWXYZ23456789', 1 + get_byte(x.b, u.i) % 31, 1), '' order by u.n)
+        from (select decode(replace(gen_random_uuid()::text, '-', ''), 'hex') b) x cross join unnest(array[0, 1, 2, 3, 4, 5, 7, 9, 10, 11]) with ordinality as u(i, n));
   insert into invites (code, baby_id, role, perms, created_by)
     values (c, p_baby, p_role, normalize_perms(p_role, p_perms), auth.uid());
   perform log_activity(p_baby, 'invite_created', null, null, jsonb_build_object('role', p_role));
@@ -777,12 +781,14 @@ end $$;
 
 -- ── account deletion (App Store / Play Store requirement) ─────────────────────────────────────
 -- If you are a log's only parent, the log is deleted with your account (the app warns first).
--- If another parent exists, you simply leave it.
+-- If another parent exists, you simply leave it. Someone who has set up two-step verification must be in a session that passed it:
+-- an email code alone (a phished or glimpsed one) is not enough to delete a family's log.
 create function delete_my_account() returns void
 language plpgsql security definer set search_path = public as $$
 declare me uuid := auth.uid(); b record;
 begin
   if me is null then raise exception 'not signed in'; end if;
+  if jwt_aal() <> 'aal2' and exists (select 1 from auth.mfa_factors where user_id = me and status = 'verified') then raise exception 'Two-step verification is required'; end if;
   for b in select baby_id from members where user_id = me loop
     if (select role from members where baby_id = b.baby_id and user_id = me) = 'parent'
        and not exists (select 1 from members where baby_id = b.baby_id and role = 'parent' and user_id <> me) then

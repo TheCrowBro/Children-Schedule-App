@@ -124,7 +124,7 @@ const Sync = (() => {
     if (db.meta.role !== 'parent' && !db.meta.perms.view_health) db.events = db.events.filter(e => !isSens(e.type));   // access to health notes was taken away
     return true;
   }
-  function lostAccess() { const b = db.meta.babyId; if (b) E2EE.forget(b); reset(); db.meta.babyId = null; db.meta.role = null; db.meta.perms = null; db.baby = { name: '', birth: '', kids: Kids.clean([]) }; st.people = []; save(true); }
+  function lostAccess() { const b = db.meta.babyId; if (b) E2EE.forget(b); reset(); Store.purge().catch(() => {}); db.meta.babyId = null; db.meta.role = null; db.meta.perms = null; db.baby = { name: '', birth: '', kids: Kids.clean([]) }; st.people = []; save(true); }
 
   async function pull() {
     const b = db.meta.babyId;
@@ -337,6 +337,7 @@ const Sync = (() => {
 
   // ---- baby / membership management ---------------------------------------------------------
   async function loadMemberships() {
+    membershipsAt = Date.now();
     const rows = list(await Auth.api(`/members?user_id=eq.${Auth.id}&select=baby_id,role,perms`));
     // Baby names are encrypted: show the ones this phone already has the key for.
     let profiles = [];
@@ -372,7 +373,8 @@ const Sync = (() => {
     if (!m || switching) return false;
     if (from === id) {   // the same log again (after signing in): its role may have changed; its profile, unless a change of ours is waiting to go up
       db.meta.role = m.role; db.meta.perms = m.perms;
-      if ((m.name || m.kids) && !db.meta.babyDirty) db.baby = { name: m.name, birth: m.birth, kids: Kids.clean(m.kids, m.name, m.birth) };
+      // (and not a copy read before a change made here went up: that copy is older than what this phone has)
+      if ((m.name || m.kids) && !db.meta.babyDirty && babyAt < membershipsAt) db.baby = { name: m.name, birth: m.birth, kids: Kids.clean(m.kids, m.name, m.birth) };
       save(true); run(); return true;
     }
     if (from && unsent() && navigator.onLine !== false) await run(true);   // send what is waiting first, while it is the log shown
@@ -430,7 +432,8 @@ const Sync = (() => {
 
   // Invite links only open the installed app (custom URL scheme); people without the app scan the QR code inside it.
   const inviteUrl = (code, secret) => Native.scheme + '://join?join=' + code + (secret ? '&s=' + secret : '');
-  function pushBaby() { db.meta.babyDirty = true; save(); schedule(500); }
+  let babyAt = 0, membershipsAt = 0;   // when the profile last changed on this phone, and when the memberships (with their copy of it) were last read
+  function pushBaby() { db.meta.babyDirty = true; babyAt = Date.now(); save(); schedule(500); }
 
   function start() {
     if (started) return run(true);

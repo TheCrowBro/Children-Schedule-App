@@ -43,7 +43,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
 
     await step('the Day page: a drop-off from 3 months old (behind More for a baby), next to sleep for a toddler and a preschooler, and Drop-off, Activity and Homework for a school child', async () => {
       const at = async (y, m) => { await P.evaluate(([a, b]) => { G.age(0, a, b); G.page(kids()[0].id); }, [y, m]); return P.evaluate(() => G.buttons()); };
-      const baby = await at(0, 6); assert.deepEqual(baby.shown, ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'bath']); assert.equal(baby.more, 'med care');
+      const baby = await at(0, 6); assert.deepEqual(baby.shown, ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'bath']); assert.equal(baby.more, 'med care pump');
       assert.deepEqual((await at(1, 6)).shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'bath', 'health', 'care']);
       assert.deepEqual((await at(3, 4)).shown, ['meal', 'potty', 'sleep', 'care', 'play', 'bath', 'health', 'med']);
       const school = await at(7, 0);

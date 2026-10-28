@@ -317,7 +317,7 @@ const pickFormula = async (page, scope, name) => {
 
     await step('the Guide tab: common newborn issues with when to call, and every month\'s milestones', async () => {
       await P.click('[data-tab=guide]');
-      assert.equal(await P.$$eval('details.gd[data-grp^=g]:not([data-grp=gsolids])', d => d.length), 18);
+      assert.equal(await P.$$eval('details.gd[data-grp^=g]:not([data-grp=gsolids])', d => d.length), 19);
       assert.equal(await P.$$eval('details.gd[data-grp=gsolids]', d => d.length), 1, 'and starting solid foods, under Food');
       await P.click('details[data-grp=gfever] > summary');
       assert(/100\.4°F \(38°C\)/.test(await P.textContent('details[data-grp=gfever]')));

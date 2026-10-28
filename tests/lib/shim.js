@@ -1,8 +1,8 @@
 // A stand-in for Supabase's HTTP layer (GoTrue + PostgREST) that runs the REAL schema.sql on a real Postgres.
 // Auth: email code, sessions with aal1/aal2, real TOTP (RFC 6238) enrolment + verification, global sign-out.
 // REST: the handful of table reads + RPC calls the app uses, executed as role `authenticated` with the session's JWT claims.
-// Functions: language-report, running the real handler (supabase/functions/language-report/handler.mjs) and the real limits in the
-// database; the emails it "sends" are kept in `mail`, and where they go (`reportTo`) is known only here, as on the real server.
+// Functions: language-report and crash-report, running the real handlers (supabase/functions/<name>/handler.mjs) and the real limits
+// in the database; the emails they "send" are kept in `mail`, and where they go (`reportTo`) is known only here, as on the real server.
 const crypto = require('crypto'), path = require('path');
 const { Client, Pool } = require('pg');
 
@@ -97,13 +97,14 @@ function createShim(superUrl, opts = {}) {
   }
   // ---- Edge Functions -------------------------------------------------------------------------
   async function functions(req, url) {
-    if (url.pathname !== '/functions/v1/language-report') return J(404, { message: 'no such function' });
+    const fn = { '/functions/v1/language-report': 'language-report', '/functions/v1/crash-report': 'crash-report' }[url.pathname];
+    if (!fn) return J(404, { message: 'no such function' });
     const bearer = (req.headers()['authorization'] || '').replace('Bearer ', '');
     if (bearer !== 'anon' && !parse(bearer)) return J(401, { message: 'Invalid JWT' });   // the gateway checks the key or the session first
-    const { handle, senderKey } = await import(path.join(__dirname, '..', '..', 'supabase', 'functions', 'language-report', 'handler.mjs'));
+    const { handle, senderKey } = await import(path.join(__dirname, '..', '..', 'supabase', 'functions', fn, 'handler.mjs'));
     const r = new Request(url.toString(), { method: req.method(), headers: req.headers(), body: req.postData() || undefined });
     const res = await handle(r, { to: o.reportTo, from: 'Little Log <reports@little-log.example>' }, {
-      who: x => senderKey(x, 'test-salt'),
+      who: x => senderKey(x, 'test-salt' + (fn === 'crash-report' ? '/crash' : '')),   // (as index.ts salts them)
       allow: async k => (await su.query('select language_report_allow($1) ok', [k])).rows[0].ok,
       send: async m => { if (o.mailDown) throw new Error('mail service down'); o.mail.push(m); },
     });

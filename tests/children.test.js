@@ -128,7 +128,7 @@ const EMOJI = /[\u{1F300}-\u{1FAFF}⚠✅⚙☁⏳]/u;
       await P.click('[data-add=sleep]'); await P.click('#save'); await P.click('#cancel');   // Leo again: refused, the sheet stays open
       assert.equal(await P.evaluate(() => db.events.filter(e => e.type === 'sleep').length), 2, 'refused: Leo is already asleep');
       await P.click('#wakeBtn');
-      assert.equal(await P.$$eval('#sleepBanner .brow', e => e.length), 1, 'one still asleep');
+      assert.equal(await P.$$eval('#sleepBanner .brow:not(.awake)', e => e.length), 1, 'one still asleep');
       await P.evaluate(() => db.events.filter(e => e.type === 'sleep' && !e.end).forEach(e => { e.end = Date.now(); e.updated = stamp(); })); await P.evaluate(() => render());
     });
 
@@ -149,7 +149,7 @@ const EMOJI = /[\u{1F300}-\u{1FAFF}⚠✅⚙☁⏳]/u;
     await step('the server holds none of it in readable form: names, colours, birth dates and which child an entry belongs to are all sealed', async () => {
       const kidsJson = await P.evaluate(() => JSON.stringify(db.baby.kids));
       const dump = JSON.stringify(await q('select * from babies')) + JSON.stringify(await q('select * from events')) + JSON.stringify(await q('select * from activity'));
-      for (const k of JSON.parse(kidsJson)) { assert(!dump.includes(`"${k.name}"`) && !dump.includes(k.color) && !dump.includes(k.id + '"'), `leak: ${k.name}`); }
+      for (const k of JSON.parse(kidsJson)) { assert(!dump.includes(`"${k.name}"`) && !dump.includes(k.color) && !dump.includes(`"${k.id}"`), `leak: ${k.name}`); }
       assert(!/"Zoe"|"Sam"|Mia/.test(dump), 'names stay out of the server, including the activity log');
     });
 

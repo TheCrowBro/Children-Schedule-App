@@ -6,10 +6,10 @@ import { handle, senderKey } from './handler.mjs';
 
 const env = { to: Deno.env.get('REPORT_TO') ?? '', from: Deno.env.get('REPORT_FROM') ?? '' };
 const SB = Deno.env.get('SUPABASE_URL') ?? '', SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const RESEND = Deno.env.get('RESEND_API_KEY') ?? '', SALT = Deno.env.get('REPORT_SALT') ?? SERVICE;
+const RESEND = Deno.env.get('RESEND_API_KEY') ?? '', SALT = Deno.env.get('REPORT_SALT') ?? '';   // (its own secret: never the service-role key)
 
 Deno.serve(req => handle(req, env, {
-  who: (r: Request) => senderKey(r, SALT),
+  who: (r: Request) => { if (!SALT) throw new Error('REPORT_SALT is not set'); return senderKey(r, SALT); },   // (unset: the report is refused as unavailable, 503)
   // the limits live in the database (language_report_allow in schema.sql), which only this service role may call
   async allow(key: string) {
     const r = await fetch(`${SB}/rest/v1/rpc/language_report_allow`, {

@@ -1,8 +1,8 @@
 {
   "name": "little-log",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "private": true,
-  "description": "A child tracker that grows from newborn to 18 \u2013 web app, packaged for iOS and Android with Capacitor",
+  "description": "A child tracker that grows from newborn to 18 – web app, packaged for iOS and Android with Capacitor",
   "scripts": {
     "build:web": "node scripts/build-web.js",
     "sync": "npm run build:web && cap sync && node scripts/native-config.js",
@@ -11,7 +11,7 @@
     "apk": "npm run sync && cd android && ./gradlew assembleDebug",
     "aab": "npm run sync && cd android && ./gradlew bundleRelease",
     "icons": "node scripts/make-icons.js && npx @capacitor/assets generate",
-    "test": "npm run lint && node tests/db.test.js && node tests/e2e.test.js && node tests/children.test.js && node tests/features.test.js && node tests/robust.test.js && node tests/routine.test.js && node tests/report.test.js && node tests/solids.test.js && node tests/families.test.js && node tests/growing.test.js && node tests/health.test.js && node tests/school.test.js && node tests/teen.test.js && node tests/media.test.js && node tests/pictures.test.js && node tests/start.test.js && node tests/languages.test.js",
+    "test": "npm run lint && node tests/db.test.js && node tests/e2e.test.js && node tests/children.test.js && node tests/features.test.js && node tests/robust.test.js && node tests/routine.test.js && node tests/report.test.js && node tests/solids.test.js && node tests/families.test.js && node tests/growing.test.js && node tests/health.test.js && node tests/school.test.js && node tests/teen.test.js && node tests/media.test.js && node tests/pictures.test.js && node tests/start.test.js && node tests/languages.test.js && node tests/app.test.js && node tests/expecting.test.js && node tests/feeding.test.js && node tests/charts.test.js",
     "test:db": "node tests/db.test.js",
     "test:e2e": "node tests/e2e.test.js",
     "lint": "eslint .",
@@ -25,7 +25,11 @@
     "test:teen": "node tests/teen.test.js",
     "test:media": "node tests/media.test.js",
     "test:pictures": "node tests/pictures.test.js",
-    "test:start": "node tests/start.test.js"
+    "test:start": "node tests/start.test.js",
+    "test:app": "node tests/app.test.js",
+    "test:expecting": "node tests/expecting.test.js",
+    "test:feeding": "node tests/feeding.test.js",
+    "test:charts": "node tests/charts.test.js"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",

@@ -15,7 +15,7 @@
 const E2EE = (() => {
   const enc = new TextEncoder(), dec = new TextDecoder(), S = crypto.subtle;
   const ECDH = { name: 'ECDH', namedCurve: 'P-256' };
-  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg', 'meal', 'potty', 'moment', 'vaccine', 'visit', 'growth', 'care', 'pickup', 'study', 'plan', 'photo'];
+  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg', 'meal', 'potty', 'moment', 'vaccine', 'visit', 'growth', 'care', 'pickup', 'study', 'plan', 'photo', 'pump', 'contraction', 'tooth'];
   // health notes, medicines and the health record (vaccines, doctor visits, measurements) are kept under the HEALTH key
   const SENSITIVE = ['health', 'med', 'vaccine', 'visit', 'growth'];
   const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // exactly 32 symbols = 5 bits each
@@ -202,6 +202,9 @@ const E2EE = (() => {
       case 'potty': b('pee'); b('poo'); b('dry'); b('accident'); b('asked'); s('where', 20); break;
       case 'moment': s('what', 80); b('own'); media(); break;
       case 'photo': if (/^(m\d|m1[0-2]|y[1-9]|y1[0-8])$/.test(d.slot || '')) o.slot = d.slot; media(); break;   // (a picture as they grow: its slot, newborn to 18 years)
+      case 'pump': s('side', 10); n('ml'); n('min'); if (['fridge', 'freezer', 'now'].includes(d.store)) o.store = d.store; b('used'); break;   // (a pumping session and where the milk went)
+      case 'contraction': break;   // (just when it began and ended)
+      case 'tooth': if (/^[UL][LR][1-5]$/.test(d.tooth || '')) o.tooth = d.tooth; b('lost'); break;   // (a tooth that came in, or fell out)
       case 'vaccine': s('name', 60); b('own'); n('dose'); s('place', 80); s('batch', 40); break;
       case 'visit': s('kind', 30); s('who', 80); s('why', 120); break;
       case 'growth': n('weight'); n('height'); n('head'); break;

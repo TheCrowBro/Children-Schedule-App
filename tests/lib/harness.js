@@ -22,7 +22,8 @@ async function setup({ port = 8126 } = {}) {
   });
   await new Promise(r => server.listen(port, r));
   const adminUrl = startCluster(), { url, su } = await freshDb(adminUrl), shim = createShim(url, {});
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
+  const exe = process.env.LL_CHROMIUM || (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : '');   // (the dev sandbox's browser; elsewhere Playwright's own)
+  const browser = await chromium.launch({ ...(exe ? { executablePath: exe } : {}), args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const pages = [];
   const H = { tmp, APP, su, shim, browser, pages, sleep, totp };
   H.q = async (sql, params) => (await su.query(sql, params)).rows;

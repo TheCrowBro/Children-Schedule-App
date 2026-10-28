@@ -8,6 +8,7 @@
    are below, by stage. */
 const Stages = (() => {
   const LIST = [
+    { id: 'expecting', from: null, name: N_('Expecting') },   // (a due date still to come: the baby is not here yet)
     { id: 'newborn', from: 0, name: N_('Newborn') },
     { id: 'baby', from: 3, name: N_('Baby') },
     { id: 'toddler', from: 12, name: N_('Toddler') },
@@ -18,6 +19,10 @@ const Stages = (() => {
   ];
   const IDS = LIST.map(s => s.id);
   const SCHOOL = { uk: 4, na: 5, anz: 5 };
+  // How long a baby is usually happy awake between sleeps, by age in months: [from this month, least minutes, most minutes]. Typical
+  // ranges rather than a rule; from 3 years naps fade and no window is given.
+  const WAKE = [[0, 35, 60], [1, 45, 75], [2, 60, 90], [3, 75, 120], [4, 90, 150], [6, 120, 180], [9, 150, 210], [12, 180, 240], [18, 240, 360], [24, 300, 420]];
+  const wakeWindow = m => { if (!(m >= 0) || m >= 36) return null; const w = WAKE.filter(x => m >= x[0]).pop(); return { min: w[1], max: w[2] }; };
   /** The age (in years) children usually start school in a region (Formulas.REGIONS). */
   const schoolAge = region => SCHOOL[region] || 6;
   const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -33,11 +38,12 @@ const Stages = (() => {
   /** A child's stage id at `t`. `school` is the day (YYYY-MM-DD) of their first day of school, if it was saved as a moment (it counts
       from 3 years old); without a birth date a child counts as a newborn. */
   function of(birth, { t = Date.now(), region = '', school = '' } = {}) {
+    const d = new Date(t), today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (DATE.test(birth || '') && birth > today) return 'expecting';   // (a due date: the baby is not here yet)
     const m = months(birth, t);
     if (m < 0) return 'newborn';
     if (m >= 216) return 'grown';
     if (m >= 144) return 'teen';
-    const d = new Date(t), today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     if (m >= 36 && (school ? school <= today : m >= schoolAge(region) * 12)) return 'school';   // (school can start at 3 in some countries)
     return m >= 36 ? 'preschool' : m >= 12 ? 'toddler' : m >= 3 ? 'baby' : 'newborn';
   }
@@ -63,9 +69,10 @@ const Stages = (() => {
   // shown (with any the family has used lately moved up) and the rest are behind More. A bath is logged as play, with a button of its own.
   // (daycare, preschool or school: a drop-off, from 3 months old; homework from the school years)
   const DAY = {
-    newborn: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'bath'],
-    baby: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'bath', 'med', 'care'],
-    toddler: ['meal', 'feed', 'diaper', 'potty', 'sleep', 'bath', 'health', 'care', 'med', 'wake', 'play', 'vomit'],
+    expecting: [],   // (before the birth the Day page is the countdown, the contraction timer and the hospital bag)
+    newborn: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'bath', 'med', 'pump'],
+    baby: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'bath', 'med', 'care', 'pump'],
+    toddler: ['meal', 'feed', 'diaper', 'potty', 'sleep', 'bath', 'health', 'care', 'med', 'wake', 'play', 'vomit', 'pump'],
     preschool: ['meal', 'potty', 'sleep', 'care', 'play', 'bath', 'health', 'med', 'wake', 'vomit', 'diaper', 'feed'],
     school: ['meal', 'care', 'sleep', 'play', 'study', 'health', 'med', 'wake', 'vomit', 'potty', 'diaper', 'feed'],
     teen: ['meal', 'sleep', 'play', 'study', 'health', 'med', 'care', 'vomit'],   // (the baby days are over: no feeds, diapers, potty or night wakings; the Everyone page keeps them while a younger child needs them)
@@ -111,5 +118,5 @@ const Stages = (() => {
   const CARE = [N_('Daycare'), N_('Preschool'), N_('School'), N_('Childminder'), N_('Grandparents'), N_('After-school club'), N_('Babysitter'), N_('Friend\'s house')];
   const carePlace = id => (from(id, 'school') ? 'School' : id === 'preschool' ? 'Preschool' : 'Daycare');
 
-  return { LIST, IDS, schoolAge, months, of, from, byId, age, DAY, buttons, MOMENTS, ALL_MOMENTS, SCHOOL_DAY, known, ideas, CARE, carePlace };
+  return { LIST, IDS, schoolAge, months, of, from, byId, age, DAY, buttons, wakeWindow, MOMENTS, ALL_MOMENTS, SCHOOL_DAY, known, ideas, CARE, carePlace };
 })();

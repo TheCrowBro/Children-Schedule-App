@@ -44,10 +44,10 @@ const page = `<title>Little Log Demo</title>
 <script>\n${rd('theme.js')}\n</script>
 <script>\n${rd('i18n.js')}\n${languages()}\n</script>
 <div id="phone"><div id="scroll">${head}</div>${rest}</div>
-${['kids.js', 'icons.js', 'guide.js', 'stages.js', 'growth.js', 'formulas.js', 'travel.js', 'calendar.js', 'tour.js', 'routine.js', 'pdf.js', 'foods.js', 'art.js', 'ftree.js', 'media.js', 'notify.js', 'demo/stubs.js'].map(f => `<script>\n${rd(f).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}
+${['kids.js', 'icons.js', 'guide.js', 'stages.js', 'growth.js', 'formulas.js', 'travel.js', 'calendar.js', 'tour.js', 'routine.js', 'pdf.js', 'foods.js', 'art.js', 'ftree.js', 'media.js', 'notify.js', 'crash.js', 'demo/stubs.js'].map(f => `<script>\n${rd(f).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}
 <script>\n${pictures()}\n</script>
 <script>\n${app.replace(/<\/script/gi, '<\\/script')}\n</script>
-<script>\n// The demo has no server: reports of language problems are not sent anywhere.\nReport.can = () => true; Report.send = async () => 'sent';\n</script>
+<script>\n// The demo has no server: reports of language problems are not sent anywhere.\nReport.can = () => true; Report.send = async () => 'sent';\nCrash.can = () => true; Crash.flush = async () => 'sent';\n</script>
 <script>\n${saving}\n</script>
 `;
 fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, page); console.log('wrote', out, (page.length / 1024).toFixed(0) + ' KB');

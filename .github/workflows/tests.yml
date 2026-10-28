@@ -1,0 +1,55 @@
+# Lint and every test suite on each push and pull request: the real app in Chromium against the real database rules on a throwaway
+# Postgres, as `npm test` runs them (TESTING.md). The suites are spread over a few jobs so a run takes minutes, not a quarter of an hour.
+name: Tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: node scripts/i18n.js check
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: robust
+            suites: robust
+          - name: features
+            suites: features routine children app
+          - name: e2e
+            suites: e2e start report growing expecting
+          - name: families
+            suites: families languages db teen school health solids media pictures feeding charts
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Browser, PDF tools, video tools and Postgres
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils ffmpeg postgresql
+          npm i --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Test suites
+        run: |
+          for s in ${{ matrix.suites }}; do echo "== $s"; node tests/$s.test.js || exit 1; done

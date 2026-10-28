@@ -500,6 +500,7 @@ const Acct = (() => {
 
   async function wipeLocal() {
     await Sync.dropKept();   // (the other family logs kept on the phone too)
+    await Store.purge();     // (and the decrypted pictures, the backup copy and quarantined copies)
     forgetTree();
     db = { baby: { name: '', birth: '', kids: Kids.clean([]) }, events: [], deleted: [], meta: {} };
     save(true); tab = 'day'; invite = null; F.loaded = false; F.verified = false; F.enrollRequested = F.enrollForCreate = false; M.enroll = null;

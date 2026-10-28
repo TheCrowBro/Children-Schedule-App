@@ -61,18 +61,18 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('the Day page grows with the child: a newborn\'s nine buttons (a Bath among them), then Meal, Milk and Potty from a year old, a preschooler\'s and a school child\'s days, and the rest behind More', async () => {
       await P.evaluate(() => { G.age(0, 0, 1); G.page(kids()[0].id); });
       let b = await P.evaluate(() => G.buttons());
-      assert.deepEqual(b.shown, ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'bath']); assert.equal(b.more, '', 'a newborn needs no More: nine fit, three by three');
+      assert.deepEqual(b.shown, ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'bath']); assert.equal(b.more, 'med pump', 'medicines and pumping wait behind More until the family uses them');
       assert(await P.$('#view .quick.nine'), 'three by three');
       assert.deepEqual(b.labels.slice(0, 2), ['Feed', 'Diaper']); assert.deepEqual(await P.evaluate(() => G.legend()), ['Feeding', 'Diapers', 'Sleep & wake-ups', 'Vomit', 'Play', 'Health & meds']);
       await P.evaluate(() => { G.age(0, 2, 3); G.page(kids()[0].id); });
       b = await P.evaluate(() => G.buttons());
-      assert.deepEqual(b.shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'bath', 'health', 'care']); assert.equal(b.more, 'med wake play vomit');
+      assert.deepEqual(b.shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'bath', 'health', 'care']); assert.equal(b.more, 'med wake play vomit pump');
       assert.deepEqual(b.labels.slice(0, 4), ['Meal', 'Milk', 'Diaper', 'Potty'], 'a feed is Milk from a year old');
       assert(/· 2 years 3 months$/.test(await P.textContent('.datenav .d small')), 'how old, in years and months');
       assert.deepEqual((await P.evaluate(() => G.legend())).slice(0, 2), ['Meals & milk', 'Diapers & potty']);
       assert(await P.$('#view .quick [data-addmore] svg[data-n=more]'), 'More has its icon');
       await P.click('#view [data-addmore]'); assert.equal(await sheet(), 'More to log');
-      assert.deepEqual(await P.$$eval('#sheet [data-more]', x => x.map(e => e.dataset.more)), ['med', 'wake', 'play', 'vomit']);
+      assert.deepEqual(await P.$$eval('#sheet [data-more]', x => x.map(e => e.dataset.more)), ['med', 'wake', 'play', 'vomit', 'pump']);
       await P.click('#sheet [data-more=play]'); assert.equal(await sheet(), 'Add play', 'each opens its own sheet'); await P.click('#cancel');
       await P.evaluate(() => { G.age(0, 3, 4); G.page(kids()[0].id); });
       b = await P.evaluate(() => G.buttons());
@@ -94,7 +94,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await step('what the family has been logging lately moves up: three plays in two weeks give a toddler\'s Play a button, and Drop-off goes behind More', async () => {
       await P.evaluate(id => { G.age(0, 2, 3); [1, 3, 5].forEach(d => G.ev('play', G.at(d, 10), { activity: 'Play', min: 20 }, id)); save(); G.page(id); }, leo);
       const b = await P.evaluate(() => G.buttons());
-      assert.deepEqual(b.shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'bath', 'health', 'play']); assert.equal(b.more, 'care med wake vomit');
+      assert.deepEqual(b.shown, ['meal', 'feed', 'diaper', 'potty', 'sleep', 'bath', 'health', 'play']); assert.equal(b.more, 'care med wake vomit pump');
       await P.evaluate(() => { db.events = db.events.filter(e => e.type !== 'play'); save(); render(); });
     });
 

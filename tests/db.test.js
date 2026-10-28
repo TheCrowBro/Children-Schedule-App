@@ -236,6 +236,8 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     await t('removing a phone deletes its keys and asks for a key rotation', async () => {
       const d = await dev(C, 'C lost'); await A('select grant_device($1,$2,$3,$4,$5,$6)', [baby, d, W(), W(), null, 't']);
       await rejects(D('select remove_device($1)', [d]).then(() => q(`select count(*)::int c from devices where id=$1`, [d])).then(r => { if (r[0].c) throw new Error('still there'); }), /still there/, 'cannot remove someone else\'s phone');
+      await su.query(`insert into auth.mfa_factors(user_id,status) values ($1,'verified')`, [id.C]);
+      await rejects(as('C', 'aal1')('select remove_device($1)', [d]), /Two-step verification/, 'with two-step verification set up, an email code alone cannot cut a phone off');
       await C('select remove_device($1)', [d]);
       assert.equal((await q(`select count(*)::int c from key_grants where grantee=$1`, ['d:' + d]))[0].c, 0); assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, true);
       await su.query('update babies set rotate_needed=false');
@@ -400,6 +402,8 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       await q('delete from members where user_id = $1', [mid]); await q('delete from auth.users where id = $1', [mid]);
     });
     await t('account deletion: a non-parent just leaves (log asks for rotation); sole parent takes the log with them; with another parent the log stays', async () => {
+      await su.query(`insert into auth.mfa_factors(user_id,status) values ($1,'verified')`, [id.A]);
+      await rejects(as('A', 'aal1')('select delete_my_account()'), /Two-step verification/, 'with two-step verification set up, an email code alone cannot delete the account');
       await D('select delete_my_account()'); assert.equal((await q('select count(*)::int c from auth.users where id=$1', [id.D]))[0].c, 0);
       assert.equal((await q('select count(*)::int c from babies where id=$1', [baby]))[0].c, 1); assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, true);
       await A('select set_member($1,$2,$3,$4::jsonb,$5::jsonb)', [baby, id.B, 'parent', '{}', JSON.stringify((await A('select * from list_devices($1)', [baby])).filter(d => d.user_id === id.B).map(d => ({ device: d.grantee.slice(2), wrap_health: W('bh') })))]);

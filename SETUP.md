@@ -124,13 +124,15 @@ activity log therefore says "added an entry" or "added a private (health) entry"
 * It can't stop a malicious server from *withholding*, deleting or replaying data. It can detect rearranged or forged entries and ignores them.
 * A person who legitimately had access keeps whatever they already downloaded (and the old keys); only future data is protected.
 * **Lose every phone and the recovery code and the data is gone for good.** There is no back door. That is the point.
-* The local copy of the log on each phone is in the app's private storage (protected by the phone's encryption, excluded from device backups,
-  behind the app lock) but is not separately encrypted with a Keystore key.
+* The local copy of the log on each phone is in the app's private storage (protected by the phone's encryption, excluded from device backups
+  on Android, behind the app lock) but is not separately encrypted with a Keystore key. On iOS the WebView's storage is not yet excluded
+  from iCloud / iTunes backups ([SECURITY.md](SECURITY.md), finding 7).
 * Sign-in tokens, cloud tokens, the backup passphrase, the phone's private key and the log keys are in the iOS Keychain / Android Keystore.
-  Signing out clears the log from the phone but leaves the keys there, so you can sign back in; deleting your account erases them.
+  Signing out clears the log, the pictures kept beside it and the backup copy from the phone but leaves the keys there, so you can sign
+  back in; deleting your account erases them.
 * Third-party code in `vendor/`: qrcode-generator (MIT) and jsQR (Apache-2.0).
 
-## 6. Language reports (optional)
+## 6. Language and crash reports (optional)
 More → Language → **Report a language issue** lets anyone tell you about a wrong or clumsy translation. The report goes to a Supabase
 Edge Function, [`supabase/functions/language-report`](supabase/functions/language-report), which emails it to you.
 
@@ -169,6 +171,24 @@ What a report contains:
 
 **It never contains who sent it.** To limit each sender to 5 reports an hour, the function keeps a salted hash of the account (or of
 the network address, when the person is not signed in). All reports together are capped at 200 a day.
+
+### Crash reports
+More → App updates → **Crash reports** is off until a person turns it on. While on, errors the app did not expect are sent to a second
+Edge Function, [`supabase/functions/crash-report`](supabase/functions/crash-report), which emails them to the same address with the same
+secrets. Both functions share [`supabase/functions/_shared/report.mjs`](supabase/functions/_shared/report.mjs), so deploy both:
+```bash
+supabase functions deploy language-report --project-ref <project-ref>
+supabase functions deploy crash-report --project-ref <project-ref>
+```
+The database is unchanged: crash reports use the same `language_report_allow` limits (5 an hour from one sender, 200 a day in all,
+shared with language reports), with the sender hashed under a different salt.
+
+What a crash report contains: what went wrong (the error's own words, cut at 300 characters) and where in the app's own code (file, line
+and column, and the first lines of the stack), the app version, the kind of phone, the language and the hour. **It never contains an
+entry, a name, an address, the account or anything typed**: anything that looks like an email address or a web address is blanked on
+the phone and again on the server, and the app sends it with the project's public key only, never with the person's sign-in, so the
+server cannot tell whose phone it came from (the limit's hash is of the network address). At most 20 crashes wait on a phone, the same
+one only once, and turning the setting off forgets them.
 
 The button only appears when `config.js` has a Supabase project. If the function isn't deployed yet, it says the report couldn't be
 sent.

@@ -268,6 +268,40 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   bar grows by the bar below it, and the bar icons follow light or dark mode
 - **The app icon**: the baby in the centre, rays in the day clock's colours around it, on soft creamy white; the rays are drawn in the
   clock's kinds of line: most plain, some dashed, dotted, a squiggle, a zigzag or ending in a dot (`npm run icons` draws every size)
+- **Before the birth**: a date of birth still to come makes the child *expecting*. Until the baby is here their Day page is a countdown
+  to the due date, a **contraction timer** (tap when one starts and again when it ends; each one is listed with how long it lasted and how
+  far apart they are, the last hour is summed up, and once they are about five minutes apart, a minute long, for an hour, it says it is
+  time to call the midwife or the hospital) and a **hospital bag** checklist (for you, for the baby, for your partner; the ticks stay on
+  the phone). Contractions are entries, so the other parent's phone shows them too, encrypted like everything else; once the baby is here
+  they stay off the day's lists and the doctor's report. Set the date of birth under More when the baby arrives and the log begins
+- **Wake windows**: once a sleep today has ended, the banner says how long the baby has been awake and when a nap is usually due for
+  their age (35 to 60 minutes for a newborn, one to two hours by 3 months, up to five to seven hours at 2; nothing from 3 years)
+- **Pumping and the milk stash**: a **Pumping** entry (the side, the amount, the minutes, and whether the milk was given now, put in the
+  fridge or in the freezer), or a timer in the banner (**Done** opens the entry to finish it). The **Milk stash** on the Day page lists the
+  bottles waiting, oldest first, with how long each keeps (about 4 days in the fridge, 6 months in the freezer); **Used** takes one out.
+  Pumping stays out of the doctor's report
+- **Formula prep helper**: on a bottle of formula, the level scoops for the water (1 scoop per 30 ml, or per 60 ml where that is the
+  usual tin; a button says what your tin does, remembered on the phone). Water first, then the powder
+- **Allergen introduction** (the Guide's Food section): the nine key allergens (peanut, egg, milk, wheat, soy, tree nuts, sesame, fish,
+  shellfish), each with when it was first offered and how often; **Offered today** logs a taste as a solids feed, a nudge says when to
+  offer one again, and **Reaction** notes an allergy
+- **Teeth** (in the health record): a mouth of the 20 first teeth to tap; each tooth is dated the day it came in and the day it fell out,
+  with when that usually happens, on every phone like the rest
+- **Potty chart** (Stats, while potty training): the last two weeks with a star for each time on the potty, a dot for each accident and
+  a moon for a dry night; the streak of days with a star and no accident; and a **reward chart to print** (a PDF: four weeks of stars so
+  far and four empty weeks to fill in by hand, with stickers if you like)
+- **Handover card** (the Day page's **Share today so far**): the day in a few lines (feeds, diapers, sleep, medicines, notes, allergies)
+  for a babysitter or a grandparent, shared as text or as a picture
+- **Account deletion** in the app: More → Security & account → **Delete account** erases the account, the logs nobody else is in
+  (entries, members, keys and devices) and the keys on the phone; it needs a session that passed two-step verification. What the
+  server still holds afterwards, and the rest of the security review, is in [SECURITY.md](SECURITY.md)
+- **Crash reports** (More → App updates; off until turned on): when something goes wrong inside the app, a report goes to the Little
+  Log team through an Edge Function and on by email, like language reports: what went wrong and where in the app's own code, the app
+  version, the kind of phone, the language and the hour. Never an entry, a name, an address, anything typed or anything about the
+  account: anything that looks like an address is blanked before it leaves the phone, and it is sent without the sign-in, so it cannot be
+  tied to anyone ([SETUP.md](SETUP.md) §6)
+- **Tablets, and phones on their side**: on a wide screen the Day page puts the clock beside the entries, and the Stats, Guide, Month
+  and More pages use two columns
 - **32 languages**: the app follows the phone's language, or one chosen in More → Language:
   - English, Spanish, Portuguese (Brazilian Portuguese, which a phone set to European Portuguese gets too), French, German, Italian,
     Dutch, Polish, Romanian, Russian, Ukrainian and Turkish;
@@ -302,11 +336,13 @@ log, not to each child), and reminders for what is on the calendar.
 npm install && npm run sync     # then npm run android / npm run ios / npm run apk
 npm test                        # database rules + end-to-end tests
 ```
+Every push and pull request runs the lint and all the suites in GitHub Actions ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)).
 - **[INSTALL.md](INSTALL.md)**: installing on Android phones and iPhones, building from source, running the tests, and the saved
   versions with how to restore one
 - **[SETUP.md](SETUP.md)**: Supabase, sign-in hardening, roles and permissions, cloud providers, privacy notes
 - **[TESTING.md](TESTING.md)**: what the automated tests prove, what they can't, and the physical-device release checklist
 - **[MOBILE.md](MOBILE.md)**: building and releasing the Android and iOS apps, store checklist
 - **[lang/README.md](lang/README.md)**: translating, checking the catalogues and adding a language
+- **[SECURITY.md](SECURITY.md)**: the security model, the October 2026 review with its findings, and the deployment checklist
 
 *Not medical advice.*

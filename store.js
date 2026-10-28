@@ -32,6 +32,11 @@ const Store = (() => {
   async function blobPut(name, blob) { if (idb) await put(MB + name, blob); }
   async function blobGet(name) { if (!idb) return null; try { return (await get(MB + name)) || null; } catch (e) { return null; } }
   async function blobDel(name) { try { if (idb) await tx('readwrite', s => s.delete(MB + name)); } catch (e) { /* already gone */ } }
+  /** Everything kept beside the log itself (decrypted pictures and videos, the hourly backup copy, quarantined copies): gone, for when the log leaves this phone. */
+  async function purge() {
+    if (!idb) return;
+    try { const keys = (await tx('readonly', s => s.getAllKeys())) || [], gone = keys.filter(k => typeof k === 'string' && (k.startsWith(MB) || k.startsWith('corrupt.') || k === 'db.bak')); if (gone.length) await tx('readwrite', s => { gone.forEach(k => s.delete(k)); }); } catch (e) { /* best effort */ }
+  }
 
   /** Returns the saved log (or null if there is none). Never throws. */
   async function load() {
@@ -91,5 +96,5 @@ const Store = (() => {
     return out;
   }
 
-  return { st, init, load, save, whenSaved, peek, backup, quarantine, park, unpark, drop, parkedIds, blobPut, blobGet, blobDel, get usingIndexedDB() { return !!idb; } };
+  return { st, init, load, save, whenSaved, peek, backup, quarantine, park, unpark, drop, parkedIds, blobPut, blobGet, blobDel, purge, get usingIndexedDB() { return !!idb; } };
 })();
