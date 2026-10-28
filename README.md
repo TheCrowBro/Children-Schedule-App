@@ -10,7 +10,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 - **Growing up**: every child has a stage that comes from their age: newborn, baby, toddler (from 1), preschooler (from 3), school age
   (from the age children start school where the family is: 4 in the UK and Ireland, 5 in North America, Australia and New Zealand, 6
   elsewhere, or from the day a "First day of school" moment is saved), teenager (12) and grown up (18). The Day page's buttons follow it: a
-  newborn's eight, then **Meal**, **Milk** (a cup or a bottle, cow's or plant milk) and **Potty** from a year old, and the buttons a child
+  newborn's nine (three by three, a **Bath** among them: logged as play, with an icon of its own and a water-ripple ray on the clock;
+  with more than nine, eight and **More**), then **Meal**, **Milk** (a cup or a bottle, cow's or plant milk) and **Potty** from a year old, and the buttons a child
   no longer needs behind **More** (anything the family has logged three times in two weeks keeps its button). The groups are named for the
   children's ages (Feeding becomes Meals, Diapers becomes Potty), the day starts "2 years 3 months", a toddler's health notes have an older
   child's symptoms (and a fever alone is no longer flagged as an emergency), and the Routine, Stats and the doctor's report count meals and
@@ -72,12 +73,12 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   with a black rim, Roman numerals, a moon at midnight and a sun at noon, a blued spade hand at the current time). A **24 h / 12 h** switch: the 12-hour face shows the morning or the afternoon half (AM / PM) with all
   twelve numerals and an hour and a minute hand. A **XII / 123** switch beside it swaps the Roman numerals for plain, easy-to-read
   numbers (kept on the phone). Every entry is a ray from the centre to the hour it happened, coloured by group (a snack's ray is dashed,
-  a poo's a squiggle, a nap's dashed, an estimated time's dotted; the app icon's rays show the same kinds of line), with a dot: tapping a dot
+  a poo's a squiggle, a bath's a water ripple (two wavy lines in water blue), a nap's dashed, an estimated time's dotted; the app icon's rays show the same kinds of line), with a dot: tapping a dot
   shows that entry's details (editing stays in the list below, where "Show in the list" takes you); tap a quarter of
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); a day with a big moment is ringed and washed in
-  gold, like the big-moment cards and buttons, and so is the **Big moments** journal at the bottom of the page (gold and dashed, like
+  gold, like the big-moment cards and buttons, and so is the **Big moments** journal at the bottom of the page (with the two pictures carousels at its top; gold and dashed, like
   Plan a trip and Add to the calendar above it); **stats** for the last 7, 14 or 30 days, 3 months, 6
   months or a year (over 30 days the charts show an average day for each week, over a year for each month), the key numbers on each card and
   every chart in a twirl-down of its own, drawn small; a **Height & weight** card with the latest measurements and their percentiles

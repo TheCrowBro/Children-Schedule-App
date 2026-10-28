@@ -80,6 +80,20 @@ const until = async (fn, what, ms = 8000) => { const t0 = Date.now(); for (;;) {
       assert.deepEqual([r.onDay, r.rep, r.dayText, r.n], [0, false, false, ['m3']], JSON.stringify(r));
     });
 
+    await step('the Big moments journal on the Month page has the carousels too: the same tiles with the 3-month picture, and a picture can be added and opened from there', async () => {
+      await P.evaluate(() => { openGroups.add('moments'); tab = 'month'; render(); });
+      const j = 'details[data-grp=moments]', all = await P.textContent(j);
+      assert(/Pictures as they grow/.test(await P.textContent(j + ' .jpics')) && /The first year/.test(all) && /Growing up/.test(all), all.slice(0, 200));
+      assert.equal(await P.$$eval(j + ' #picsM .pic', x => x.length), 13);
+      assert.deepEqual((await tiles(P, 'picsM'))[3], ['m3', 'has', true], 'the picture added on the Stats page');
+      await choose(P, j + ' #picsM [data-pick=m1]', await png(600, 800, '#8e44ad'));
+      await until(() => P.$(j + ' #picsM [data-view=m1] img'), 'a picture added from the journal');
+      assert.deepEqual((await photos(P)).map(e => e.slot).sort(), ['m1', 'm3']);
+      await P.click(j + ' #picsM [data-view=m1]'); await P.waitForSelector('#pvRemove'); assert(/Leo · 1 month/.test(await P.textContent('#sheet h3')), await P.textContent('#sheet h3'));
+      await P.click('#pvRemove'); await until(() => P.evaluate(() => !picsOf(kids()[0].id).has('m1')), 'taken off again');
+      await stats(P);
+    });
+
     await step('the family sees it: Dad\'s phone gets the thumbnail by itself and the picture big when tapped, with the name, the age and the day, and he may keep a copy; a helper who may not add entries sees the pictures but no way to add, replace or remove one', async () => {
       D = await H.addMember(P, 'dad@x.com', 'family', {}, { name: 'Dad' });
       await D.evaluate(() => { db.meta.ms = { [kids()[0].id]: 99 }; if (!$('#sheet').hidden) $('#sheetBack').click(); });   // (the month-birthday sheet opens on his phone the moment he joins)

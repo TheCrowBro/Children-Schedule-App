@@ -59,14 +59,14 @@ const Stages = (() => {
     return __('{years} {months}', { years: __n('{n} year', '{n} years', y), months: __n('{n} month', '{n} months', rest) });
   }
 
-  // The Day page's buttons at each stage, most useful first. Up to eight fit; when there are more, the first seven are shown (with
-  // any the family has used lately moved up) and the rest are behind More.
+  // The Day page's buttons at each stage, most useful first. Up to nine fit (three by three); when there are more, the first eight are
+  // shown (with any the family has used lately moved up) and the rest are behind More. A bath is logged as play, with a button of its own.
   // (daycare, preschool or school: a drop-off, from 3 months old; homework from the school years)
   const DAY = {
-    newborn: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med'],
-    baby: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'care'],
-    toddler: ['meal', 'feed', 'diaper', 'potty', 'sleep', 'health', 'care', 'med', 'wake', 'play', 'vomit'],
-    preschool: ['meal', 'potty', 'sleep', 'care', 'play', 'health', 'med', 'wake', 'vomit', 'diaper', 'feed'],
+    newborn: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'bath'],
+    baby: ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'bath', 'med', 'care'],
+    toddler: ['meal', 'feed', 'diaper', 'potty', 'sleep', 'bath', 'health', 'care', 'med', 'wake', 'play', 'vomit'],
+    preschool: ['meal', 'potty', 'sleep', 'care', 'play', 'bath', 'health', 'med', 'wake', 'vomit', 'diaper', 'feed'],
     school: ['meal', 'care', 'sleep', 'play', 'study', 'health', 'med', 'wake', 'vomit', 'potty', 'diaper', 'feed'],
     teen: ['meal', 'sleep', 'play', 'study', 'health', 'med', 'care', 'vomit'],   // (the baby days are over: no feeds, diapers, potty or night wakings; the Everyone page keeps them while a younger child needs them)
   };
@@ -77,10 +77,10 @@ const Stages = (() => {
     const rank = new Map();
     for (const s of ids) DAY[s].forEach((t, i) => { if (!rank.has(t) || rank.get(t) > i) rank.set(t, i); });
     const list = [...rank.keys()].filter(allowed).sort((a, b) => rank.get(a) - rank.get(b) || DAY.toddler.indexOf(a) - DAY.toddler.indexOf(b));
-    if (list.length <= 8) return { shown: list, more: [] };
-    const busy = list.filter(t => (used[t] || 0) >= 3).sort((a, b) => used[b] - used[a]).slice(0, 7);
+    if (list.length <= 9) return { shown: list, more: [] };
+    const busy = list.filter(t => (used[t] || 0) >= 3).sort((a, b) => used[b] - used[a]).slice(0, 8);
     const pick = new Set(busy);
-    for (const t of list) if (pick.size < 7) pick.add(t);
+    for (const t of list) if (pick.size < 8) pick.add(t);
     return { shown: list.filter(t => pick.has(t)), more: list.filter(t => !pick.has(t)) };
   }
 

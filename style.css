@@ -20,7 +20,7 @@ main{max-width:640px;margin:0 auto;padding:0 16px}
 .datenav{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
 .datenav button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;width:44px;height:44px;font-size:18px}
 .datenav .d{font-weight:700;text-align:center}.datenav .d small{display:block;color:var(--mute);font-weight:400}
-.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.quick.nine{grid-template-columns:repeat(3,1fr)}
 .quick button{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 2px;font-size:12px;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:2px;min-height:64px}
 .quick button b{font-size:24px;font-weight:400}
 .summary{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
@@ -320,7 +320,7 @@ details.tips ul{margin:0 0 6px;padding-inline-start:20px;line-height:1.5;font-si
 /* a nap: a dashed ray and a dashed arc; a night's sleep stays solid */
 .clock .ray.nap path:not(.hitl){stroke-dasharray:6 4}.clock .sarc.nap{stroke-dasharray:9 8}
 /* a snack: a dashed ray; a poo: a squiggle (its path is a wave), drawn a touch finer so the waves read */
-.clock .ray.snack path:not(.hitl){stroke-dasharray:5 3}.clock .ray.poo path:not(.hitl){stroke-width:1.7;stroke-linejoin:round}
+.clock .ray.snack path:not(.hitl){stroke-dasharray:5 3}.clock .ray.poo path:not(.hitl){stroke-width:1.7;stroke-linejoin:round}.clock .ray.bath path:not(.hitl){stroke-width:1.2;stroke-linejoin:round}
 .ev .t .approx{color:var(--mute);margin-inline-end:1px}
 .cal button.tripday{border-color:var(--trip);box-shadow:inset 0 -3px 0 var(--trip)}
 .legend .tripkey i{border-radius:2px;background:var(--trip)}
@@ -563,4 +563,5 @@ details.tut>.note{margin:0 16px 10px}details.tut details.gd.med{margin:0 10px 8p
 .pthumb.add{border:2px dashed var(--brand);background:var(--card)}.pthumb.add .ph{opacity:1;color:var(--brand)}.pthumb.add small{font-size:11px;line-height:1.2;color:var(--mute);padding:0 8px}
 .pthumb.empty{border-style:dashed;cursor:default}.pic.soon{opacity:.45}.pic.now .pthumb{box-shadow:0 0 0 3px var(--brand)}
 .pveil{position:relative}.pveil .pics{filter:blur(2px);opacity:.5;pointer-events:none}
+.jpics{padding-top:4px}.jpics .mh{margin:0 6px 2px}
 .plock{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:10px 16px;font-weight:600;line-height:1.4}.plock .ic{width:22px;height:22px;vertical-align:-5px}

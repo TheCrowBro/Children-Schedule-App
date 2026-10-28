@@ -53,6 +53,21 @@ const pickFormula = async (page, scope, name) => {
       await P.evaluate(() => { db.events = db.events.filter(e => e.id !== 'fsnack'); Store.save(db); render(); });
     });
 
+    await step('a Bath button on the Day page (nine buttons fit, three by three): it opens the play sheet headed Bath with Bath chosen; the entry is play with Bath, listed with the bath icon, and its ray on the clock is a water ripple (two wavy lines) in water blue', async () => {
+      assert(await P.$('#view .quick [data-add=bath]'), 'the button'); assert(await P.$('#view .quick.nine'), 'three by three');
+      assert.equal(await P.$eval('#view .quick [data-add=bath] .ic', s => s.dataset.n), 'bath');
+      await P.click('#view .quick [data-add=bath]'); await P.waitForSelector('#save');
+      assert(/Add bath/.test(await P.textContent('#sheet h3')) && (await P.$eval('#sheet h3 .ic', s => s.dataset.n)) === 'bath', await P.textContent('#sheet h3'));
+      assert.equal(await P.evaluate(() => $('#sheet [name=activity]:checked').value), 'Bath');
+      await P.evaluate(t => { $('#ts').value = toLocalInput(t); }, at(18.25)); await P.fill('#min', '10'); await P.click('#save'); await P.waitForFunction(() => $('#sheet').hidden);
+      const e = await P.evaluate(() => db.events.filter(x => x.type === 'play').sort((a, b) => b.updated - a.updated)[0]);
+      assert.deepEqual([e.type, e.data.activity, e.data.min], ['play', 'Bath', 10], JSON.stringify(e));
+      assert.equal(await P.$eval(`.ev[data-edit="${e.id}"] .b .ic`, s => s.dataset.n), 'bath', 'the bath icon in the list');
+      const line = await P.evaluate(id => { const g = document.querySelector(`.ray[data-info="${id}"]`), p = g.querySelector('path:not(.hitl)'), d = p.getAttribute('d'); return { cls: g.className.baseVal, moves: (d.match(/M/g) || []).length, points: (d.match(/L/g) || []).length, color: g.style.getPropertyValue('--c'), label: g.getAttribute('aria-label'), width: getComputedStyle(p).strokeWidth }; }, e.id);
+      assert(/\bbath\b/.test(line.cls) && line.moves === 2 && line.points >= 40 && /g-bath/.test(line.color) && /Bath/.test(line.label), 'a ripple of two wavy lines in water blue: ' + JSON.stringify(line));
+      await P.evaluate(id => { db.events = db.events.filter(x => x.id !== id); Store.save(db); render(); }, e.id);
+    });
+
     await step('tapping a dot shows that entry without a way to change it (that is in the list below); it also works from the keyboard', async () => {
       await P.click(`.ray[data-info="fvomit${at(19)}"]`); await P.waitForSelector('#infoList');
       const r = await P.evaluate(() => ({ h: $('#sheet h3').textContent, body: $('#sheet').textContent, fields: $('#sheet').querySelectorAll('input, textarea, select, #save, #del').length }));

@@ -17,8 +17,8 @@ const GROUPS = [
 ];
 const RING = ['sleep', 'feed', 'diaper', 'vomit', 'play', 'health'];   // (daycare and school have no ring: a stay lights up the dial's outer track)
 const GCOLOR = {
-  light: { sleep: '#5b5fc7', feed: '#c9761f', diaper: '#2a9db8', vomit: '#5f8a1f', play: '#a845a8', health: '#c0392b', poo: '#8a5a2b', moment: '#a47414', care: '#55708c' },
-  dark: { sleep: '#7478d8', feed: '#c97a2a', diaper: '#2b9fc0', vomit: '#8a9a2a', play: '#b85ab0', health: '#dd5a4a', poo: '#b98a55', moment: '#d3a548', care: '#8ba6c2' },
+  light: { sleep: '#5b5fc7', feed: '#c9761f', diaper: '#2a9db8', vomit: '#5f8a1f', play: '#a845a8', health: '#c0392b', poo: '#8a5a2b', moment: '#a47414', care: '#55708c', bath: '#3f8fbf' },
+  dark: { sleep: '#7478d8', feed: '#c97a2a', diaper: '#2b9fc0', vomit: '#8a9a2a', play: '#b85ab0', health: '#dd5a4a', poo: '#b98a55', moment: '#d3a548', care: '#8ba6c2', bath: '#5aa5d2' },
 };
 const groupOf = t => GROUPS.find(g => g.types.includes(t)) || GROUPS[0];
 /** A type's colour in a palette: its group's, or gold for a big moment. */
@@ -30,6 +30,7 @@ const TYPES = {
   wake:   { label: N_('Woke up'), noun: N_('wake-up'), icon: '🌙' },
   vomit:  { label: N_('Vomit'),    noun: N_('vomit'),      icon: '🤮' },
   play:   { label: N_('Play'),     noun: N_('play'),       icon: '🧸' },
+  bath:   { label: N_('Bath'),     noun: N_('bath'),       icon: '🛁' },   // (a button of its own; the entry is play, with Bath as the activity)
   health: { label: N_('Health'),   noun: N_('health note'), icon: '🩺' },
   med:    { label: N_('Meds'),     noun: N_('meds'),       icon: '💊' },
   meal:   { label: N_('Meal'),     noun: N_('meal'),       icon: '🍽' },
@@ -48,6 +49,9 @@ const TYPES = {
 const PRIVATE = ['health', 'med', 'vaccine', 'visit', 'growth'];
 const isPrivate = t => PRIVATE.includes(t);
 for (const [t, T] of Object.entries(TYPES)) T.color = colorOf(t, GCOLOR.light);   // plain hex (light) for the few places that need one
+TYPES.bath.color = GCOLOR.light.bath;   // (water blue)
+/** A bath: logged as play, drawn as a water ripple on the clock, with its own button and icon. */
+const isBath = e => e.type === 'play' && !!(e.data && e.data.activity === 'Bath');
 const INK = '#2a241c';   // the dark the type colours are mixed with, so icons and text in them stay easy to read
 // The answers below are saved in the log in English (so every phone reads them the same) and shown in each phone's language.
 const SYMPTOMS = [
@@ -540,7 +544,7 @@ function theme() {
 /** The colour variables of a palette (the home set, or the travel set) for light or dark. */
 function paletteVars(P, dk) {
   const G = { moment: GCOLOR[dk ? 'dark' : 'light'].moment, ...P[dk ? 'dark' : 'light'] }, v = GROUPS.map(g => [`--g-${g.id}`, G[g.id]]), paper = dk ? '#1d1b19' : '#ffffff';
-  v.push(['--g-poo', G.poo], ['--g-meds', Kids.mix(G.health, paper, 0.45)], ['--g-snack', Kids.mix(G.feed, paper, 0.45)], ['--g-oops', Kids.mix(G.diaper, paper, 0.5)], ['--g-moment', G.moment]);
+  v.push(['--g-poo', G.poo], ['--g-meds', Kids.mix(G.health, paper, 0.45)], ['--g-snack', Kids.mix(G.feed, paper, 0.45)], ['--g-oops', Kids.mix(G.diaper, paper, 0.5)], ['--g-moment', G.moment], ['--g-bath', G.bath]);
   for (const t of Object.keys(TYPES)) { const c = colorOf(t, G); v.push([`--${t}`, c], [`--${t}-ink`, dk ? Kids.mix(c, '#ffffff', 0.3) : Kids.mix(c, INK, 0.25)]); }
   v.push(['--poo-ink', P === GCOLOR ? (dk ? '#d0b080' : '#7d5a2c') : G.poo]);
   return v;
@@ -628,7 +632,7 @@ function dayView() {
   ${momentCards(viewDay)}
   ${isToday ? comingUp() : ''}
   ${trip && isToday ? travelQuick() : quickButtons()}
-  <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${(trip ? Travel.PALETTE : GCOLOR).light[g.id]}`).join(';')};--trip:${Travel.ACCENT.light}">${clockSvg(shown, viewDay)}
+  <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${(trip ? Travel.PALETTE : GCOLOR).light[g.id]}`).join(';')};--g-bath:${GCOLOR.light.bath};--trip:${Travel.ACCENT.light}">${clockSvg(shown, viewDay)}
     <div class="clockctl">${seg('face', [['24', N_('24 h')], ['12', N_('12 h')]], twelve ? '12' : '24', N_('Clock face'))}${twelve ? seg('half', [['0', N_('AM')], ['1', N_('PM')]], String(half), N_('Half of the day')) : ''}${numsSeg()}${trip ? `<span class="artbtn tripart">${TM.icon} ${__h(Art.byId(TM.art).name)}</span>` : `<button class="artbtn" data-art>🎨 ${__h(Art.byId(artOf()).name)}</button>`}</div>
     ${clockLegend(shown)}
     <p class="note hint">${twelve ? (half ? __h('Showing noon to midnight; switch AM and PM for the other half of the day.') : __h('Showing midnight to noon; switch AM and PM for the other half of the day.')) : __h('Midnight is at the top, noon at the bottom.')} ${__h('Tap a dot to see an entry (change it in the list below), or a quarter of the dial for just those hours.')}</p></div>
@@ -687,6 +691,8 @@ function clockSvg(evs, day) {
   const sp = clockSpan(day), twelve = face12(), frac = t => (t - sp.start) / sp.len, ang = fr => fr * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C.x + r * Math.cos(a), C.y + r * Math.sin(a)];
   const f1 = n => n.toFixed(1), xy = (a, r) => P(a, r).map(f1).join(' ');
   // a poo's ray is a squiggle: a wave along the ray from the centre to its dot (five waves, drawn as a fine polyline)
+  // a bath's ray is a water ripple: two gentle waves side by side along the ray (three waves each, as fine polylines)
+  const rippled = (a, r0, r1) => { const n = 24, amp = rr(1.8), gap = rr(1.5), ux = Math.cos(a), uy = Math.sin(a); let d = ''; for (const s of [-1, 1]) for (let i = 0; i <= n; i++) { const t = i / n, r = r0 + (r1 - r0) * t, o = amp * Math.sin(t * 6 * Math.PI) + s * gap; d += (i ? 'L' : 'M') + f1(C.x + r * ux - o * uy) + ' ' + f1(C.y + r * uy + o * ux); } return d; };
   const wavy = (a, r0, r1) => { const n = 30, amp = rr(2.2), ux = Math.cos(a), uy = Math.sin(a); let d = ''; for (let i = 0; i <= n; i++) { const t = i / n, r = r0 + (r1 - r0) * t, o = amp * Math.sin(t * 10 * Math.PI); d += (i ? 'L' : 'M') + f1(C.x + r * ux - o * uy) + ' ' + f1(C.y + r * uy + o * ux); } return d; };
   const arc = (a0, a1, r) => `M${xy(a0, r)}A${f1(r)} ${f1(r)} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${xy(a1, r)}`;
   const ink = '#1f1b16', gilt = '#b8862b', gold = dk ? '#8f7c55' : '#c8aa6e';
@@ -748,11 +754,11 @@ function clockSvg(evs, day) {
     // (a drop-off and a pick-up are dots on the outer track, without a ray)
     const g = groupOf(e.type).id, a = ang(frac(e.ts)), pin = g === 'care', r = pin ? rr(115) : RR[g], [x, y] = P(a, r), [d] = describe(e), k = all ? kidById(childOf(e)) : null;
     const approx = !!(e.data && e.data.approx), when = approx ? __('about {time}', { time: fmtTime(e.ts) }) : fmtTime(e.ts);
-    // the kinds of line: a nap and a snack dashed, a poo a squiggle, an estimated time dotted
-    const snack = e.type === 'meal' && !!(e.data && e.data.meal === 'Snack'), poo = (e.type === 'diaper' || e.type === 'potty') && !!(e.data && e.data.poo);
-    data += `<g class="ray${approx ? ' approx' : ''}${e.type === 'sleep' && isNap(e) ? ' nap' : ''}${snack ? ' snack' : ''}${poo ? ' poo' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${g})">
+    // the kinds of line: a nap and a snack dashed, a poo a squiggle, a bath a water ripple, an estimated time dotted
+    const snack = e.type === 'meal' && !!(e.data && e.data.meal === 'Snack'), poo = (e.type === 'diaper' || e.type === 'potty') && !!(e.data && e.data.poo), bath = isBath(e);
+    data += `<g class="ray${approx ? ' approx' : ''}${e.type === 'sleep' && isNap(e) ? ' nap' : ''}${snack ? ' snack' : ''}${poo ? ' poo' : ''}${bath ? ' bath' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(bath ? 'bath' : e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${bath ? 'bath' : g})">
       <title>${esc(when + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
-      ${pin ? '' : `<path d="${poo ? wavy(a, rr(17), r - rr(5)) : `M${xy(a, rr(17))}L${xy(a, r - rr(5))}`}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
+      ${pin ? '' : `<path d="${poo ? wavy(a, rr(17), r - rr(5)) : bath ? rippled(a, rr(17), r - rr(5)) : `M${xy(a, rr(17))}L${xy(a, r - rr(5))}`}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
   }
   // blued-steel hands at the current time, when it is on the dial: one 24-hour hand, or an hour and a minute hand; then the centre boss
   let hand = '';
@@ -853,7 +859,7 @@ const kidTag = e => { if (dayKid() !== 'all') return ''; const k = kidById(child
 /** How many entries of each type the children on the page had in the last two weeks. */
 function usedLately() {
   const ids = new Set(pageKids().map(k => k.id)), since = Date.now() - 14 * DAY, n = {};
-  for (const e of db.events) if (e.ts > since && ids.has(childOf(e))) n[e.type] = (n[e.type] || 0) + 1;
+  for (const e of db.events) if (e.ts > since && ids.has(childOf(e))) { const t = isBath(e) ? 'bath' : e.type; n[t] = (n[t] || 0) + 1; }
   return n;
 }
 /** The Day page's buttons for the children's ages (stages.js), with what the family has been logging lately moved up: { shown, more }. */
@@ -861,14 +867,14 @@ const dayButtons = () => Stages.buttons(pageKids().map(k => stageOf(k)), usedLat
 function quickButtons() {
   if (!Sync.can('add')) return '';
   const { shown, more } = dayButtons();
-  return `<div class="quick" style="margin-bottom:10px">${shown.map(k => `<button data-add="${k}" style="--cw:${Kids.rgba(TYPES[k].color, 0.3)}"><b>${TYPES[k].icon}</b>${__h(tLabel(k))}</button>`).join('')}${more.length ? `<button data-addmore="${more.join(' ')}" aria-label="${__h('More to log')}"><b>⚙</b>${__h('More')}</button>` : ''}</div>`;
+  return `<div class="quick${shown.length + (more.length ? 1 : 0) === 9 ? ' nine' : ''}" style="margin-bottom:10px">${shown.map(k => `<button data-add="${k}" style="--cw:${Kids.rgba(TYPES[k].color, 0.3)}"><b>${TYPES[k].icon}</b>${__h(tLabel(k))}</button>`).join('')}${more.length ? `<button data-addmore="${more.join(' ')}" aria-label="${__h('More to log')}"><b>⚙</b>${__h('More')}</button>` : ''}</div>`;
 }
 /** "added by Dad" – only when the log is shared and the person is known. */
 const byLine = e => { const n = Sync.linked() && e.by && e.by !== Auth.id ? Sync.nameOf(e.by) : ''; return n ? `<small>${__h('added by {name}', { name: n })}</small>` : ''; };
 const urgentFor = e => (Stages.from(stageOf(kidById(childOf(e)), e.ts), 'toddler') ? KID_URGENT : URGENT);
 const isWarn = e => (e.type === 'health' && (e.data.symptoms || []).some(s => urgentFor(e).includes(s))) || (e.type === 'diaper' && !!e.data.poo && STOOL_WARN.includes(e.data.color));
 function evRow(e) {
-  const [a, b] = describe(e), t = TYPES[e.type];
+  const [a, b] = describe(e), t = isBath(e) ? TYPES.bath : TYPES[e.type];
   return `<div class="card ev ${isWarn(e) ? 'alert' : ''}" style="--c:var(--${e.type})" data-edit="${e.id}">
     <div class="t">${e.data && e.data.approx ? `<span class="approx" title="${__h('About this time')}">~</span>` : ''}${esc(fmtTime(e.ts))}</div>
     <div class="b">${kidTag(e)}${t.icon} <b>${esc(a)}</b>${b ? `<small>${esc(b)}</small>` : ''}${e.note ? `<small>“${esc(e.note)}”</small>` : ''}${byLine(e)}</div></div>`;
@@ -1080,11 +1086,10 @@ function picsOf(id) {
   return m;
 }
 let picSlot = ''; const picScroll = {};   // (the slot a picture is being chosen for; where each carousel was scrolled to)
-/** The Pictures twirl-down on the Stats page: the first year by month, then growing up by year (veiled until the first birthday). */
-function picturesFold(k) {
-  if (!k) return '';
-  const name = kidName(k), title = __('Pictures of {name}', { name });
-  if (!k.birth) return fold('pics', '📷', title, __('No pictures yet'), `<p class="note">${__h("Add {name}'s date of birth under More to start the pictures.", { name })}</p>`);
+/** The two carousels (the first year by month, then growing up by year, veiled until the first birthday) and the line under the title. */
+function picturesParts(k) {
+  const name = kidName(k);
+  if (!k.birth) return { sub: __('No pictures yet'), body: `<p class="note">${__h("Add {name}'s date of birth under More to start the pictures.", { name })}</p>` };
   const today = startOfDay(Date.now()), pics = picsOf(k.id), can = Sync.can('add'), one = picDay(k.birth, 'y1') <= today;
   const reached = s => picDay(k.birth, s) <= today, cur = { m: PIC_MONTHS.filter(reached).pop(), y: PIC_YEARS.filter(reached).pop() };
   Media.prime([...pics.values()].map(e => e.data.media[0]));
@@ -1102,8 +1107,12 @@ function picturesFold(k) {
     <h2>${__h('Growing up')}</h2><p class="note">${__h('A picture on every birthday, from one to eighteen. The 12-month picture is the first birthday picture too.')}</p>
     ${one ? row('picsY', PIC_YEARS) : `<div class="pveil"><div class="pics" aria-hidden="true">${PIC_YEARS.slice(0, 4).map(s => `<div class="pic soon"><span class="pthumb empty"></span><b>${esc(picLabel(s))}</b></div>`).join('')}</div><div class="plock">🔒 ${__h("Opens on {name}'s first birthday, {date}", { name, date: fmtDay(dkey(picDay(k.birth, 'y1'))) })}</div></div>`}
     <input type="file" id="picFile" accept="image/*" hidden>`;
-  return fold('pics', '📷', title, n ? __n('{n} picture', '{n} pictures', n) : __('No pictures yet'), body);
+  return { sub: n ? __n('{n} picture', '{n} pictures', n) : __('No pictures yet'), body };
 }
+/** The Pictures twirl-down on the Stats page. */
+function picturesFold(k) { if (!k) return ''; const p = picturesParts(k); return fold('pics', '📷', __('Pictures of {name}', { name: kidName(k) }), p.sub, p.body); }
+/** The same carousels at the top of the Big moments journal on the Month page. */
+function picturesJournal(k) { return `<div class="gdin jpics"><p class="mh">📷 ${__h('Pictures as they grow')}</p>${picturesParts(k).body}</div>`; }
 function pickPicture(key) { picSlot = key; const f = $('#picFile'); if (f) { f.value = ''; f.click(); } }
 /** Keeps a chosen file as the picture for a slot (shrunk, on this phone, then up with the next sync); an earlier picture there goes. */
 async function addPicture(k, key, file) {
@@ -1178,8 +1187,8 @@ function routineView(now = Date.now()) {
   }).join('')}</div>` : '');
   if (!R.enough) return `${head}${todayHtml(N_('Today so far'))}<div class="empty">⏰ ${__h('Your routine will show up here after a few days of logging.')}<br><small>${__hn('{n} day logged in the last week so far.', '{n} days logged in the last week so far.', R.logged)}</small></div>${how}`;
   if (!R.slots.length) return `${head}${todayHtml(N_('Today so far'))}<div class="empty">⏰ ${__h('No regular times yet.')}<br><small>${__h('Anything that happens at about the same time on most days will show up here.')}</small></div>${how}`;
-  const nx = T.next, ni = nx && TYPES[nx.slot.type];
-  const next = nx ? `<div class="card rnext" style="--c:var(--${nx.slot.type})"><span class="rni">${nx.slot.key === 'solids' ? '🥄' : ni.icon}</span><span><small>${__h('Next in the routine')}</small><b>${esc(name(nx.slot))}</b><small>${esc(nx.tomorrow && startOfDay(nx.at) > startOfDay(now) ? __('tomorrow at about {time}', { time: fmtTime(nx.at) })
+  const nx = T.next, slotIcon = s => (s.key === 'solids' ? '🥄' : s.type === 'play' && s.activity === 'Bath' ? TYPES.bath.icon : TYPES[s.type].icon);
+  const next = nx ? `<div class="card rnext" style="--c:var(--${nx.slot.type})"><span class="rni">${slotIcon(nx.slot)}</span><span><small>${__h('Next in the routine')}</small><b>${esc(name(nx.slot))}</b><small>${esc(nx.tomorrow && startOfDay(nx.at) > startOfDay(now) ? __('tomorrow at about {time}', { time: fmtTime(nx.at) })
     : nx.state === 'now' ? __('about now ({time})', { time: fmtTime(nx.at) }) : __('at about {time}, in {wait}', { time: fmtTime(nx.at), wait: fmtDur((nx.at - now) / MIN) }))}</small></span></div>` : '';
   // from morning to night: the morning, afternoon and evening, then the night after them (the parts of the day as the clock names them)
   const parts = [[0, 0], [6, 1], [12, 2], [18, 3]];
@@ -1194,13 +1203,13 @@ function routineView(now = Date.now()) {
       : o.state === 'now' ? `<span class="rs now">${__h('Due now')}</span>` : nx && !nx.tomorrow && nx.slot === s ? `<span class="rs next">${__h('Up next')}</span>`
         : o.state === 'past' ? `<span class="rs past" title="${__h('Not logged today')}">–</span>` : '';
     rows += `<div class="card rslot ${o.state}" style="--c:var(--${s.type})" data-slot="${esc(s.key)}">
-      <div class="rt">${esc(clock(s.at))}</div><div class="rb"><b>${s.key === 'solids' ? '🥄' : TYPES[s.type].icon} ${esc(name(s))}</b>${w ? `<small>${esc(w)}</small>` : ''}<small>${esc([range, often].filter(Boolean).join(' · '))}</small></div>${state}</div>`;
+      <div class="rt">${esc(clock(s.at))}</div><div class="rb"><b>${slotIcon(s)} ${esc(name(s))}</b>${w ? `<small>${esc(w)}</small>` : ''}<small>${esc([range, often].filter(Boolean).join(' · '))}</small></div>${state}</div>`;
   }
   if (!nowShown) rows += `<div class="rnow" aria-hidden="true"><span>${esc(fmtTime(now))}</span></div>`;
   // the times that keep to other days of the week (school on a Sunday, swimming on Tuesdays)
   const today = new Set(T.list.map(o => o.slot)), week = R.slots.filter(s => s.weekdays && !today.has(s));
   const weekHtml = week.length ? `<h2>${__h('Other days of the week')}</h2><div class="routine week">${week.map(s => `<div class="card rslot" style="--c:var(--${s.type})" data-slot="${esc(s.key)}">
-    <div class="rt">${esc(clock(s.at))}</div><div class="rb"><b>${TYPES[s.type].icon} ${esc(name(s))}</b>${what(s) ? `<small>${esc(what(s))}</small>` : ''}<small>${esc(weekdaysText(s.weekdays))}</small></div></div>`).join('')}</div>` : '';
+    <div class="rt">${esc(clock(s.at))}</div><div class="rb"><b>${slotIcon(s)} ${esc(name(s))}</b>${what(s) ? `<small>${esc(what(s))}</small>` : ''}<small>${esc(weekdaysText(s.weekdays))}</small></div></div>`).join('')}</div>` : '';
   const weekly = R.slots.some(s => s.weekdays) ? `<p class="note rhow">${__h('Daycare, school, homework, and lessons and clubs are worked out from the last 4 weeks, for each day of the week.')}</p>` : '';
   return `${head}${next}<div class="routine">${rows}</div>${todayHtml(N_('Also today'), N_('Logged today at a time that is not part of the routine (yet).'))}${weekHtml}${how}${weekly}`;
 }
@@ -1730,6 +1739,7 @@ function momentsJournal() {
   let body = '', ch = '';
   for (const e of list) { const st = stageOf(k, e.ts); if (st !== ch) { body += `<p class="mh">${__h(Stages.byId(st).name)}</p>`; ch = st; } body += momentRow(e, true); }
   return `<details class="gd moments" data-grp="moments" ${openGroups.has('moments') ? 'open' : ''}><summary><span class="gi">🌟</span><span class="gt"><b>${__h('Big moments')}</b><small>${list.length ? __hn('{n} big moment', '{n} big moments', list.length) : __h('None saved yet')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    ${picturesJournal(k)}
     ${body || `<p class="note">${__h('First smiles, first steps, first days at school: save them as they happen, and they are kept here.')}</p>`}
     ${Sync.can('add') ? `<button class="btn mmadd" data-momentnew>🌟 ${__h('Save a big moment')}</button>` : ''}</details>`;
 }
@@ -2677,13 +2687,14 @@ const feedKid = ev => kidById(ev ? childOf(ev) : dayKid()) || kids()[0];
 function openSheet(type, ev, pre) {
   const editing = !!ev;
   type = ev ? ev.type : type;
+  if (type === 'bath') { type = 'play'; pre = { activity: 'Bath', ...(pre || {}) }; }   // (the Bath button: a play entry with Bath chosen)
   if (editing ? !Sync.can('edit', ev) : !Sync.can('add')) return toast(__("You don't have permission to do that"));
   if (isPrivate(type) && !Sync.can('health')) return toast(__("You don't have access to health notes"));
   const d = (ev && ev.data) || pre || {}, T = TYPES[type];
   // New entries default to now, or to noon of the viewed day when browsing past days.
   const defTs = ev ? ev.ts : (viewDay === startOfDay(Date.now()) ? Date.now() : viewDay + 12 * 60 * MIN);
   const forKids = ev ? [kidById(childOf(ev))].filter(Boolean) : pageKids(), older = forKids.length > 0 && forKids.every(k => Stages.from(stageOf(k, defTs), 'toddler'));
-  const noun = type === 'feed' && older ? N_('milk') : T.noun;
+  const bathy = type === 'play' && d.activity === 'Bath', noun = type === 'feed' && older ? N_('milk') : bathy ? TYPES.bath.noun : T.noun;
   let body = '';
   const L = t => `<label class="f">${__h(t)}</label>`;
   if (type === 'feed') body = `
@@ -2762,7 +2773,7 @@ function openSheet(type, ev, pre) {
   const multi = kids().length > 1, one = editing || type === 'growth', here = ev ? childOf(ev) : type === 'growth' ? viewKid() : dayKid();
   const forHtml = !multi ? '' : `<label class="f">${one ? __h('For') : __h('For (tick everyone it applies to)')}</label><div class="chips kidchips">${kids().map(k =>
     `<label class="chip kidchip" style="--k:${k.color}"><input type="${one ? 'radio' : 'checkbox'}" name="kid" value="${k.id}" ${k.id === here ? 'checked' : ''}><span>${avatar(k)}${esc(kidName(k))}</span></label>`).join('')}</div>`;
-  $('#sheet').innerHTML = `<h3>${T.icon} ${editing ? __h('Edit {what}', { what: __(noun) }) : __h('Add {what}', { what: __(noun) })}</h3>
+  $('#sheet').innerHTML = `<h3>${bathy ? TYPES.bath.icon : T.icon} ${editing ? __h('Edit {what}', { what: __(noun) }) : __h('Add {what}', { what: __(noun) })}</h3>
     ${forHtml}
     ${L(type === 'sleep' ? N_('Fell asleep at') : N_('Time'))}<input id="ts" type="datetime-local" value="${toLocalInput(defTs)}">
     <div class="mini">${[5, 15, 30, 60].map(m => `<button type="button" data-ago="${m}">${m < 60 ? __h('{n} min ago', { n: m }) : __h('1 hr ago')}</button>`).join('')}<button type="button" data-ago="0">${__h('Now')}</button></div>
