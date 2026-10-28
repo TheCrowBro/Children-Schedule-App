@@ -2461,5 +2461,23 @@
  "1aqdhru": "Preguntar en cambio una hora después de que el sueño suela terminar: una siesta que suele acabar a las 2:30 se pregunta a las 3:30. La notificación dice a qué hora suele estar despierto.",
  "wooms1": "Dormido desde las {time} ({long}).",
  "daeire": "Suele estar despierto hacia las {time}.",
- "1p7goiw": "Toca «Se despertó» cuando esté despierto."
+ "1p7goiw": "Toca «Se despertó» cuando esté despierto.",
+ "1el5q6o": "Fotos de {name}",
+ "1qaod0z": "Aún no hay fotos",
+ "6hja7n": "Añade la fecha de nacimiento de {name} en Más para empezar con las fotos.",
+ "6rb47n": "El primer año",
+ "1h5hezp": "Una foto en cada cumplemés, desde recién nacido hasta los 12 meses.",
+ "8tkuiq": "Una foto en cada cumpleaños, de uno a dieciocho. La foto de los 12 meses es también la del primer cumpleaños.",
+ "t6rvat": "Se abre en el primer cumpleaños de {name}, el {date}",
+ "c1kzx8": {
+  "one": "{n} foto",
+  "many": "{n} fotos",
+  "other": "{n} fotos"
+ },
+ "4wsbya": "¿Quitar esta foto?",
+ "1rhr1wj": "Sustituir",
+ "cr1ob1": "Novedad en la página Gráficos: las fotos de {name} tienen ahora una segunda fila, una foto por cada cumpleaños de uno a dieciocho. La foto de los 12 meses es también la del primer cumpleaños.",
+ "lf2pjm": "Ver las fotos",
+ "lwfec3": "Fotos mientras crece",
+ "1x7twtv": "Una foto en cada cumplemés del primer año y después una en cada cumpleaños hasta los dieciocho. Toca una foto para verla en grande."
 }

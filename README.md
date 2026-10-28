@@ -81,6 +81,11 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   Plan a trip and Add to the calendar above it); **stats** for the last 7, 14 or 30 days, 3 months, 6
   months or a year (over 30 days the charts show an average day for each week, over a year for each month), the key numbers on each card and
   every chart in a twirl-down of its own, drawn small; a **Height & weight** card with the latest measurements and their percentiles
+  ; **Pictures as they grow**, in a twirl-down: a carousel for the first year (a tile for the newborn and for each month birthday, the
+  reached ones open to a picture, the rest dimmed with their dates, the one for now ringed) and one for every birthday from one to
+  eighteen, veiled until the first birthday, when the 12-month sheet says it has opened; the 12-month and first-birthday slots are one picture.
+  A picture is an entry of its own (shrunk, kept on the phone, encrypted and synced like a big moment's pictures, off the Day page and
+  the report); tap one to see it big, replace it, remove it or save it; ‹ › or a swipe moves along a carousel
 - **Routine** tab: the times of day that keep coming back, laid out like a day in a calendar from morning to night (morning, afternoon,
   evening, then the night, which counts with the evening before it: the routine's day runs from 6 AM to 6 AM) with a line at the time now. A feed, a meal of solid food, a nap, a kind of play or a medicine that happened within 45 minutes of the same time
   on most of the last 7 days (and on at least 3) is part of the routine, with what it usually is (how long, how much, which medicine and

@@ -2416,5 +2416,22 @@
  "1aqdhru": "Vraag in plaats daarvan een uur nadat het slaapje gewoonlijk eindigt: een dutje dat meestal om 14:30 eindigt wordt om 15:30 gevraagd. De melding zegt wanneer het kind meestal wakker is.",
  "wooms1": "Slaapt sinds {time} ({long}).",
  "daeire": "Meestal wakker rond {time}.",
- "1p7goiw": "Tik op 'Wakker geworden' als het wakker is."
+ "1p7goiw": "Tik op 'Wakker geworden' als het wakker is.",
+ "1el5q6o": "Foto's van {name}",
+ "1qaod0z": "Nog geen foto's",
+ "6hja7n": "Vul onder Meer de geboortedatum van {name} in om met de foto's te beginnen.",
+ "6rb47n": "Het eerste jaar",
+ "1h5hezp": "Een foto bij elke maandverjaardag, van pasgeboren tot 12 maanden.",
+ "8tkuiq": "Een foto op elke verjaardag, van één tot achttien. De foto van 12 maanden is ook die van de eerste verjaardag.",
+ "t6rvat": "Gaat open op de eerste verjaardag van {name}, {date}",
+ "c1kzx8": {
+  "one": "{n} foto",
+  "other": "{n} foto's"
+ },
+ "4wsbya": "Deze foto verwijderen?",
+ "1rhr1wj": "Vervangen",
+ "cr1ob1": "Nieuw op de pagina Statistiek: de foto's van {name} hebben nu een tweede rij, één foto voor elke verjaardag van één tot achttien. De foto van 12 maanden is ook die van de eerste verjaardag.",
+ "lf2pjm": "Foto's bekijken",
+ "lwfec3": "Foto's tijdens het opgroeien",
+ "1x7twtv": "Een foto bij elke maandverjaardag in het eerste jaar, daarna één op elke verjaardag tot achttien. Tik op een foto om hem groot te zien."
 }

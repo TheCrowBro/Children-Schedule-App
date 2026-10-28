@@ -2506,5 +2506,24 @@
  "1aqdhru": "Pytaj zamiast tego godzinę po zwykłym końcu snu: o drzemkę, która zwykle kończy się o 14:30, pyta o 15:30. Powiadomienie mówi, kiedy dziecko zwykle już nie śpi.",
  "wooms1": "Śpi od {time} ({long}).",
  "daeire": "Zwykle budzi się około {time}.",
- "1p7goiw": "Dotknij „Pobudka”, gdy się obudzi."
+ "1p7goiw": "Dotknij „Pobudka”, gdy się obudzi.",
+ "1el5q6o": "Zdjęcia: {name}",
+ "1qaod0z": "Nie ma jeszcze zdjęć",
+ "6hja7n": "Wpisz datę urodzenia dziecka ({name}) w zakładce Więcej, aby zacząć zbierać zdjęcia.",
+ "6rb47n": "Pierwszy rok",
+ "1h5hezp": "Zdjęcie na każde miesięcznice urodzin, od noworodka do 12 miesięcy.",
+ "8tkuiq": "Zdjęcie na każde urodziny, od pierwszych do osiemnastych. Zdjęcie z 12 miesięcy jest zarazem zdjęciem z pierwszych urodzin.",
+ "t6rvat": "Otworzy się w pierwsze urodziny dziecka ({name}), {date}",
+ "c1kzx8": {
+  "one": "{n} zdjęcie",
+  "few": "{n} zdjęcia",
+  "many": "{n} zdjęć",
+  "other": "{n} zdjęcia"
+ },
+ "4wsbya": "Usunąć to zdjęcie?",
+ "1rhr1wj": "Zamień",
+ "cr1ob1": "Nowość na stronie Statystyki: zdjęcia ({name}) mają teraz drugi rząd, po jednym zdjęciu na każde urodziny od pierwszych do osiemnastych. Zdjęcie z 12 miesięcy jest zarazem zdjęciem z pierwszych urodzin.",
+ "lf2pjm": "Zobacz zdjęcia",
+ "lwfec3": "Zdjęcia w miarę dorastania",
+ "1x7twtv": "Zdjęcie na każdą miesięcznicę urodzin w pierwszym roku, potem jedno na każde urodziny do osiemnastych. Dotknij zdjęcia, aby zobaczyć je w powiększeniu."
 }

@@ -2461,5 +2461,23 @@
  "1aqdhru": "Chiedi invece un'ora dopo la fine abituale del sonno: un pisolino che di solito finisce alle 14:30 viene chiesto alle 15:30. La notifica dice quando di solito è sveglio.",
  "wooms1": "Dorme dalle {time} ({long}).",
  "daeire": "Di solito sveglio verso le {time}.",
- "1p7goiw": "Tocca «Fine nanna» quando è sveglio."
+ "1p7goiw": "Tocca «Fine nanna» quando è sveglio.",
+ "1el5q6o": "Foto di {name}",
+ "1qaod0z": "Ancora nessuna foto",
+ "6hja7n": "Aggiungi la data di nascita di {name} in Altro per iniziare con le foto.",
+ "6rb47n": "Il primo anno",
+ "1h5hezp": "Una foto a ogni mese compiuto, dal neonato ai 12 mesi.",
+ "8tkuiq": "Una foto a ogni compleanno, da uno a diciotto anni. La foto dei 12 mesi è anche quella del primo compleanno.",
+ "t6rvat": "Si apre al primo compleanno di {name}, il {date}",
+ "c1kzx8": {
+  "one": "{n} foto",
+  "many": "{n} foto",
+  "other": "{n} foto"
+ },
+ "4wsbya": "Rimuovere questa foto?",
+ "1rhr1wj": "Sostituisci",
+ "cr1ob1": "Novità nella pagina Grafici: le foto di {name} hanno ora una seconda fila, una foto per ogni compleanno da uno a diciotto anni. La foto dei 12 mesi è anche quella del primo compleanno.",
+ "lf2pjm": "Vedi le foto",
+ "lwfec3": "Foto mentre cresce",
+ "1x7twtv": "Una foto a ogni mese compiuto del primo anno, poi una a ogni compleanno fino ai diciotto. Tocca una foto per vederla grande."
 }

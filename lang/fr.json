@@ -2461,5 +2461,23 @@
  "1aqdhru": "Demander plutôt une heure après la fin habituelle du sommeil : une sieste qui finit d'habitude à 14 h 30 est demandée à 15 h 30. La notification dit quand il est réveillé d'habitude.",
  "wooms1": "Endormi depuis {time} ({long}).",
  "daeire": "D'habitude réveillé vers {time}.",
- "1p7goiw": "Touchez « Réveillé » quand il est réveillé."
+ "1p7goiw": "Touchez « Réveillé » quand il est réveillé.",
+ "1el5q6o": "Photos de {name}",
+ "1qaod0z": "Pas encore de photos",
+ "6hja7n": "Ajoutez la date de naissance de {name} dans Plus pour commencer les photos.",
+ "6rb47n": "La première année",
+ "1h5hezp": "Une photo à chaque mois-anniversaire, du nouveau-né à 12 mois.",
+ "8tkuiq": "Une photo à chaque anniversaire, de un à dix-huit ans. La photo des 12 mois est aussi celle du premier anniversaire.",
+ "t6rvat": "S'ouvre au premier anniversaire de {name}, le {date}",
+ "c1kzx8": {
+  "one": "{n} photo",
+  "many": "{n} photos",
+  "other": "{n} photos"
+ },
+ "4wsbya": "Retirer cette photo ?",
+ "1rhr1wj": "Remplacer",
+ "cr1ob1": "Du nouveau sur la page Stats : les photos de {name} ont maintenant une deuxième rangée, une photo pour chaque anniversaire de un à dix-huit ans. La photo des 12 mois est aussi celle du premier anniversaire.",
+ "lf2pjm": "Voir les photos",
+ "lwfec3": "Photos au fil des années",
+ "1x7twtv": "Une photo à chaque mois-anniversaire de la première année, puis une à chaque anniversaire jusqu'à dix-huit ans. Touchez une photo pour la voir en grand."
 }

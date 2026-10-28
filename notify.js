@@ -51,7 +51,7 @@ const Notify = (() => {
     const near = (a, b) => Math.min(Math.abs(a - b), 1440 - Math.abs(a - b)) <= Routine.WINDOW;
     const days = new Set(), hits = new Map();   // the days with entries; the length of the sleep at about this time on each (the longest)
     for (const x of events) {
-      if (x.ts < from || x.ts >= now || x.id === e.id || x.type === 'plan' || Travel.isTravel(x.type) || childOf(x) !== child) continue;
+      if (x.ts < from || x.ts >= now || x.id === e.id || x.type === 'plan' || x.type === 'photo' || Travel.isTravel(x.type) || childOf(x) !== child) continue;
       const d = dayOf(x.ts); days.add(d);
       if (x.type === 'sleep' && x.end > x.ts && near(minutesOf(x.ts), m)) { const len = (x.end - x.ts) / MIN; if (!hits.has(d) || hits.get(d) < len) hits.set(d, len); }
     }

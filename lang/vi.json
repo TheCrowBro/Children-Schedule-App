@@ -2371,5 +2371,21 @@
  "1aqdhru": "Thay vào đó, hỏi một giờ sau khi giấc ngủ thường kết thúc: giấc ngủ trưa thường kết thúc lúc 2:30 sẽ được hỏi lúc 3:30. Thông báo cho biết bé thường dậy lúc nào.",
  "wooms1": "Ngủ từ {time} ({long}).",
  "daeire": "Thường dậy khoảng {time}.",
- "1p7goiw": "Chạm 'Đã dậy' khi bé thức."
+ "1p7goiw": "Chạm 'Đã dậy' khi bé thức.",
+ "1el5q6o": "Ảnh của {name}",
+ "1qaod0z": "Chưa có ảnh",
+ "6hja7n": "Thêm ngày sinh của {name} trong mục Khác để bắt đầu lưu ảnh.",
+ "6rb47n": "Năm đầu tiên",
+ "1h5hezp": "Một ảnh mỗi mốc tròn tháng, từ sơ sinh đến 12 tháng.",
+ "8tkuiq": "Một ảnh mỗi sinh nhật, từ một đến mười tám tuổi. Ảnh 12 tháng cũng là ảnh sinh nhật đầu tiên.",
+ "t6rvat": "Mở vào sinh nhật đầu tiên của {name}, {date}",
+ "c1kzx8": {
+  "other": "{n} ảnh"
+ },
+ "4wsbya": "Gỡ bỏ ảnh này?",
+ "1rhr1wj": "Thay ảnh",
+ "cr1ob1": "Mới trên trang Thống kê: ảnh của {name} giờ có hàng thứ hai, một ảnh cho mỗi sinh nhật từ một đến mười tám tuổi. Ảnh 12 tháng cũng là ảnh sinh nhật đầu tiên.",
+ "lf2pjm": "Xem ảnh",
+ "lwfec3": "Ảnh theo năm tháng",
+ "1x7twtv": "Năm đầu mỗi mốc tròn tháng một ảnh, sau đó mỗi sinh nhật một ảnh đến mười tám tuổi. Chạm vào ảnh để xem lớn."
 }

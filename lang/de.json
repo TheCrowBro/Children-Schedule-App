@@ -2416,5 +2416,22 @@
  "1aqdhru": "Stattdessen eine Stunde nach dem üblichen Ende des Schlafs fragen: Bei einem Nickerchen, das sonst um 14:30 endet, wird um 15:30 gefragt. Die Benachrichtigung sagt, wann das Kind sonst wach ist.",
  "wooms1": "Schläft seit {time} ({long}).",
  "daeire": "Normalerweise gegen {time} wach.",
- "1p7goiw": "Tippe auf „Aufgewacht“, wenn es wach ist."
+ "1p7goiw": "Tippe auf „Aufgewacht“, wenn es wach ist.",
+ "1el5q6o": "Fotos von {name}",
+ "1qaod0z": "Noch keine Fotos",
+ "6hja7n": "Trage unter „Mehr“ das Geburtsdatum von {name} ein, um mit den Fotos zu beginnen.",
+ "6rb47n": "Das erste Jahr",
+ "1h5hezp": "Ein Foto zu jedem Monatsgeburtstag, vom Neugeborenen bis 12 Monate.",
+ "8tkuiq": "Ein Foto zu jedem Geburtstag, von eins bis achtzehn. Das Foto mit 12 Monaten ist zugleich das vom ersten Geburtstag.",
+ "t6rvat": "Öffnet sich am ersten Geburtstag von {name}, {date}",
+ "c1kzx8": {
+  "one": "{n} Foto",
+  "other": "{n} Fotos"
+ },
+ "4wsbya": "Dieses Foto entfernen?",
+ "1rhr1wj": "Ersetzen",
+ "cr1ob1": "Neu auf der Statistik-Seite: Die Fotos von {name} haben jetzt eine zweite Reihe, ein Foto zu jedem Geburtstag von eins bis achtzehn. Das Foto mit 12 Monaten ist zugleich das vom ersten Geburtstag.",
+ "lf2pjm": "Fotos ansehen",
+ "lwfec3": "Fotos beim Großwerden",
+ "1x7twtv": "Ein Foto zu jedem Monatsgeburtstag im ersten Jahr, danach eins zu jedem Geburtstag bis achtzehn. Tippe auf ein Foto, um es groß zu sehen."
 }

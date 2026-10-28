@@ -2416,5 +2416,22 @@
  "1aqdhru": "Badala yake uliza saa moja baada ya usingizi kuisha kawaida: usingizi wa mchana unaoisha kawaida saa 2:30 huulizwa saa 3:30. Arifa husema mtoto huwa ameamka saa ngapi.",
  "wooms1": "Amelala tangu {time} ({long}).",
  "daeire": "Kawaida huwa ameamka karibu {time}.",
- "1p7goiw": "Gonga 'Ameamka' akiamka."
+ "1p7goiw": "Gonga 'Ameamka' akiamka.",
+ "1el5q6o": "Picha za {name}",
+ "1qaod0z": "Hakuna picha bado",
+ "6hja7n": "Weka tarehe ya kuzaliwa ya {name} chini ya Zaidi ili kuanza picha.",
+ "6rb47n": "Mwaka wa kwanza",
+ "1h5hezp": "Picha moja kila mwezi wa kuzaliwa, kuanzia mtoto mchanga hadi miezi 12.",
+ "8tkuiq": "Picha moja kila siku ya kuzaliwa, kuanzia mwaka mmoja hadi kumi na nane. Picha ya miezi 12 ndiyo pia picha ya siku ya kuzaliwa ya kwanza.",
+ "t6rvat": "Itafunguka siku ya kuzaliwa ya kwanza ya {name}, {date}",
+ "c1kzx8": {
+  "one": "Picha {n}",
+  "other": "Picha {n}"
+ },
+ "4wsbya": "Ondoa picha hii?",
+ "1rhr1wj": "Badilisha",
+ "cr1ob1": "Kipya kwenye ukurasa wa Takwimu: picha za {name} sasa zina safu ya pili, picha moja kwa kila siku ya kuzaliwa kuanzia mwaka mmoja hadi kumi na nane. Picha ya miezi 12 ndiyo pia picha ya siku ya kuzaliwa ya kwanza.",
+ "lf2pjm": "Ona picha",
+ "lwfec3": "Picha akikua",
+ "1x7twtv": "Picha moja kila mwezi wa kuzaliwa katika mwaka wa kwanza, kisha moja kila siku ya kuzaliwa hadi kumi na nane. Gonga picha ili kuiona kubwa."
 }

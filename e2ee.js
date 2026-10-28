@@ -15,7 +15,7 @@
 const E2EE = (() => {
   const enc = new TextEncoder(), dec = new TextDecoder(), S = crypto.subtle;
   const ECDH = { name: 'ECDH', namedCurve: 'P-256' };
-  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg', 'meal', 'potty', 'moment', 'vaccine', 'visit', 'growth', 'care', 'pickup', 'study', 'plan'];
+  const TYPES = ['feed', 'diaper', 'sleep', 'wake', 'vomit', 'play', 'health', 'med', 'trip', 'leg', 'meal', 'potty', 'moment', 'vaccine', 'visit', 'growth', 'care', 'pickup', 'study', 'plan', 'photo'];
   // health notes, medicines and the health record (vaccines, doctor visits, measurements) are kept under the HEALTH key
   const SENSITIVE = ['health', 'med', 'vaccine', 'visit', 'growth'];
   const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // exactly 32 symbols = 5 bits each
@@ -187,20 +187,21 @@ const E2EE = (() => {
   function sanitize(type, d) {
     d = d && typeof d === 'object' && !Array.isArray(d) ? d : {};
     const o = {}, n = k => { const v = num(d[k]); if (v !== undefined) o[k] = v; }, s = (k, len) => { if (typeof d[k] === 'string') o[k] = str(d[k], len); }, b = k => { if (typeof d[k] === 'boolean') o[k] = d[k]; };
+    const media = () => {   // pictures and videos (a big moment's, or a picture as they grow): ids and sizes only, the files are elsewhere
+      if (!Array.isArray(d.media)) return;
+      const big = v => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.round(Math.min(v, 1e9)) : undefined);
+      const m = d.media.filter(x => x && typeof x === 'object' && /^[A-Za-z0-9_-]{6,40}$/.test(x.id || '') && (x.kind === 'photo' || x.kind === 'video')).slice(0, 5)
+        .map(x => { const o2 = { id: x.id, kind: x.kind }; for (const f of ['w', 'h', 'bytes']) { const v = big(x[f]); if (v !== undefined) o2[f] = v; } const dur = num(x.dur); if (dur !== undefined) o2.dur = dur;
+          if (typeof x.mime === 'string' && /^(image|video)\/[\w.+-]{1,30}$/.test(x.mime)) o2.mime = x.mime; return o2; });
+      if (m.length) o.media = m;
+    };
     switch (type) {
       case 'feed': if (['bottle', 'breast', 'solids', 'cup'].includes(d.kind)) o.kind = d.kind; s('side', 10); s('milk', 20); s('formula', 60); n('min'); n('ml');
         if (Array.isArray(d.foods)) o.foods = d.foods.filter(x => typeof x === 'string' && x.trim()).slice(0, 30).map(x => x.slice(0, 60)); s('amount', 30); break;
       case 'meal': s('meal', 20); if (Array.isArray(d.foods)) o.foods = d.foods.filter(x => typeof x === 'string' && x.trim()).slice(0, 30).map(x => x.slice(0, 60)); s('amount', 30); break;
       case 'potty': b('pee'); b('poo'); b('dry'); b('accident'); b('asked'); s('where', 20); break;
-      case 'moment': s('what', 80); b('own');
-        if (Array.isArray(d.media)) {   // pictures and videos: ids and sizes only (the files are elsewhere)
-          const big = v => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.round(Math.min(v, 1e9)) : undefined);
-          const m = d.media.filter(x => x && typeof x === 'object' && /^[A-Za-z0-9_-]{6,40}$/.test(x.id || '') && (x.kind === 'photo' || x.kind === 'video')).slice(0, 5)
-            .map(x => { const o2 = { id: x.id, kind: x.kind }; for (const f of ['w', 'h', 'bytes']) { const v = big(x[f]); if (v !== undefined) o2[f] = v; } const dur = num(x.dur); if (dur !== undefined) o2.dur = dur;
-              if (typeof x.mime === 'string' && /^(image|video)\/[\w.+-]{1,30}$/.test(x.mime)) o2.mime = x.mime; return o2; });
-          if (m.length) o.media = m;
-        }
-        break;
+      case 'moment': s('what', 80); b('own'); media(); break;
+      case 'photo': if (/^(m\d|m1[0-2]|y[1-9]|y1[0-8])$/.test(d.slot || '')) o.slot = d.slot; media(); break;   // (a picture as they grow: its slot, newborn to 18 years)
       case 'vaccine': s('name', 60); b('own'); n('dose'); s('place', 80); s('batch', 40); break;
       case 'visit': s('kind', 30); s('who', 80); s('why', 120); break;
       case 'growth': n('weight'); n('height'); n('head'); break;

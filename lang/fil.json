@@ -2416,5 +2416,22 @@
  "1aqdhru": "Sa halip, magtanong isang oras pagkatapos ng karaniwang pagtatapos ng tulog: ang idlip na karaniwang natatapos ng 2:30 ay tatanungin ng 3:30. Sinasabi ng notification kung kailan karaniwang gising na ang bata.",
  "wooms1": "Tulog mula {time} ({long}).",
  "daeire": "Karaniwang gising na bandang {time}.",
- "1p7goiw": "Pindutin ang 'Nagising' kapag gising na."
+ "1p7goiw": "Pindutin ang 'Nagising' kapag gising na.",
+ "1el5q6o": "Mga larawan ni {name}",
+ "1qaod0z": "Wala pang larawan",
+ "6hja7n": "Ilagay ang kaarawan ni {name} sa Iba pa para simulan ang mga larawan.",
+ "6rb47n": "Ang unang taon",
+ "1h5hezp": "Isang larawan sa bawat buwanang kaarawan, mula bagong silang hanggang 12 buwan.",
+ "8tkuiq": "Isang larawan sa bawat kaarawan, mula isa hanggang labingwalo. Ang larawan sa 12 buwan ay siya ring larawan ng unang kaarawan.",
+ "t6rvat": "Bubukas sa unang kaarawan ni {name}, {date}",
+ "c1kzx8": {
+  "one": "{n} larawan",
+  "other": "{n} larawan"
+ },
+ "4wsbya": "Alisin ang larawang ito?",
+ "1rhr1wj": "Palitan",
+ "cr1ob1": "Bago sa pahina ng Stats: may pangalawang hanay na ang mga larawan ni {name}, isang larawan para sa bawat kaarawan mula isa hanggang labingwalo. Ang larawan sa 12 buwan ay siya ring larawan ng unang kaarawan.",
+ "lf2pjm": "Tingnan ang mga larawan",
+ "lwfec3": "Mga larawan habang lumalaki",
+ "1x7twtv": "Isang larawan sa bawat buwanang kaarawan sa unang taon, pagkatapos isa sa bawat kaarawan hanggang labingwalo. Pindutin ang larawan para makita nang malaki."
 }

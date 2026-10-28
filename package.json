@@ -1,6 +1,6 @@
 {
   "name": "little-log",
-  "version": "1.8.2",
+  "version": "1.9.0",
   "private": true,
   "description": "A child tracker that grows from newborn to 18 \u2013 web app, packaged for iOS and Android with Capacitor",
   "scripts": {
@@ -11,7 +11,7 @@
     "apk": "npm run sync && cd android && ./gradlew assembleDebug",
     "aab": "npm run sync && cd android && ./gradlew bundleRelease",
     "icons": "node scripts/make-icons.js && npx @capacitor/assets generate",
-    "test": "npm run lint && node tests/db.test.js && node tests/e2e.test.js && node tests/children.test.js && node tests/features.test.js && node tests/robust.test.js && node tests/routine.test.js && node tests/report.test.js && node tests/solids.test.js && node tests/families.test.js && node tests/growing.test.js && node tests/health.test.js && node tests/school.test.js && node tests/teen.test.js && node tests/media.test.js && node tests/start.test.js && node tests/languages.test.js",
+    "test": "npm run lint && node tests/db.test.js && node tests/e2e.test.js && node tests/children.test.js && node tests/features.test.js && node tests/robust.test.js && node tests/routine.test.js && node tests/report.test.js && node tests/solids.test.js && node tests/families.test.js && node tests/growing.test.js && node tests/health.test.js && node tests/school.test.js && node tests/teen.test.js && node tests/media.test.js && node tests/pictures.test.js && node tests/start.test.js && node tests/languages.test.js",
     "test:db": "node tests/db.test.js",
     "test:e2e": "node tests/e2e.test.js",
     "lint": "eslint .",
@@ -24,6 +24,7 @@
     "test:school": "node tests/school.test.js",
     "test:teen": "node tests/teen.test.js",
     "test:media": "node tests/media.test.js",
+    "test:pictures": "node tests/pictures.test.js",
     "test:start": "node tests/start.test.js"
   },
   "dependencies": {

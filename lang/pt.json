@@ -2461,5 +2461,23 @@
  "1aqdhru": "Perguntar antes uma hora depois de o sono costumar acabar: uma soneca que costuma acabar às 14:30 é perguntada às 15:30. A notificação diz a que horas costuma estar acordado.",
  "wooms1": "A dormir desde as {time} ({long}).",
  "daeire": "Costuma estar acordado por volta das {time}.",
- "1p7goiw": "Toque em «Acordou» quando estiver acordado."
+ "1p7goiw": "Toque em «Acordou» quando estiver acordado.",
+ "1el5q6o": "Fotos de {name}",
+ "1qaod0z": "Ainda sem fotos",
+ "6hja7n": "Adicione a data de nascimento de {name} em Mais para começar as fotos.",
+ "6rb47n": "O primeiro ano",
+ "1h5hezp": "Uma foto a cada mesversário, do recém-nascido aos 12 meses.",
+ "8tkuiq": "Uma foto a cada aniversário, de um a dezoito anos. A foto dos 12 meses é também a do primeiro aniversário.",
+ "t6rvat": "Abre no primeiro aniversário de {name}, em {date}",
+ "c1kzx8": {
+  "one": "{n} foto",
+  "many": "{n} fotos",
+  "other": "{n} fotos"
+ },
+ "4wsbya": "Remover esta foto?",
+ "1rhr1wj": "Substituir",
+ "cr1ob1": "Novidade na página Gráficos: as fotos de {name} agora têm uma segunda fileira, uma foto para cada aniversário de um a dezoito anos. A foto dos 12 meses é também a do primeiro aniversário.",
+ "lf2pjm": "Ver as fotos",
+ "lwfec3": "Fotos enquanto cresce",
+ "1x7twtv": "Uma foto a cada mesversário do primeiro ano, depois uma a cada aniversário até os dezoito. Toque em uma foto para vê-la em tamanho grande."
 }

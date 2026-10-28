@@ -2461,5 +2461,23 @@
  "1aqdhru": "Întreabă în schimb la o oră după sfârșitul obișnuit al somnului: despre un somn de zi care se termină de obicei la 14:30 întreabă la 15:30. Notificarea spune când e treaz de obicei.",
  "wooms1": "Doarme de la {time} ({long}).",
  "daeire": "De obicei treaz pe la {time}.",
- "1p7goiw": "Apasă „S-a trezit” când e treaz."
+ "1p7goiw": "Apasă „S-a trezit” când e treaz.",
+ "1el5q6o": "Pozele lui {name}",
+ "1qaod0z": "Încă nicio poză",
+ "6hja7n": "Adaugă data nașterii pentru {name} în Altele ca să începi pozele.",
+ "6rb47n": "Primul an",
+ "1h5hezp": "O poză la fiecare lună împlinită, de la nou-născut până la 12 luni.",
+ "8tkuiq": "O poză la fiecare zi de naștere, de la unu la optsprezece ani. Poza de la 12 luni este și cea de la prima aniversare.",
+ "t6rvat": "Se deschide la prima aniversare a lui {name}, pe {date}",
+ "c1kzx8": {
+  "one": "{n} poză",
+  "few": "{n} poze",
+  "other": "{n} de poze"
+ },
+ "4wsbya": "Elimini această poză?",
+ "1rhr1wj": "Înlocuiește",
+ "cr1ob1": "Noutate pe pagina Statistici: pozele lui {name} au acum un al doilea rând, câte o poză pentru fiecare zi de naștere de la unu la optsprezece ani. Poza de la 12 luni este și cea de la prima aniversare.",
+ "lf2pjm": "Vezi pozele",
+ "lwfec3": "Poze pe măsură ce crește",
+ "1x7twtv": "O poză la fiecare lună împlinită din primul an, apoi câte una la fiecare zi de naștere până la optsprezece ani. Apasă o poză ca să o vezi mare."
 }

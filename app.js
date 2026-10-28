@@ -190,6 +190,7 @@ function describeEntry(e) {
       return [d.accident ? (what ? __('Accident: {what}', { what }) : __('Accident')) : what, [!d.dry && !d.accident && __(d.where || 'Potty'), d.poo && d.texture && __(d.texture), d.asked && __('asked to go')].filter(Boolean).join(' · ')];
     }
     case 'moment': return [d.own ? d.what || '' : __(d.what || 'Big moment'), ''];
+    case 'photo': return [__('Picture'), picOk(d.slot) ? picLabel(picKey(d.slot)) : ''];
     case 'vaccine': return [d.own ? d.name || '' : __(d.name || 'Vaccine'), [d.dose && __('dose {n}', { n: d.dose }), d.place].filter(Boolean).join(' · ')];
     case 'visit': return [__(d.kind || 'Checkup'), [d.who, d.why].filter(Boolean).join(' · ')];
     case 'growth': return [[d.weight && fmtWeight(d.weight), d.height && fmtLength(d.height)].filter(Boolean).join(' · ') || __('Measurement'), d.head ? __('head {size}', { size: fmtLength(d.head) }) : ''];
@@ -224,7 +225,7 @@ function setKid(id) { selKid = id; if (id !== 'all') lastKid = id; db.meta.kid =
 /** The child whose numbers the Month and Stats tabs show (Everyone falls back to the last child looked at). */
 function viewKid() { const k = curKid(); return k !== 'all' ? k : (kidById(lastKid) ? lastKid : kids()[0].id); }
 const dayKid = () => (tab === 'day' ? curKid() : viewKid());
-const scoped = () => { const k = dayKid(), log = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'moment' && e.type !== 'plan'); return k === 'all' ? log : log.filter(e => childOf(e) === k); };   // (big moments are kept apart)
+const scoped = () => { const k = dayKid(), log = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'moment' && e.type !== 'plan' && e.type !== 'photo'); return k === 'all' ? log : log.filter(e => childOf(e) === k); };   // (big moments are kept apart)
 const eventsOnDay = day => scoped().filter(e => e.ts >= day && e.ts < day + DAY).sort((a, b) => a.ts - b.ts);
 const activeSleep = id => db.events.find(e => e.type === 'sleep' && !e.end && (!id || childOf(e) === id));
 /** A nap or a night's sleep: as marked on the entry, or else by when it began (from 6 AM to 6 PM, a nap). Naps are drawn dashed on the clock. */
@@ -397,7 +398,7 @@ async function makeBook(id) {
 }
 /** A child's whole record as a file (JSON), to hand over: their details and every entry this phone may see. */
 function exportRecord(id) {
-  const k = kidById(id), list = entriesOf(id).filter(e => e.type !== 'plan' && (Sync.can('health') || !isPrivate(e.type))), iso = t => new Date(t).toISOString();
+  const k = kidById(id), list = entriesOf(id).filter(e => e.type !== 'plan' && e.type !== 'photo' && (Sync.can('health') || !isPrivate(e.type))), iso = t => new Date(t).toISOString();
   const out = { app: 'Little Log', made: iso(Date.now()), child: { name: k.name || '', birth: k.birth || '', sex: k.sex || '', allergies: (k.allergies || []).map(a => ({ food: a.food, date: a.date || '', note: a.note || '' })) },
     entries: list.map(e => ({ type: e.type, at: iso(e.ts), ...(Number.isFinite(e.end) ? { until: iso(e.end) } : {}), data: e.data || {}, ...(e.note ? { note: e.note } : {}) })) };
   download(`little-log-${slugOf(kidName(k))}.json`, JSON.stringify(out, null, 1), 'application/json');
@@ -1027,6 +1028,7 @@ function statsView() {
   ${kids().length > 1 ? `<h2>${esc(kidName(kidById(viewKid())))}</h2>` : ''}
   ${Sync.can('health') ? recordButton(kidById(viewKid())) : ''}
   ${heightWeightCard(kidById(viewKid()))}
+  ${picturesFold(kidById(viewKid()))}
   ${mine.length ? '' : `<div class="empty">${__h('Log a few entries and your stats will show up here.')}</div>`}
   ${lowWet ? `<div class="card alert">⚠️ ${__h('Fewer than 6 wet diapers/day on average. After the first week this can signal low intake – worth mentioning to your pediatrician.')}</div>` : ''}
   ${runny ? `<div class="card alert">⚠️ ${__h('Three or more wet, runny poos in one day can be a tummy bug. Offer feeds or drinks often, and call your pediatrician if it goes on past a day, there is blood, or they are peeing less than usual.')}</div>` : ''}
@@ -1052,6 +1054,89 @@ function statsView() {
 }
 function ageDays() { const k = kidById(viewKid()); return k && k.birth ? Math.floor((Date.now() - new Date(k.birth + 'T00:00').getTime()) / DAY) : 99; }
 
+// ---------- Pictures as they grow ----------
+// Two carousels in a twirl-down on the Stats page: a picture at each month birthday of the first year (newborn to 12 months), and one on
+// every birthday from one to eighteen. Each picture is an entry of type 'photo' ({ slot, media: [the picture] }, dated the day the child
+// reached that age), so it is encrypted, synced and shared like a big moment's pictures (media.js), and it is kept out of the day's
+// lists, the stats and the report. The 12-month and the first-birthday slot are one picture ('y1'). The second carousel stays veiled
+// until the first birthday; the 12-month sheet (milestoneCheck) then says what is new.
+const PIC_MONTHS = Array.from({ length: 13 }, (_, i) => 'm' + i), PIC_YEARS = Array.from({ length: 18 }, (_, i) => 'y' + (i + 1));
+const picKey = s => (s === 'm12' ? 'y1' : s);
+const picOk = s => typeof s === 'string' && (PIC_MONTHS.includes(s) || PIC_YEARS.includes(s));
+const picMonths = s => (s[0] === 'y' ? 12 * +s.slice(1) : +s.slice(1));
+/** The day (local midnight) a child born on `birth` reaches `slot`: the same day of the month, or the last day of a shorter month. */
+function picDay(birth, slot) {
+  const [y, m, d] = birth.split('-').map(Number), n = picMonths(slot);
+  return new Date(y, m - 1 + n, Math.min(d, new Date(y, m + n, 0).getDate())).getTime();
+}
+const picLabel = s => (s === 'm0' ? __('Newborn') : s[0] === 'y' ? __n('{n} year', '{n} years', +s.slice(1)) : __n('{n} month', '{n} months', +s.slice(1)));
+/** A child's pictures by slot: the newest entry for each (two phones adding the same slot offline both keep theirs; the newer shows). */
+function picsOf(id) {
+  const m = new Map();
+  for (const e of db.events) {
+    if (e.type !== 'photo' || childOf(e) !== id || !e.data || !picOk(e.data.slot) || !Array.isArray(e.data.media) || !e.data.media[0]) continue;
+    const k = picKey(e.data.slot), o = m.get(k); if (!o || (e.updated || 0) > (o.updated || 0)) m.set(k, e);
+  }
+  return m;
+}
+let picSlot = ''; const picScroll = {};   // (the slot a picture is being chosen for; where each carousel was scrolled to)
+/** The Pictures twirl-down on the Stats page: the first year by month, then growing up by year (veiled until the first birthday). */
+function picturesFold(k) {
+  if (!k) return '';
+  const name = kidName(k), title = __('Pictures of {name}', { name });
+  if (!k.birth) return fold('pics', '📷', title, __('No pictures yet'), `<p class="note">${__h("Add {name}'s date of birth under More to start the pictures.", { name })}</p>`);
+  const today = startOfDay(Date.now()), pics = picsOf(k.id), can = Sync.can('add'), one = picDay(k.birth, 'y1') <= today;
+  const reached = s => picDay(k.birth, s) <= today, cur = { m: PIC_MONTHS.filter(reached).pop(), y: PIC_YEARS.filter(reached).pop() };
+  Media.prime([...pics.values()].map(e => e.data.media[0]));
+  const tile = s => {
+    const key = picKey(s), e = pics.get(key), m = e && e.data.media[0], u = m && Media.url(m.id + '.t'), is = reached(s);
+    const date = new Date(picDay(k.birth, s)).toLocaleDateString(I18n.locale(), s[0] === 'y' ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' });
+    const box = e ? `<button type="button" class="pthumb${u ? '' : ' wait'}" data-view="${key}" aria-label="${esc(picLabel(s))}">${u ? `<img src="${u}" alt="">` : '<span class="ph">🖼</span>'}</button>`
+      : is && can ? `<button type="button" class="pthumb add" data-pick="${key}" aria-label="${__h('Add a picture')}"><span class="ph">📷</span><small>${__h('Add a picture')}</small></button>`
+        : `<span class="pthumb empty">${is ? '<span class="ph">🖼</span>' : ''}</span>`;
+    return `<div class="pic${is ? '' : ' soon'}${s === cur.m || s === cur.y ? ' now' : ''}" data-slot="${s}">${box}<b>${esc(picLabel(s))}</b><small>${esc(date)}</small></div>`;
+  };
+  const row = (id, list) => `<div class="prow"><button type="button" class="parr" data-pscroll="-1" data-row="${id}" aria-label="${__h('Back')}">‹</button><div class="pics" id="${id}">${list.map(tile).join('')}</div><button type="button" class="parr" data-pscroll="1" data-row="${id}" aria-label="${__h('Next')}">›</button></div>`;
+  const n = [...new Set(PIC_MONTHS.concat(one ? PIC_YEARS : []).map(picKey))].filter(s => pics.has(s)).length;
+  const body = `<h2>${__h('The first year')}</h2><p class="note">${__h('A picture at each month birthday, from newborn to 12 months.')}</p>${row('picsM', PIC_MONTHS)}
+    <h2>${__h('Growing up')}</h2><p class="note">${__h('A picture on every birthday, from one to eighteen. The 12-month picture is the first birthday picture too.')}</p>
+    ${one ? row('picsY', PIC_YEARS) : `<div class="pveil"><div class="pics" aria-hidden="true">${PIC_YEARS.slice(0, 4).map(s => `<div class="pic soon"><span class="pthumb empty"></span><b>${esc(picLabel(s))}</b></div>`).join('')}</div><div class="plock">🔒 ${__h("Opens on {name}'s first birthday, {date}", { name, date: fmtDay(dkey(picDay(k.birth, 'y1'))) })}</div></div>`}
+    <input type="file" id="picFile" accept="image/*" hidden>`;
+  return fold('pics', '📷', title, n ? __n('{n} picture', '{n} pictures', n) : __('No pictures yet'), body);
+}
+function pickPicture(key) { picSlot = key; const f = $('#picFile'); if (f) { f.value = ''; f.click(); } }
+/** Keeps a chosen file as the picture for a slot (shrunk, on this phone, then up with the next sync); an earlier picture there goes. */
+async function addPicture(k, key, file) {
+  if (!k || !picOk(key)) return;
+  const old = picsOf(k.id).get(key);
+  if (old ? !Sync.can('edit', old) : !Sync.can('add')) return toast(__("You don't have permission to do that"));
+  const prep = await Media.fromPhoto(file); if (prep.error) return toast(prep.error);
+  const item = await Media.stage(prep);
+  if (old) { const prev = old.data.media.map(m => m.id); old.data = { slot: key, media: [item] }; old.updated = stamp(); Media.discard(prev); }
+  else db.events.push({ id: uid(), type: 'photo', ts: picDay(k.birth, key) + 12 * 60 * MIN, data: { slot: key, media: [item] }, note: '', by: Auth.id || undefined, child: k.id, updated: stamp() });
+  save(); render();
+}
+function removePicture(k, key) {
+  const e = picsOf(k.id).get(key); if (!e) return;
+  if (!Sync.can('delete', e)) return toast(__("You don't have permission to do that"));
+  if (!confirm(__('Remove this picture?'))) return;
+  removeEvent(e); save(); render();
+}
+/** One of the pictures, big: replace it, take it off, or keep a copy (Save or share). */
+async function openPicView(k, key) {
+  const e = picsOf(k.id).get(key); if (!e) return;
+  const m = e.data.media[0], label = key === 'y1' ? `${picLabel('y1')} · ${picLabel('m12')}` : picLabel(key);
+  const close = popup(`<h3>📷 ${esc(kidName(k))} · ${esc(label)}</h3><p class="note">${esc(fmtDay(dkey(e.ts)))}</p><div class="mview" id="mview"></div>
+    <div class="row" style="margin-top:12px"><button class="btn" data-close>${__h('Close')}</button>${Sync.can('edit', e) ? `<button type="button" class="btn" id="pvReplace">${__h('Replace')}</button>` : ''}${Sync.can('delete', e) ? `<button type="button" class="btn d" id="pvRemove">${__h('Remove')}</button>` : ''}<button type="button" class="btn" id="pvSave">${__h('Save or share')}</button></div>`);
+  if ($('#pvReplace')) $('#pvReplace').onclick = () => { close(); pickPicture(key); };
+  if ($('#pvRemove')) $('#pvRemove').onclick = () => { close(); removePicture(k, key); };
+  $('#pvSave').onclick = async () => {
+    try { await Media.ensure(m.id, m.mime); const blob = await Store.blobGet(m.id); if (!blob) throw new Error(N_("Couldn't load it. Check the connection and try again.")); download(`little-log-${slugOf(kidName(k))}-${key}.jpg`, new Uint8Array(await blob.arrayBuffer()), m.mime); }
+    catch (err) { toast(__(err.message)); }
+  };
+  const box = $('#mview'), t = Media.url(m.id + '.t'); box.innerHTML = t ? `<img src="${t}" alt="" class="dim">` : `<span class="ph">${__h('Loading…')}</span>`;
+  try { const u = await Media.ensure(m.id, m.mime); if (box.isConnected) box.innerHTML = `<img src="${u}" alt="">`; } catch (err) { if (box.isConnected) toast(__(err.message)); }
+}
 // ---------- Routine ----------
 // The times of day that keep coming back, laid out like a day in a calendar. routine.js works them out from the last week every time
 // the page is drawn, so the routine follows the baby as it changes; today's entries tick off what has been done.
@@ -1065,7 +1150,7 @@ function weekdaysText(ws) {
   return ws.length === 7 ? __('every day') : andList(ws.map(day));
 }
 function routineView(now = Date.now()) {
-  const k = viewKid(), mine = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'plan' && childOf(e) === k);
+  const k = viewKid(), mine = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'plan' && e.type !== 'photo' && childOf(e) === k);
   const R = Routine.find(mine, now), T = Routine.today(R.slots, mine, now, { off: holidayOn(k) });
   const clock = m => { const d = new Date(now); d.setHours(0, m, 0, 0); return fmtTime(d.getTime()); };
   const night = s => s.at >= 19 * 60 || s.at < 5 * 60;
@@ -1127,7 +1212,7 @@ function routineView(now = Date.now()) {
 let reportDays = 14;
 /** One child's entries over the last `days` days (from the first entry, if that is later), and the numbers for each day. */
 function reportData(kidId, days, now = Date.now()) {
-  const to = addDays(startOfDay(now), 1), all = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'plan' && childOf(e) === kidId);   // (what happened, not the calendar)
+  const to = addDays(startOfDay(now), 1), all = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'plan' && e.type !== 'photo' && childOf(e) === kidId);   // (what happened, not the calendar)
   const from = Math.max(addDays(to, -days), all.length ? startOfDay(Math.min(...all.map(e => e.ts))) : startOfDay(now));
   const evs = all.filter(e => e.ts >= from && e.ts < to).sort((a, b) => a.ts - b.ts), sleeps = all.filter(e => e.type === 'sleep'), byDay = new Map();
   for (const e of evs) { const d = startOfDay(e.ts); if (!byDay.has(d)) byDay.set(d, []); byDay.get(d).push(e); }
@@ -1873,13 +1958,15 @@ function milestoneCheck() {
     36: N_('The preschool years: the Day page and the Guide keep growing with {name}.') }[m];
   const day = new Date(who[0].birth + 'T12:00'); day.setMonth(day.getMonth() + m);
   popup(`<h3>🌟 ${who.length > 1 ? __h('{names} are {age} old', { names: andList(names), age }) : __h('{name} is {age} old', { name: names[0], age })}</h3><p class="note">${m >= 24 ? __h("Every child is different; this is what's common around now.") : __h("Every baby is different; this is what's common around now.")}</p>
-    ${grow ? `<p class="grow">🌿 ${__h(grow, { name: andList(names) })}</p>` : ''}${milestoneBody(M)}
+    ${grow ? `<p class="grow">🌿 ${__h(grow, { name: andList(names) })}</p>` : ''}${m === 12 ? `<p class="grow">📷 ${__h('Something new on the Stats page: Pictures of {name} has a second row now, one picture for every birthday from one to eighteen. The 12-month picture is the first birthday picture too.', { name: andList(names) })}</p>` : ''}${milestoneBody(M)}
     ${m % 12 === 0 && Sync.can('add') ? `<button class="btn" id="msMoment" style="width:100%;margin-top:12px">🌟 ${__h('Save the birthday as a big moment')}</button>` : ''}
+    ${m === 12 ? `<button class="btn" id="picsGo" style="width:100%;margin-top:8px">📷 ${__h('See the pictures')}</button>` : ''}
     ${M.visit && Sync.can('add') && Sync.can('health') ? `<button class="btn" id="msVisit" style="width:100%;margin-top:8px">🏥 ${__h('Save the checkup in the health record')}</button>` : ''}
     <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button><button class="btn p" id="msGuide">${__h('More in the Guide')}</button></div>`);
   $('#msGuide').onclick = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; tab = 'guide'; render(); window.scrollTo(0, 0); };
   if ($('#msMoment')) $('#msMoment').onclick = () => openMoment(null, { kid: who[0].id, what: 'Birthday', day: Math.min(day.getTime(), Date.now()) });
   if ($('#msVisit')) $('#msVisit').onclick = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; setKid(who[0].id); openSheet('visit', null, { kind: 'Checkup' }); };
+  if ($('#picsGo')) $('#picsGo').onclick = () => { $('#sheet').hidden = $('#sheetBack').hidden = true; tab = 'stats'; setKid(who[0].id); openGroups.add('mpics'); render(); const d = document.querySelector('details[data-grp=mpics]'); if (d) d.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
 }
 
 // ---------- Formula ----------
@@ -2203,6 +2290,7 @@ const TOURS = {
   stats: [
     { sel: '#view .seg', title: N_('How far back'), why: N_('Look at the last 7, 14 or 30 days.') },
     { sel: '#pdfBtn', title: N_('For the doctor'), why: N_('A PDF of everything logged, to share or print for a checkup.') },
+    { sel: '#view details[data-grp=mpics]>summary', title: N_('Pictures as they grow'), why: N_('A picture at each month birthday of the first year, then one on every birthday to eighteen. Tap a picture to see it big.') },
     { sel: '#view .recbtn', title: N_('The health record'), why: N_('Vaccines, doctor visits, and weight, height and head size on the growth charts, for each child: a page of its own, with a tour of its own.') },
     { sel: '#view .card.alert', title: N_('Worth mentioning'), why: N_('A card turns red when there is something to tell the doctor: symptoms this week, or too few wet diapers.') },
     { sel: '#view .chart', title: N_('A chart for each section'), why: N_('Drawn to scale, one bar per day. Tap a bar for its numbers.') },
@@ -2445,6 +2533,16 @@ function bind() {
   document.querySelectorAll('[data-half]').forEach(b => b.onclick = () => { half = +b.dataset.half; quad = null; render(); });
   document.querySelectorAll('[data-nums]').forEach(b => b.onclick = () => { db.meta.nums = b.dataset.nums; Store.save(db); render(); });
   document.querySelectorAll('[data-info]').forEach(b => b.onclick = () => openEntryInfo(b.dataset.info));
+  // pictures as they grow (Stats): choose a file for a slot, open a picture, scroll a carousel (kept where it was scrolled to)
+  document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pickPicture(b.dataset.pick));
+  if ($('#picFile')) $('#picFile').onchange = () => { const f = $('#picFile').files[0]; if (f && picSlot) addPicture(kidById(viewKid()), picSlot, f); };
+  document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => openPicView(kidById(viewKid()), b.dataset.view));
+  document.querySelectorAll('[data-pscroll]').forEach(b => b.onclick = () => { const r = $('#' + b.dataset.row); if (r) r.scrollBy({ left: +b.dataset.pscroll * 122 * (I18n.rtl() ? -1 : 1), behavior: 'smooth' }); });
+  document.querySelectorAll('.pics[id]').forEach(r => {
+    const at = picScroll[viewKid() + r.id], c = r.querySelector('.pic.now');
+    if (at != null) r.scrollLeft = at; else if (c) { const a = c.getBoundingClientRect(), b = r.getBoundingClientRect(); r.scrollLeft += a.left + a.width / 2 - (b.left + b.width / 2); }
+    r.onscroll = () => { picScroll[viewKid() + r.id] = r.scrollLeft; };
+  });
   document.querySelectorAll('#pdfBtn, #expPdf').forEach(b => b.onclick = openDoctorReport);
   document.querySelectorAll('[data-yt]').forEach(b => b.onclick = () => Native.openExternal('https://www.youtube.com/watch?v=' + b.dataset.yt));
   document.querySelectorAll('details[data-grp]').forEach(d => d.ontoggle = () => {

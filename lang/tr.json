@@ -2416,5 +2416,22 @@
  "1aqdhru": "Bunun yerine uykunun genellikle bittiği saatten bir saat sonra sor: genellikle 14:30'da biten bir şekerleme 15:30'da sorulur. Bildirim, çocuğun genellikle ne zaman uyanık olduğunu söyler.",
  "wooms1": "{time} saatinden beri uyuyor ({long}).",
  "daeire": "Genellikle {time} civarında uyanık olur.",
- "1p7goiw": "Uyanınca 'Uyandı'ya dokunun."
+ "1p7goiw": "Uyanınca 'Uyandı'ya dokunun.",
+ "1el5q6o": "{name} fotoğrafları",
+ "1qaod0z": "Henüz fotoğraf yok",
+ "6hja7n": "Fotoğraflara başlamak için Diğer bölümünden {name} için doğum tarihini ekleyin.",
+ "6rb47n": "İlk yıl",
+ "1h5hezp": "Yenidoğandan 12 aya kadar, her aylık doğum gününde bir fotoğraf.",
+ "8tkuiq": "Birden on sekize kadar her doğum gününde bir fotoğraf. 12 aylık fotoğrafı aynı zamanda ilk doğum günü fotoğrafıdır.",
+ "t6rvat": "{name} için ilk doğum gününde açılır: {date}",
+ "c1kzx8": {
+  "one": "{n} fotoğraf",
+  "other": "{n} fotoğraf"
+ },
+ "4wsbya": "Bu fotoğraf kaldırılsın mı?",
+ "1rhr1wj": "Değiştir",
+ "cr1ob1": "İstatistik sayfasında yeni: {name} fotoğraflarının artık ikinci bir sırası var; birden on sekize kadar her doğum günü için bir fotoğraf. 12 aylık fotoğrafı aynı zamanda ilk doğum günü fotoğrafıdır.",
+ "lf2pjm": "Fotoğrafları gör",
+ "lwfec3": "Büyürken fotoğraflar",
+ "1x7twtv": "İlk yıl her aylık doğum gününde bir fotoğraf, sonra on sekize kadar her doğum gününde bir tane. Büyük görmek için bir fotoğrafa dokunun."
 }

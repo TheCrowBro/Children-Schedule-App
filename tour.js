@@ -28,7 +28,10 @@ const Tour = (() => {
     if (i < 0) i = cur.i;
     if (i >= steps.length) return end(true);
     cur.i = i;
-    const s = steps[i], el = find(s.sel), tall = el.getBoundingClientRect().height > window.innerHeight * 0.5;
+    const s = steps[i], el = find(s.sel);
+    // a step inside a closed twirl-down (a chart on the Stats page): open it, or the card would point below the screen
+    for (let d = el.closest('details:not([open])'); d; d = d.parentElement && d.parentElement.closest('details:not([open])')) d.open = true;
+    const tall = el.getBoundingClientRect().height > window.innerHeight * 0.5;
     el.scrollIntoView({ block: tall ? 'start' : 'center' });
     cur.tip.querySelector('.tt-n').textContent = __('{n} of {total}', { n: i + 1, total: steps.length });
     cur.tip.querySelector('#tourT').textContent = s.title;
