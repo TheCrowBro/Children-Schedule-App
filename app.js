@@ -717,15 +717,15 @@ function clockSvg(evs, day) {
   const ink = dk ? '#e8dfcf' : '#1f1b16', gilt = '#b8862b', gold = dk ? '#8f7c55' : '#c8aa6e', paper = dk ? '#2a2622' : '#fffdf8';
   const pic = (cls, attr, u) => `<image class="${cls}" ${attr} preserveAspectRatio="none"${u ? ` href="${u}" xlink:href="${u}"` : ''}/>`;
   const fill = (sel, p) => p.then(u => document.querySelectorAll(sel).forEach(im => { im.setAttribute('href', u); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', u); }));
-  const artUrl = Art.peek(th.id);
-  if (!artUrl) fill(`.clock image.art[data-theme="${th.id}"]`, Art.url(th.id));
+  const artUrl = Art.peek(th.id, 2.5, dk);   // (in dark mode, the painting's night-time scene)
+  if (!artUrl) fill(`.clock image.art[data-theme="${th.id}"][data-night="${dk ? 1 : 0}"]`, Art.url(th.id, 2.5, dk));
   const box = (x, y, w, h, r = 2) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}"/>`;
   const frame = `<g class="frame" fill="none" stroke="${gold}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M101 36V17Q101 12 106 12H234Q239 12 239 17V36"/><path d="M21 34V36M319 34V36"/><circle cx="21" cy="31" r="3"/><circle cx="319" cy="31" r="3"/>
     ${box(9, 36, 322, 12)}${box(9, 406, 322, 12)}${box(14, 48, 14, 358, 1.5)}${box(312, 48, 14, 358, 1.5)}<path d="M14 418Q21 427 28 418M312 418Q319 427 326 418"/>
     <path d="M14 42H326M14 412H326M21 52V402M319 52V402" stroke-width=".6" stroke-opacity=".75"/></g>`;
   const panel = `<clipPath id="cc-panel"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5"/></clipPath>
-    <g clip-path="url(#cc-panel)"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="${th.base}"/>${pic('art', `data-theme="${th.id}" x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}"`, artUrl)}${dk ? `<rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="#120f0b" opacity=".3"/>` : ''}</g>
+    <g clip-path="url(#cc-panel)"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="${dk ? '#1a2240' : th.base}"/>${pic('art', `data-theme="${th.id}" data-night="${dk ? 1 : 0}" x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}"`, artUrl)}</g>
     <rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5" fill="none" stroke="${gold}" stroke-width=".8"/>`;
   let dial = `<circle class="face" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="${paper}"/><circle class="rim" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="none" stroke="${ink}" stroke-width="1.6"/>`;
   // railway minute track and the hours. 24-hour face: numerals on the even hours, a moon at midnight and a sun at noon.
@@ -2090,10 +2090,10 @@ function openArtPicker(forId = dayKid()) {
   const cur = artOf(forId), multi = kids().length > 1;
   const whom = !multi ? __h('For this phone.') : forId === 'all' ? __h('For the All page on this phone.') : __h("For {name}'s page on this phone.", { name: kidName(kidById(forId)) });
   const close = popup(`<h3>🎨 ${__h('Clock art')}</h3><p class="note">${whom}</p>
-    <div class="artgrid">${Art.THEMES.filter(t => !t.travel).map(t => { const u = Art.peek(t.id, 0.7); return `<button class="artopt ${t.id === cur ? 'on' : ''}" data-pick="${t.id}" aria-pressed="${t.id === cur}"><span class="thumb" style="background:${t.base}"><img alt="" data-th="${t.id}"${u ? ` src="${u}"` : ''}><i></i></span><span class="an">${__h(t.name)}</span></button>`; }).join('')}</div>
+    <div class="artgrid">${Art.THEMES.filter(t => !t.travel).map(t => { const u = Art.peek(t.id, 0.7, dark()); return `<button class="artopt ${t.id === cur ? 'on' : ''}" data-pick="${t.id}" aria-pressed="${t.id === cur}"><span class="thumb" style="background:${dark() ? '#1a2240' : t.base}"><img alt="" data-th="${t.id}"${u ? ` src="${u}"` : ''}><i></i></span><span class="an">${__h(t.name)}</span></button>`; }).join('')}</div>
     ${multi && forId !== 'all' ? `<div class="chips" style="margin-top:12px">${chip('artAll', 1, __h('Use it for every child'), false)}</div>` : ''}
     <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Done')}</button></div>`);
-  $('#sheet').querySelectorAll('img[data-th]').forEach(img => { if (!img.getAttribute('src')) Art.url(img.dataset.th, 0.7).then(u => { img.src = u; }); });
+  $('#sheet').querySelectorAll('img[data-th]').forEach(img => { if (!img.getAttribute('src')) Art.url(img.dataset.th, 0.7, dark()).then(u => { img.src = u; }); });
   $('#sheet').querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
     const every = $('#sheet').querySelector('[name=artAll]:checked');
     (every ? kids().map(k => k.id).concat('all') : [forId]).forEach(id => setArt(id, b.dataset.pick));
@@ -2659,7 +2659,7 @@ function openLanguageReport() {
 }
 function artHtml() {
   const pages = (kids().length > 1 ? [...kids().map(k => [k.id, kidName(k)]), ['all', __('All')]] : [[kids()[0].id, kidName(kids()[0])]]);
-  return `<div class="card"><b>🎨 ${__h('Clock art')}</b><p class="note">${__h('The watercolour painting around the day clock. Kept on this phone.')}</p>
+  return `<div class="card"><b>🎨 ${__h('Clock art')}</b><p class="note">${__h('The watercolour painting around the day clock. Kept on this phone.')} ${__h('In dark mode each painting shows the same scene at night.')}</p>
     ${pages.map(([id, name]) => `<div class="stat"><span>${esc(name)}<br><small>${__h(Art.byId(artOf(id)).name)}</small></span><button class="btn" data-art="${id}" style="padding:6px 12px">${__h('Change')}</button></div>`).join('')}</div>`;
 }
 /** Light, dark, matching the phone, or following sunrise and sunset (kept on this phone). */

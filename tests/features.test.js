@@ -161,6 +161,9 @@ const pickFormula = async (page, scope, name) => {
       const r = await P.evaluate(async () => { const out = []; for (const t of Art.THEMES) { const t0 = performance.now(); const u = await Art.url(t.id, 1); const ok = await new Promise(res => { const i = new Image(); i.onload = () => res(i.naturalWidth > 0); i.onerror = () => res(false); i.src = u; }); out.push([t.id, ok, Math.round(performance.now() - t0)]); } return out; });
       assert.deepEqual(r.map(x => x[0]), ['blossom', 'maple', 'ocean', 'forest', 'mountains', 'garden', 'night', 'classic', 'car', 'plane', 'train', 'ship'], 'the eight to choose from, and one for each way of travelling');
       assert(r.every(x => x[1]), JSON.stringify(r)); assert(r.every(x => x[2] < 3000), 'each under 3 s: ' + JSON.stringify(r));
+      // and each one's night-time scene (dark mode): a picture of its own, with a dark sky and stars (the starry night is itself; the gilt classic just goes darker)
+      const n = await P.evaluate(async () => { const out = []; for (const t of Art.THEMES) { const t0 = performance.now(); const u = await Art.url(t.id, 1, true); const ok = await new Promise(res => { const i = new Image(); i.onload = () => res(i.naturalWidth > 0); i.onerror = () => res(false); i.src = u; }); const d = Art.svg(t.id, 1, false), s = Art.svg(t.id, 1, true); out.push([t.id, ok, Math.round(performance.now() - t0), u !== Art.peek(t.id, 1, false), s !== d, (s.match(/#fff6d2/g) || []).length, /fill="#1a2240"|fill="#22325e"|giltN/.test(s)]); } return out; });
+      assert(n.every(x => x[1] && x[3] && x[4] && x[6]), JSON.stringify(n)); assert(n.filter(x => x[0] !== 'classic').every(x => x[5] >= 40), 'stars: ' + JSON.stringify(n)); assert(n.every(x => x[2] < 3000), 'each under 3 s: ' + JSON.stringify(n));
     });
 
     await step('the clock art can be changed for a page, and it sticks', async () => {
@@ -213,9 +216,19 @@ const pickFormula = async (page, scope, name) => {
       assert.equal(r.legend, rgb('#c97a2a'), 'the legend matches the rays: ' + r.legend);
       assert([rgb('#c97a2a'), rgb('#2b9fc0'), rgb('#7478d8'), rgb('#8a9a2a'), rgb('#b85ab0'), rgb('#dd5a4a')].includes(r.dot), 'a night-palette colour: ' + r.dot);
       assert.equal(r.disc, rgb('#3a342d'), 'a dark disc under the symbol');
+      // the painting is its night-time scene: a different picture, loaded, with no dark wash over it any more
+      assert.equal(await P.$eval('.clock image.art', i => i.dataset.night), '1', 'the night-time painting');
+      await P.waitForFunction(() => /^(blob|data):/.test(document.querySelector('.clock image.art').getAttribute('href') || ''), null, { timeout: 10000 });
+      const pics = await P.evaluate(() => [document.querySelector('.clock image.art').getAttribute('href'), Art.peek(artOf(), 2.5, true), Art.peek(artOf(), 2.5, false), document.querySelectorAll('.clock rect[fill="#120f0b"]').length]);
+      assert.equal(pics[0], pics[1], 'the night version is what the clock shows'); assert.notEqual(pics[1], pics[2], 'not the daytime one'); assert.equal(pics[3], 0, 'no wash');
+      const nightSvg = await P.evaluate(() => Art.svg(artOf(), 1, true)); assert(/mn-blossom|#fff6d2/.test(nightSvg) && /fill="#1a2240"/.test(nightSvg), 'a moon, stars and a night sky');
+      await P.click('.artbtn'); await P.waitForSelector('.artgrid'); await P.waitForFunction(() => [...document.querySelectorAll('.artgrid img[data-th]')].every(i => i.getAttribute('src')), null, { timeout: 10000 });
+      assert.equal(await P.evaluate(() => [...document.querySelectorAll('.artgrid img[data-th]')].every(i => i.getAttribute('src') === Art.peek(i.dataset.th, 0.7, true))), true, 'the picker shows the night scenes too');
+      await P.click('[data-close]');
       await P.emulateMedia({ colorScheme: 'light' }); await P.evaluate(() => Theme.apply(false));
       await P.click('[data-tab=day]');
       assert.equal(await P.evaluate(() => document.querySelector('.clock .face').getAttribute('fill')), '#fffdf8', 'and white again by day');
+      assert.equal(await P.$eval('.clock image.art', i => i.dataset.night), '0', 'the daytime painting again');
     });
 
     await step('More → Appearance and clock art: the symbols at the end of the rays can be turned into plain dots, kept on this phone; the legend follows', async () => {

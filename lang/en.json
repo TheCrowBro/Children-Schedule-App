@@ -6265,6 +6265,11 @@
    "where": "app.js:2662"
   },
   {
+   "id": "1h71wdc",
+   "en": "In dark mode each painting shows the same scene at night.",
+   "where": "app.js:2662"
+  },
+  {
    "id": "18wuq59",
    "en": "Change",
    "where": "app.js:2663"
@@ -7268,17 +7273,17 @@
   {
    "id": "plvxbk",
    "en": "Cannot save on this phone – free up space",
-   "where": "app.js:3238"
+   "where": "app.js:3237"
   },
   {
    "id": "x3k3ic",
    "en": "Your saved log was damaged and has been restored from a recent backup",
-   "where": "app.js:3239"
+   "where": "app.js:3238"
   },
   {
    "id": "1faqwbi",
    "en": "A damaged copy of the log was set aside; it will be re-downloaded from your family log",
-   "where": "app.js:3239"
+   "where": "app.js:3238"
   },
   {
    "id": "16pr4dg",

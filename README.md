@@ -81,7 +81,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   clock shows the same symbols (More → Appearance and clock art turns them into plain dots, kept on the phone): tapping a symbol
   shows that entry's details (editing stays in the list below, where "Show in the list" takes you); tap a quarter of
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
-  forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
+  forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone; in dark mode each one is its night-time
+  scene (a moon and stars, lit windows and lanterns, moonlight on the water), and so are the travel paintings. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); a day with a big moment is ringed and washed in
   gold, like the big-moment cards and buttons, and so is the **Big moments** journal at the bottom of the page (gold and dashed, like
   Plan a trip and Add to the calendar above it); **stats** for the last 7, 14 or 30 days, 3 months, 6
