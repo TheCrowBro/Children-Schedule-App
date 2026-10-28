@@ -69,18 +69,19 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   book prints the pictures under each moment
 - **More than one child**: up to 8 children in one shared log. Each has a page of their own with their own colour (blues for boys, reds for girls, a different shade for each; parents can change any colour), an "All" view, and entries can be logged for several children at once. Names, colours and which child an entry belongs to are end-to-end encrypted like everything else
 - **Watercolour look**: soft washes in the open child's colour and hand-painted style icons, with dark outlines and text kept at readable contrast (light and dark mode)
-- **Day clock**: a French carriage clock (a frame of thin soft-gold lines, a painted panel, a white face
+- **Day clock**: a French carriage clock (a frame of thin soft-gold lines, a painted panel, a white face that goes dark in dark mode, with
+  pale lines and the night palette for the entries,
   with a black rim, Roman numerals, a moon at midnight and a sun at noon, a blued spade hand at the current time). A **24 h / 12 h** switch: the 12-hour face shows the morning or the afternoon half (AM / PM) with all
   twelve numerals and an hour and a minute hand. A **XII / 123** switch beside it swaps the Roman numerals for plain, easy-to-read
   numbers (kept on the phone). Every entry is a ray from the centre to the hour it happened, coloured by group (a snack's ray is dashed,
   a poo's a squiggle, a bath's a water ripple (two wavy lines in water blue), a nap's dashed, an estimated time's dotted; the app icon's rays show the same kinds of line), ending in a small paper disc with a mini symbol of the entry on it (a bottle, a spoon for
   solids, a drop, a poo, a moon, a teddy, a bathtub…), ringed in the entry's colour, or the child's on a shared log; the legend under the
-  clock shows the same symbols: tapping a symbol
+  clock shows the same symbols (More → Appearance and clock art turns them into plain dots, kept on the phone): tapping a symbol
   shows that entry's details (editing stays in the list below, where "Show in the list" takes you); tap a quarter of
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); a day with a big moment is ringed and washed in
-  gold, like the big-moment cards and buttons, and so is the **Big moments** journal at the bottom of the page (with the two pictures carousels at its top; gold and dashed, like
+  gold, like the big-moment cards and buttons, and so is the **Big moments** journal at the bottom of the page (gold and dashed, like
   Plan a trip and Add to the calendar above it); **stats** for the last 7, 14 or 30 days, 3 months, 6
   months or a year (over 30 days the charts show an average day for each week, over a year for each month), the key numbers on each card and
   every chart in a twirl-down of its own, drawn small; a **Height & weight** card with the latest measurements and their percentiles

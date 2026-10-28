@@ -205,14 +205,25 @@ const pickFormula = async (page, scope, name) => {
       assert(/2.*1/.test(row), 'the table shows today: ' + row);
     });
 
-    await step('in dark mode the clock keeps its white face, and the entries on it keep the colours checked against white', async () => {
+    await step('in dark mode the clock face goes dark too, and the entries and symbols on it take the night palette', async () => {
       await P.emulateMedia({ colorScheme: 'dark' }); await P.evaluate(() => Theme.apply(false)); await P.click('[data-tab=day]');
-      const r = await P.evaluate(() => ({ face: document.querySelector('.clock .face').getAttribute('fill'), dot: getComputedStyle(document.querySelector('.clock .ray .dot')).stroke, legend: getComputedStyle(document.querySelector('.clockwrap .clegend i .ic')).color }));
-      assert.equal(r.face, '#f1ece3', 'a warm white face at night');
+      const r = await P.evaluate(() => ({ face: document.querySelector('.clock .face').getAttribute('fill'), dot: getComputedStyle(document.querySelector('.clock .ray .dot')).stroke, disc: getComputedStyle(document.querySelector('.clock .ray .dot')).fill, legend: getComputedStyle(document.querySelector('.clockwrap .clegend i .ic')).color, rim: document.querySelector('.clock .rim').getAttribute('stroke') }));
+      assert.deepEqual([r.face, r.rim], ['#2a2622', '#e8dfcf'], 'a dark face with pale lines at night');
       const rgb = h => `rgb(${[1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(', ')})`;
-      assert.equal(r.legend, rgb('#c9761f'), 'the legend matches the rays: ' + r.legend);
-      assert([rgb('#c9761f'), rgb('#2a9db8'), rgb('#5b5fc7'), rgb('#5f8a1f'), rgb('#a845a8'), rgb('#c0392b')].includes(r.dot), 'a light-palette colour: ' + r.dot);
+      assert.equal(r.legend, rgb('#c97a2a'), 'the legend matches the rays: ' + r.legend);
+      assert([rgb('#c97a2a'), rgb('#2b9fc0'), rgb('#7478d8'), rgb('#8a9a2a'), rgb('#b85ab0'), rgb('#dd5a4a')].includes(r.dot), 'a night-palette colour: ' + r.dot);
+      assert.equal(r.disc, rgb('#3a342d'), 'a dark disc under the symbol');
       await P.emulateMedia({ colorScheme: 'light' }); await P.evaluate(() => Theme.apply(false));
+      await P.click('[data-tab=day]');
+      assert.equal(await P.evaluate(() => document.querySelector('.clock .face').getAttribute('fill')), '#fffdf8', 'and white again by day');
+    });
+
+    await step('More → Appearance and clock art: the symbols at the end of the rays can be turned into plain dots, kept on this phone; the legend follows', async () => {
+      await P.click('[data-tab=more]'); await P.click('[name=dots][value=plain]'); await P.click('[data-tab=day]');
+      const r = await P.evaluate(() => ({ plain: document.querySelectorAll('.clock .ray .dot.plain').length, rays: document.querySelectorAll('.clock .ray').length, syms: document.querySelectorAll('.clock .ray .mini').length, fill: getComputedStyle(document.querySelector('.clock .ray .dot')).fill, legend: document.querySelectorAll('.clockwrap .clegend i .ic').length, kept: db.meta.dots }));
+      assert.deepEqual([r.plain, r.syms, r.legend, r.kept], [r.rays, 0, 0, 'plain'], JSON.stringify(r)); assert.notEqual(r.fill, 'rgb(255, 253, 248)', 'a dot in the colour of the entry: ' + r.fill);
+      await P.click('[data-tab=more]'); await P.click('[name=dots][value=symbols]'); await P.click('[data-tab=day]');
+      assert.equal(await P.$$eval('.clock .ray .mini', x => x.length), r.rays, 'symbols again');
     });
 
     await step('group colours stay readable on the paper in light and dark mode (3:1 for marks)', async () => {

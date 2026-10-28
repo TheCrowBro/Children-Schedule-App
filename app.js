@@ -632,7 +632,7 @@ function dayView() {
   ${momentCards(viewDay)}
   ${isToday ? comingUp() : ''}
   ${trip && isToday ? travelQuick() : quickButtons()}
-  <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${(trip ? Travel.PALETTE : GCOLOR).light[g.id]}`).join(';')};--g-bath:${GCOLOR.light.bath};--paper:${dark() ? '#f1ece3' : '#fffdf8'};--trip:${Travel.ACCENT.light}">${clockSvg(shown, viewDay)}
+  <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${(trip ? Travel.PALETTE : GCOLOR)[dark() ? 'dark' : 'light'][g.id]}`).join(';')};--g-bath:${GCOLOR[dark() ? 'dark' : 'light'].bath};--paper:${dark() ? '#3a342d' : '#fffdf8'};--trip:${Travel.ACCENT[dark() ? 'dark' : 'light']}">${clockSvg(shown, viewDay)}
     <div class="clockctl">${seg('face', [['24', N_('24 h')], ['12', N_('12 h')]], twelve ? '12' : '24', N_('Clock face'))}${twelve ? seg('half', [['0', N_('AM')], ['1', N_('PM')]], String(half), N_('Half of the day')) : ''}${numsSeg()}${trip ? `<span class="artbtn tripart">${TM.icon} ${__h(Art.byId(TM.art).name)}</span>` : `<button class="artbtn" data-art>🎨 ${__h(Art.byId(artOf()).name)}</button>`}</div>
     ${clockLegend(shown)}
     <p class="note hint">${twelve ? (half ? __h('Showing noon to midnight; switch AM and PM for the other half of the day.') : __h('Showing midnight to noon; switch AM and PM for the other half of the day.')) : __h('Midnight is at the top, noon at the bottom.')} ${__h('Tap a dot to see an entry (change it in the list below), or a quarter of the dial for just those hours.')}</p></div>
@@ -683,11 +683,12 @@ function numsSeg() {
 }
 function clockSvg(evs, day) {
   // The frame is a carriage-clock outline in thin soft-gold lines, like the lines of the dial, so the dial stays the focus. The painting
-  // is a picture drawn once and reused. The dial is a plain white face with a black rim, the same in light and dark mode, so the entries
-  // on it always read the same way.
+  // is a picture drawn once and reused. The dial is a white face with a black rim by day; in dark mode it goes dark, with pale lines and
+  // the night palette for the entries, so it is easy on the eyes at 3 in the morning.
   const trip = tab === 'day' ? tripOn(day) : null, th = Art.byId(trip ? Travel.MEANS[Travel.meansOf(trip)].art : artOf()), dk = dark(), F = Art.FRAME, K = F.k, PW = Art.W * K, PH = Art.H * K;
   const C = { x: F.x + Art.DIAL.x * K, y: F.y + Art.DIAL.y * K }, RD = Art.DIAL.r * K, rr = r => r * K;
   const RR = { sleep: rr(90), feed: rr(78), diaper: rr(66), vomit: rr(54), play: rr(42), health: rr(30) };
+  const symbols = db.meta.dots !== 'plain';   // (More → Appearance and clock art: a symbol of the entry at the end of each ray, or a plain dot)
   const sp = clockSpan(day), twelve = face12(), frac = t => (t - sp.start) / sp.len, ang = fr => fr * 2 * Math.PI - Math.PI / 2, P = (a, r) => [C.x + r * Math.cos(a), C.y + r * Math.sin(a)];
   const f1 = n => n.toFixed(1), xy = (a, r) => P(a, r).map(f1).join(' ');
   // a poo's ray is a squiggle: a wave along the ray from the centre to its dot (five waves, drawn as a fine polyline)
@@ -695,7 +696,7 @@ function clockSvg(evs, day) {
   const rippled = (a, r0, r1) => { const n = 24, amp = rr(1.8), gap = rr(1.5), ux = Math.cos(a), uy = Math.sin(a); let d = ''; for (const s of [-1, 1]) for (let i = 0; i <= n; i++) { const t = i / n, r = r0 + (r1 - r0) * t, o = amp * Math.sin(t * 6 * Math.PI) + s * gap; d += (i ? 'L' : 'M') + f1(C.x + r * ux - o * uy) + ' ' + f1(C.y + r * uy + o * ux); } return d; };
   const wavy = (a, r0, r1) => { const n = 30, amp = rr(2.2), ux = Math.cos(a), uy = Math.sin(a); let d = ''; for (let i = 0; i <= n; i++) { const t = i / n, r = r0 + (r1 - r0) * t, o = amp * Math.sin(t * 10 * Math.PI); d += (i ? 'L' : 'M') + f1(C.x + r * ux - o * uy) + ' ' + f1(C.y + r * uy + o * ux); } return d; };
   const arc = (a0, a1, r) => `M${xy(a0, r)}A${f1(r)} ${f1(r)} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${xy(a1, r)}`;
-  const ink = '#1f1b16', gilt = '#b8862b', gold = dk ? '#8f7c55' : '#c8aa6e';
+  const ink = dk ? '#e8dfcf' : '#1f1b16', gilt = '#b8862b', gold = dk ? '#8f7c55' : '#c8aa6e', paper = dk ? '#2a2622' : '#fffdf8';
   const pic = (cls, attr, u) => `<image class="${cls}" ${attr} preserveAspectRatio="none"${u ? ` href="${u}" xlink:href="${u}"` : ''}/>`;
   const fill = (sel, p) => p.then(u => document.querySelectorAll(sel).forEach(im => { im.setAttribute('href', u); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', u); }));
   const artUrl = Art.peek(th.id);
@@ -708,7 +709,7 @@ function clockSvg(evs, day) {
   const panel = `<clipPath id="cc-panel"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5"/></clipPath>
     <g clip-path="url(#cc-panel)"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="${th.base}"/>${pic('art', `data-theme="${th.id}" x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}"`, artUrl)}${dk ? `<rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="#120f0b" opacity=".3"/>` : ''}</g>
     <rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5" fill="none" stroke="${gold}" stroke-width=".8"/>`;
-  let dial = `<circle class="face" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="${dk ? '#f1ece3' : '#fffdf8'}"/><circle class="rim" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="none" stroke="${ink}" stroke-width="1.6"/>`;
+  let dial = `<circle class="face" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="${paper}"/><circle class="rim" cx="${C.x}" cy="${f1(C.y)}" r="${f1(RD)}" fill="none" stroke="${ink}" stroke-width="1.6"/>`;
   // railway minute track and the hours. 24-hour face: numerals on the even hours, a moon at midnight and a sun at noon.
   // 12-hour face: all twelve numerals, with a.m. or p.m. under the centre.
   dial += `<circle cx="${C.x}" cy="${f1(C.y)}" r="${f1(rr(112))}" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/><circle cx="${C.x}" cy="${f1(C.y)}" r="${f1(rr(118))}" fill="none" stroke="${ink}" stroke-opacity=".7" stroke-width=".6"/>`;
@@ -760,11 +761,11 @@ function clockSvg(evs, day) {
     const sym = Icons.nameOf(bath ? TYPES.bath.icon : e.type === 'feed' && e.data && e.data.kind === 'solids' ? '🥄' : poo ? '💩' : TYPES[e.type].icon) || 'star';
     data += `<g class="ray${approx ? ' approx' : ''}${e.type === 'sleep' && isNap(e) ? ' nap' : ''}${snack ? ' snack' : ''}${poo ? ' poo' : ''}${bath ? ' bath' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(bath ? 'bath' : e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${bath ? 'bath' : g})">
       <title>${esc(when + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
-      ${pin ? '' : `<path d="${poo ? wavy(a, rr(17), r - rr(5)) : bath ? rippled(a, rr(17), r - rr(5)) : `M${xy(a, rr(17))}L${xy(a, r - rr(5))}`}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(7.3))}"${k ? ` style="stroke:${k.color}"` : ''}/><g class="sym" transform="translate(${f1(x)} ${f1(y)})"><g class="mini" data-n="${sym}"><g transform="scale(${(rr(11.8) / 32).toFixed(3)}) translate(-16 -16)">${Icons.mini(sym)}</g></g></g></g>`;
+      ${pin ? '' : `<path d="${poo ? wavy(a, rr(17), r - rr(5)) : bath ? rippled(a, rr(17), r - rr(5)) : `M${xy(a, rr(17))}L${xy(a, r - rr(5))}`}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot${symbols ? '' : ' plain'}" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(symbols ? 7.3 : 4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/>${symbols ? `<g class="sym" transform="translate(${f1(x)} ${f1(y)})"><g class="mini" data-n="${sym}"><g transform="scale(${(rr(11.8) / 32).toFixed(3)}) translate(-16 -16)">${Icons.mini(sym)}</g></g></g>` : ''}</g>`;
   }
   // blued-steel hands at the current time, when it is on the dial: one 24-hour hand, or an hour and a minute hand; then the centre boss
   let hand = '';
-  const steel = '#24356b', hy = (L, k) => f1(C.y - L * k);
+  const steel = dk ? '#9fb1e6' : '#24356b', hy = (L, k) => f1(C.y - L * k);
   const spade = (kind, deg, L) => `<path class="hand" data-hand="${kind}" transform="rotate(${deg.toFixed(2)} ${C.x} ${f1(C.y)})" fill="${steel}" d="M${C.x - 1.2} ${f1(C.y + 14)}L${C.x - 1.2} ${hy(L, 0.727)}C${C.x - 6.5} ${hy(L, 0.747)} ${C.x - 7.5} ${hy(L, 0.808)} ${C.x - 4.8} ${hy(L, 0.848)}C${C.x - 2.6} ${hy(L, 0.879)} ${C.x - 0.8} ${hy(L, 0.909)} ${C.x} ${hy(L, 1)}C${C.x + 0.8} ${hy(L, 0.909)} ${C.x + 2.6} ${hy(L, 0.879)} ${C.x + 4.8} ${hy(L, 0.848)}C${C.x + 7.5} ${hy(L, 0.808)} ${C.x + 6.5} ${hy(L, 0.747)} ${C.x + 1.2} ${hy(L, 0.727)}L${C.x + 1.2} ${f1(C.y + 14)}Z"/>`;
   const needle = (deg, L) => `<path class="hand" data-hand="m" transform="rotate(${deg.toFixed(2)} ${C.x} ${f1(C.y)})" fill="${steel}" d="M${C.x - 0.9} ${f1(C.y + 16)}L${C.x - 0.9} ${hy(L, 0.86)}L${C.x - 3.2} ${hy(L, 0.92)}L${C.x} ${hy(L, 1)}L${C.x + 3.2} ${hy(L, 0.92)}L${C.x + 0.9} ${hy(L, 0.86)}L${C.x + 0.9} ${f1(C.y + 16)}Z"/>`;
   const now = Date.now();
@@ -772,7 +773,7 @@ function clockSvg(evs, day) {
     const h = handAngles(now, sp);
     hand = twelve ? needle(h.m, rr(106)) + spade('h', h.h, rr(70)) : spade('d', h.d, rr(99));
   }
-  const boss = `<circle cx="${C.x}" cy="${f1(C.y)}" r="5.2" fill="#fffdf8" stroke="${ink}" stroke-width="1.2"/><circle cx="${C.x}" cy="${f1(C.y)}" r="1.6" fill="${ink}"/>`;
+  const boss = `<circle cx="${C.x}" cy="${f1(C.y)}" r="5.2" fill="${paper}" stroke="${ink}" stroke-width="1.2"/><circle cx="${C.x}" cy="${f1(C.y)}" r="1.6" fill="${ink}"/>`;
   const summary = GROUPS.map(gr => [gLabel(gr), evs.filter(e => gr.types.includes(e.type)).length]).filter(x => x[1]).map(x => __('{group}: {n}', { group: __(x[0]), n: x[1] })).join(', ');
   const what = twelve ? (half ? __('12-hour clock, noon to midnight') : __('12-hour clock, midnight to noon')) : __('24-hour clock of the day, midnight at the top and noon at the bottom');
   return `<svg class="clock" viewBox="0 0 ${F.W} ${F.H}" data-cx="${C.x}" data-cy="${f1(C.y)}" data-painting="${th.id}" data-dial="${twelve ? 12 : 24}" role="group" aria-label="${esc(summary ? __('{clock}: {entries}', { clock: what, entries: summary }) : __('{clock}, no entries', { clock: what }))}">
@@ -800,7 +801,7 @@ function groupsOnPage(evs) {
 }
 function clockLegend(evs) {
   return `<div class="clegend">${groupsOnPage(evs).map(g => { const n = evs.filter(e => g.types.includes(e.type)).length;
-    return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})">${g.icon}</i>${__h(gLabel(g))} <b>${n}</b></span>`; }).join('')}</div>`;
+    return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})">${db.meta.dots !== 'plain' ? g.icon : ''}</i>${__h(gLabel(g))} <b>${n}</b></span>`; }).join('')}</div>`;
 }
 /** One twirl-down per group (pee and poo together, sleep and wake-ups together…), each with a one-line summary. */
 const openGroups = new Set();
@@ -1113,8 +1114,6 @@ function picturesParts(k) {
 }
 /** The Pictures twirl-down on the Stats page. */
 function picturesFold(k) { if (!k) return ''; const p = picturesParts(k); return fold('pics', '📷', __('Pictures of {name}', { name: kidName(k) }), p.sub, p.body); }
-/** The same carousels at the top of the Big moments journal on the Month page. */
-function picturesJournal(k) { return `<div class="gdin jpics"><p class="mh">📷 ${__h('Pictures as they grow')}</p>${picturesParts(k).body}</div>`; }
 function pickPicture(key) { picSlot = key; const f = $('#picFile'); if (f) { f.value = ''; f.click(); } }
 /** Keeps a chosen file as the picture for a slot (shrunk, on this phone, then up with the next sync); an earlier picture there goes. */
 async function addPicture(k, key, file) {
@@ -1741,7 +1740,6 @@ function momentsJournal() {
   let body = '', ch = '';
   for (const e of list) { const st = stageOf(k, e.ts); if (st !== ch) { body += `<p class="mh">${__h(Stages.byId(st).name)}</p>`; ch = st; } body += momentRow(e, true); }
   return `<details class="gd moments" data-grp="moments" ${openGroups.has('moments') ? 'open' : ''}><summary><span class="gi">🌟</span><span class="gt"><b>${__h('Big moments')}</b><small>${list.length ? __hn('{n} big moment', '{n} big moments', list.length) : __h('None saved yet')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
-    ${picturesJournal(k)}
     ${body || `<p class="note">${__h('First smiles, first steps, first days at school: save them as they happen, and they are kept here.')}</p>`}
     ${Sync.can('add') ? `<button class="btn mmadd" data-momentnew>🌟 ${__h('Save a big moment')}</button>` : ''}</details>`;
 }
@@ -2469,7 +2467,11 @@ function appearanceHtml() {
   return `<div class="card"><b>🌗 ${__h('Appearance')}</b>
     <div class="chips" style="margin-top:10px">${opts.map(([v, l]) => chip('themeMode', v, __h(l), m === v, '', true)).join('')}</div>
     <p class="note">${m === 'sun' ? sun + ' ' + (s.zone ? __h("Estimated for the {zone} time zone; your location isn't used.", { zone: s.zone }) : __h("Estimated from your time zone; your location isn't used."))
-      : m === 'system' ? __h("Follows your phone's light or dark setting.") : __h('Switching plays a little sunrise or sunset.')}</p></div>`;
+      : m === 'system' ? __h("Follows your phone's light or dark setting.") : __h('Switching plays a little sunrise or sunset.')}</p></div>
+    <div class="card"><b>⏰ ${__h('The clock')}</b>
+    <label class="f" style="display:block;margin-top:10px">${__h('At the end of each ray')}</label>
+    <div class="chips">${chip('dots', 'symbols', __h('A little symbol of the entry'), db.meta.dots !== 'plain', '', true)}${chip('dots', 'plain', __h('A plain dot'), db.meta.dots === 'plain', '', true)}</div>
+    <p class="note">${__h('A bottle for a feed, a drop for a diaper, a moon for a sleep… or just a dot in the colour of the entry. The legend under the clock follows. Kept on this phone.')}</p></div>`;
 }
 /** Weight and length in kg and cm, or in pounds and inches (kept on this phone). */
 function unitsHtml() {
@@ -2601,6 +2603,7 @@ function bindMore() {
   $('#appUpdate').onclick = updateApp;
   Native.version().then(v => { const el = $('#appVer'), sub = document.querySelector('details[data-grp=mapp] .gt small'); if (!v) return; appVersion = v; if (el) el.textContent = __('Version {version}', { version: v }) + ' · '; if (sub) sub.textContent = __('Version {version}', { version: v }); });
   document.querySelectorAll('[name=themeMode]').forEach(r => r.onchange = () => { if (r.checked) { Theme.set(r.value); render(); } });
+  document.querySelectorAll('[name=dots]').forEach(r => r.onchange = () => { if (r.checked) { db.meta.dots = r.value; Store.save(db); render(); } });
   document.querySelectorAll('[name=units]').forEach(r => r.onchange = () => { if (r.checked) { db.meta.units = r.value; Store.save(db); render(); } });
   document.querySelectorAll('[name=vol]').forEach(r => r.onchange = () => { if (r.checked) { db.meta.vol = r.value; Store.save(db); render(); } });
   // notifications: the setting is kept on the phone, the phone's checks follow it; the phone's answer on notifications, once known
