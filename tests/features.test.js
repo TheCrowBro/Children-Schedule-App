@@ -37,8 +37,13 @@ const pickFormula = async (page, scope, name) => {
       assert(pos[0] < cx && Math.abs(pos[0] - cx) < 25 && pos[1] > cy + 50, '1 PM is just past the bottom of a 24-hour dial (noon at the bottom): ' + pos);
       const top = await P.evaluate(id => +document.querySelector(`.ray[data-info="${id}"] .dot`).getAttribute('cy'), 'ffeed' + at(1));
       assert(top < cy - 50, '1 AM is near the top');
-      const colours = await P.evaluate(() => [...document.querySelectorAll('.clock .ray .dot')].map(d => getComputedStyle(d).fill));
-      assert.equal(new Set(colours).size, 4, 'feed, diaper, vomit and sleep each in their own colour: ' + colours);
+      const colours = await P.evaluate(() => [...document.querySelectorAll('.clock .ray .dot')].map(d => getComputedStyle(d).stroke));
+      assert.equal(new Set(colours).size, 4, 'feed, diaper, vomit and sleep each in their own colour (the ring of the disc): ' + colours);
+      // the dot at the end of each ray is a paper disc with a mini symbol of the entry on it
+      const syms = await P.evaluate(() => Object.fromEntries([...document.querySelectorAll('.clock .ray')].map(g => [g.dataset.info, g.querySelector('.mini').dataset.n])));
+      assert.deepEqual(syms, { ['ffeed' + at(1)]: 'feed', ['fdiaper' + at(7.5)]: 'diaper', ['fdiaper' + at(13)]: 'poo', ['fvomit' + at(19)]: 'vomit', ['fsleep' + at(2)]: 'sleep' }, JSON.stringify(syms));
+      assert.equal(await P.evaluate(() => getComputedStyle(document.querySelector('.clock .ray .dot')).fill), 'rgb(255, 253, 248)', 'a paper disc');
+      assert.deepEqual(await P.$$eval('.clockwrap .clegend i .ic', x => x.map(s => s.dataset.n)), ['feed', 'diaper', 'sleep', 'vomit', 'play', 'health'], 'the legend shows the same symbols, one per group on the page');
       assert.equal(await P.$$eval('.clock .sarc', a => a.length), 1, 'the sleep shows as an arc for how long it lasted');
       assert(/Diapers\s*2/.test(await P.textContent('.clegend')), 'the legend counts each group');
     });
@@ -65,6 +70,7 @@ const pickFormula = async (page, scope, name) => {
       assert.equal(await P.$eval(`.ev[data-edit="${e.id}"] .b .ic`, s => s.dataset.n), 'bath', 'the bath icon in the list');
       const line = await P.evaluate(id => { const g = document.querySelector(`.ray[data-info="${id}"]`), p = g.querySelector('path:not(.hitl)'), d = p.getAttribute('d'); return { cls: g.className.baseVal, moves: (d.match(/M/g) || []).length, points: (d.match(/L/g) || []).length, color: g.style.getPropertyValue('--c'), label: g.getAttribute('aria-label'), width: getComputedStyle(p).strokeWidth }; }, e.id);
       assert(/\bbath\b/.test(line.cls) && line.moves === 2 && line.points >= 40 && /g-bath/.test(line.color) && /Bath/.test(line.label), 'a ripple of two wavy lines in water blue: ' + JSON.stringify(line));
+      assert.equal(await P.$eval(`.ray[data-info="${e.id}"] .mini`, m => m.dataset.n), 'bath', 'a bathtub at the end of the ray');
       await P.evaluate(id => { db.events = db.events.filter(x => x.id !== id); Store.save(db); render(); }, e.id);
     });
 
@@ -201,10 +207,10 @@ const pickFormula = async (page, scope, name) => {
 
     await step('in dark mode the clock keeps its white face, and the entries on it keep the colours checked against white', async () => {
       await P.emulateMedia({ colorScheme: 'dark' }); await P.evaluate(() => Theme.apply(false)); await P.click('[data-tab=day]');
-      const r = await P.evaluate(() => ({ face: document.querySelector('.clock .face').getAttribute('fill'), dot: getComputedStyle(document.querySelector('.clock .ray .dot')).fill, legend: getComputedStyle(document.querySelector('.clockwrap .clegend i')).backgroundColor }));
+      const r = await P.evaluate(() => ({ face: document.querySelector('.clock .face').getAttribute('fill'), dot: getComputedStyle(document.querySelector('.clock .ray .dot')).stroke, legend: getComputedStyle(document.querySelector('.clockwrap .clegend i .ic')).color }));
       assert.equal(r.face, '#f1ece3', 'a warm white face at night');
       const rgb = h => `rgb(${[1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(', ')})`;
-      assert.equal(r.legend, rgb('#c9761f'), 'the legend matches the dots: ' + r.legend);
+      assert.equal(r.legend, rgb('#c9761f'), 'the legend matches the rays: ' + r.legend);
       assert([rgb('#c9761f'), rgb('#2a9db8'), rgb('#5b5fc7'), rgb('#5f8a1f'), rgb('#a845a8'), rgb('#c0392b')].includes(r.dot), 'a light-palette colour: ' + r.dot);
       await P.emulateMedia({ colorScheme: 'light' }); await P.evaluate(() => Theme.apply(false));
     });

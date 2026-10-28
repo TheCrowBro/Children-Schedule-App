@@ -61,7 +61,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.deepEqual(r.d, ['Preschool', 'dropped off by Mum · Grandpa Joe picks up at 3:15 PM']);
       const banner = await P.textContent('#sleepBanner'); assert(await P.isVisible('#sleepBanner [data-pickup]'));
       assert(/At Preschool since \d+:\d\d [AP]M\s*Grandpa Joe picks up at 3:15 PM/.test(banner.replace(/\s+/g, ' ')), banner);
-      const clock = await P.evaluate(() => ({ arc: document.querySelectorAll('#view svg .carc').length, rays: document.querySelectorAll(`#view svg .ray[data-info="${G.last('care').id}"] path`).length }));
+      const clock = await P.evaluate(() => ({ arc: document.querySelectorAll('#view svg .carc').length, rays: document.querySelectorAll(`#view svg .ray[data-info="${G.last('care').id}"] > path`).length }));
       assert.deepEqual(clock, { arc: 1, rays: 0 }, 'the stay on the outer track, the drop-off a dot without a ray');
     });
 

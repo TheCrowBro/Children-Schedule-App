@@ -632,7 +632,7 @@ function dayView() {
   ${momentCards(viewDay)}
   ${isToday ? comingUp() : ''}
   ${trip && isToday ? travelQuick() : quickButtons()}
-  <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${(trip ? Travel.PALETTE : GCOLOR).light[g.id]}`).join(';')};--g-bath:${GCOLOR.light.bath};--trip:${Travel.ACCENT.light}">${clockSvg(shown, viewDay)}
+  <div class="clockwrap" style="${GROUPS.map(g => `--g-${g.id}:${(trip ? Travel.PALETTE : GCOLOR).light[g.id]}`).join(';')};--g-bath:${GCOLOR.light.bath};--paper:${dark() ? '#f1ece3' : '#fffdf8'};--trip:${Travel.ACCENT.light}">${clockSvg(shown, viewDay)}
     <div class="clockctl">${seg('face', [['24', N_('24 h')], ['12', N_('12 h')]], twelve ? '12' : '24', N_('Clock face'))}${twelve ? seg('half', [['0', N_('AM')], ['1', N_('PM')]], String(half), N_('Half of the day')) : ''}${numsSeg()}${trip ? `<span class="artbtn tripart">${TM.icon} ${__h(Art.byId(TM.art).name)}</span>` : `<button class="artbtn" data-art>🎨 ${__h(Art.byId(artOf()).name)}</button>`}</div>
     ${clockLegend(shown)}
     <p class="note hint">${twelve ? (half ? __h('Showing noon to midnight; switch AM and PM for the other half of the day.') : __h('Showing midnight to noon; switch AM and PM for the other half of the day.')) : __h('Midnight is at the top, noon at the bottom.')} ${__h('Tap a dot to see an entry (change it in the list below), or a quarter of the dial for just those hours.')}</p></div>
@@ -756,9 +756,11 @@ function clockSvg(evs, day) {
     const approx = !!(e.data && e.data.approx), when = approx ? __('about {time}', { time: fmtTime(e.ts) }) : fmtTime(e.ts);
     // the kinds of line: a nap and a snack dashed, a poo a squiggle, a bath a water ripple, an estimated time dotted
     const snack = e.type === 'meal' && !!(e.data && e.data.meal === 'Snack'), poo = (e.type === 'diaper' || e.type === 'potty') && !!(e.data && e.data.poo), bath = isBath(e);
+    // the dot at the end of the ray is a small paper disc with a symbol of the entry on it: a bottle, a spoon for solids, a drop, a poo, a moon…
+    const sym = Icons.nameOf(bath ? TYPES.bath.icon : e.type === 'feed' && e.data && e.data.kind === 'solids' ? '🥄' : poo ? '💩' : TYPES[e.type].icon) || 'star';
     data += `<g class="ray${approx ? ' approx' : ''}${e.type === 'sleep' && isNap(e) ? ' nap' : ''}${snack ? ' snack' : ''}${poo ? ' poo' : ''}${bath ? ' bath' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(bath ? 'bath' : e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${bath ? 'bath' : g})">
       <title>${esc(when + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
-      ${pin ? '' : `<path d="${poo ? wavy(a, rr(17), r - rr(5)) : bath ? rippled(a, rr(17), r - rr(5)) : `M${xy(a, rr(17))}L${xy(a, r - rr(5))}`}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/></g>`;
+      ${pin ? '' : `<path d="${poo ? wavy(a, rr(17), r - rr(5)) : bath ? rippled(a, rr(17), r - rr(5)) : `M${xy(a, rr(17))}L${xy(a, r - rr(5))}`}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(7.3))}"${k ? ` style="stroke:${k.color}"` : ''}/><g class="sym" transform="translate(${f1(x)} ${f1(y)})"><g class="mini" data-n="${sym}"><g transform="scale(${(rr(11.8) / 32).toFixed(3)}) translate(-16 -16)">${Icons.mini(sym)}</g></g></g></g>`;
   }
   // blued-steel hands at the current time, when it is on the dial: one 24-hour hand, or an hour and a minute hand; then the centre boss
   let hand = '';
@@ -798,7 +800,7 @@ function groupsOnPage(evs) {
 }
 function clockLegend(evs) {
   return `<div class="clegend">${groupsOnPage(evs).map(g => { const n = evs.filter(e => g.types.includes(e.type)).length;
-    return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})"></i>${__h(gLabel(g))} <b>${n}</b></span>`; }).join('')}</div>`;
+    return `<span class="${n ? '' : 'zero'}"><i style="--c:var(--g-${g.id})">${g.icon}</i>${__h(gLabel(g))} <b>${n}</b></span>`; }).join('')}</div>`;
 }
 /** One twirl-down per group (pee and poo together, sleep and wake-ups together…), each with a one-line summary. */
 const openGroups = new Set();

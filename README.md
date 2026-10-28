@@ -73,7 +73,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   with a black rim, Roman numerals, a moon at midnight and a sun at noon, a blued spade hand at the current time). A **24 h / 12 h** switch: the 12-hour face shows the morning or the afternoon half (AM / PM) with all
   twelve numerals and an hour and a minute hand. A **XII / 123** switch beside it swaps the Roman numerals for plain, easy-to-read
   numbers (kept on the phone). Every entry is a ray from the centre to the hour it happened, coloured by group (a snack's ray is dashed,
-  a poo's a squiggle, a bath's a water ripple (two wavy lines in water blue), a nap's dashed, an estimated time's dotted; the app icon's rays show the same kinds of line), with a dot: tapping a dot
+  a poo's a squiggle, a bath's a water ripple (two wavy lines in water blue), a nap's dashed, an estimated time's dotted; the app icon's rays show the same kinds of line), ending in a small paper disc with a mini symbol of the entry on it (a bottle, a spoon for
+  solids, a drop, a poo, a moon, a teddy, a bathtub…), ringed in the entry's colour, or the child's on a shared log; the legend under the
+  clock shows the same symbols: tapping a symbol
   shows that entry's details (editing stays in the list below, where "Show in the list" takes you); tap a quarter of
   the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)

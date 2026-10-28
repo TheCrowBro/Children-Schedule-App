@@ -97,5 +97,9 @@ const Icons = (() => {
     d.innerHTML = '<svg id="wcDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="wc" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="0.45"/></filter></svg>';
     document.body.prepend(d.firstChild);
   }
-  return { svg, paint, init, names: Object.keys(D) };
+  /** The icon's drawing alone (wash and outline on the 32×32 grid), for the day clock's mini symbols. */
+  const mini = name => (D[name] ? `<g class="wash">${D[name][0]}</g><g class="ln">${D[name][1]}</g>` : '');
+  /** The icon an emoji stands for ('🍼' → 'feed'), or ''. */
+  const nameOf = emoji => MAP[bare(emoji || '')] || '';
+  return { svg, paint, init, mini, nameOf, names: Object.keys(D) };
 })();

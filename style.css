@@ -155,12 +155,14 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .clock .sarc{fill:none;stroke:var(--g-sleep);stroke-width:8;stroke-linecap:round;opacity:.35}
 .clock .ray{cursor:pointer}
 .clock .ray path{stroke:var(--c);stroke-width:2;stroke-linecap:round}
-.clock .ray .dot{fill:var(--c);stroke:#fffdf8;stroke-width:1.6}
+.clock .ray .dot{fill:var(--paper,#fffdf8);stroke:var(--c);stroke-width:1.3}
+.clock .ray .mini .wash{fill:var(--c);opacity:.32}.clock .ray .mini .ln{fill:none;stroke:var(--c);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.clock .ray .sym{pointer-events:none}
+.clock .ray:hover .mini,.clock .ray:focus-visible .mini{transform:scale(1.35)}
 .clock .ray .hit{fill:transparent}
-.clock .ray:hover .dot,.clock .ray:focus-visible .dot{r:8}
+.clock .ray:hover .dot,.clock .ray:focus-visible .dot{r:9}
 .clegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink);margin:6px 2px 0}
 .clegend span{display:inline-flex;align-items:center;gap:6px}.clegend span.zero{color:var(--mute)}
-.clegend i{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
+.clegend i{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}.clegend i:not(:empty){width:auto;height:auto;border-radius:0;background:none;line-height:0}.clegend i .ic{width:17px;height:17px;color:var(--c);vertical-align:0}
 .clegend b{font-variant-numeric:tabular-nums}
 .hint{margin:8px 2px 0;font-size:12px}
 .quadlist .qhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.quadlist .qhead .btn{flex:none;padding:10px 14px}
