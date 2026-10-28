@@ -579,7 +579,7 @@ function fitTabs() {
 window.addEventListener('resize', () => fitTabs());
 function render() {
   if (voyageFirst()) return;   // travel mode is switching: the page changes under the journey in a moment
-  schoolDays = null;
+  shownAt = Date.now(); schoolDays = null;
   document.querySelectorAll('#view details[data-grp]').forEach(d => { d.open ? openGroups.add(d.dataset.grp) : openGroups.delete(d.dataset.grp); });   // keep twirl-downs as the user left them
   if (tab !== 'guide') openGroups.forEach(g => { if (g.startsWith('pix')) openGroups.delete(g); });   // except the Guide's pictures: hidden again next time
   const multi = kids().length > 1, vk = kidById(dayKid()), single = kids()[0];
@@ -3012,7 +3012,7 @@ function openSheet(type, ev, pre) {
     `<label class="chip kidchip" style="--k:${k.color}"><input type="${one ? 'radio' : 'checkbox'}" name="kid" value="${k.id}" ${k.id === here ? 'checked' : ''}><span>${avatar(k)}${esc(kidName(k))}</span></label>`).join('')}</div>`;
   $('#sheet').innerHTML = `<h3>${bathy ? TYPES.bath.icon : T.icon} ${editing ? __h('Edit {what}', { what: __(noun) }) : __h('Add {what}', { what: __(noun) })}</h3>
     ${forHtml}
-    ${L(type === 'sleep' ? N_('Fell asleep at') : N_('Time'))}<input id="ts" type="datetime-local" value="${toLocalInput(defTs)}">
+    ${L(type === 'sleep' ? N_('Fell asleep at') : N_('Time'))}<input id="ts" type="datetime-local" value="${toLocalInput(defTs)}">${!ev && viewDay !== startOfDay(Date.now()) ? `<p class="note pastday">${__h('This entry goes on {date}, not today.', { date: fmtDate(viewDay) })}</p>` : ''}
     <div class="mini">${[5, 15, 30, 60].map(m => `<button type="button" data-ago="${m}">${m < 60 ? __h('{n} min ago', { n: m }) : __h('1 hr ago')}</button>`).join('')}<button type="button" data-ago="0">${__h('Now')}</button></div>
     ${body}
     ${L(N_('Note (optional)'))}<textarea id="note" rows="2" maxlength="1000" placeholder="${__h('Anything worth remembering')}">${esc(ev ? ev.note : '')}</textarea>
@@ -3183,7 +3183,21 @@ function openSheet(type, ev, pre) {
   };
 }
 
-setInterval(() => { if ((activeSleep() || Travel.moving(db.events)) && tab === 'day') render(); }, 60000);
+/** The page follows the calendar. When the app comes back after being paused, or the day changes while it is open, the Day page moves to
+    today (and the Month page to this month): at once when the page was "today" as it was drawn (the date moved under it, as it does when
+    the app is left open overnight), and after a long pause (half an hour) even when another day was chosen on purpose. True when it moved. */
+let shownAt = Date.now();   // when the page was last drawn
+function followToday(resumed) {   // (also while the lock screen is up: the page behind it is right once it opens)
+  const now = Date.now(), today = startOfDay(now), t = new Date(now), longAway = resumed && now - shownAt > 30 * MIN;
+  const moveDay = viewDay !== today && (startOfDay(shownAt) === viewDay || longAway);
+  const moveMonth = longAway && (calMonth.getFullYear() !== t.getFullYear() || calMonth.getMonth() !== t.getMonth());
+  if (!moveDay && !moveMonth) return false;
+  if (moveDay) { viewDay = today; quad = null; if (tab !== 'month' || longAway) calMonth = new Date(today); }
+  if (moveMonth) calMonth = new Date(today);
+  render(); if (tab === 'day' || tab === 'month') window.scrollTo(0, 0); return true;
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) followToday(true); });
+setInterval(() => { if (!followToday(false) && (activeSleep() || Travel.moving(db.events)) && tab === 'day') render(); }, 60000);   // (midnight; an open sleep's length)
 setInterval(() => { const el = $('#cElapsed'); if (el) el.textContent = __('{n} s', { n: Math.round((Date.now() - +el.dataset.since) / 1000) }); }, 1000);   // (a contraction under way)
 
 // Re-render after a background sync, unless the user is in the middle of typing.
@@ -3233,7 +3247,7 @@ Sync.onSessionLost = () => Acct.sessionLost();
       if (action === 'woke' && s && !s.end) { if (!Sync.can('edit', s)) toast(__("You can't change this entry")); else { s.end = Date.now(); s.updated = stamp(); save(); toast(__('Sleep saved')); } }
       tab = 'day'; viewDay = startOfDay(Date.now()); if (s && s.child && kidById(s.child)) setKid(s.child); render();
     });
-    Native.onAppState(active => { if (active) Notify.sync(db.events); });
+    Native.onAppState(active => { if (active) { Notify.sync(db.events); followToday(true); } });
   }
   render();                                            // the gate decides what to show: sign-in, two-step check, lock, or the app
   if (!Native.is) return;

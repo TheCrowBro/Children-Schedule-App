@@ -595,3 +595,4 @@ details.tut>.note{margin:0 16px 10px}details.tut details.gd.med{margin:0 10px 8p
   #view[data-page=stats]>h2,#view[data-page=guide]>h2,#view[data-page=more]>h2,#view[data-page=month]>h2{break-after:avoid}
   #view[data-page=routine],#view[data-page=family],#view[data-page=health],#view[data-page=signin]{max-width:720px;margin:0 auto}
 }
+.sheet .pastday{color:var(--feed-ink);font-weight:600;margin:4px 0 0}

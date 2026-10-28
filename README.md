@@ -6,7 +6,9 @@ easy-to-read stats, until the child turns 18. Built with plain web code wrapped 
 To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 
 ## Features
-- **Day view**: one-tap entry buttons, tick-box chips, time defaults to now with "5 min ago" shortcuts; tap an entry to edit/delete
+- **Day view**: one-tap entry buttons, tick-box chips, time defaults to now with "5 min ago" shortcuts; tap an entry to edit/delete.
+  The page follows the calendar: back from the background on a new day, or past midnight while open, it shows today (a day gone back
+  to on purpose stays through a short pause); an entry added to another day says so in its sheet
 - **Growing up**: every child has a stage that comes from their age: newborn, baby, toddler (from 1), preschooler (from 3), school age
   (from the age children start school where the family is: 4 in the UK and Ireland, 5 in North America, Australia and New Zealand, 6
   elsewhere, or from the day a "First day of school" moment is saved), teenager (12) and grown up (18). The Day page's buttons follow it: a

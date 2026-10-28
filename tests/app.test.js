@@ -2,7 +2,8 @@
 // checks and limits), tablets and phones on their side (the clock beside the entries, two columns elsewhere), and the account deletion
 // that is in the app.   node tests/app.test.js
 const assert = require('assert'), fs = require('fs'), path = require('path');
-/* global Crash, Report, render, Store */
+/* global Crash, Report, render, Store, startOfDay, followToday, Lock */
+/* global viewDay:writable, calMonth:writable */
 /* global tab:writable */
 const { setup } = require('./lib/harness');
 
@@ -144,6 +145,28 @@ const shot = async (p, name) => { if (process.env.LL_SHOTS) await p.screenshot({
       const schema = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'schema.sql'), 'utf8');
       assert(/create (or replace )?function delete_my_account/.test(schema), 'the server-side function');
       assert(/delete_my_account/.test(fs.readFileSync(path.join(__dirname, '..', 'account.js'), 'utf8')), 'called from the app');
+    });
+
+    await step('the day follows the calendar: paused overnight and resumed, the page is on the new today; a day gone back to on purpose stays through a short pause and returns after a long one; midnight while open; the Month page too; a new entry on a past day says so', async () => {
+      const skew = ms => P.evaluate(ms => { if (!window.__real) window.__real = Date.now.bind(Date); Date.now = () => window.__real() + ms; }, ms);
+      const pause = async ms => { await P.evaluate(() => window.__emit('appStateChange', { isActive: false })); await skew(ms); await P.evaluate(() => window.__emit('appStateChange', { isActive: true })); };
+      const shown = () => P.evaluate(() => [viewDay === startOfDay(Date.now()), document.querySelector('.datenav .d').textContent.slice(0, 5)]);
+      await more(); await P.click('[name=lockMode][value=off]'); await P.waitForFunction(() => Lock.mode === 'off');   // (the app lock would cover the page after a day away: its own tests are in e2e)
+      await P.evaluate(() => { tab = 'day'; viewDay = startOfDay(Date.now()); render(); });
+      await pause(24 * 3600e3); assert.deepEqual(await shown(), [true, 'Today'], 'resumed the next day: today');
+      await P.click('[data-nav="-1"]'); assert.equal((await shown())[0], false, 'yesterday, on purpose');
+      await pause(24 * 3600e3 + 10 * 60e3); assert.equal((await shown())[0], false, 'ten minutes away: still the day chosen');
+      await pause(24 * 3600e3 + 2 * 3600e3); assert.deepEqual(await shown(), [true, 'Today'], 'two hours away: back to today');
+      await skew(48 * 3600e3); assert.equal((await shown())[0], false, 'midnight passed while the app stayed open');
+      assert.equal(await P.evaluate(() => followToday(false)), true, 'the minute timer moves it'); assert.deepEqual(await shown(), [true, 'Today']);
+      await P.evaluate(() => { tab = 'month'; calMonth = new Date(2020, 0, 1); render(); });
+      await pause(48 * 3600e3 + 10 * 60e3); assert.equal(await P.evaluate(() => calMonth.getFullYear()), 2020, 'a short pause keeps the month');
+      await pause(48 * 3600e3 + 3 * 3600e3); assert.equal(await P.evaluate(() => calMonth.getFullYear() === new Date(Date.now()).getFullYear() && calMonth.getMonth() === new Date(Date.now()).getMonth()), true, 'a long pause: this month again');
+      await P.evaluate(() => { tab = 'day'; viewDay = startOfDay(Date.now()); render(); }); await P.click('[data-nav="-1"]'); await P.click('[data-add=feed]'); await P.waitForSelector('#sheet #ts');
+      assert(/goes on .*, not today/.test(await P.textContent('#sheet .pastday')), 'the sheet says which day'); assert.equal(await P.$eval('#ts', i => i.value.slice(11)), '12:00', 'noon of that day');
+      await P.click('#cancel'); await P.evaluate(() => { viewDay = startOfDay(Date.now()); render(); }); await P.click('[data-add=feed]'); await P.waitForSelector('#sheet #ts');
+      assert(!(await P.$('#sheet .pastday')), 'nothing to say on today'); await P.click('#cancel');
+      await P.evaluate(() => { Date.now = window.__real; tab = 'day'; viewDay = startOfDay(Date.now()); calMonth = new Date(viewDay); render(); });
     });
 
     await step('signing out takes the decrypted pictures, the backup copy and quarantined copies off the phone along with the log', async () => {
