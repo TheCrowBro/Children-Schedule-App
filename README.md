@@ -206,7 +206,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   with the badge). Parents get a private **activity log** of who did what.
 - **Family tree** (Family tab): the family as the tree's **roots**: a detailed tree above the ground (its crown, boughs and birds, the
   sun or the moon, the hill with its flowers) and below it the children as the newest root tips just under the trunk, the parents
-  below them, the grandparents deeper and the great-grandparents deepest, aunts and uncles as side roots with their children. Painted as a soft watercolour (washes with pigment edges, paper grain) of
+  below them, the grandparents deeper and the great-grandparents deepest, aunts and uncles as side roots with their children, and each
+  grandparent's brothers and sisters (the great-aunts and great-uncles) beside them with their partners and children (the parents'
+  cousins). Painted as a soft watercolour (washes with pigment edges, paper grain) of
   the tree most common where the family comes from: an English oak (UK & Ireland), a red maple (North America), a European beech, a
   silver birch, an olive tree, a eucalyptus (Australia & New Zealand), cherry blossom (East Asia), a banyan with its hanging roots
   (South Asia), a mango tree, an umbrella acacia (Africa) or a jacaranda (Latin America and Brazil), each with its own bark, crown, leaves

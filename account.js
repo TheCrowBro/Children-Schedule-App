@@ -643,9 +643,9 @@ const Acct = (() => {
     return mo < 24 ? __n('{n} month', '{n} months', mo) : __n('{n} year', '{n} years', Math.floor(mo / 12));
   }
   // who someone is to the children, by where they are on the tree; adding someone there; whose …, for the sheet
-  const KIN = { parent: N_('Parent'), gp: N_('Grandparent'), ggp: N_('Great-grandparent'), sib: N_('Aunt or uncle'), partner: N_('Aunt or uncle'), cousin: N_('Cousin') };
-  const ADDS = { parent: N_("Add the children's other parent"), gp: N_('Add a grandparent'), ggp: N_('Add a great-grandparent'), sib: N_('Add an aunt or uncle'), partner: N_('Add a partner'), cousin: N_('Add a cousin') };
-  const WHOSE = { gp: N_("{name}'s parent"), ggp: N_("{name}'s parent"), sib: N_("{name}'s brother or sister"), partner: N_("{name}'s partner"), cousin: N_("{name}'s child") };
+  const KIN = { parent: N_('Parent'), gp: N_('Grandparent'), ggp: N_('Great-grandparent'), sib: N_('Aunt or uncle'), partner: N_('Aunt or uncle'), cousin: N_('Cousin'), gsib: N_('Great-aunt or great-uncle'), gpartner: N_('Great-aunt or great-uncle'), gcousin: N_("A parent's cousin") };
+  const ADDS = { parent: N_("Add the children's other parent"), gp: N_('Add a grandparent'), ggp: N_('Add a great-grandparent'), sib: N_('Add an aunt or uncle'), partner: N_('Add a partner'), cousin: N_('Add a cousin'), gsib: N_('Add a great-aunt or great-uncle'), gpartner: N_('Add a partner'), gcousin: N_('Add a child') };
+  const WHOSE = { gp: N_("{name}'s parent"), ggp: N_("{name}'s parent"), sib: N_("{name}'s brother or sister"), partner: N_("{name}'s partner"), cousin: N_("{name}'s child"), gsib: N_("{name}'s brother or sister"), gpartner: N_("{name}'s partner"), gcousin: N_("{name}'s child") };
   // the kinds of tree, and where each is the most common one: the tree is the one where the family comes from (a parent can change it)
   const TREES = { oak: [N_('English oak'), N_('UK & Ireland')], maple: [N_('Red maple'), N_('North America')], beech: [N_('European beech'), N_('Central Europe')],
     birch: [N_('Silver birch'), N_('Northern and Eastern Europe')], olive: [N_('Olive tree'), N_('The Mediterranean and the Middle East')], eucalyptus: [N_('Eucalyptus'), N_('Australia & New Zealand')],
@@ -690,12 +690,13 @@ const Acct = (() => {
     const parents = t.parents.map(par => {
       acts['+gp:p:' + par.id] = () => relativeForm({ kind: 'gp', at: par.id }); acts['+sib:p:' + par.id] = () => relativeForm({ kind: 'sib', at: par.id });
       return { ...node(par, 'parent'),
-        gp: par.gp.map(g => { acts['+ggp:p:' + g.id] = () => relativeForm({ kind: 'ggp', at: g.id }); return { ...node(g, 'gp'), gp: g.gp.map(q => node(q, 'ggp')) }; }),
+        gp: par.gp.map(g => { acts['+ggp:p:' + g.id] = () => relativeForm({ kind: 'ggp', at: g.id }); acts['+gsib:p:' + g.id] = () => relativeForm({ kind: 'gsib', at: g.id });
+          return { ...node(g, 'gp'), gp: g.gp.map(q => node(q, 'ggp')), sibs: (g.sibs || []).map(sb => ({ ...node(sb, 'gsib'), partner: sb.partner ? node(sb.partner, 'gpartner') : null, kids: (sb.kids || []).map(c => node(c, 'gcousin')) })) }; }),
         sibs: par.sibs.map(sb => ({ ...node(sb, 'sib'), partner: sb.partner ? node(sb.partner, 'partner') : null, kids: cousins(sb) })) };
     });
     acts['+parent'] = () => relativeForm({ kind: 'parent' });
     const tr = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, __(v)]));
-    return { model: { title: __('Family tree'), rtl: I18n.rtl(), edit, text: tr({ parent: KIN.parent, gp: KIN.gp, ggp: KIN.ggp, sib: KIN.sib }), adds: tr(ADDS), kids: kidsHere, parents }, acts };
+    return { model: { title: __('Family tree'), rtl: I18n.rtl(), edit, text: tr({ parent: KIN.parent, gp: KIN.gp, ggp: KIN.ggp, sib: KIN.sib, gsib: KIN.gsib }), adds: tr(ADDS), kids: kidsHere, parents }, acts };
   }
   /** The family tree, for the children's relatives; the families you have asked to join, and adding one, for everyone. */
   function treePicHtml() {
@@ -741,6 +742,7 @@ const Acct = (() => {
   function treeCard(id) {
     const w = FamilyTree.find(shownTree(), id); if (!w) return;
     const p = w.p, edit = Sync.isParent(), member = p.user && Sync.st.people.find(x => x.user_id === p.user), sib = w.kind === 'sib' ? p : w.kind === 'partner' || w.kind === 'cousin' ? w.up : null;
+    const kinds = w.kind === 'sib' ? ['partner', 'cousin'] : w.kind === 'gsib' ? ['gpartner', 'gcousin'] : null;   // (a brother or sister: a partner and children can be added to them)
     const fam = sib && sib.family && Sync.st.memberships.find(m => m.id === sib.family && m.id !== db.meta.babyId);
     const close = showSheet(`<h3>${esc(treeName(p))}</h3>
       <p class="note" style="margin-top:0">${esc([__(KIN[w.kind]), w.kind === 'parent' ? '' : __("{name}'s side", { name: treeName(w.side) })].filter(Boolean).join(' · '))}</p>
@@ -748,17 +750,17 @@ const Acct = (() => {
       ${p.gone ? `<p class="note">✦ ${__h('In loving memory')}</p>` : ''}
       ${member ? detailsHtml(member.info || {}, member.email) : ''}
       <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button>${fam ? `<button class="btn" id="tcOpen">${__h('Open {family}', { family: famName(fam) })}</button>` : ''}${edit ? `<button class="btn p" id="tcEdit">${__h('Edit')}</button>` : ''}</div>
-      ${edit && w.kind === 'sib' ? `<div class="row">${p.partner ? '' : `<button class="btn" id="tcPartner">+ ${__h('Add a partner')}</button>`}${p.kids.length < FamilyTree.MAX_KIDS ? `<button class="btn" id="tcCousin">+ ${__h('Add a cousin')}</button>` : ''}</div>` : ''}`);
+      ${edit && kinds ? `<div class="row">${p.partner ? '' : `<button class="btn" id="tcPartner">+ ${__h('Add a partner')}</button>`}${p.kids.length < FamilyTree.MAX_KIDS ? `<button class="btn" id="tcCousin">+ ${__h(ADDS[kinds[1]])}</button>` : ''}</div>` : ''}`);
     $('#sheet [data-close]').onclick = close;
     if ($('#tcOpen')) $('#tcOpen').onclick = () => { close(); openFamily(fam.id); };
     if ($('#tcEdit')) $('#tcEdit').onclick = () => relativeForm({ id });
-    if ($('#tcPartner')) $('#tcPartner').onclick = () => relativeForm({ kind: 'partner', at: id });
-    if ($('#tcCousin')) $('#tcCousin').onclick = () => relativeForm({ kind: 'cousin', at: id });
+    if ($('#tcPartner')) $('#tcPartner').onclick = () => relativeForm({ kind: kinds[0], at: id });
+    if ($('#tcCousin')) $('#tcCousin').onclick = () => relativeForm({ kind: kinds[1], at: id });
   }
   /** People this phone knows in Little Log who could be added: relatives in this log, and the parents and family in your relatives'
       family logs (an aunt or uncle picked from their own family brings their partner and children along). */
   function treeCandidates(t, kind) {
-    if (kind === 'cousin') return [];
+    if (kind === 'cousin' || kind === 'gcousin') return [];
     const on = new Set(FamilyTree.walk(t).map(w => w.p.user).filter(Boolean)), out = [];
     for (const p of Sync.st.people) if (RELATIVES.includes(p.role) && !on.has(p.user_id)) { on.add(p.user_id); out.push({ user: p.user_id, name: p.display_name || __('Member') }); }
     for (const m of kinFams()) {

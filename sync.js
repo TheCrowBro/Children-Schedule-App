@@ -307,6 +307,7 @@ const Sync = (() => {
   }
   /** Change the family tree (parents only): `fn` changes the latest copy (made from `start` when there is none yet) and says false
       when it can't, because what it changes is gone. Sealed here, saved on the server. */
+  const TREE_MAX = 32768;   // the most the server takes for a sealed tree (set_tree in schema.sql)
   async function editTree(fn, start) {
     const b = db.meta.babyId;
     for (let again = true; ; again = false) {
@@ -314,6 +315,7 @@ const Sync = (() => {
       if (fn(t) === false) throw new Error(N_('The family tree changed meanwhile: try again'));
       try {
         const { blob, epoch } = await E2EE.sealTree(b, t);
+        if (blob.length > TREE_MAX) throw new Error(N_('There is no room on the family tree for more people: take someone off it, or shorten the names'));
         await Auth.rpc('set_tree', { p_baby: b, p_blob: blob, p_epoch: epoch });
       } catch (e) { if (again && /stale epoch/.test((e && e.message) || '')) { await run(true); continue; } throw e; }   // (new keys since: fetch them and try once more)
       if (b === db.meta.babyId) { st.tree = t; db.meta.tree = t; save(true); }

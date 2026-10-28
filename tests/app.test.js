@@ -157,11 +157,11 @@ const shot = async (p, name) => { if (process.env.LL_SHOTS) await p.screenshot({
       await P.click('[data-nav="-1"]'); assert.equal((await shown())[0], false, 'yesterday, on purpose');
       await pause(24 * 3600e3 + 10 * 60e3); assert.equal((await shown())[0], false, 'ten minutes away: still the day chosen');
       await pause(24 * 3600e3 + 2 * 3600e3); assert.deepEqual(await shown(), [true, 'Today'], 'two hours away: back to today');
-      await skew(48 * 3600e3); assert.equal((await shown())[0], false, 'midnight passed while the app stayed open');
+      await skew(50 * 3600e3); assert.equal((await shown())[0], false, 'midnight passed while the app stayed open');   // (a day after the last pause, whatever the time of day)
       assert.equal(await P.evaluate(() => followToday(false)), true, 'the minute timer moves it'); assert.deepEqual(await shown(), [true, 'Today']);
       await P.evaluate(() => { tab = 'month'; calMonth = new Date(2020, 0, 1); render(); });
-      await pause(48 * 3600e3 + 10 * 60e3); assert.equal(await P.evaluate(() => calMonth.getFullYear()), 2020, 'a short pause keeps the month');
-      await pause(48 * 3600e3 + 3 * 3600e3); assert.equal(await P.evaluate(() => calMonth.getFullYear() === new Date(Date.now()).getFullYear() && calMonth.getMonth() === new Date(Date.now()).getMonth()), true, 'a long pause: this month again');
+      await pause(50 * 3600e3 + 10 * 60e3); assert.equal(await P.evaluate(() => calMonth.getFullYear()), 2020, 'a short pause keeps the month');
+      await pause(50 * 3600e3 + 3 * 3600e3); assert.equal(await P.evaluate(() => calMonth.getFullYear() === new Date(Date.now()).getFullYear() && calMonth.getMonth() === new Date(Date.now()).getMonth()), true, 'a long pause: this month again');
       await P.evaluate(() => { tab = 'day'; viewDay = startOfDay(Date.now()); render(); }); await P.click('[data-nav="-1"]'); await P.click('[data-add=feed]'); await P.waitForSelector('#sheet #ts');
       assert(/goes on .*, not today/.test(await P.textContent('#sheet .pastday')), 'the sheet says which day'); assert.equal(await P.$eval('#ts', i => i.value.slice(11)), '12:00', 'noon of that day');
       await P.click('#cancel'); await P.evaluate(() => { viewDay = startOfDay(Date.now()); render(); }); await P.click('[data-add=feed]'); await P.waitForSelector('#sheet #ts');

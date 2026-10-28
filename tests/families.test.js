@@ -1,6 +1,6 @@
 // More than one family: someone with their own family log who also looks after a sister's children and, now and then, a
 // brother-in-law's. The Family tab draws the children's family tree (parents, grandparents and great-grandparents, aunts, uncles
-// and cousins), which the parents grow by adding people, end-to-end encrypted and shown only to relatives; the families are listed
+// and cousins, the grandparents' brothers and sisters with their children), which the parents grow by adding people, end-to-end encrypted and shown only to relatives; the families are listed
 // in a twirl-down below. Another family is added by scanning an invite from one of its parents (who approves it), requests to
 // join any family they are a parent in are approved from that list, and switching between families is quick and loses nothing,
 // even offline.   node tests/families.test.js
@@ -113,6 +113,59 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       const row = (await H.q('select blob, epoch from trees where baby_id=$1', [ids.jo]))[0];
       assert(row && row.blob.length > 100 && !/Rose|Nana|Edith|Sarah|Ava/.test(row.blob), 'no names on the server');
       assert((await J.evaluate(() => Sync.activity().then(r => r.map(l => l.action)))).includes('tree_changed'), 'in the activity log');
+    });
+
+    await step("the parents' aunts and uncles: a great-aunt added beside the grandmother, her partner and her child (a parent's cousin) typed in and drawn on the rows below; sealed; removed with everyone added through her", async () => {
+      await family();
+      const rose = await keyOf('Rose Miller');
+      assert((await pic()).some(n => n.key === '+gsib:' + rose), 'a bud beside the grandmother for her brothers and sisters');
+      await tap('+gsib:' + rose); await J.waitForSelector('#rlName');
+      assert(/Add a great-aunt or great-uncle/.test(await J.textContent('#sheet h3')) && /Rose Miller's brother or sister/.test(await J.textContent('#sheet')), await J.textContent('#sheet'));
+      await J.click('#sheet [data-close]');
+      await addTo('+gsib:' + rose, 'Iris Miller', { call: 'Auntie Iris' });
+      const iris = await keyOf('Iris Miller'); assert(iris, 'on the tree');
+      assert.equal((await pic()).find(n => n.key === iris).label, 'Iris Miller · Auntie Iris · Great-aunt or great-uncle');
+      await tap(iris); await J.waitForSelector('#tcPartner'); assert(/Great-aunt or great-uncle · Jo's side/.test(await J.textContent('#sheet')));
+      await J.click('#tcPartner'); await J.waitForSelector('#rlName'); assert(/Iris Miller's partner/.test(await J.textContent('#sheet')));
+      await J.fill('#rlName', 'Bert'); await J.click('#rlSave'); await J.waitForFunction(() => document.querySelector('#sheet').hidden);
+      await tap(iris); await J.waitForSelector('#tcCousin'); assert(!(await J.$('#tcPartner')), 'one partner');
+      await J.click('#tcCousin'); await J.waitForSelector('#rlName'); assert(/Add a child/.test(await J.textContent('#sheet h3')) && /Iris Miller's child/.test(await J.textContent('#sheet')));
+      await J.fill('#rlName', 'Max'); await J.click('#rlSave'); await J.waitForFunction(() => document.querySelector('#sheet').hidden);
+      const labels = (await pic()).filter(n => !n.key.startsWith('+')).map(n => n.label);
+      assert(labels.includes('Bert · Great-aunt or great-uncle') && labels.includes("Max · A parent's cousin"), JSON.stringify(labels));
+      const pos = await J.evaluate(() => { const at = l => { const n = [...document.querySelectorAll('.ftreesvg [data-tk]')].find(x => (x.getAttribute('aria-label') || '').startsWith(l)), c = n.querySelector('.disc'); return [+c.getAttribute('cx'), +c.getAttribute('cy')]; }; return { rose: at('Rose Miller'), iris: at('Iris Miller'), bert: at('Bert'), max: at('Max'), jo: at('Jo') }; });
+      assert.equal(pos.iris[1], pos.rose[1], "on the grandmother's row"); assert(Math.abs(pos.iris[0] - pos.jo[0]) > Math.abs(pos.rose[0] - pos.jo[0]), 'further out than the grandmother');
+      assert.equal(pos.bert[1], pos.rose[1], 'her partner beside her'); assert.equal(pos.max[1], pos.jo[1], "a parent's cousin on the parents' row");
+      assert.deepEqual(await J.evaluate(() => FamilyTree.walk(Sync.st.tree).filter(w => /^g(sib|partner|cousin)$/.test(w.kind)).map(w => w.kind + ':' + w.p.name)), ['gsib:Iris Miller', 'gpartner:Bert', 'gcousin:Max']);
+      assert(!/Iris|Bert|Max/.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
+      await tap(iris); await J.waitForSelector('#tcEdit'); await J.click('#tcEdit'); await J.waitForSelector('#rlRemove'); await J.click('#rlRemove'); await J.waitForFunction(() => document.querySelector('#sheet').hidden);
+      const after = (await pic()).map(n => n.label); assert(!after.some(l => /^(Iris|Bert|Max)\b/.test(l)), 'gone with her: ' + JSON.stringify(after));
+      assert((await pic()).some(n => n.key === '+gsib:' + rose), 'the bud is back');
+      const cleaned = await J.evaluate(() => FamilyTree.clean({ parents: [{ id: 'abcd', name: 'P', gp: [{ id: 'efgh', name: 'G', sibs: [{ name: 'S', partner: { name: 'T', evil: 1 }, kids: [{ name: 'K' }, { nope: 1 }] }, 'junk'] }] }] }).parents[0].gp[0].sibs);
+      assert.deepEqual(cleaned.map(s => [s.name, s.partner && s.partner.name, Object.keys(s.partner), s.kids.map(k => k.name)]), [['S', 'T', ['id', 'name'], ['K']]], 'cleaned: only what belongs');
+    });
+
+    await step('a tree with no room left (every great-aunt and great-uncle with a partner and children, the longest names): the phone says so before sending, and nothing changes on the server', async () => {
+      const before = (await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob;
+      const r = await J.evaluate(async () => {
+        const count = () => FamilyTree.walk(Sync.st.tree).length, was = count();
+        const who = (n, i) => ({ id: FamilyTree.newId(), name: (n + ' ' + i + ' Wolfeschlegelsteinhausenbergerdorff').slice(0, 40), call: ('Auntie ' + n + ' ' + i).slice(0, 24), user: crypto.randomUUID(), gone: i % 2 === 0 });
+        try {
+          await Sync.editTree(t => {
+            if (t.parents.length < 2) FamilyTree.add(t, 'parent', null, who('Parent', 2));
+            for (const p of t.parents) {
+              while (p.gp.length < 2) FamilyTree.add(t, 'gp', p.id, who('Grand', p.gp.length));
+              for (const g of p.gp) for (let i = (g.sibs || []).length; i < FamilyTree.MAX_SIBS; i++) {
+                const s = who('Great', i); FamilyTree.add(t, 'gsib', g.id, s); FamilyTree.add(t, 'gpartner', s.id, who('Partner', i));
+                for (let k = 0; k < FamilyTree.MAX_KIDS; k++) FamilyTree.add(t, 'gcousin', s.id, who('Cousin', k));
+              }
+            }
+          });
+          return { saved: true };
+        } catch (e) { return { err: e.message, same: count() === was }; }
+      });
+      assert.equal(r.err, 'There is no room on the family tree for more people: take someone off it, or shorten the names', JSON.stringify(r)); assert(r.same, 'the phone keeps the tree it had');
+      assert.equal((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob, before, 'and so does the server');
     });
 
     await step('the tree is the kind most common where the family comes from (by where the phone is), unless a parent picks another, for everyone', async () => {
