@@ -2651,5 +2651,20 @@
  "1bcd4q6": "Not edildi. Yeniden uyuduğunda «Yeniden uyudu»ya dokunun.",
  "b2h88z": "{time} saatinden beri uyanık ({long}) · {start} saatinden beri uyuyor",
  "11pv9av": "Yeniden uyudu",
- "vzr1m6": "Bebeğiniz uyurken sayaç burada işler. Uyandığında «Uyandı»ya dokunun ve tamamen mi uyandığını yoksa az sonra yeniden mi uyuyacağını söyleyin: o zaman uyku sürer, uyanma not edilir ve düğme «Yeniden uyudu» diye sorar."
+ "vzr1m6": "Bebeğiniz uyurken sayaç burada işler. Uyandığında «Uyandı»ya dokunun ve tamamen mi uyandığını yoksa az sonra yeniden mi uyuyacağını söyleyin: o zaman uyku sürer, uyanma not edilir ve düğme «Yeniden uyudu» diye sorar.",
+ "x1mo12": "Üvey anne veya baba",
+ "1wirif0": "Üvey kardeş",
+ "1l6o2ng": "Üvey büyükanne veya büyükbaba",
+ "1h8s7fz": "Sonraki eşi ekle",
+ "1w93leb": "Onların çocuğunu ekle",
+ "1x5hari": "{name} adlı kişinin sonraki eşi",
+ "19qett4": "{name} adlı kişinin sonraki eşi · çocukların üvey annesi veya babası",
+ "zjt4n4": "{name} adlı kişinin çocuğu · çocukların üvey kardeşi",
+ "9mi8av": "{name} adlı kişinin sonraki eşi · {parent} adlı kişinin üvey annesi veya babası, çocukların üvey büyükannesi veya büyükbabası",
+ "zeuzwe": "{parent} adlı kişinin anne bir ya da baba bir kardeşi: {name} adlı kişinin sonraki eşinden çocuğu",
+ "113hjkg": "{parent} adlı kişinin üvey kardeşi: {name} adlı kişinin önceki çocuğu",
+ "17jvkzb": "{a} ve {b} adlı kişilerin",
+ "1fpvwni": "{name} adlı kişinin",
+ "xhygd9": "{name} adlı kişinin, önceden",
+ "29zjk2": "Kimin çocuğu?"
 }

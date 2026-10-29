@@ -2597,5 +2597,20 @@
  "1bcd4q6": "Đã ghi lại. Chạm «Đã ngủ lại» khi bé ngủ lại.",
  "b2h88z": "Thức từ {time} ({long}) · ngủ từ {start}",
  "11pv9av": "Đã ngủ lại",
- "vzr1m6": "Khi bé ngủ, đồng hồ chạy ở đây. Chạm «Đã dậy» khi bé thức dậy, và cho biết bé dậy hẳn hay sắp ngủ lại: khi đó giấc ngủ tiếp tục, lần thức giấc được ghi lại, và nút sẽ hỏi «Đã ngủ lại»."
+ "vzr1m6": "Khi bé ngủ, đồng hồ chạy ở đây. Chạm «Đã dậy» khi bé thức dậy, và cho biết bé dậy hẳn hay sắp ngủ lại: khi đó giấc ngủ tiếp tục, lần thức giấc được ghi lại, và nút sẽ hỏi «Đã ngủ lại».",
+ "x1mo12": "Cha dượng hoặc mẹ kế",
+ "1wirif0": "Anh chị em kế",
+ "1l6o2ng": "Ông bà kế",
+ "1h8s7fz": "Thêm người bạn đời sau này",
+ "1w93leb": "Thêm con của họ",
+ "1x5hari": "Người bạn đời sau này của {name}",
+ "19qett4": "Người bạn đời sau này của {name} · cha dượng hoặc mẹ kế của các con",
+ "zjt4n4": "Con của {name} · anh chị em kế của các con",
+ "9mi8av": "Người bạn đời sau này của {name} · cha dượng hoặc mẹ kế của {parent}, ông bà kế của các con",
+ "zeuzwe": "Anh chị em cùng cha khác mẹ hoặc cùng mẹ khác cha của {parent}: con của {name} với người bạn đời sau này",
+ "113hjkg": "Anh chị em kế của {parent}: con riêng của {name} từ trước",
+ "17jvkzb": "của {a} và {b}",
+ "1fpvwni": "của {name}",
+ "xhygd9": "của {name}, từ trước",
+ "29zjk2": "Con của ai?"
 }

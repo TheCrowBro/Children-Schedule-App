@@ -73,8 +73,8 @@ const Acct = {
 const DEMO_TREE = { seen: null, grow: {}, scroll: null, tree: FamilyTree.clean({ parents: [
   { id: 'mum00001', name: 'Mum', gp: [{ id: 'nana0001', name: 'Rose', call: 'Nana', gp: [{ id: 'edith001', name: 'Edith', gone: true }, { id: 'arthur01', name: 'Arthur', gone: true }] }, { id: 'joe00001', name: 'Joe', call: 'Grandpa Joe', gp: [] }],
     sibs: [{ id: 'sarah001', name: 'Sarah', call: 'Auntie Sarah', partner: { id: 'ben00001', name: 'Ben' }, kids: [{ id: 'ava00001', name: 'Ava' }, { id: 'jack0001', name: 'Jack' }] }] },
-  { id: 'dad00001', name: 'Dad', gp: [{ id: 'gran0001', name: 'Gran', gp: [] }, { id: 'grandad1', name: 'Grandad', gp: [] }],
-    sibs: [{ id: 'tom00001', name: 'Tom', call: 'Uncle Tom', partner: { id: 'priya001', name: 'Priya' }, kids: [{ id: 'noah0001', name: 'Noah' }] }] }] }) };
+  { id: 'dad00001', name: 'Dad', gp: [{ id: 'gran0001', name: 'Gran', gp: [] }, { id: 'grandad1', name: 'Grandad', gp: [], partner: { id: 'june0001', name: 'June', call: 'Grandma June' } }],
+    sibs: [{ id: 'tom00001', name: 'Tom', call: 'Uncle Tom', partner: { id: 'priya001', name: 'Priya' }, kids: [{ id: 'noah0001', name: 'Noah' }] }, { id: 'ray00001', name: 'Ray', call: 'Uncle Ray', via: 'june0001', kids: [] }] }] }) };   // (June: Grandad's later partner; Ray: her son from before, a step-uncle)
 const DEMO_TREES = { oak: ['English oak', 'UK & Ireland'], maple: ['Red maple', 'North America'], beech: ['European beech', 'Central Europe'], birch: ['Silver birch', 'Northern and Eastern Europe'],
   olive: ['Olive tree', 'The Mediterranean and the Middle East'], eucalyptus: ['Eucalyptus', 'Australia & New Zealand'], cherry: ['Cherry blossom', 'East Asia'], banyan: ['Banyan', 'South Asia'],
   mango: ['Mango tree', 'Southeast Asia'], acacia: ['Umbrella acacia', 'Africa'], jacaranda: ['Jacaranda', 'Latin America'] };
@@ -88,16 +88,17 @@ function demoPickTree() {
   S.hidden = B.hidden = false; B.onclick = close; S.querySelector('[data-close]').onclick = close;
   $('#dmKindSave').onclick = () => { DEMO_TREE.kind = (S.querySelector('[name=dmKind]:checked') || {}).value || ''; DEMO_TREE.scroll = null; close(); render(); };
 }
-const DEMO_KIN = { parent: 'Parent', gp: 'Grandparent', ggp: 'Great-grandparent', sib: 'Aunt or uncle', partner: 'Aunt or uncle', cousin: 'Cousin' };
-const DEMO_ADDS = { parent: "Add the children's other parent", gp: 'Add a grandparent', ggp: 'Add a great-grandparent', sib: 'Add an aunt or uncle', partner: 'Add a partner', cousin: 'Add a cousin' };
+const DEMO_KIN = { parent: 'Parent', gp: 'Grandparent', ggp: 'Great-grandparent', sib: 'Aunt or uncle', partner: 'Aunt or uncle', cousin: 'Cousin', gsib: 'Great-aunt or great-uncle', gpartner: 'Great-aunt or great-uncle', gcousin: "A parent's cousin", pstep: 'Step-parent', stepkid: 'Step-brother or step-sister', gstep: 'Step-grandparent' };
+const DEMO_ADDS = { parent: "Add the children's other parent", gp: 'Add a grandparent', ggp: 'Add a great-grandparent', sib: 'Add an aunt or uncle', partner: 'Add a partner', cousin: 'Add a cousin', gsib: 'Add a great-aunt or great-uncle' };
 const COUSIN_COLOURS = ['#c2577a', '#3f78b5', '#2f8f83', '#8a5cc2', '#c98a3d'];
 function demoTreeModel() {
   const node = (p, kind) => ({ key: 'p:' + p.id, label: p.call || p.name, initial: p.name[0].toUpperCase(), title: [p.name, p.call, DEMO_KIN[kind]].filter(Boolean).join(' · '), gone: !!p.gone });
-  return { title: 'Family tree', rtl: I18n.rtl(), edit: true, text: { parent: 'Parent', gp: 'Grandparent', ggp: 'Great-grandparent', sib: 'Aunt or uncle' }, adds: DEMO_ADDS,
+  return { title: 'Family tree', rtl: I18n.rtl(), edit: true, text: { parent: 'Parent', gp: 'Grandparent', ggp: 'Great-grandparent', sib: 'Aunt or uncle', gsib: 'Great-aunt or great-uncle' }, adds: DEMO_ADDS,
     kids: kids().map(k => ({ key: 'k:' + k.id, label: k.name, initial: k.name[0], title: k.name, color: k.color })),
     parents: DEMO_TREE.tree.parents.map(par => ({ ...node(par, 'parent'),
-      gp: par.gp.map(g => ({ ...node(g, 'gp'), gp: g.gp.map(q => node(q, 'ggp')) })),
-      sibs: par.sibs.map(sb => ({ ...node(sb, 'sib'), partner: sb.partner ? node(sb.partner, 'partner') : null, kids: sb.kids.map((c, i) => ({ ...node(c, 'cousin'), color: COUSIN_COLOURS[(i + sb.name.length) % COUSIN_COLOURS.length] })) })) })) };
+      partner: par.partner ? { ...node(par.partner, 'pstep'), kids: (par.partner.kids || []).map((c, i) => ({ ...node(c, 'stepkid'), color: COUSIN_COLOURS[i % COUSIN_COLOURS.length] })) } : null,
+      gp: par.gp.map(g => ({ ...node(g, 'gp'), partner: g.partner ? node(g.partner, 'gstep') : null, gp: g.gp.map(q => node(q, 'ggp')), sibs: (g.sibs || []).map(sb => ({ ...node(sb, 'gsib'), partner: sb.partner ? node(sb.partner, 'gpartner') : null, kids: (sb.kids || []).map(c => node(c, 'gcousin')) })) })),
+      sibs: par.sibs.map(sb => ({ ...node(sb, 'sib'), via: sb.via ? 'p:' + sb.via : null, partner: sb.partner ? node(sb.partner, 'partner') : null, kids: sb.kids.map((c, i) => ({ ...node(c, 'cousin'), color: COUSIN_COLOURS[(i + sb.name.length) % COUSIN_COLOURS.length] })) })) })) };
 }
 /** A tap on the demo's tree: someone's card, a child's day, or adding someone (as a parent would). */
 function demoTreeTap(key) {
@@ -112,7 +113,7 @@ function demoTreeTap(key) {
   const t = DEMO_TREE.tree;
   if (key.startsWith('+')) {   // a bud: add someone there
     const [kind, at] = key.slice(1).split(':p:'), up = at ? FamilyTree.find(t, at) : null;
-    show(`<h3>🌱 ${DEMO_ADDS[kind]}</h3>${up ? `<p class="note" style="margin-top:0">${kind === 'sib' ? `${up.p.name}'s brother or sister` : `${up.p.name}'s parent`}</p>` : ''}
+    show(`<h3>🌱 ${DEMO_ADDS[kind]}</h3>${up ? `<p class="note" style="margin-top:0">${/sib$/.test(kind) ? `${up.p.name}'s brother or sister` : `${up.p.name}'s parent`}</p>` : ''}
       <label class="f" for="dmName">Name</label><input id="dmName" type="text" maxlength="40">
       <label class="f" for="dmCall">What the children call them</label><input id="dmCall" type="text" maxlength="24" placeholder="e.g. Nana, Grandpa Joe">
       <div class="chips" style="margin-top:12px"><label class="chip"><input type="checkbox" id="dmGone"><span>In loving memory</span></label></div>
@@ -126,7 +127,9 @@ function demoTreeTap(key) {
     return;
   }
   const w = FamilyTree.find(t, key.slice(2)); if (!w) return;
-  show(`<h3>${w.p.name}</h3><p class="note" style="margin-top:0">${DEMO_KIN[w.kind]}${w.kind === 'parent' ? '' : ` · ${w.side.name}'s side`}</p>
+  const via = w.kind === 'sib' && w.p.via ? FamilyTree.find(t, w.p.via) : null;
+  const how = w.kind === 'gstep' ? `${w.up.name}'s later partner · ${w.side.name}'s step-parent, the children's step-grandparent` : via ? (via.kind === 'gp' ? `${w.side.name}'s half-brother or half-sister: ${via.p.name}'s child with a later partner` : `${w.side.name}'s step-brother or step-sister: ${via.p.name}'s child from before`) : '';
+  show(`<h3>${w.p.name}</h3><p class="note" style="margin-top:0">${DEMO_KIN[w.kind]}${w.kind === 'parent' ? '' : ` · ${w.side.name}'s side`}</p>${how ? `<p class="note" style="margin-top:0">${how}</p>` : ''}
     ${w.p.call ? `<div class="stat"><span>What the children call them<br><b>${w.p.call}</b></span></div>` : ''}${w.p.gone ? '<p class="note">✦ In loving memory</p>' : ''}
     <p class="note">In the real app a parent can change or remove them here, and someone in Little Log shows their phone number and work details.</p>
     <div class="row" style="margin-top:16px"><button class="btn" data-close>Close</button>${w.kind === 'parent' ? '' : '<button class="btn d" id="dmRemove">Remove from the tree</button>'}</div>`);

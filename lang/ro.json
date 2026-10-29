@@ -2705,5 +2705,20 @@
  "1bcd4q6": "Notat. Atinge „A adormit la loc” când adoarme din nou.",
  "b2h88z": "Treaz de la {time} ({long}) · doarme de la {start}",
  "11pv9av": "A adormit la loc",
- "vzr1m6": "Cât timp bebelușul doarme, aici curge timpul. Atinge „S-a trezit” când se trezește și spune dacă s-a trezit de tot sau adoarme la loc în curând: atunci somnul continuă, trezirea este notată, iar butonul întreabă „A adormit la loc”."
+ "vzr1m6": "Cât timp bebelușul doarme, aici curge timpul. Atinge „S-a trezit” când se trezește și spune dacă s-a trezit de tot sau adoarme la loc în curând: atunci somnul continuă, trezirea este notată, iar butonul întreabă „A adormit la loc”.",
+ "x1mo12": "Tată vitreg sau mamă vitregă",
+ "1wirif0": "Frate vitreg sau soră vitregă",
+ "1l6o2ng": "Bunic vitreg sau bunică vitregă",
+ "1h8s7fz": "Adaugă un partener de mai târziu",
+ "1w93leb": "Adaugă un copil al lor",
+ "1x5hari": "Partenerul de mai târziu al lui {name}",
+ "19qett4": "Partenerul de mai târziu al lui {name} · părinte vitreg al copiilor",
+ "zjt4n4": "Copilul lui {name} · frate vitreg sau soră vitregă a copiilor",
+ "9mi8av": "Partenerul de mai târziu al lui {name} · părinte vitreg al lui {parent}, bunic vitreg al copiilor",
+ "zeuzwe": "Frate sau soră după un singur părinte al lui {parent}: copilul lui {name} cu un partener de mai târziu",
+ "113hjkg": "Frate vitreg sau soră vitregă a lui {parent}: copilul lui {name} de dinainte",
+ "17jvkzb": "al lui {a} și {b}",
+ "1fpvwni": "al lui {name}",
+ "xhygd9": "al lui {name}, de dinainte",
+ "29zjk2": "Al cui copil?"
 }

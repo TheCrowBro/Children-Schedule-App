@@ -149,6 +149,13 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   stored in ml, so phones set differently agree. ml until switched
 - **Woke up**: the night-waking entry is "Woke up" (a wake-up), with Pain among the reasons beside hungry, diaper, gas and unknown;
   Stats count wake-ups per night
+- **Step-families on the tree**: a parent's or a grandparent's **later partner** sits just outside them, joined by a small open
+  heart (the original couple stays as it is). A grandparent's later partner is the children's step-grandparent; an aunt or uncle can
+  be said to be **whose child** (the grandparent couple's, that grandparent's with the later partner: a half-brother or half-sister of
+  the parent, or the partner's from before: a step-brother or step-sister), and is drawn beyond the parent's own brothers and sisters,
+  rooted to whoever's child they are. A parent's later partner is the children's step-parent, and their own children sit on the
+  grass beside the children as step-brothers and step-sisters. On the tree family is family: the cards say who is whose. Added from a
+  person's card (+ Add a later partner, + Add a child of theirs); removing a later partner takes their own children, not a half-sibling
 - **The family tree's watercolour is painted once**: its filters (turbulence, displacement, blur) take seconds to rasterize at a
   phone's pixel density and used to run again for every tile a sideways scroll or a redraw uncovered, which showed as flashing
   while the tree was moved. The painting is now rendered once into a picture, kept on the phone for the next time the same

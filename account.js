@@ -645,9 +645,9 @@ const Acct = (() => {
     return mo < 24 ? __n('{n} month', '{n} months', mo) : __n('{n} year', '{n} years', Math.floor(mo / 12));
   }
   // who someone is to the children, by where they are on the tree; adding someone there; whose …, for the sheet
-  const KIN = { parent: N_('Parent'), gp: N_('Grandparent'), ggp: N_('Great-grandparent'), sib: N_('Aunt or uncle'), partner: N_('Aunt or uncle'), cousin: N_('Cousin'), gsib: N_('Great-aunt or great-uncle'), gpartner: N_('Great-aunt or great-uncle'), gcousin: N_("A parent's cousin") };
-  const ADDS = { parent: N_("Add the children's other parent"), gp: N_('Add a grandparent'), ggp: N_('Add a great-grandparent'), sib: N_('Add an aunt or uncle'), partner: N_('Add a partner'), cousin: N_('Add a cousin'), gsib: N_('Add a great-aunt or great-uncle'), gpartner: N_('Add a partner'), gcousin: N_('Add a child') };
-  const WHOSE = { gp: N_("{name}'s parent"), ggp: N_("{name}'s parent"), sib: N_("{name}'s brother or sister"), partner: N_("{name}'s partner"), cousin: N_("{name}'s child"), gsib: N_("{name}'s brother or sister"), gpartner: N_("{name}'s partner"), gcousin: N_("{name}'s child") };
+  const KIN = { parent: N_('Parent'), gp: N_('Grandparent'), ggp: N_('Great-grandparent'), sib: N_('Aunt or uncle'), partner: N_('Aunt or uncle'), cousin: N_('Cousin'), gsib: N_('Great-aunt or great-uncle'), gpartner: N_('Great-aunt or great-uncle'), gcousin: N_("A parent's cousin"), pstep: N_('Step-parent'), stepkid: N_('Step-brother or step-sister'), gstep: N_('Step-grandparent') };
+  const ADDS = { parent: N_("Add the children's other parent"), gp: N_('Add a grandparent'), ggp: N_('Add a great-grandparent'), sib: N_('Add an aunt or uncle'), partner: N_('Add a partner'), cousin: N_('Add a cousin'), gsib: N_('Add a great-aunt or great-uncle'), gpartner: N_('Add a partner'), gcousin: N_('Add a child'), pstep: N_('Add a later partner'), stepkid: N_('Add a child of theirs'), gstep: N_('Add a later partner') };
+  const WHOSE = { gp: N_("{name}'s parent"), ggp: N_("{name}'s parent"), sib: N_("{name}'s brother or sister"), partner: N_("{name}'s partner"), cousin: N_("{name}'s child"), gsib: N_("{name}'s brother or sister"), gpartner: N_("{name}'s partner"), gcousin: N_("{name}'s child"), pstep: N_("{name}'s later partner"), stepkid: N_("{name}'s child"), gstep: N_("{name}'s later partner") };
   // the kinds of tree, and where each is the most common one: the tree is the one where the family comes from (a parent can change it)
   const TREES = { oak: [N_('English oak'), N_('UK & Ireland')], maple: [N_('Red maple'), N_('North America')], beech: [N_('European beech'), N_('Central Europe')],
     birch: [N_('Silver birch'), N_('Northern and Eastern Europe')], olive: [N_('Olive tree'), N_('The Mediterranean and the Middle East')], eucalyptus: [N_('Eucalyptus'), N_('Australia & New Zealand')],
@@ -692,9 +692,10 @@ const Acct = (() => {
     const parents = t.parents.map(par => {
       acts['+gp:p:' + par.id] = () => relativeForm({ kind: 'gp', at: par.id }); acts['+sib:p:' + par.id] = () => relativeForm({ kind: 'sib', at: par.id });
       return { ...node(par, 'parent'),
+        partner: par.partner ? { ...node(par.partner, 'pstep'), kids: (par.partner.kids || []).map((c, i) => ({ ...node(c, 'stepkid'), color: Kids.PALETTE.other[i % Kids.PALETTE.other.length] })) } : null,   // (a later partner, with their own children)
         gp: par.gp.map(g => { acts['+ggp:p:' + g.id] = () => relativeForm({ kind: 'ggp', at: g.id }); acts['+gsib:p:' + g.id] = () => relativeForm({ kind: 'gsib', at: g.id });
-          return { ...node(g, 'gp'), gp: g.gp.map(q => node(q, 'ggp')), sibs: (g.sibs || []).map(sb => ({ ...node(sb, 'gsib'), partner: sb.partner ? node(sb.partner, 'gpartner') : null, kids: (sb.kids || []).map(c => node(c, 'gcousin')) })) }; }),
-        sibs: par.sibs.map(sb => ({ ...node(sb, 'sib'), partner: sb.partner ? node(sb.partner, 'partner') : null, kids: cousins(sb) })) };
+          return { ...node(g, 'gp'), partner: g.partner ? node(g.partner, 'gstep') : null, gp: g.gp.map(q => node(q, 'ggp')), sibs: (g.sibs || []).map(sb => ({ ...node(sb, 'gsib'), partner: sb.partner ? node(sb.partner, 'gpartner') : null, kids: (sb.kids || []).map(c => node(c, 'gcousin')) })) }; }),
+        sibs: par.sibs.map(sb => ({ ...node(sb, 'sib'), via: sb.via ? 'p:' + sb.via : null, partner: sb.partner ? node(sb.partner, 'partner') : null, kids: cousins(sb) })) };
     });
     acts['+parent'] = () => relativeForm({ kind: 'parent' });
     const tr = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, __(v)]));
@@ -742,27 +743,40 @@ const Acct = (() => {
   /** Someone on the tree: who they are to the children, what the children call them, their contact details when they share this log;
       a parent edits them here, and adds an aunt or uncle's partner and children. */
   function treeCard(id) {
-    const w = FamilyTree.find(shownTree(), id); if (!w) return;
+    const t = shownTree(), w = FamilyTree.find(t, id); if (!w) return;
     const p = w.p, edit = Sync.isParent(), member = p.user && Sync.st.people.find(x => x.user_id === p.user), sib = w.kind === 'sib' ? p : w.kind === 'partner' || w.kind === 'cousin' ? w.up : null;
-    const kinds = w.kind === 'sib' ? ['partner', 'cousin'] : w.kind === 'gsib' ? ['gpartner', 'gcousin'] : null;   // (a brother or sister: a partner and children can be added to them)
     const fam = sib && sib.family && Sync.st.memberships.find(m => m.id === sib.family && m.id !== db.meta.babyId);
+    // who is whose, when it is not plain: a later partner, their child, a half- or step-brother or sister
+    const via = w.kind === 'sib' && p.via ? FamilyTree.find(t, p.via) : null, nm = treeName;
+    const how = w.kind === 'pstep' ? __("{name}'s later partner · the children's step-parent", { name: nm(w.up) })
+      : w.kind === 'stepkid' ? __("{name}'s child · the children's step-brother or step-sister", { name: nm(w.up) })
+      : w.kind === 'gstep' ? __("{name}'s later partner · {parent}'s step-parent, the children's step-grandparent", { name: nm(w.up), parent: nm(w.side) })
+      : via && via.kind === 'gp' ? __("{parent}'s half-brother or half-sister: {name}'s child with a later partner", { parent: nm(w.side), name: nm(via.p) })
+      : via ? __("{parent}'s step-brother or step-sister: {name}'s child from before", { parent: nm(w.side), name: nm(via.p) }) : '';
+    // what can be added to them: a partner and children to a brother or sister; a later partner to a parent or grandparent; children to a later partner
+    const more = [];
+    if (edit) {
+      if (w.kind === 'sib' || w.kind === 'gsib') { const [pk, ck] = w.kind === 'sib' ? ['partner', 'cousin'] : ['gpartner', 'gcousin']; if (!p.partner) more.push(['tcPartner', pk]); if (p.kids.length < FamilyTree.MAX_KIDS) more.push(['tcCousin', ck]); }
+      if ((w.kind === 'parent' || w.kind === 'gp') && !p.partner) more.push(['tcLater', w.kind === 'parent' ? 'pstep' : 'gstep']);
+      if (w.kind === 'pstep' && (p.kids || []).length < FamilyTree.MAX_KIDS) more.push(['tcStepkid', 'stepkid']);
+    }
     const close = showSheet(`<h3>${esc(treeName(p))}</h3>
       <p class="note" style="margin-top:0">${esc([__(KIN[w.kind]), w.kind === 'parent' ? '' : __("{name}'s side", { name: treeName(w.side) })].filter(Boolean).join(' · '))}</p>
+      ${how ? `<p class="note" style="margin-top:0">${esc(how)}</p>` : ''}
       ${p.call ? `<div class="stat"><span>${__h('What the children call them')}<br><b class="sel">${esc(p.call)}</b></span></div>` : ''}
       ${p.gone ? `<p class="note">✦ ${__h('In loving memory')}</p>` : ''}
       ${member ? detailsHtml(member.info || {}, member.email) : ''}
       <div class="row" style="margin-top:16px"><button class="btn" data-close>${__h('Close')}</button>${fam ? `<button class="btn" id="tcOpen">${__h('Open {family}', { family: famName(fam) })}</button>` : ''}${edit ? `<button class="btn p" id="tcEdit">${__h('Edit')}</button>` : ''}</div>
-      ${edit && kinds ? `<div class="row">${p.partner ? '' : `<button class="btn" id="tcPartner">+ ${__h('Add a partner')}</button>`}${p.kids.length < FamilyTree.MAX_KIDS ? `<button class="btn" id="tcCousin">+ ${__h(ADDS[kinds[1]])}</button>` : ''}</div>` : ''}`);
+      ${more.length ? `<div class="row">${more.map(([bid, k]) => `<button class="btn" id="${bid}" data-tcadd="${k}">+ ${__h(ADDS[k])}</button>`).join('')}</div>` : ''}`);
     $('#sheet [data-close]').onclick = close;
     if ($('#tcOpen')) $('#tcOpen').onclick = () => { close(); openFamily(fam.id); };
     if ($('#tcEdit')) $('#tcEdit').onclick = () => relativeForm({ id });
-    if ($('#tcPartner')) $('#tcPartner').onclick = () => relativeForm({ kind: kinds[0], at: id });
-    if ($('#tcCousin')) $('#tcCousin').onclick = () => relativeForm({ kind: kinds[1], at: id });
+    document.querySelectorAll('#sheet [data-tcadd]').forEach(b => b.onclick = () => relativeForm({ kind: b.dataset.tcadd, at: id }));
   }
   /** People this phone knows in Little Log who could be added: relatives in this log, and the parents and family in your relatives'
       family logs (an aunt or uncle picked from their own family brings their partner and children along). */
   function treeCandidates(t, kind) {
-    if (kind === 'cousin' || kind === 'gcousin') return [];
+    if (kind === 'cousin' || kind === 'gcousin' || kind === 'stepkid') return [];
     const on = new Set(FamilyTree.walk(t).map(w => w.p.user).filter(Boolean)), out = [];
     for (const p of Sync.st.people) if (RELATIVES.includes(p.role) && !on.has(p.user_id)) { on.add(p.user_id); out.push({ user: p.user_id, name: p.display_name || __('Member') }); }
     for (const m of kinFams()) {
@@ -783,10 +797,15 @@ const Acct = (() => {
     if (id && !w) return;
     kind = w ? w.kind : kind;
     const p = w ? w.p : {}, picks = w ? [] : treeCandidates(t, kind), whose = WHOSE[kind] && up ? __(WHOSE[kind], { name: treeName(up) }) : '';
+    // an aunt or uncle, once a grandparent has a later partner: whose child (the couple's, that grandparent's with the partner, or the partner's from before)
+    const side = kind === 'sib' ? (w ? w.side : up) : null, gps = side ? side.gp : [];
+    const vias = gps.some(g => g.partner) ? [['', gps.length === 2 ? __("{a} and {b}'s", { a: treeName(gps[0]), b: treeName(gps[1]) }) : __("{name}'s", { name: treeName(gps[0]) })],
+      ...gps.flatMap(g => (g.partner ? [[g.id, __("{a} and {b}'s", { a: treeName(g), b: treeName(g.partner) })], [g.partner.id, __("{name}'s, from before", { name: treeName(g.partner) })]] : []))] : [];
     const close = showSheet(`<h3>🌱 ${w ? esc(treeName(p)) : __h(ADDS[kind])}</h3>${whose ? `<p class="note" style="margin-top:0">${esc(whose)}</p>` : ''}
       ${picks.length ? `<label class="f">${__h('Already in Little Log')}</label><div class="chips">${picks.map((c, i) => chip('rlPick', i, `${esc(c.name)}${c.fam ? ` <small>· ${esc(c.fam)}</small>` : ''}`, false, '', true)).join('')}</div>` : ''}
       <label class="f" for="rlName">${__h('Name')}</label><input id="rlName" type="text" maxlength="40" value="${esc(p.name || '')}">
       <label class="f" for="rlCall">${__h('What the children call them')}</label><input id="rlCall" type="text" maxlength="24" value="${esc(p.call || '')}" placeholder="${__h('e.g. Nana, Grandpa Joe')}">
+      ${vias.length ? `<label class="f">${__h('Whose child?')}</label><div class="chips">${vias.map(([v, l]) => chip('rlVia', v, esc(l), (p.via || '') === v, '', true)).join('')}</div>` : ''}
       <div class="chips" style="margin-top:12px">${chip('rlGone', '1', __h('In loving memory'), !!p.gone)}</div>
       <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="rlSave">${w ? __h('Save') : __h('Add')}</button></div>
       ${w ? `<div class="row"><button class="btn d" id="rlRemove">${__h('Remove from the tree')}</button></div>` : ''}`);
@@ -801,8 +820,9 @@ const Acct = (() => {
     $('#rlSave').onclick = () => {
       const name = $('#rlName').value.trim(), call = $('#rlCall').value.trim(), gone = !!document.querySelector('#sheet [name=rlGone]:checked'), c = pick();
       if (!name) return toast(__('Enter a name'));
-      if (w) return save(tr => FamilyTree.update(tr, id, { name, call, gone }), N_('Saved'));
-      const person = { id: FamilyTree.newId(), name, call, gone, ...(c ? { user: c.user } : {}), ...(c && c.family && kind === 'sib' ? fromFamily(c) : {}) };
+      const via = vias.length ? ((document.querySelector('#sheet [name=rlVia]:checked') || {}).value || '') : undefined;
+      if (w) return save(tr => FamilyTree.update(tr, id, { name, call, gone, ...(via !== undefined ? { via } : {}) }), N_('Saved'));
+      const person = { id: FamilyTree.newId(), name, call, gone, ...(via ? { via } : {}), ...(c ? { user: c.user } : {}), ...(c && c.family && kind === 'sib' ? fromFamily(c) : {}) };
       save(tr => FamilyTree.add(tr, kind, at, person), N_('Saved'));
     };
     if ($('#rlRemove')) $('#rlRemove').onclick = () => {

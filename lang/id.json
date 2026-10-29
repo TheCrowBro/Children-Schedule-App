@@ -2597,5 +2597,20 @@
  "1bcd4q6": "Dicatat. Ketuk «Tidur lagi» saat ia sudah tidur kembali.",
  "b2h88z": "Terjaga sejak {time} ({long}) · tidur sejak {start}",
  "11pv9av": "Tidur lagi",
- "vzr1m6": "Selama bayi tidur, pengatur waktu berjalan di sini. Ketuk «Sudah bangun» saat ia bangun, lalu katakan apakah ia bangun untuk seterusnya atau akan segera tidur lagi: tidurnya pun berlanjut, terjaganya dicatat, dan tombolnya menanyakan «Tidur lagi»."
+ "vzr1m6": "Selama bayi tidur, pengatur waktu berjalan di sini. Ketuk «Sudah bangun» saat ia bangun, lalu katakan apakah ia bangun untuk seterusnya atau akan segera tidur lagi: tidurnya pun berlanjut, terjaganya dicatat, dan tombolnya menanyakan «Tidur lagi».",
+ "x1mo12": "Ayah atau ibu tiri",
+ "1wirif0": "Saudara tiri",
+ "1l6o2ng": "Kakek atau nenek tiri",
+ "1h8s7fz": "Tambahkan pasangan berikutnya",
+ "1w93leb": "Tambahkan anak mereka",
+ "1x5hari": "Pasangan berikutnya {name}",
+ "19qett4": "Pasangan berikutnya {name} · ayah atau ibu tiri anak-anak",
+ "zjt4n4": "Anak {name} · saudara tiri anak-anak",
+ "9mi8av": "Pasangan berikutnya {name} · ayah atau ibu tiri {parent}, kakek atau nenek tiri anak-anak",
+ "zeuzwe": "Saudara seayah atau seibu {parent}: anak {name} dengan pasangan berikutnya",
+ "113hjkg": "Saudara tiri {parent}: anak {name} dari sebelumnya",
+ "17jvkzb": "{a} dan {b}",
+ "1fpvwni": "{name}",
+ "xhygd9": "{name}, dari sebelumnya",
+ "29zjk2": "Anak siapa?"
 }

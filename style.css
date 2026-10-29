@@ -464,6 +464,7 @@ details.fgrp{margin:6px 10px}details.fgrp .chips,details.fgrp .note,details.food
 .ftreesvg .tbud .disc{fill:var(--ft-paper);fill-opacity:.55;stroke:#7fa86a;stroke-width:1.8;stroke-dasharray:3 3}.ftreesvg .tbud .plus{stroke:#6f9a5c;stroke-width:2.2;stroke-linecap:round}
 .ftreesvg .tbud .ftl{fill:var(--mute);font-weight:500;font-size:9.5px}
 .ftreesvg .heart{fill:#e58aa0;opacity:.88}.ftreesvg .heart.faint{fill:none;stroke:#e58aa0;stroke-dasharray:2 2;opacity:.7}
+.ftreesvg .heart.step{fill:none;stroke:#e58aa0;stroke-width:1.4;opacity:.9}   /* (a later partner: a small open heart) */
 .ftreesvg [role=button]:focus-visible .disc{stroke:var(--brand);stroke-width:3.5}
 .ftreesvg [role=button]:active .disc{stroke:var(--brand);stroke-width:2.5}
 /* gently alive: the birds hop and look about, leaves drift down; whoever is new sprouts in */

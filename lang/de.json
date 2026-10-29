@@ -2651,5 +2651,20 @@
  "1bcd4q6": "Notiert. Tippe auf „Wieder eingeschlafen“, wenn dein Kind wieder schläft.",
  "b2h88z": "Wach seit {time} ({long}) · schläft seit {start}",
  "11pv9av": "Wieder eingeschlafen",
- "vzr1m6": "Während dein Baby schläft, läuft hier die Uhr. Tippe auf „Aufgewacht“, wenn es aufwacht, und sage, ob es endgültig wach ist oder bald wieder schläft: Dann geht der Schlaf weiter, das Aufwachen wird notiert, und der Knopf fragt „Wieder eingeschlafen“."
+ "vzr1m6": "Während dein Baby schläft, läuft hier die Uhr. Tippe auf „Aufgewacht“, wenn es aufwacht, und sage, ob es endgültig wach ist oder bald wieder schläft: Dann geht der Schlaf weiter, das Aufwachen wird notiert, und der Knopf fragt „Wieder eingeschlafen“.",
+ "x1mo12": "Stiefelternteil",
+ "1wirif0": "Stiefbruder oder Stiefschwester",
+ "1l6o2ng": "Stiefgroßelternteil",
+ "1h8s7fz": "Neuen Partner hinzufügen",
+ "1w93leb": "Ein Kind von ihnen hinzufügen",
+ "1x5hari": "Neuer Partner von {name}",
+ "19qett4": "Neuer Partner von {name} · Stiefelternteil der Kinder",
+ "zjt4n4": "Kind von {name} · Stiefbruder oder Stiefschwester der Kinder",
+ "9mi8av": "Neuer Partner von {name} · Stiefelternteil von {parent}, Stiefgroßelternteil der Kinder",
+ "zeuzwe": "Halbbruder oder Halbschwester von {parent}: Kind von {name} mit dem neuen Partner",
+ "113hjkg": "Stiefbruder oder Stiefschwester von {parent}: Kind von {name} aus früherer Zeit",
+ "17jvkzb": "von {a} und {b}",
+ "1fpvwni": "von {name}",
+ "xhygd9": "von {name}, aus früherer Zeit",
+ "29zjk2": "Wessen Kind?"
 }

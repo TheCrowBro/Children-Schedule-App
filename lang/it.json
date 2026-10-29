@@ -2705,5 +2705,20 @@
  "1bcd4q6": "Annotato. Tocca «Si è riaddormentato» quando si è riaddormentato.",
  "b2h88z": "Sveglio dalle {time} ({long}) · dorme dalle {start}",
  "11pv9av": "Si è riaddormentato",
- "vzr1m6": "Mentre il tuo bimbo dorme, qui scorre il tempo. Tocca «Si è svegliato» quando si sveglia e di' se è sveglio del tutto o se presto tornerà a nanna: allora la nanna continua, il risveglio viene annotato e il pulsante chiede «Si è riaddormentato»."
+ "vzr1m6": "Mentre il tuo bimbo dorme, qui scorre il tempo. Tocca «Si è svegliato» quando si sveglia e di' se è sveglio del tutto o se presto tornerà a nanna: allora la nanna continua, il risveglio viene annotato e il pulsante chiede «Si è riaddormentato».",
+ "x1mo12": "Patrigno o matrigna",
+ "1wirif0": "Fratellastro o sorellastra",
+ "1l6o2ng": "Nonno o nonna acquisiti",
+ "1h8s7fz": "Aggiungi un nuovo partner",
+ "1w93leb": "Aggiungi un loro figlio",
+ "1x5hari": "Nuovo partner di {name}",
+ "19qett4": "Nuovo partner di {name} · patrigno o matrigna dei bambini",
+ "zjt4n4": "Figlio di {name} · fratellastro o sorellastra dei bambini",
+ "9mi8av": "Nuovo partner di {name} · patrigno o matrigna di {parent}, nonno o nonna acquisiti dei bambini",
+ "zeuzwe": "Fratellastro o sorellastra di {parent}, figlio di {name} con un nuovo partner",
+ "113hjkg": "Fratellastro o sorellastra acquisiti di {parent}: figlio di {name} di prima",
+ "17jvkzb": "di {a} e {b}",
+ "1fpvwni": "di {name}",
+ "xhygd9": "di {name}, di prima",
+ "29zjk2": "Figlio di chi?"
 }

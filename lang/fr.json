@@ -2705,5 +2705,20 @@
  "1bcd4q6": "Noté. Touchez « Rendormi » quand il se rendort.",
  "b2h88z": "Réveillé depuis {time} ({long}) · dort depuis {start}",
  "11pv9av": "Rendormi",
- "vzr1m6": "Pendant que votre bébé dort, le chronomètre tourne ici. Touchez « Réveillé » quand il se réveille, et dites s'il est réveillé pour de bon ou s'il va bientôt se rendormir : le sommeil continue alors, le réveil est noté, et le bouton demande « Rendormi »."
+ "vzr1m6": "Pendant que votre bébé dort, le chronomètre tourne ici. Touchez « Réveillé » quand il se réveille, et dites s'il est réveillé pour de bon ou s'il va bientôt se rendormir : le sommeil continue alors, le réveil est noté, et le bouton demande « Rendormi ».",
+ "x1mo12": "Beau-parent",
+ "1wirif0": "Frère ou sœur par alliance",
+ "1l6o2ng": "Beau-grand-parent",
+ "1h8s7fz": "Ajouter un nouveau partenaire",
+ "1w93leb": "Ajouter un de ses enfants",
+ "1x5hari": "Nouveau partenaire de {name}",
+ "19qett4": "Nouveau partenaire de {name} · beau-parent des enfants",
+ "zjt4n4": "Enfant de {name} · frère ou sœur par alliance des enfants",
+ "9mi8av": "Nouveau partenaire de {name} · beau-parent de {parent}, beau-grand-parent des enfants",
+ "zeuzwe": "Demi-frère ou demi-sœur de {parent} : enfant de {name} avec un nouveau partenaire",
+ "113hjkg": "Frère ou sœur par alliance de {parent} : enfant de {name} d'une union précédente",
+ "17jvkzb": "de {a} et {b}",
+ "1fpvwni": "de {name}",
+ "xhygd9": "de {name}, d'une union précédente",
+ "29zjk2": "Enfant de qui ?"
 }

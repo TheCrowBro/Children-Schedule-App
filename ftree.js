@@ -13,7 +13,11 @@ const FamilyTree = (() => {
   // { v: 1, parents: [Parent], species (the kind of tree, when a parent chose one) }: the children's parents (one or two), each with
   //   gp:   their own parents, the children's grandparents (up to two), each with gp: theirs, the great-grandparents (up to two), and
   //         sibs: their brothers and sisters, the children's great-aunts and great-uncles (up to eight), each with a partner and children
-  //   sibs: their brothers and sisters, the children's aunts and uncles (up to eight), each with a partner and children (the cousins)
+  //   sibs: their brothers and sisters, the children's aunts and uncles (up to eight), each with a partner and children (the cousins);
+  //         one may carry via, whose child they are when not the grandparent couple's: a grandparent's id (a half-brother or half-sister,
+  //         that grandparent's child with a later partner) or a later partner's id (a step-brother or step-sister, their child from before)
+  //   partner: the parent's later partner (the children's step-parent), with kids: their own children (the children's step-brothers and
+  //         step-sisters, up to eight). A grandparent may have a later partner too (the parent's step-parent, the children's step-grandparent).
   // A person: { id, name, call (what the children call them), user (their Little Log account), gone (in loving memory) }. An aunt or
   // uncle may carry family (their own family log), and a cousin kid (the child's id in that log), to open it from the tree.
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, ID = /^[a-z0-9]{4,16}$/, KID = /^[A-Za-z0-9_-]{1,24}$/;
@@ -41,25 +45,34 @@ const FamilyTree = (() => {
       const x = person(s, seen); if (!x) return null;
       const partner = person(s.partner, seen); if (partner) x.partner = partner;
       if (typeof s.family === 'string' && UUID.test(s.family)) x.family = s.family.toLowerCase();
+      if (typeof s.via === 'string' && ID.test(s.via)) x.via = s.via;
       x.kids = list(s.kids, MAX_KIDS, q => person(q, seen));
       return x;
     };
+    // a later partner (of a parent, with their own children; of a grandparent)
+    const later = (x, withKids) => { const q = person(x, seen); if (q && withKids) q.kids = list(x.kids, MAX_KIDS, k => person(k, seen)); return q; };
     const parents = list(t && t.parents, 2, p => {
       const o = person(p, seen); if (!o) return null;
-      o.gp = list(p.gp, 2, g => { const x = person(g, seen); if (x) { x.gp = list(g.gp, 2, q => person(q, seen)); x.sibs = list(g.sibs, MAX_SIBS, sibOf); } return x; });
+      o.gp = list(p.gp, 2, g => { const x = person(g, seen); if (x) { x.gp = list(g.gp, 2, q => person(q, seen)); x.sibs = list(g.sibs, MAX_SIBS, sibOf); const l = later(g.partner); if (l) x.partner = l; } return x; });
       o.sibs = list(p.sibs, MAX_SIBS, sibOf);
+      const l = later(p.partner, true); if (l) o.partner = l;
+      const vias = new Set(o.gp.flatMap(g => [g.id, ...(g.partner ? [g.partner.id] : [])]));   // (whose child: a grandparent of this side, or a later partner of one; anything else is dropped)
+      for (const s of o.sibs) if (s.via && !vias.has(s.via)) delete s.via;
       return o;
     });
     return { v: 1, parents, ...(t && SPECIES[t.species] ? { species: t.species } : {}) };
   }
   /** Everyone on the tree, with where they are: kind (parent, gp, ggp, sib, partner, cousin, or a grandparent's gsib, gpartner and
-      gcousin), side (the children's parent whose side of the family it is), up (who they hang from) and list (the list they are in). */
+      gcousin; a parent's later partner pstep and their children stepkid; a grandparent's later partner gstep), side (the children's
+      parent whose side of the family it is), up (who they hang from) and list (the list they are in). */
   function walk(t) {
     const out = [];
     for (const s of t.parents) {
       out.push({ p: s, kind: 'parent', side: s, up: null, list: t.parents });
+      if (s.partner) { out.push({ p: s.partner, kind: 'pstep', side: s, up: s, list: null }); for (const k of s.partner.kids || []) out.push({ p: k, kind: 'stepkid', side: s, up: s.partner, list: s.partner.kids }); }
       for (const g of s.gp) {
         out.push({ p: g, kind: 'gp', side: s, up: s, list: s.gp });
+        if (g.partner) out.push({ p: g.partner, kind: 'gstep', side: s, up: g, list: null });
         for (const q of g.gp) out.push({ p: q, kind: 'ggp', side: s, up: g, list: g.gp });
         for (const b of g.sibs || []) {
           out.push({ p: b, kind: 'gsib', side: s, up: g, list: g.sibs });
@@ -78,13 +91,18 @@ const FamilyTree = (() => {
   const find = (t, id) => walk(t).find(w => w.p.id === id) || null;
   /** Add `p` where someone is missing: kind parent (the children's other parent), gp (a parent `at`'s parent), ggp (a grandparent
       `at`'s parent), sib (a parent `at`'s brother or sister), partner or cousin (an aunt or uncle `at`'s), gsib (a grandparent `at`'s
-      brother or sister), gpartner or gcousin (a great-aunt or great-uncle `at`'s). False when there is no room there (any more). */
+      brother or sister), gpartner or gcousin (a great-aunt or great-uncle `at`'s), pstep (a parent `at`'s later partner), stepkid (a
+      later partner `at`'s child), gstep (a grandparent `at`'s later partner). A brother or sister may say via whose child they are
+      (a grandparent of that side, or a later partner of one). False when there is no room there (any more). */
   function add(t, kind, at, p) {
     if (kind === 'parent') { if (t.parents.length >= 2) return false; t.parents.push({ ...p, gp: [], sibs: [] }); return true; }
     const w = find(t, at); if (!w) return false;
     if (kind === 'gp' && w.kind === 'parent' && w.p.gp.length < 2) { w.p.gp.push({ ...p, gp: [], sibs: [] }); return true; }
     if (kind === 'ggp' && w.kind === 'gp' && w.p.gp.length < 2) { w.p.gp.push({ ...p }); return true; }
-    if (kind === 'sib' && w.kind === 'parent' && w.p.sibs.length < MAX_SIBS) { w.p.sibs.push({ kids: [], ...p }); return true; }
+    if (kind === 'sib' && w.kind === 'parent' && w.p.sibs.length < MAX_SIBS) { if (p.via && !viaOk(w.p, p.via)) return false; w.p.sibs.push({ kids: [], ...p }); return true; }
+    if (kind === 'pstep' && w.kind === 'parent' && !w.p.partner) { w.p.partner = { kids: [], ...p }; return true; }
+    if (kind === 'stepkid' && w.kind === 'pstep' && w.p.kids.length < MAX_KIDS) { w.p.kids.push({ ...p }); return true; }
+    if (kind === 'gstep' && w.kind === 'gp' && !w.p.partner) { w.p.partner = { ...p }; return true; }
     if (kind === 'partner' && w.kind === 'sib' && !w.p.partner) { w.p.partner = { ...p }; return true; }
     if (kind === 'cousin' && w.kind === 'sib' && w.p.kids.length < MAX_KIDS) { w.p.kids.push({ ...p }); return true; }
     if (kind === 'gsib' && w.kind === 'gp' && (w.p.sibs || (w.p.sibs = [])).length < MAX_SIBS) { w.p.sibs.push({ kids: [], ...p }); return true; }
@@ -92,16 +110,26 @@ const FamilyTree = (() => {
     if (kind === 'gcousin' && w.kind === 'gsib' && w.p.kids.length < MAX_KIDS) { w.p.kids.push({ ...p }); return true; }
     return false;
   }
-  /** Change someone's name, what the children call them, their account, or whether they are remembered (in loving memory). */
+  /** Whose child a brother or sister of parent `s` may be said to be: one of that side's grandparents, or a later partner of one. */
+  const viaOk = (s, via) => s.gp.some(g => g.id === via || (g.partner && g.partner.id === via));
+  /** Change someone's name, what the children call them, their account, whether they are remembered (in loving memory), or whose child
+      a brother or sister is (via: '' for the grandparent couple's). */
   function update(t, id, f) {
     const w = find(t, id); if (!w) return false;
     for (const k of ['name', 'call', 'user', 'gone']) if (k in f) { if (f[k]) w.p[k] = f[k]; else delete w.p[k]; }
+    if ('via' in f && w.kind === 'sib') { if (f.via && viaOk(w.side, f.via)) w.p.via = f.via; else delete w.p.via; }
     return true;
   }
-  /** Take someone off the tree, and everyone added through them (a grandparent's parents, an aunt's partner and children). */
+  /** Take someone off the tree, and everyone added through them (a grandparent's parents, an aunt's partner and children, a later
+      partner's own children; a half-brother or half-sister stays, as the grandparent's child). */
   function remove(t, id) {
     const w = find(t, id); if (!w) return false;
-    if (w.kind === 'partner' || w.kind === 'gpartner') delete w.up.partner; else w.list.splice(w.list.indexOf(w.p), 1);
+    if (w.kind === 'partner' || w.kind === 'gpartner' || w.kind === 'pstep') delete w.up.partner;
+    else if (w.kind === 'gstep') { delete w.up.partner; w.side.sibs = w.side.sibs.filter(s => s.via !== id); }
+    else {
+      w.list.splice(w.list.indexOf(w.p), 1);
+      if (w.kind === 'gp') { const l = w.p.partner ? w.p.partner.id : null; w.side.sibs = w.side.sibs.filter(s => !(l && s.via === l)); for (const s of w.side.sibs) if (s.via === id) delete s.via; }
+    }
     return true;
   }
 
@@ -230,7 +258,7 @@ const FamilyTree = (() => {
     const sibsOf = p => p.sibs || [], gpOf = p => p.gp || [];
     // what grows in, and when: asked from the grass up, so that the first time it grows in that order
     for (const n of [...kids, ...P, ...P.flatMap(p => sibsOf(p).flatMap(s => [s, ...(s.partner ? [s.partner] : []), ...(s.kids || [])])),
-      ...P.flatMap(gpOf), ...P.flatMap(p => gpOf(p).flatMap(gpOf)), ...P.flatMap(p => gpOf(p).flatMap(g => sibsOf(g).flatMap(s => [s, ...(s.partner ? [s.partner] : []), ...(s.kids || [])])))]) { keys.push(n.key); when[n.key] = m.sprout ? m.sprout(n.key) : null; }
+      ...P.flatMap(p => (p.partner ? [p.partner, ...(p.partner.kids || [])] : [])), ...P.flatMap(gpOf), ...P.flatMap(p => gpOf(p).flatMap(g => (g.partner ? [g.partner] : []))), ...P.flatMap(p => gpOf(p).flatMap(gpOf)), ...P.flatMap(p => gpOf(p).flatMap(g => sibsOf(g).flatMap(s => [s, ...(s.partner ? [s.partner] : []), ...(s.kids || [])])))]) { keys.push(n.key); when[n.key] = m.sprout ? m.sprout(n.key) : null; }
     const grow = (key, cls) => (when[key] == null ? `class="${cls}"` : `class="${cls} sprout" style="--d:${Math.round(when[key])}ms"`);
 
     // where everyone goes: x from the parents' heart (0), and a row (3 great-grandparents … 0 the children)
@@ -242,31 +270,49 @@ const FamilyTree = (() => {
     if (couple) hearts.push({ x: 0, row: 1, faint: P.length < 2, big: true });
     const kidRows = rowsOf(kids, KPR);
     kidRows.forEach((r, i) => spread(r.length, KCELL, 0).forEach((kx, j) => nodes.push({ n: r[j], x: kx, row: 0, sub: i, r: RK, kid: true, home: true })));
-    const homeHalf = Math.max(couple ? CELL : CELL / 2, ...kidRows.map(r => (r.length * KCELL) / 2));
+    const kidsHalf = Math.max(0, ...kidRows.map(r => (r.length * KCELL) / 2));
+    // a parent's later partner (the children's step-parent) just outside them, a small open heart between; the partner's own children
+    // (the children's step-brothers and step-sisters) on the grass beyond the children, off a root from the partner
+    const stepHalf = P.map((p, i) => {
+      if (!p.partner) return 0;
+      const dir = i === 0 ? -1 : 1, sx = homeX[i] + dir * CELL, sk = p.partner.kids || [], kw = sk.length * KCELL, k0 = dir * (kidsHalf + (kidsHalf ? 10 : 0) + kw / 2);
+      nodes.push({ n: p.partner, x: sx, row: 1, r: RA, step: true }); hearts.push({ x: homeX[i] + (dir * CELL) / 2, row: 1, step: true, small: true });
+      spread(sk.length, KCELL, k0).forEach((kx, j) => nodes.push({ n: sk[j], x: kx, row: 0, r: RK, kid: true, cousin: true, step: true, from: sx }));
+      return Math.max(Math.abs(sx) + CELL / 2, sk.length ? Math.abs(k0) + kw / 2 : 0);
+    });
+    const homeHalfOf = i => Math.max(couple ? CELL : CELL / 2, kidsHalf, stepHalf[i] || 0);
 
     const sides = P.map((p, si) => {
       const dir = si === 0 ? -1 : 1, px = homeX[si], units = [];   // the first parent's side of the family to the left, the second's to the right
-      let edge = dir * (homeHalf + GAP);
-      for (const s of sibsOf(p)) {
+      let edge = dir * (homeHalfOf(si) + GAP);
+      for (const s of [...sibsOf(p)].sort((a, b) => (a.via ? 1 : 0) - (b.via ? 1 : 0))) {   // (a parent's own brothers and sisters first; the half- and step-ones further out)
         const cRows = rowsOf(s.kids || [], CPR), uw = Math.max(s.partner ? 2 * CELL : CELL, ...cRows.map(r => r.length * KCELL));
         const cx = edge + (dir * uw) / 2, sx = s.partner ? cx - (dir * CELL) / 2 : cx;   // the aunt or uncle nearer the parent, a partner outside
         nodes.push({ n: s, x: sx, row: 1, r: RA });
         if (s.partner) { nodes.push({ n: s.partner, x: cx + (dir * CELL) / 2, row: 1, r: RA }); hearts.push({ x: cx, row: 1 }); }
         cRows.forEach((r, i) => spread(r.length, KCELL, cx).forEach((kx, j) => nodes.push({ n: r[j], x: kx, row: 0, sub: i, r: RK, kid: true, cousin: true, from: cx })));
-        units.push({ sx, cx });
+        units.push({ sx, cx, via: s.via || null });
         edge += dir * (uw + GAP);
       }
       if (edit && sibsOf(p).length < MAX_SIBS) { nodes.push({ bud: bud('+sib:' + p.key, 'sib'), x: edge + (dir * CELL) / 2, row: 1, r: RA }); }
       // the grandparents: above this parent and their brothers and sisters, on this side of the trunk
-      const gpItems = [...gpOf(p).map(g => ({ n: g })), ...(edit && gpOf(p).length < 2 ? [{ bud: bud('+gp:' + p.key, 'gp') }] : [])];
-      const below = [px, ...units.map(u => u.sx)];
+      // (a grandparent's later partner sits just outside them: that grandparent takes the outer place; the left side's outer place is
+      // first in x order, the right side's last)
+      const gps = gpOf(p).slice(); if (gps.length === 2 && gps[1].partner && !gps[0].partner) gps.reverse();
+      const outerFirst = [];
+      gps.forEach((g, i) => { const it = { n: g }; if (g.partner && i === 0) outerFirst.push({ n: g.partner, step: true, of: it }); outerFirst.push(it); if (g.partner && i === 1) outerFirst.push({ n: g.partner, step: true, of: it }); });
+      if (edit && gps.length < 2) outerFirst.push({ bud: bud('+gp:' + p.key, 'gp') });
+      const gpItems = dir < 0 ? outerFirst : outerFirst.slice().reverse();
+      const below = [px, ...units.filter(u => !u.via).map(u => u.sx)];
       let gx = (Math.min(...below) + Math.max(...below)) / 2;
       const gw = gpItems.length * CELL;
       if (couple) gx = dir < 0 ? Math.min(gx, -GAP / 2 - gw / 2) : Math.max(gx, GAP / 2 + gw / 2);
       spread(gpItems.length, CELL, gx).forEach((gxx, i) => { gpItems[i].x = gxx; nodes.push({ ...gpItems[i], row: 2, r: RA }); });
-      if (gpItems.length === 2) hearts.push({ x: gx, row: 2, faint: !gpItems[1].n });
+      const pair = gpItems.filter(it => !it.step);   // (the grandparent couple, or one of them and the bud for the other: a heart between)
+      if (pair.length === 2) hearts.push({ x: (pair[0].x + pair[1].x) / 2, row: 2, faint: !pair[0].n || !pair[1].n });
+      for (const it of gpItems.filter(k => k.step)) hearts.push({ x: (it.x + it.of.x) / 2, row: 2, step: true, small: true });
       // the great-grandparents: above their grandparent, side by side
-      const gg = gpItems.filter(it => it.n).map(it => {
+      const gg = gpItems.filter(it => it.n && !it.step).map(it => {
         const items = [...gpOf(it.n).map(q => ({ n: q })), ...(edit && gpOf(it.n).length < 2 ? [{ bud: bud('+ggp:' + it.n.key, 'ggp') }] : [])];
         return { gx: it.x, items, w: items.length * GCELL };
       }).filter(u => u.items.length);
@@ -285,7 +331,7 @@ const FamilyTree = (() => {
       // partners; their children (the parents' cousins) on the parents' row under them, beyond the aunts and uncles
       const gunits = [];
       let e1 = edge + (edit && sibsOf(p).length < MAX_SIBS ? dir * (CELL + GAP) : 0), e2 = gpItems.length ? gx + dir * (gw / 2 + GAP) : e1;   // the free end of the parents' row, and of the grandparents'
-      for (const it of gpItems.filter(k => k.n)) {
+      for (const it of gpItems.filter(k => k.n && !k.step)) {
         for (const s of sibsOf(it.n)) {
           const kidsOf = s.kids || [], uw = Math.max(s.partner ? 2 * CELL : CELL, kidsOf.length * CELL);
           const need = Math.max(Math.abs(e1), Math.abs(e2)) + uw / 2, cx = dir * need, sx = s.partner ? cx - (dir * CELL) / 2 : cx;
@@ -296,8 +342,8 @@ const FamilyTree = (() => {
           e1 = e2 = dir * (need + uw / 2 + GAP);
         }
       }
-      for (const it of gpItems.filter(k => k.n && edit && sibsOf(k.n).length < MAX_SIBS)) { nodes.push({ bud: bud('+gsib:' + it.n.key, 'gsib', it.n.label), x: e2 + (dir * CELL) / 2, row: 2, r: RA }); e2 += dir * (CELL + GAP); }
-      return { p, dir, px, units, gx, gpItems, gg, edge, gunits };
+      for (const it of gpItems.filter(k => k.n && !k.step && edit && sibsOf(k.n).length < MAX_SIBS)) { nodes.push({ bud: bud('+gsib:' + it.n.key, 'gsib', it.n.label), x: e2 + (dir * CELL) / 2, row: 2, r: RA }); e2 += dir * (CELL + GAP); }
+      return { p, dir, px, units, gx, gpItems, gg, edge, gunits, stepX: p.partner ? homeX[si] + dir * CELL : null };
     });
 
     // the rows: the tree stands above the ground, and the family is its roots below it: the children just under the trunk (the newest
@@ -413,15 +459,19 @@ const FamilyTree = (() => {
     A.push(`<g filter="url(#ftbrush)">${dabs.join('')}</g>`);
     // the roots: from the foot of the trunk to each parent, on down to the grandparents and great-grandparents; brothers and
     // sisters as side roots off the same root; the children as the newest root tips, just under the trunk
+    const xOfKey = key => { const n = nodes.find(k => k.n && k.n.key === key); return n ? n.x : null; };
     const RT = [], rootStroke = (d, wdt, op = 1) => `<path d="${d}" fill="none" stroke="${bark}" stroke-width="${r1(wdt)}" stroke-linecap="round" opacity="${op}"/><path d="${d}" fill="none" stroke="${line}" stroke-width="${r1(Math.max(0.8, wdt * 0.25))}" stroke-linecap="round" opacity=".45"/>`;
     for (const s of sides) {
       RT.push(rootStroke(branch(Math.sign(s.px || s.dir) * w2 * 0.5, tBot - 4, s.px, Y[1] - RA), Math.max(6, tw * 0.42)));
       const target = s.gpItems.length ? [s.gx, Y[2] - RA - 2] : null;
       if (target) {   // on down to the grandparents, and up again to each brother and sister
         RT.push(rootStroke(branch(s.px, Y[1] + RA, target[0], target[1]), Math.max(5, tw * 0.3)));
-        for (const u of s.units) RT.push(rootStroke(branch(target[0], target[1], u.sx, Y[1] + RA), Math.max(3, tw * 0.2)));
+        for (const u of s.units) { const vx = u.via ? xOfKey(u.via) : null; RT.push(rootStroke(branch(vx != null ? vx : target[0], target[1], u.sx, Y[1] + RA), Math.max(3, tw * 0.2), vx != null ? 0.75 : 1)); }   // (a half- or step-brother or sister: off the one whose child they are)
       } else for (const u of s.units) RT.push(rootStroke(`M${X(s.px)} ${Y[1] + RA}Q${X((s.px + u.sx) / 2)} ${r1(Y[1] + RA + 44)} ${X(u.sx)} ${Y[1] + RA}`, Math.max(3, tw * 0.2)));   // (no grandparents yet: a side root)
       for (const u of s.gg) RT.push(rootStroke(branch(u.gx, Y[2] + RA, u.cx, Y[3] - RG - 2), 2.6));
+      // later partners: a side root from the one they are with
+      if (s.stepX != null) RT.push(rootStroke(`M${X(s.px)} ${Y[1] + RA}Q${X((s.px + s.stepX) / 2)} ${r1(Y[1] + RA + 30)} ${X(s.stepX)} ${Y[1] + RA}`, 2.6, 0.75));
+      for (const it of s.gpItems.filter(k => k.step)) RT.push(rootStroke(`M${X(it.of.x)} ${Y[2] + RA}Q${X((it.of.x + it.x) / 2)} ${r1(Y[2] + RA + 28)} ${X(it.x)} ${Y[2] + RA}`, 2.4, 0.75));
       for (const u of s.gunits) {   // a grandparent's brothers and sisters: off their parents' root when it is there, else a side root from the grandparent
         const gg = s.gg.find(v => v.gx === u.g.x);
         if (gg) RT.push(rootStroke(branch(gg.cx, Y[3] - RG - 2, u.sx, Y[2] + RA), 2.6));
@@ -431,7 +481,7 @@ const FamilyTree = (() => {
     if (!sides.length) RT.push(rootStroke(branch(0, tBot - 4, 0, Y[1] - RA), Math.max(6, tw * 0.42), 0.5));
     for (const n of nodes.filter(k => k.home)) RT.push(rootStroke(branch(Math.sign(n.x || 1) * w2 * 0.3, tBot - 6, n.x, yOf(n) - RK - 2), 2.4, 0.9));   // (the children: new root tips)
     for (const n of nodes.filter(k => k.pcousin)) RT.push(rootStroke(`M${X(n.from)} ${Y[2] - RA}C${X(n.from)} ${r1(Y[2] - 48)} ${X(n.x)} ${r1(Y[1] + 48)} ${X(n.x)} ${r1(Y[1] + RA + 2)}`, 2));   // (the parents' cousins: from their parents)
-    for (const n of nodes.filter(k => k.cousin)) RT.push(rootStroke(`M${X(n.from)} ${Y[1] - RA}C${X(n.from)} ${r1(Y[1] - 50)} ${X(n.x)} ${r1(yOf(n) + 50)} ${X(n.x)} ${r1(yOf(n) + RK + 2)}`, 2));   // (cousins: from their parents)
+    for (const n of nodes.filter(k => k.cousin)) RT.push(rootStroke(`M${X(n.from)} ${Y[1] - RA}C${X(n.from)} ${r1(Y[1] - 50)} ${X(n.x)} ${r1(yOf(n) + 50)} ${X(n.x)} ${r1(yOf(n) + RK + 2)}`, 2, n.step ? 0.75 : 1));   // (cousins: from their parents; a step-parent's children from them)
     for (let i = 0; i < 6; i++) { const rx0 = (R() - 0.5) * 60, ry0 = tBot + 6 + R() * 30; RT.push(`<path d="M${X(rx0 * 0.4)} ${r1(tBot - 4)}Q${X(rx0 * 0.8)} ${r1(ry0 - 10)} ${X(rx0)} ${r1(ry0)}" fill="none" stroke="${bark}" stroke-width="1.4" stroke-linecap="round" opacity=".7"/>`); }   // (fine hair roots at the foot)
     A.push(`<g filter="url(#ftbrush)">${RT.join('')}</g>`);
     // and the paper's grain over all of it
@@ -450,7 +500,7 @@ const FamilyTree = (() => {
 
     // ---- over it: hearts, birds, everyone, the buds, and leaves falling ----
     const B = [];
-    B.push(`<g class="hearts">${hearts.map(h => `<path class="heart${h.faint ? ' faint' : ''}" d="${heart(X(h.x), Y[h.row] + 1, h.big ? 8 : h.small ? 5 : 6.5)}"/>`).join('')}</g>`);
+    B.push(`<g class="hearts">${hearts.map(h => `<path class="heart${h.faint ? ' faint' : ''}${h.step ? ' step' : ''}" d="${heart(X(h.x), Y[h.row] + 1, h.big ? 8 : h.small ? 5 : 6.5)}"/>`).join('')}</g>`);
     // birds of this place on the boughs, well apart (one at least)
     const seats = [];
     for (const p of perches) if (p[1] < ground - 30 && seats.every(q => Math.hypot(q[0] - p[0], q[1] - p[1]) > 70) && seats.length < 3) seats.push(p);

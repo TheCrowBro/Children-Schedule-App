@@ -2651,5 +2651,20 @@
  "1bcd4q6": "Imeandikwa. Gusa «Amelala tena» akirudi kulala.",
  "b2h88z": "Macho tangu {time} ({long}) · amelala tangu {start}",
  "11pv9av": "Amelala tena",
- "vzr1m6": "Mtoto akiwa amelala, kipima muda kinaendelea hapa. Gusa «Ameamka» akiamka, na useme kama ameamka kabisa au atarudi kulala hivi karibuni: hapo usingizi unaendelea, kuamka kunaandikwa, na kitufe kinauliza «Amelala tena»."
+ "vzr1m6": "Mtoto akiwa amelala, kipima muda kinaendelea hapa. Gusa «Ameamka» akiamka, na useme kama ameamka kabisa au atarudi kulala hivi karibuni: hapo usingizi unaendelea, kuamka kunaandikwa, na kitufe kinauliza «Amelala tena».",
+ "x1mo12": "Baba au mama wa kambo",
+ "1wirif0": "Kaka au dada wa kambo",
+ "1l6o2ng": "Babu au bibi wa kambo",
+ "1h8s7fz": "Ongeza mwenzi wa baadaye",
+ "1w93leb": "Ongeza mtoto wao",
+ "1x5hari": "Mwenzi wa baadaye wa {name}",
+ "19qett4": "Mwenzi wa baadaye wa {name} · baba au mama wa kambo wa watoto",
+ "zjt4n4": "Mtoto wa {name} · kaka au dada wa kambo wa watoto",
+ "9mi8av": "Mwenzi wa baadaye wa {name} · baba au mama wa kambo wa {parent}, babu au bibi wa kambo wa watoto",
+ "zeuzwe": "Kaka au dada wa {parent} wa baba mmoja au mama mmoja: mtoto wa {name} na mwenzi wa baadaye",
+ "113hjkg": "Kaka au dada wa kambo wa {parent}: mtoto wa {name} wa awali",
+ "17jvkzb": "wa {a} na {b}",
+ "1fpvwni": "wa {name}",
+ "xhygd9": "wa {name}, wa awali",
+ "29zjk2": "Mtoto wa nani?"
 }

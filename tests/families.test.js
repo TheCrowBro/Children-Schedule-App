@@ -145,6 +145,49 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.deepEqual(cleaned.map(s => [s.name, s.partner && s.partner.name, Object.keys(s.partner), s.kids.map(k => k.name)]), [['S', 'T', ['id', 'name'], ['K']]], 'cleaned: only what belongs');
     });
 
+    await step("step-families: a grandmother's later partner sits just outside her with a small open heart; her child from before and the grandmother's child with her are aunts and uncles drawn beyond the others, rooted to whoever's child they are; a parent's later partner sits outside them with their own children on the grass; the cards say who is whose; removing the partner takes their own child, not the half-brother; sealed", async () => {
+      await family();
+      const rose = await keyOf('Rose Miller'), roseId = rose.slice(2);
+      const card = async (key, btn) => { await tap(key); await J.waitForSelector(btn); await J.click(btn); await J.waitForSelector('#rlName'); };
+      const saveNew = async (name, via) => { await J.fill('#rlName', name); if (via !== undefined) await J.click(`#sheet [name=rlVia][value="${via}"]`); await J.click('#rlSave'); await J.waitForFunction(() => document.querySelector('#sheet').hidden); };
+      const shown = l => J.waitForFunction(x => [...document.querySelectorAll('.ftreesvg [data-tk]')].some(n => (n.getAttribute('aria-label') || '').startsWith(x)), l);
+      const at = (P = J) => P.evaluate(() => { const o = {}; for (const n of document.querySelectorAll('.ftreesvg [data-tk]')) { const c = n.querySelector('.disc'); if (c) o[(n.getAttribute('aria-label') || '').split(' · ')[0]] = [+c.getAttribute('cx'), +c.getAttribute('cy')]; } return o; });
+      await card(rose, '#tcLater'); assert(/Add a later partner/.test(await J.textContent('#sheet h3')) && /Rose Miller's later partner/.test(await J.textContent('#sheet')), await J.textContent('#sheet'));
+      await saveNew('Sue'); await shown('Sue · Step-grandparent');
+      const sue = await keyOf('Sue'), sueId = sue.slice(2);
+      // an aunt or uncle: whose child? the grandparent couple's, Rose's with Sue (a half-brother), or Sue's from before (a step-brother)
+      await tap('+sib:' + jo); await J.waitForSelector('#rlName');
+      assert.deepEqual(await J.$$eval('#sheet [name=rlVia]', x => x.map(i => [i.value, i.nextSibling.textContent])), [['', "Rose Miller's"], [roseId, "Rose Miller and Sue's"], [sueId, "Sue's, from before"]], 'whose child');
+      await saveNew('Mark', sueId); await shown('Mark · Aunt or uncle');
+      await tap('+sib:' + jo); await J.waitForSelector('#rlName'); await saveNew('Lena', roseId); await shown('Lena · Aunt or uncle');
+      const kinds = await J.evaluate(() => FamilyTree.walk(Sync.st.tree).map(w => w.kind + ':' + w.p.name + (w.p.via ? '/' + w.p.via : '')));
+      assert(kinds.includes('gstep:Sue') && kinds.includes('sib:Mark/' + sueId) && kinds.includes('sib:Lena/' + roseId), JSON.stringify(kinds));
+      // drawn: Sue beside Rose on the outside; Mark and Lena on the parents' row beyond Sarah; one small open heart
+      let x = await at();
+      assert.equal(x.Sue[1], x['Rose Miller'][1], "on the grandmother's row"); assert(Math.abs(x.Sue[0] - x['Rose Miller'][0]) < 70 && Math.abs(x.Sue[0] - x.Jo[0]) > Math.abs(x['Rose Miller'][0] - x.Jo[0]), 'just outside her: ' + JSON.stringify(x));
+      assert.equal(x.Mark[1], x.Sarah[1]); assert(Math.abs(x.Mark[0] - x.Jo[0]) > Math.abs(x.Sarah[0] - x.Jo[0]) && Math.abs(x.Lena[0] - x.Jo[0]) > Math.abs(x.Sarah[0] - x.Jo[0]), 'beyond the parent\'s own sister: ' + JSON.stringify(x));
+      assert.equal(await J.$$eval('.ftreesvg .heart.step', h => h.length), 1, 'a small open heart: ' + JSON.stringify(await J.$$eval('.ftreesvg .heart', h => h.map(e => e.getAttribute('class')))));
+      await tap(await keyOf('Mark')); assert(/Jo's step-brother or step-sister: Sue's child from before/.test(await J.textContent('#sheet')), await J.textContent('#sheet')); await J.click('#sheet [data-close]');
+      await tap(await keyOf('Lena')); assert(/Jo's half-brother or half-sister: Rose Miller's child with a later partner/.test(await J.textContent('#sheet')), await J.textContent('#sheet')); await J.click('#sheet [data-close]');
+      // a parent's later partner, and their child on the grass beside the children
+      await card(jo, '#tcLater'); assert(/Jo's later partner/.test(await J.textContent('#sheet'))); await saveNew('Pat'); await shown('Pat · Step-parent');
+      const pat = await keyOf('Pat');
+      await card(pat, '#tcStepkid'); assert(/Add a child of theirs/.test(await J.textContent('#sheet h3')) && /Pat's child/.test(await J.textContent('#sheet'))); await saveNew('Kim'); await shown('Kim · Step-brother or step-sister');
+      x = await at();
+      assert.equal(x.Pat[1], x.Jo[1], "on the parents' row"); assert(Math.abs(x.Pat[0] - x.Jo[0]) < 70, 'beside Jo'); assert.equal(x.Kim[1], x.Leo[1], 'on the grass with the children');
+      assert.equal(await J.$$eval('.ftreesvg .heart.step', h => h.length), 2, 'two small open hearts');
+      await tap(pat); assert(/Step-parent · Jo's side/.test(await J.textContent('#sheet')) && /Jo's later partner · the children's step-parent/.test(await J.textContent('#sheet')), await J.textContent('#sheet')); await J.click('#sheet [data-close]');
+      await tap(await keyOf('Kim')); assert(/Pat's child · the children's step-brother or step-sister/.test(await J.textContent('#sheet'))); await J.click('#sheet [data-close]');
+      assert(!/Sue|Mark|Lena|Pat|Kim/.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
+      // removing Sue takes Mark (her own child) but not Lena (Rose's); then everyone else added here goes, for the steps that follow
+      await tap(sue); await J.waitForSelector('#tcEdit'); await J.click('#tcEdit'); await J.waitForSelector('#rlRemove'); await J.click('#rlRemove'); await J.waitForFunction(() => document.querySelector('#sheet').hidden);
+      const after = await J.evaluate(() => FamilyTree.walk(Sync.st.tree).map(w => w.kind + ':' + w.p.name + (w.p.via ? '/via' : '')));
+      assert(!after.includes('gstep:Sue') && !after.some(k => k.startsWith('sib:Mark')) && after.includes('sib:Lena/via'), 'Mark went with Sue; Lena stays, Rose\'s child: ' + JSON.stringify(after));
+      await J.evaluate(() => Sync.editTree(t => { for (const n of ['Pat', 'Lena']) { const w = FamilyTree.walk(t).find(x => x.p.name === n); if (w) FamilyTree.remove(t, w.p.id); } }));
+      await J.evaluate(() => render());
+      assert(!(await pic()).some(n => /^(Pat|Kim|Lena|Sue|Mark)\b/.test(n.label)), 'the tree as it was');
+    });
+
     await step('a tree with no room left (every great-aunt and great-uncle with a partner and children, the longest names): the phone says so before sending, and nothing changes on the server', async () => {
       const before = (await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob;
       const r = await J.evaluate(async () => {

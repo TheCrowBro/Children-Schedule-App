@@ -826,6 +826,15 @@
     "Up for good": "A button: the child is awake for now, the sleep is over (as opposed to \"Back to sleep soon\"). Also shown while they are up for a moment, to end the sleep after all.",
     "Back to sleep soon": "A button: the child woke in the middle of a sleep and will go back to sleep; the sleep goes on and the wake-up is noted.",
     "Asleep again": "The button that replaces \"Woke up\" while the child is up for a moment: tapping it continues the sleep as it was.",
-    "Awake now\u2026": "In the list, a wake-up still going on (the child is up for a moment in the middle of a sleep)."
+    "Awake now\u2026": "In the list, a wake-up still going on (the child is up for a moment in the middle of a sleep).",
+    "Add a later partner": "Button on a parent's or a grandparent's card on the family tree: a new partner after the original couple (the children's step-parent or step-grandparent).",
+    "Add a child of theirs": "Button on a later partner's card: one of their own children (the children's step-brother or step-sister).",
+    "{name}'s later partner": "Under the form's title when adding a later partner; {name} is the parent or grandparent they are with.",
+    "Whose child?": "On the aunt-or-uncle form once a grandparent has a later partner: the chip row that follows says whose child this aunt or uncle is.",
+    "{a} and {b}'s": "A chip answering \"Whose child?\": the child of these two people (a grandparent couple, or a grandparent and their later partner). {a} and {b} are names.",
+    "{name}'s": "A chip answering \"Whose child?\" when only one grandparent is on the tree. {name} is a name.",
+    "{name}'s, from before": "A chip answering \"Whose child?\": the later partner's own child from before they were together. {name} is the later partner.",
+    "{parent}'s half-brother or half-sister: {name}'s child with a later partner": "On an aunt or uncle's card. {parent} is the children's parent; {name} is the grandparent.",
+    "{parent}'s step-brother or step-sister: {name}'s child from before": "On an aunt or uncle's card. {parent} is the children's parent; {name} is the grandparent's later partner."
   }
 }

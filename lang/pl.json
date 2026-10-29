@@ -2759,5 +2759,20 @@
  "1bcd4q6": "Zapisano. Stuknij „Znów śpi”, gdy dziecko znów zaśnie.",
  "b2h88z": "Nie śpi od {time} ({long}) · śpi od {start}",
  "11pv9av": "Znów śpi",
- "vzr1m6": "Gdy dziecko śpi, tutaj biegnie czas. Stuknij „Pobudka”, gdy się obudzi, i powiedz, czy wstaje na dobre, czy zaraz znów zaśnie: wtedy sen trwa dalej, przebudzenie zostaje zapisane, a przycisk pyta „Znów śpi”."
+ "vzr1m6": "Gdy dziecko śpi, tutaj biegnie czas. Stuknij „Pobudka”, gdy się obudzi, i powiedz, czy wstaje na dobre, czy zaraz znów zaśnie: wtedy sen trwa dalej, przebudzenie zostaje zapisane, a przycisk pyta „Znów śpi”.",
+ "x1mo12": "Ojczym lub macocha",
+ "1wirif0": "Przyrodni brat lub siostra",
+ "1l6o2ng": "Przybrany dziadek lub babcia",
+ "1h8s7fz": "Dodaj późniejszego partnera",
+ "1w93leb": "Dodaj ich dziecko",
+ "1x5hari": "Późniejszy partner {name}",
+ "19qett4": "Późniejszy partner {name} · ojczym lub macocha dzieci",
+ "zjt4n4": "Dziecko {name} · przyrodni brat lub siostra dzieci",
+ "9mi8av": "Późniejszy partner {name} · ojczym lub macocha {parent}, przybrany dziadek lub babcia dzieci",
+ "zeuzwe": "Brat lub siostra {parent} po jednym z rodziców: dziecko {name} z późniejszym partnerem",
+ "113hjkg": "Przyrodni brat lub siostra {parent}: dziecko {name} z wcześniejszego związku",
+ "17jvkzb": "{a} i {b}",
+ "1fpvwni": "{name}",
+ "xhygd9": "{name}, z wcześniejszego związku",
+ "29zjk2": "Czyje dziecko?"
 }

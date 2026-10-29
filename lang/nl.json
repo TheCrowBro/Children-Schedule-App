@@ -2651,5 +2651,20 @@
  "1bcd4q6": "Genoteerd. Tik op „Weer in slaap” zodra je kind weer slaapt.",
  "b2h88z": "Wakker sinds {time} ({long}) · slaapt sinds {start}",
  "11pv9av": "Weer in slaap",
- "vzr1m6": "Terwijl je baby slaapt, loopt hier de tijd. Tik op „Wakker geworden” als je kind wakker wordt, en zeg of het voorgoed wakker is of zo weer gaat slapen: dan gaat de slaap door, wordt het wakker worden genoteerd, en vraagt de knop „Weer in slaap”."
+ "vzr1m6": "Terwijl je baby slaapt, loopt hier de tijd. Tik op „Wakker geworden” als je kind wakker wordt, en zeg of het voorgoed wakker is of zo weer gaat slapen: dan gaat de slaap door, wordt het wakker worden genoteerd, en vraagt de knop „Weer in slaap”.",
+ "x1mo12": "Stiefouder",
+ "1wirif0": "Stiefbroer of stiefzus",
+ "1l6o2ng": "Stiefgrootouder",
+ "1h8s7fz": "Een latere partner toevoegen",
+ "1w93leb": "Een kind van hen toevoegen",
+ "1x5hari": "Latere partner van {name}",
+ "19qett4": "Latere partner van {name} · stiefouder van de kinderen",
+ "zjt4n4": "Kind van {name} · stiefbroer of stiefzus van de kinderen",
+ "9mi8av": "Latere partner van {name} · stiefouder van {parent}, stiefgrootouder van de kinderen",
+ "zeuzwe": "Halfbroer of halfzus van {parent}: kind van {name} met een latere partner",
+ "113hjkg": "Stiefbroer of stiefzus van {parent}: kind van {name} van eerder",
+ "17jvkzb": "van {a} en {b}",
+ "1fpvwni": "van {name}",
+ "xhygd9": "van {name}, van eerder",
+ "29zjk2": "Wiens kind?"
 }

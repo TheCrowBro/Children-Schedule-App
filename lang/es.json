@@ -2705,5 +2705,20 @@
  "1bcd4q6": "Anotado. Toca «Dormido otra vez» cuando vuelva a dormirse.",
  "b2h88z": "Despierto desde {time} ({long}) · durmiendo desde {start}",
  "11pv9av": "Dormido otra vez",
- "vzr1m6": "Mientras tu bebé duerme, el tiempo corre aquí. Toca «Se despertó» cuando despierte y di si está despierto del todo o pronto volverá a dormir: entonces el sueño continúa, el despertar queda anotado y el botón pregunta «Dormido otra vez»."
+ "vzr1m6": "Mientras tu bebé duerme, el tiempo corre aquí. Toca «Se despertó» cuando despierte y di si está despierto del todo o pronto volverá a dormir: entonces el sueño continúa, el despertar queda anotado y el botón pregunta «Dormido otra vez».",
+ "x1mo12": "Padrastro o madrastra",
+ "1wirif0": "Hermanastro o hermanastra",
+ "1l6o2ng": "Abuelastro o abuelastra",
+ "1h8s7fz": "Añadir una nueva pareja",
+ "1w93leb": "Añadir un hijo suyo",
+ "1x5hari": "Nueva pareja de {name}",
+ "19qett4": "Nueva pareja de {name} · padrastro o madrastra de los niños",
+ "zjt4n4": "Hijo o hija de {name} · hermanastro o hermanastra de los niños",
+ "9mi8av": "Nueva pareja de {name} · padrastro o madrastra de {parent}, abuelastro o abuelastra de los niños",
+ "zeuzwe": "Medio hermano o media hermana de {parent}: hijo de {name} con una nueva pareja",
+ "113hjkg": "Hermanastro o hermanastra de {parent}: hijo de {name} de antes",
+ "17jvkzb": "de {a} y {b}",
+ "1fpvwni": "de {name}",
+ "xhygd9": "de {name}, de antes",
+ "29zjk2": "¿De quién es hijo?"
 }

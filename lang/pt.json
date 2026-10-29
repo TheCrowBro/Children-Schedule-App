@@ -2705,5 +2705,20 @@
  "1bcd4q6": "Anotado. Toque em «Dormindo de novo» quando voltar a dormir.",
  "b2h88z": "Acordado desde {time} ({long}) · dormindo desde {start}",
  "11pv9av": "Dormindo de novo",
- "vzr1m6": "Enquanto o bebê dorme, o tempo corre aqui. Toque em «Acordou» quando ele acordar e diga se acordou de vez ou se logo volta a dormir: então o sono continua, o despertar fica anotado e o botão pergunta «Dormindo de novo»."
+ "vzr1m6": "Enquanto o bebê dorme, o tempo corre aqui. Toque em «Acordou» quando ele acordar e diga se acordou de vez ou se logo volta a dormir: então o sono continua, o despertar fica anotado e o botão pergunta «Dormindo de novo».",
+ "x1mo12": "Padrasto ou madrasta",
+ "1wirif0": "Irmão ou irmã por afinidade",
+ "1l6o2ng": "Avô ou avó por afinidade",
+ "1h8s7fz": "Adicionar um novo parceiro",
+ "1w93leb": "Adicionar um filho dele ou dela",
+ "1x5hari": "Novo parceiro de {name}",
+ "19qett4": "Novo parceiro de {name} · padrasto ou madrasta das crianças",
+ "zjt4n4": "Filho de {name} · irmão ou irmã por afinidade das crianças",
+ "9mi8av": "Novo parceiro de {name} · padrasto ou madrasta de {parent}, avô ou avó por afinidade das crianças",
+ "zeuzwe": "Meio-irmão ou meia-irmã de {parent}: filho de {name} com um novo parceiro",
+ "113hjkg": "Irmão ou irmã por afinidade de {parent}: filho de {name} de antes",
+ "17jvkzb": "de {a} e {b}",
+ "1fpvwni": "de {name}",
+ "xhygd9": "de {name}, de antes",
+ "29zjk2": "Filho de quem?"
 }
