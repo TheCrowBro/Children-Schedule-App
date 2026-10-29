@@ -145,8 +145,8 @@ const Sync = (() => {
     let { rows, cut } = await encodeRows(b), denied = [], ceiling = Infinity;
     for (let attempt = 0; ; attempt++) {
       denied = []; let stale = null; ceiling = Infinity;
-      for (let i = 0; i < rows.length; i += 200) {
-        const r = await Auth.rpc('push_events', { p_baby: b, p_rows: rows.slice(i, i + 200) });
+      for (let i = 0; i < rows.length; i += 500) {   // (the server takes up to 500 at a time)
+        const r = await Auth.rpc('push_events', { p_baby: b, p_rows: rows.slice(i, i + 500) });
         denied.push(...((r && r.denied) || [])); if (r && r.stale) stale = r.stale;
         if (r && Number.isFinite(r.ceiling)) ceiling = Math.min(ceiling, r.ceiling);
       }

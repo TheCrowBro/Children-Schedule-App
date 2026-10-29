@@ -485,10 +485,14 @@ const server = http.createServer((req, res) => {
     assert(await A.$('#bioToo'), 'Face ID / fingerprint can stay as a shortcut');
     await A.evaluate(() => localStorage.setItem('MOCK_BIO_FAIL', '1')); await A.reload(); await A.waitForSelector('#ul .pk'); assert(!(await A.isVisible('#tabs')), 'locked on a cold start');
     assert(await A.$('#unlock'), 'the shortcut is offered on the lock screen');
-    const said = re => A.waitForFunction(r => new RegExp(r).test($('#ulMsg').textContent), re.source);   // (checking a PIN takes a moment: it is hashed)
-    for (let i = 0; i < 4; i++) { await A.evaluate(() => { $('#ulMsg').textContent = ''; }); await tap('1111', '#ul'); await said(/not right/); }
-    await A.evaluate(() => { $('#ulMsg').textContent = ''; }); await tap('1111', '#ul'); await said(/Try again in \d+ seconds/);
-    await A.evaluate(() => { $('#ulMsg').textContent = ''; }); await tap('2468', '#ul'); await said(/Try again in/);   // the right PIN has to wait too
+    // (checking a PIN takes a moment: it is hashed; the message is waited for together with the count of tries, and it survives a redraw by a sync)
+    const said = (re, n) => A.waitForFunction(([r, n]) => new RegExp(r).test($('#ulMsg').textContent) && ((JSON.parse(localStorage.getItem('MOCKSECURE:ll.pin')) || {}).tries || 0) === n, [re.source, n]);
+    for (let i = 1; i <= 4; i++) {
+      await tap('1111', '#ul'); await said(/not right/, i);
+      if (i === 2) { await syncNow(A); assert(/not right/.test(await A.textContent('#ulMsg')), 'the message survives a redraw by a sync'); }
+    }
+    await tap('1111', '#ul'); await said(/Try again in \d+ seconds/, 5);
+    await A.evaluate(() => { $('#ulMsg').textContent = ''; }); await tap('2468', '#ul'); await said(/Try again in/, 5);   // the right PIN has to wait too
     assert(!(await A.isVisible('#tabs')), 'still locked');
     await A.evaluate(() => { const p = JSON.parse(localStorage.getItem('MOCKSECURE:ll.pin')); p.until = Date.now() - 1; localStorage.setItem('MOCKSECURE:ll.pin', JSON.stringify(p)); });
     await A.reload(); await A.waitForSelector('#ul .pk'); await tap('2468', '#ul'); await A.waitForSelector('#tabs'); assert.equal(await A.textContent('#title'), "Leo's Log");

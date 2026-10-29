@@ -56,6 +56,9 @@ const ungated = p => p.waitForFunction(() => !document.body.classList.contains('
       assert(await P.$('.cloudkeys') && !(await P.$('[data-cc]')), 'no drive registered: the card says so once, instead of three rows that lead nowhere');
       assert(/any cloud app/.test(await P.textContent('details[data-grp=mcloud]')), 'and points to Save, which reaches any cloud app through the share sheet');
       await P.evaluate(() => { Cloud.available = window.__av; render(); });
+      await P.click('details.cloudhow > summary'); const how = await P.textContent('details.cloudhow');
+      assert(/app\.littlelog\.newborn:\/\/oauth/.test(how) && /dropboxKey/.test(how) && /googleClientId/.test(how) && /msClientId/.test(how) && /npm run sync/.test(how), 'the tutorial names the redirect address, the three keys and the rebuild: ' + how.slice(0, 200));
+      assert.equal(await P.$$eval('details.cloudhow ol.steps', o => o.length), 3, 'steps for each of the three services');
     });
 
     await step('a backup file made from More → Cloud backup counts as a backup: the reminder goes; the file is encrypted', async () => {

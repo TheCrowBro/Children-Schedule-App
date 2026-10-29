@@ -31,7 +31,7 @@ jobs:
           - name: robust
             suites: robust
           - name: features
-            suites: features routine children app
+            suites: features routine children app perf
           - name: e2e
             suites: e2e start report growing expecting
           - name: families

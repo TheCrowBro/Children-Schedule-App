@@ -234,23 +234,24 @@ const Acct = (() => {
   const lockHtml = () => {
     const pinMode = Lock.mode === 'pin', bio = Lock.bioAllowed;
     return `<div class="card" style="text-align:center"><div style="font-size:48px">🔒</div><b>${__h('Locked')}</b>
-    ${pinMode ? `<p class="note">${__h('Enter your PIN to continue.')}</p>${padHtml('ul', Lock.wait ? waitMsg(Lock.wait) : '')}` : `<p class="note">${__h('Use Face ID, your fingerprint or your phone passcode to continue.')}</p>`}
+    ${pinMode ? `<p class="note">${__h('Enter your PIN to continue.')}</p>${padHtml('ul', Lock.wait ? waitMsg(Lock.wait) : bindLock.msg || '')}` : `<p class="note">${__h('Use Face ID, your fingerprint or your phone passcode to continue.')}</p>`}
     ${bio ? `<button class="btn${pinMode ? '' : ' p'}" id="unlock" style="width:100%">${pinMode ? __h('Use Face ID / fingerprint instead') : __h('Unlock')}</button>` : ''}
     <button class="btn" id="lockOut" style="width:100%;margin-top:8px">${pinMode ? __h('Forgot your PIN?') : __h('Sign out')}</button></div>`;
   };
   function bindLock() {
-    const go = async () => { if (await Lock.unlock()) render(); };
+    const go = async () => { if (await Lock.unlock()) { bindLock.msg = ''; render(); } };
     if ($('#unlock')) $('#unlock').onclick = go;
     $('#lockOut').onclick = lockOut;
     if (Lock.mode === 'pin') {
       const pad = bindPad('ul', async code => {
         const r = await Lock.checkPin(code);
-        if (r.ok) { clearPad('ul'); return render(); }
-        pad.say(r.wait ? waitMsg(r.wait) : __('That PIN is not right.')); if (r.wait) tick();
+        if (r.ok) { clearPad('ul'); bindLock.msg = ''; return render(); }
+        say(r.wait ? waitMsg(r.wait) : __('That PIN is not right.')); if (r.wait) tick();
       }, Lock.pinLength);
+      const say = m => { bindLock.msg = m; pad.say(m); };   // (remembered: a sync can redraw the screen while the message is being read)
       const tick = () => {   // (the wait counts down on the screen)
         clearInterval(bindLock.timer);
-        bindLock.timer = setInterval(() => { if (!$('#ulMsg')) return clearInterval(bindLock.timer); const w = Lock.wait; pad.say(w ? waitMsg(w) : ''); if (!w) clearInterval(bindLock.timer); }, 1000);
+        bindLock.timer = setInterval(() => { if (!$('#ulMsg')) return clearInterval(bindLock.timer); const w = Lock.wait; say(w ? waitMsg(w) : ''); if (!w) clearInterval(bindLock.timer); }, 1000);
       };
       if (Lock.wait) tick();
       if (!Lock.bioAllowed) return;
@@ -262,6 +263,7 @@ const Acct = (() => {
     const msg = Sync.linked() ? __("Sign out? This clears the log from this phone. It stays safe in the family's cloud and comes back when you sign in again.")
       : __('This clears the log on this phone. It comes back only from a backup you made (More → Cloud backup). Continue?');
     if (!confirm(msg)) return;
+    bindLock.msg = '';
     if (Sync.linked()) { try { await Sync.run(true); } catch (e) { /* offline: what is unsent is lost, as the message said */ } }
     try { await Auth.signOut(false); } catch (e) { /* not signed in, or offline: the phone is cleared all the same */ }
     await wipeLocal(); render();
@@ -1152,6 +1154,28 @@ const Acct = (() => {
     if (on.length) return on.join(', ') + (Cloud.auto ? ' · ' + __('daily') : '');
     return db.meta.fileBackupAt ? __('Saved to a file {when}', { when: ago(db.meta.fileBackupAt) }) : __('Not set up');
   }
+  // How to set up the three drives: done once, on a computer, by whoever builds the app (each step is one text, so it reads well in every language)
+  const CLOUD_HOW = {
+    intro: N_('This is done once, on a computer, by whoever builds the app: each service hands out a public key that goes into config.js, then the app is rebuilt and that service shows Connect here. The app id is **{id}** and its redirect address is **{redirect}**.'),
+    dropbox: [N_('Go to dropbox.com/developers/apps and choose Create app: scoped access, App folder, any name.'), N_('Under Permissions tick files.content.write and files.content.read, then Submit.'),
+      N_('Under Settings add the redirect address to OAuth 2 → Redirect URIs.'), N_('Copy the App key into config.js as dropboxKey.')],
+    google: [N_('In the Google Cloud console (console.cloud.google.com) create a project and turn on the Google Drive API under APIs & Services → Library.'),
+      N_('Under OAuth consent screen choose External, name the app, add the scope …/auth/drive.appdata and add yourself as a test user (until the app is published, only test users can sign in).'),
+      N_('Under Credentials create an OAuth client ID of type iOS, with the app id as its bundle id.'), N_('Copy the client ID (it ends in .apps.googleusercontent.com) into config.js as googleClientId; the build registers its redirect scheme for you.')],
+    onedrive: [N_('In the Azure portal (portal.azure.com) go to Microsoft Entra ID → App registrations → New registration: any name; accounts in any organisational directory and personal Microsoft accounts.'),
+      N_('Under Authentication add a platform, Mobile and desktop applications, with the redirect address as a custom redirect URI, and allow public client flows.'),
+      N_('Under API permissions add Microsoft Graph → Delegated → Files.ReadWrite.AppFolder and offline_access.'), N_('Copy the Application (client) ID into config.js as msClientId.')],
+    done: N_('Then rebuild and install the app: npm run sync, then run it from Android Studio or Xcode. Each service you set up shows Connect here; signing in opens in the browser and comes back to the app.'),
+    icloud: N_('iCloud Drive needs no setup: Save below puts the encrypted file in Files.'),
+  };
+  function cloudHowHtml() {
+    const id = Native.scheme, redirect = id + '://oauth';
+    const steps = (name, list) => `<p style="margin:10px 0 4px"><b>${esc(name)}</b></p><ol class="steps">${list.map(s => `<li>${__h(s)}</li>`).join('')}</ol>`;
+    return `<details class="more cloudhow" data-grp="cloudhow" ${openGroups.has('cloudhow') ? 'open' : ''}><summary>${__h('How to set up Google Drive, Dropbox or OneDrive')}<span class="chev" aria-hidden="true">›</span></summary>
+      <div class="howbody"><p class="note">${__h(CLOUD_HOW.intro, { id, redirect })}</p>
+      ${steps(Cloud.label('dropbox'), CLOUD_HOW.dropbox)}${steps(Cloud.label('google'), CLOUD_HOW.google)}${steps(Cloud.label('onedrive'), CLOUD_HOW.onedrive)}
+      <p class="note">${__h(CLOUD_HOW.done)}</p><p class="note">${__h(CLOUD_HOW.icloud)}</p></div></details>`;
+  }
   function cloudHtml() {
     const av = Cloud.available(), row = p => {
       const last = Cloud.last(p);
@@ -1169,7 +1193,8 @@ const Acct = (() => {
       ${['google', 'dropbox', 'onedrive'].some(p => av[p]) ? ['google', 'dropbox', 'onedrive'].map(row).join('')
         : `<p class="note cloudkeys">${__h('Google Drive, Dropbox and OneDrive connect directly once the app is registered with each service: whoever builds the app puts the keys in config.js (SETUP.md, Cloud backup providers). Until then, **Save** below puts the encrypted file in any cloud app on this phone.')}</p>`}
       <div class="stat"><span>${__h('Files, iCloud Drive or any cloud app')}<br><small>${__h('The share sheet lets you pick the app or folder the encrypted file goes to')}</small></span><span class="btns"><button class="btn" id="cFileSave" style="padding:6px 10px">${__h('Save')}</button><button class="btn" id="cFileLoad" style="padding:6px 10px">${__h('Restore')}</button></span></div>
-      <input type="file" id="cFile" accept="application/json,.json" hidden></div>`;
+      <input type="file" id="cFile" accept="application/json,.json" hidden>
+      ${cloudHowHtml()}</div>`;
   }
   function applyBackup(d) {
     if (!d || !Array.isArray(d.events)) throw new Error(N_('That file has no entries in it'));

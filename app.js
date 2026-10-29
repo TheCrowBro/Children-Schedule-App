@@ -117,7 +117,7 @@ function normalize(d) {
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 // `quiet` saves skip scheduling a sync (used by the sync engine itself).
 function save(quiet) {
-  schoolDays = null;   // (a first day of school may have been saved or deleted)
+  schoolDays = null; freshView();   // (a first day of school may have been saved or deleted; the page's view of the log is rebuilt)
   Store.save(db);
   if (!quiet) Sync.schedule();
   Notify.sync(db.events);   // (a sleep begun or ended: the phone's "still asleep?" checks follow)
@@ -129,7 +129,7 @@ function stamp() {
   db.meta.hlc = t; return t;
 }
 function removeEvent(ev) {
-  db.events = db.events.filter(x => x !== ev);
+  db.events = db.events.filter(x => x !== ev); freshView();
   db.deleted.push({ id: ev.id, type: ev.type, ts: ev.ts, updated: stamp() });
   const media = (ev.data || {}).media; if (Array.isArray(media) && media.length) Media.discard(media.map(m => m.id));   // (its pictures and videos go too, unless another child's copy of the moment has them)
 }
@@ -240,8 +240,27 @@ function setKid(id) { selKid = id; if (id !== 'all') lastKid = id; db.meta.kid =
 /** The child whose numbers the Month and Stats tabs show (Everyone falls back to the last child looked at). */
 function viewKid() { const k = curKid(); return k !== 'all' ? k : (kidById(lastKid) ? lastKid : kids()[0].id); }
 const dayKid = () => (tab === 'day' ? curKid() : viewKid());
-const scoped = () => { const k = dayKid(), log = db.events.filter(e => !Travel.isTravel(e.type) && e.type !== 'moment' && !offDay(e.type)); return k === 'all' ? log : log.filter(e => childOf(e) === k); };   // (big moments are kept apart)
-const eventsOnDay = day => scoped().filter(e => e.ts >= day && e.ts < day + DAY).sort((a, b) => a.ts - b.ts);
+// The log as the page sees it, built once and reused until something changes: the entries in scope (the child shown, or everyone),
+// grouped by the day they fall on, the sleeps (they can span midnight) and the drop-offs. A page like Stats asks for hundreds of days;
+// without this each day scanned the whole log. Any change goes through save() or removeEvent(), which start it afresh, and the key
+// below catches a log swapped or grown by a sync or a switch of child.
+let logView = null;
+function viewOf() {
+  const k = dayKid(), v = logView;
+  if (v && v.events === db.events && v.n === db.events.length && v.hlc === db.meta.hlc && v.kid === k) return v;
+  const all = db.events, list = [], byDay = new Map(), sleeps = [], care = [];
+  for (const e of all) {
+    if (e.type === 'care') care.push(e);
+    if (Travel.isTravel(e.type) || e.type === 'moment' || offDay(e.type) || (k !== 'all' && childOf(e) !== k)) continue;
+    list.push(e); if (e.type === 'sleep') sleeps.push(e);
+    const d = startOfDay(e.ts), a = byDay.get(d); if (a) a.push(e); else byDay.set(d, [e]);
+  }
+  for (const a of byDay.values()) a.sort((x, y) => x.ts - y.ts);
+  return logView = { events: all, n: all.length, hlc: db.meta.hlc, kid: k, list, byDay, sleeps, care };
+}
+const freshView = () => { logView = null; };
+const scoped = () => viewOf().list;   // (big moments are kept apart)
+const eventsOnDay = day => { const a = viewOf().byDay.get(day); return a ? a.slice() : []; };
 const activeSleep = id => db.events.find(e => e.type === 'sleep' && !e.end && (!id || childOf(e) === id));
 /** A nap or a night's sleep: as marked on the entry, or else by when it began (from 6 AM to 6 PM, a nap). Naps are drawn dashed on the clock. */
 const napTime = ts => { const h = new Date(ts).getHours(); return h >= 6 && h < 18; };
@@ -534,7 +553,7 @@ function openPickup(c) {
 }
 /** Each stay (a drop-off and its pick-up, or now) that overlaps the time from `t0` to `t1`, for one child or all. */
 function stays(t0, t1, kid) {
-  return db.events.filter(e => e.type === 'care' && (!kid || kid === 'all' || childOf(e) === kid) && e.ts < t1 && e.ts > t0 - STAY).map(e => {
+  return viewOf().care.filter(e => (!kid || kid === 'all' || childOf(e) === kid) && e.ts < t1 && e.ts > t0 - STAY).map(e => {
     const out = pickupAfter(e), end = out ? out.ts : Math.min(Date.now(), e.ts + STAY);
     return { e, out, start: e.ts, end, open: !out && atCare(childOf(e)) === e };
   }).filter(s => s.end > t0);
@@ -579,7 +598,7 @@ function fitTabs() {
 window.addEventListener('resize', () => fitTabs());
 function render() {
   if (voyageFirst()) return;   // travel mode is switching: the page changes under the journey in a moment
-  shownAt = Date.now(); schoolDays = null;
+  shownAt = Date.now(); schoolDays = null; freshView();
   document.querySelectorAll('#view details[data-grp]').forEach(d => { d.open ? openGroups.add(d.dataset.grp) : openGroups.delete(d.dataset.grp); });   // keep twirl-downs as the user left them
   if (tab !== 'guide') openGroups.forEach(g => { if (g.startsWith('pix')) openGroups.delete(g); });   // except the Guide's pictures: hidden again next time
   const multi = kids().length > 1, vk = kidById(dayKid()), single = kids()[0];
@@ -960,7 +979,7 @@ function monthDay() {
 // ---------- Stats ----------
 function sleepMinutesOn(day) {
   let tot = 0;
-  for (const e of scoped()) if (e.type === 'sleep') {
+  for (const e of viewOf().sleeps) {
     const end = e.end || Date.now(), s = Math.max(e.ts, day), f = Math.min(end, day + DAY);
     if (f > s) tot += (f - s) / MIN;
   }
@@ -968,7 +987,7 @@ function sleepMinutesOn(day) {
 }
 function dayStats(day) {
   const evs = eventsOnDay(day), of = t => evs.filter(e => e.type === t);
-  const feeds = of('feed').filter(e => e.data.kind !== 'solids'), diapers = of('diaper'), sleeps = scoped().filter(e => e.type === 'sleep' && e.end && e.ts >= day && e.ts < day + DAY);   // (milk feeds: a meal of solid food is counted on its own)
+  const feeds = of('feed').filter(e => e.data.kind !== 'solids'), diapers = of('diaper'), sleeps = evs.filter(e => e.type === 'sleep' && e.end);   // (milk feeds: a meal of solid food is counted on its own)
   return {
     day, feeds: feeds.length, solids: of('feed').length - feeds.length, ml: feeds.reduce((a, e) => a + (+e.data.ml || 0), 0),
     pee: diapers.filter(e => e.data.pee).length, poo: diapers.filter(e => e.data.poo).length, runny: [...diapers, ...of('potty')].filter(e => e.data.poo && e.data.texture === RUNNY).length,
@@ -2562,7 +2581,7 @@ const TOURS = {
     { sel: 'details[data-grp=mnotify]', title: N_('Notifications'), why: N_('While a child is logged asleep, the phone asks whether they are still asleep, with Woke up on the notification. Set when it asks, and the quiet hours it keeps out of.') },
     { sel: 'details[data-grp=munits]', title: N_('Units'), why: N_('Kilograms and centimetres or pounds and inches for the health record, and ml or fl oz for milk.') },
     { sel: 'details[data-grp=mlook]', title: N_('Appearance and clock art'), why: N_('Light or dark: match your phone, pick one, or follow sunrise and sunset. And the painting around each child\'s clock.') },
-    { sel: 'details[data-grp=mcloud]', title: N_('Cloud backup'), why: N_('A private, encrypted copy in your own cloud storage, scrambled with a passphrase only you know.') },
+    { sel: 'details[data-grp=mcloud]', title: N_('Cloud backup'), why: N_('A private, encrypted copy in your own cloud storage, scrambled with a passphrase only you know. Google Drive, Dropbox and OneDrive need a one-time setup by whoever builds the app: the card has the steps. Save works right away, through the share sheet.') },
     { sel: 'details[data-grp=mdata]', title: N_('Your data'), why: N_('Back up the log as a file, export a copy for your pediatrician, or restore a backup.') },
     { sel: 'details[data-grp=mapp]', title: N_('App updates'), why: N_('New versions come through the app store. This opens Little Log\'s page there.') },
     { sel: '#wipe', title: N_('Starting over'), why: N_('Deletes every entry in this log, for everyone sharing it. Only parents see this button.') },
@@ -3238,7 +3257,9 @@ function applyInsets(i) {
 }
 Sync.onSessionLost = () => Acct.sessionLost();
 (async () => {
-  await Promise.all([I18n.init(), Store.init()]); db = normalize(await Store.load());   // before anything reads the log, or shows text
+  const mark = n => { try { performance.mark('ll:' + n); } catch (e) { /* no timeline */ } };   // (start-up timings, for the speed suite and diagnostics)
+  mark('start');
+  await Promise.all([I18n.init(), Store.init()]); db = normalize(await Store.load()); mark('loaded');   // before anything reads the log, or shows text
   Media.onChange = () => render();   // (a thumbnail arrived)
   Icons.init(); Icons.paint(document.querySelector('#tabs')); Icons.paint(document.querySelector('#cover')); Icons.paint(document.querySelector('#helpBtn'));
   Theme.onChange = () => { render(); Native.setBarsLight(!Theme.isDark()); };
@@ -3258,7 +3279,7 @@ Sync.onSessionLost = () => Acct.sessionLost();
     });
     Native.onAppState(active => { if (active) { Notify.sync(db.events); followToday(true); } });
   }
-  render();                                            // the gate decides what to show: sign-in, two-step check, lock, or the app
+  render(); mark('drawn');                             // the gate decides what to show: sign-in, two-step check, lock, or the app
   if (!Native.is) return;
   const launch = await Native.launchUrl();             // app opened from an invite link
   if (launch) { const m = await Cloud.handleOAuthUrl(launch); if (!m) Acct.receiveJoin(launch); }

@@ -31,8 +31,15 @@ const rng = seed => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = M
         assert.equal(d.length, 0, `${label}: phone ${i} differs from phone 0:\n      ${d.slice(0, 6).join('\n      ')}`);
       }
       assert.deepEqual(await serverTruth(), sets[0], `${label}: phones differ from what the server holds`);
-      for (const p of phones) await p.waitForFunction(() => Sync.st.state !== 'syncing', null, { timeout: 30000 });   // a background sync may have just started
-      for (const p of phones) { const pend = await p.evaluate(() => ({ dirty: db.events.filter(e => e.updated > db.meta.pushedAt).length, tomb: db.deleted.length, bad: Sync.st.bad, state: Sync.st.state })); assert.deepEqual(pend, { dirty: 0, tomb: 0, bad: 0, state: 'ok' }, `${label}: leftovers ${JSON.stringify(pend)}`); }
+      for (const p of phones) {   // a background sync may have just started (the 30-second timer, or a rerun): wait it out, then look at what is left
+        let pend;
+        for (let k = 0; k < 6; k++) {
+          await p.waitForFunction(() => Sync.st.state !== 'syncing', null, { timeout: 30000 });
+          pend = await p.evaluate(() => ({ dirty: db.events.filter(e => e.updated > db.meta.pushedAt).length, tomb: db.deleted.length, bad: Sync.st.bad, state: Sync.st.state }));
+          if (pend.state !== 'syncing') break;
+        }
+        assert.deepEqual(pend, { dirty: 0, tomb: 0, bad: 0, state: 'ok' }, `${label}: leftovers ${JSON.stringify(pend)}`);
+      }
       return sets[0];
     };
 

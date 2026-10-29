@@ -262,7 +262,8 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   the **Keychain / Keystore**, "sign out everywhere", in-app account deletion
 - **End-to-end encryption**: the server can't read the baby's name, entries, notes or health data. Phones hold the keys (Keychain / Keystore); a recovery code
   protects against losing every phone; keys change automatically when someone leaves or loses a phone
-- **Encrypted cloud backup** (More → Cloud backup) to Google Drive, Dropbox or OneDrive (once the app is registered with each service, SETUP.md §3; until then the card says so) or to iCloud Drive, Files or any cloud app on the phone through the share sheet, with a passphrase only
+- **Quick with a big log**: measured with ten thousand entries, every page draws in well under a tenth of a second on a build server; the budgets are held by a speed suite, and [PERFORMANCE.md](PERFORMANCE.md) has the numbers and the reasoning.
+- **Encrypted cloud backup** (More → Cloud backup) to Google Drive, Dropbox or OneDrive (once the app is registered with each service, SETUP.md §3; until then the card says so, and its *How to set up* twirl-down walks through the three registrations step by step) or to iCloud Drive, Files or any cloud app on the phone through the share sheet, with a passphrase only
   you know. A log kept on the phone only is offered it straight after the first screen (**Set it up**, or **Not now**), and until a backup
   is made a note on the Day page reminds you once something is logged (put off, it comes back a month later). To move phones, the new
   phone restores the backup file at its first screen; a backup in a drive is restored from More → Cloud backup after connecting the drive

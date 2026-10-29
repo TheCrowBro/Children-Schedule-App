@@ -26,7 +26,11 @@ const Store = (() => {
   const get = k => tx('readonly', s => s.get(k));
   const put = (k, v) => tx('readwrite', s => s.put(v, k));
 
-  async function init() { try { idb = await open(); } catch (e) { idb = null; } }
+  async function init() {
+    try { idb = await open(); } catch (e) { idb = null; }
+    // ask the browser to keep this storage out of its clean-ups (on a phone the app's storage is its own; in a browser this matters)
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* not offered */ }
+  }
   // pictures and videos (media.js), by name; too big for the localStorage fallback, so without IndexedDB they are fetched again when shown
   const MB = 'media.';
   async function blobPut(name, blob) { if (idb) await put(MB + name, blob); }

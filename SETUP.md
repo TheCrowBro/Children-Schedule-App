@@ -74,6 +74,35 @@ encrypted file in any cloud app on the phone through the share sheet. Redirect U
 | OneDrive | Azure app registration, *Mobile and desktop* platform, Graph `Files.ReadWrite.AppFolder` | `msClientId` |
 | iCloud Drive | nothing to configure: "Save" opens the share sheet → *Save to Files* | – |
 
+The app itself has these steps too: More → Cloud backup → *How to set up Google Drive, Dropbox or OneDrive*. Each is done once,
+on a computer, by whoever builds the app. The app id is `app.littlelog.newborn` unless you changed it (MOBILE.md), and its redirect
+address is `app.littlelog.newborn://oauth`.
+
+**Dropbox** → `dropboxKey`
+1. Go to <https://www.dropbox.com/developers/apps> and choose **Create app**: *Scoped access*, *App folder*, any name (people see it when they sign in).
+2. **Permissions**: tick `files.content.write` and `files.content.read`, then *Submit*.
+3. **Settings** → *OAuth 2* → *Redirect URIs*: add `app.littlelog.newborn://oauth`.
+4. Copy the **App key** into `config.js` as `dropboxKey`.
+
+**Google Drive** → `googleClientId`
+1. In the [Google Cloud console](https://console.cloud.google.com) create a project and turn on the **Google Drive API** (*APIs & Services → Library*).
+2. *APIs & Services → OAuth consent screen*: **External**, the app's name and your email; add the scope `…/auth/drive.appdata`; add yourself (and the
+   other parent) as **test users**. While the app is unpublished only test users can sign in; publishing a personal app is a short form.
+3. *Credentials → Create credentials → OAuth client ID*, type **iOS**, bundle id = the app id. No client secret is needed.
+4. Copy the client ID (it ends in `.apps.googleusercontent.com`) into `config.js` as `googleClientId`. `npm run sync` registers its
+   reverse-client-id redirect scheme in the app for you.
+
+**OneDrive** → `msClientId`
+1. In the [Azure portal](https://portal.azure.com) go to *Microsoft Entra ID → App registrations → New registration*: any name; *Accounts in any
+   organizational directory and personal Microsoft accounts*.
+2. *Authentication → Add a platform → Mobile and desktop applications*: custom redirect URI `app.littlelog.newborn://oauth`; under *Advanced settings*
+   allow public client flows.
+3. *API permissions → Add a permission → Microsoft Graph → Delegated*: `Files.ReadWrite.AppFolder` and `offline_access`.
+4. Copy the **Application (client) ID** into `config.js` as `msClientId`.
+
+Then `npm run sync` and run the app from Android Studio or Xcode. On the phone, More → Cloud backup shows **Connect** for each service you set up;
+signing in opens in the browser and returns to the app. **iCloud Drive** needs nothing: *Save* opens the share sheet → *Save to Files*.
+
 ## 4. Tests
 ```bash
 npm test          # database rules + end-to-end (needs postgres, playwright + chromium, ffmpeg)
