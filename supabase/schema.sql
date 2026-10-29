@@ -494,6 +494,20 @@ begin
                        null, null, jsonb_build_object('person', display_of(p_baby, p_user), 'role', p_role));
 end $$;
 
+-- A parent gives a member of this log a different name, the one the family sees here (other parents included). The member's name
+-- in any other log is untouched, and they can still change it themselves under Security & account.
+create function rename_member(p_baby uuid, p_user uuid, p_name text) returns void
+language plpgsql security definer set search_path = public as $$
+declare old_name text; new_name text := left(trim(coalesce(p_name, '')), 60);
+begin
+  if not is_parent(p_baby) then raise exception 'Only parents can rename members'; end if;
+  if new_name = '' then raise exception 'Enter a name'; end if;
+  select display_of(p_baby, p_user) into old_name;
+  update members set display_name = new_name where baby_id = p_baby and user_id = p_user;
+  if not found then raise exception 'not a member'; end if;
+  perform log_activity(p_baby, 'member_renamed', null, null, jsonb_build_object('person', old_name, 'name', new_name));
+end $$;
+
 create function remove_member(p_baby uuid, p_user uuid) returns void
 language plpgsql security definer set search_path = public as $$
 declare t members; me uuid := auth.uid();
@@ -839,7 +853,7 @@ grant execute on function
   list_devices(uuid), list_recovery(uuid), grant_device(uuid, uuid, text, text, text, text), set_recovery(uuid, jsonb, text, text, text, text),
   rotate_keys(uuid, int, jsonb, text, text, text, text),
   create_baby(text, text, uuid, jsonb, jsonb, text, jsonb, uuid, text), update_baby(uuid, text, int), list_people(uuid), set_display_name(text), set_my_details(uuid, text, int),
-  set_member(uuid, uuid, text, jsonb, jsonb), remove_member(uuid, uuid), reset_member_mfa(uuid, uuid),
+  set_member(uuid, uuid, text, jsonb, jsonb), rename_member(uuid, uuid, text), remove_member(uuid, uuid), reset_member_mfa(uuid, uuid),
   retire_member(uuid, uuid, text), list_retired(uuid), forget_retired(uuid), is_relative(uuid), get_tree(uuid), set_tree(uuid, text, int),
   create_invite(uuid, text, jsonb), list_invites(uuid), rescind_invite(text), redeem_invite(text, text, uuid, text),
   my_requests(), cancel_my_request(uuid), list_requests(uuid), decide_request(uuid, boolean, text, jsonb, jsonb),

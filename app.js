@@ -724,6 +724,10 @@ function clockSvg(evs, day) {
     <path d="M101 36V17Q101 12 106 12H234Q239 12 239 17V36"/><path d="M21 34V36M319 34V36"/><circle cx="21" cy="31" r="3"/><circle cx="319" cy="31" r="3"/>
     ${box(9, 36, 322, 12)}${box(9, 406, 322, 12)}${box(14, 48, 14, 358, 1.5)}${box(312, 48, 14, 358, 1.5)}<path d="M14 418Q21 427 28 418M312 418Q319 427 326 418"/>
     <path d="M14 42H326M14 412H326M21 52V402M319 52V402" stroke-width=".6" stroke-opacity=".75"/></g>`;
+  // a chosen quarter: its name, and under it the hours it covers, written in the carrying handle at the top (squeezed to the handle's
+  // width once drawn, in a language whose words are wider: bind())
+  const qh = quad == null ? null : quadInfo(quad, day);
+  const handle = qh ? `<text class="qname" x="170" y="21" text-anchor="middle" fill="${ink}">${esc(qh.label)}</text><text class="qtime" x="170" y="32" text-anchor="middle" fill="${ink}">${esc(qh.range)}</text>` : '';
   const panel = `<clipPath id="cc-panel"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5"/></clipPath>
     <g clip-path="url(#cc-panel)"><rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" fill="${dk ? '#1a2240' : th.base}"/>${pic('art', `data-theme="${th.id}" data-night="${dk ? 1 : 0}" x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}"`, artUrl)}</g>
     <rect x="${F.x}" y="${F.y}" width="${f1(PW)}" height="${f1(PH)}" rx="2.5" fill="none" stroke="${gold}" stroke-width=".8"/>`;
@@ -795,7 +799,7 @@ function clockSvg(evs, day) {
   const summary = GROUPS.map(gr => [gLabel(gr), evs.filter(e => gr.types.includes(e.type)).length]).filter(x => x[1]).map(x => __('{group}: {n}', { group: __(x[0]), n: x[1] })).join(', ');
   const what = twelve ? (half ? __('12-hour clock, noon to midnight') : __('12-hour clock, midnight to noon')) : __('24-hour clock of the day, midnight at the top and noon at the bottom');
   return `<svg class="clock" viewBox="0 0 ${F.W} ${F.H}" data-cx="${C.x}" data-cy="${f1(C.y)}" data-painting="${th.id}" data-dial="${twelve ? 12 : 24}" role="group" aria-label="${esc(summary ? __('{clock}: {entries}', { clock: what, entries: summary }) : __('{clock}, no entries', { clock: what }))}">
-    <g aria-hidden="true">${frame}${panel}${dial}</g>${quads}<g class="data">${data}</g><g class="hands" aria-hidden="true">${hand}${boss}</g></svg>`;
+    <g aria-hidden="true">${frame}${panel}${dial}${handle}</g>${quads}<g class="data">${data}</g><g class="hands" aria-hidden="true">${hand}${boss}</g></svg>`;
 }
 /** Where the hands point (degrees): the 24-hour hand, and the hour and minute hands of a 12-hour face. */
 function handAngles(now, sp) {
@@ -2755,6 +2759,8 @@ function bind() {
   document.querySelectorAll('[data-range]').forEach(b => b.onclick = () => { statDays = +b.dataset.range; render(); });
   document.querySelectorAll('[data-quad]').forEach(b => b.onclick = () => { quad = quad === +b.dataset.quad ? null : +b.dataset.quad; render(); });
   document.querySelectorAll('[data-quadclear]').forEach(b => b.onclick = () => { quad = null; render(); });
+  // the quarter's name and hours in the clock's handle: squeezed to the handle's width when a language's words are wider than it
+  for (const t of document.querySelectorAll('.clock .qname, .clock .qtime')) { try { if (t.getComputedTextLength() > 126) { t.setAttribute('textLength', 126); t.setAttribute('lengthAdjust', 'spacingAndGlyphs'); } } catch (e) { /* not drawn */ } }
   document.querySelectorAll('[data-face]').forEach(b => b.onclick = () => { db.meta.clock = b.dataset.face; Store.save(db); quad = null; render(); });
   document.querySelectorAll('[data-half]').forEach(b => b.onclick = () => { half = +b.dataset.half; quad = null; render(); });
   document.querySelectorAll('[data-nums]').forEach(b => b.onclick = () => { db.meta.nums = b.dataset.nums; Store.save(db); render(); });

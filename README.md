@@ -80,7 +80,7 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   solids, a drop, a poo, a moon, a teddy, a bathtub…), ringed in the entry's colour, or the child's on a shared log; the legend under the
   clock shows the same symbols (More → Appearance and clock art turns them into plain dots, kept on the phone): tapping a symbol
   shows that entry's details (editing stays in the list below, where "Show in the list" takes you); tap a quarter of
-  the dial to list just those hours. **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
+  the dial to list just those hours (its name and the hours it covers are written in the clock's carrying handle meanwhile). **Clock art**: eight watercolour paintings to choose from per child (cherry blossoms, Japanese maple, ocean,
   forest, mountains, rose garden, starry night, gilt classic), drawn in the app and kept on the phone; in dark mode each one is its night-time
   scene (a moon and stars, lit windows and lanterns, moonlight on the water), and so are the travel paintings. Details sit below in twirl-down groups (feeding, diapers, sleep, vomit, play, health & meds)
 - **Month view** with a day's counts at a glance (and the entries in a twirl-down); a day with a big moment is ringed and washed in
@@ -240,7 +240,7 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   goes when that family is next open, and the families list says it's waiting). Leaving a family, or being removed from it, takes it off
   the phone; signing out clears them all, after a warning if anything hasn't synced
 - **Caregivers and helpers**: in the family shown, its family (parents and family members) and its caregivers, babysitters, medical
-  assistants and friends are two lists; tap anyone for their details (phone with a Call button, work, notes). A parent can **Retire** a
+  assistants and friends are two lists; tap anyone for their details (phone with a Call button, work, notes). A parent's **Edit** on anyone, other parents included, changes the name the family sees here, their role and what they may do. A parent can **Retire** a
   helper who moved away, stopped, or died: their access ends at once (as if removed, and the log changes its keys), but they stay on a
   **Retired** list with their role, dates, the reason and their details (still end-to-end encrypted), and their past entries still say
   who added them. To have them back, invite them again; a parent can also delete the note

@@ -192,3 +192,26 @@ one only once, and turning the setting off forgets them.
 
 The button only appears when `config.js` has a Supabase project. If the function isn't deployed yet, it says the report couldn't be
 sent.
+
+## Upgrading an existing project
+
+The schema file is written for a fresh project. When a release adds something to the database, run just that part in the SQL editor:
+
+**1.16.0** adds `rename_member`, which lets a parent rename anyone in the log. Paste and run:
+
+```sql
+create function rename_member(p_baby uuid, p_user uuid, p_name text) returns void
+language plpgsql security definer set search_path = public as $$
+declare old_name text; new_name text := left(trim(coalesce(p_name, '')), 60);
+begin
+  if not is_parent(p_baby) then raise exception 'Only parents can rename members'; end if;
+  if new_name = '' then raise exception 'Enter a name'; end if;
+  select display_of(p_baby, p_user) into old_name;
+  update members set display_name = new_name where baby_id = p_baby and user_id = p_user;
+  if not found then raise exception 'not a member'; end if;
+  perform log_activity(p_baby, 'member_renamed', null, null, jsonb_build_object('person', old_name, 'name', new_name));
+end $$;
+grant execute on function rename_member(uuid, uuid, text) to authenticated;
+```
+
+Until it is run, the app's Rename shows the server's reply ("function rename_member does not exist") and nothing else changes.

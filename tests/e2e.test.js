@@ -344,10 +344,20 @@ const server = http.createServer((req, res) => {
     assert.equal((await q('select count(*)::int c from invites where code=$1', [code]))[0].c, 0);
     const r = await C.evaluate(c => Auth.rpc('redeem_invite', { p_code: c }), code); assert.equal(r.status, 'invalid');
   });
+  await step('a parent can rename anyone in the log, as the family sees them here: the list, their own name field and the activity log follow; an empty name is refused', async () => {
+    const nanId = (await q(`select user_id from members where email='nan@x.com'`))[0].user_id;
+    await goTab(A, 'family'); await A.click(`[data-person="${nanId}"]`); await A.waitForSelector('#pName'); assert.equal(await A.inputValue('#pName'), 'Nan');
+    await A.fill('#pName', '  Nana  '); await A.click('#pSave'); await A.waitForFunction(() => document.querySelector('#sheet').hidden);
+    assert(/Nana/.test(await A.textContent(`[data-pview="${nanId}"]`)), 'the list shows the new name');
+    await syncNow(C); await C.evaluate(() => Sync.loadPeople()); await goTab(C, 'more'); assert.equal(await C.$eval('#myName', i => i.value), 'Nana', "Nan's own name field (More → Account) shows it");
+    await A.click(`[data-person="${nanId}"]`); await A.waitForSelector('#pName'); await A.fill('#pName', '   '); await A.click('#pSave');
+    await A.waitForFunction(() => /Enter a name/.test(document.querySelector('#toast').textContent)); assert.equal(await A.evaluate(() => document.querySelector('#sheet').hidden), false, 'the sheet stays open');
+    await A.fill('#pName', 'Nan'); await A.click('#pSave'); await A.waitForFunction(() => document.querySelector('#sheet').hidden);
+  });
   await step('the activity log shows who did what – to parents only', async () => {
     await goTab(A, 'family'); await openSec(A); await A.click('#actBtn'); await A.waitForFunction(() => /Dad added an entry/.test(document.querySelector('#actList').textContent));
     const t = await A.textContent('#actList');
-    for (const s of ['Mum created the log', 'Dad added an entry', 'Mum added a private (health) entry', 'Mum approved dad@x.com as Family member', 'Nan edited an entry added by Mum', 'changed what Nan can do', 'rescinded a Friend invite']) assert(t.includes(s), 'missing: ' + s + '\n' + t.slice(0, 600));
+    for (const s of ['Mum created the log', 'Dad added an entry', 'Mum added a private (health) entry', 'Mum approved dad@x.com as Family member', 'Nan edited an entry added by Mum', 'changed what Nan can do', 'Mum renamed Nan to Nana', 'rescinded a Friend invite']) assert(t.includes(s), 'missing: ' + s + '\n' + t.slice(0, 600));
     assert(!t.includes('nan was here') && !t.includes('Rash') && t.includes('changed the encryption keys'), 'entry contents are not in the log; key changes are');
     await A.click('#actClose');
   });

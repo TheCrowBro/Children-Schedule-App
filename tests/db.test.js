@@ -281,6 +281,16 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       assert.deepEqual(await denied(C, baby, [ev('b1', { blob: 'N'.repeat(40), epoch: 2, updated: now() + 2000 })]), [], 'new box takes effect immediately');
       await A('select set_member($1,$2,$3,$4::jsonb)', [baby, id.C, 'caregiver', '{"edit_others":false}']);
     });
+    await t('only parents rename members (the name the family sees in this log, trimmed, logged); an empty name or a stranger is refused', async () => {
+      await rejects(C('select rename_member($1,$2,$3)', [baby, id.A, 'Mummy']), /Only parents/);
+      const was = (await q('select display_name from members where baby_id=$1 and user_id=$2', [baby, id.C]))[0].display_name;
+      await A('select rename_member($1,$2,$3)', [baby, id.C, '  Nanny Carol  ']);
+      assert.equal((await q('select display_name from members where baby_id=$1 and user_id=$2', [baby, id.C]))[0].display_name, 'Nanny Carol', 'trimmed');
+      assert.equal((await A('select * from list_people($1)', [baby])).find(p => p.user_id === id.C).display_name, 'Nanny Carol', 'as everyone lists them');
+      await rejects(A('select rename_member($1,$2,$3)', [baby, id.C, '   ']), /Enter a name/); await rejects(A('select rename_member($1,$2,$3)', [baby, '00000000-0000-0000-0000-000000000001', 'x']), /not a member/);
+      assert.deepEqual((await q(`select detail from activity where baby_id=$1 and action='member_renamed'`, [baby])).map(r => [r.detail.person, r.detail.name]), [[was || 'c', 'Nanny Carol']], 'the activity log says who was renamed to what');
+      await A('select rename_member($1,$2,$3)', [baby, id.C, was || 'c']);
+    });
     await t('health access: gaining it needs the health key for each phone; losing it removes the key and asks for rotation', async () => {
       await rejects(A('select set_member($1,$2,$3,$4::jsonb)', [baby, id.E, 'friend', '{"view_health":true}']), /health key grants are required/);
       const dE = (await A('select * from list_devices($1)', [baby])).filter(d => d.user_id === id.E && d.has_grant).map(d => d.grantee.slice(2));
@@ -323,6 +333,10 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     await t('a second parent can be added; then the first may step down', async () => {
       await A('select set_member($1,$2,$3,$4::jsonb,$5::jsonb)', [baby, id.B, 'parent', '{}', JSON.stringify((await A('select * from list_devices($1)', [baby])).filter(d => d.user_id === id.B).map(d => ({ device: d.grantee.slice(2), wrap_health: W('bh') })))]);
       assert.equal((await q(`select perms from members where user_id=$1`, [id.B]))[0].perms.edit_others, true);
+      const bName = (await q('select display_name from members where baby_id=$1 and user_id=$2', [baby, id.B]))[0].display_name;   // (a parent can rename the other parent, and the other way round)
+      await A('select rename_member($1,$2,$3)', [baby, id.B, 'Papa']); assert.equal((await q('select display_name from members where baby_id=$1 and user_id=$2', [baby, id.B]))[0].display_name, 'Papa');
+      await B('select rename_member($1,$2,$3)', [baby, id.A, 'Mama']); assert.equal((await q('select display_name from members where baby_id=$1 and user_id=$2', [baby, id.A]))[0].display_name, 'Mama');
+      await B('select rename_member($1,$2,$3)', [baby, id.A, 'Mum']); await A('select rename_member($1,$2,$3)', [baby, id.B, bName]);
       await rejects(as('B', 'aal1')('select * from list_people($1)', [baby]), /no access/, 'new parent needs MFA too');
       await A('select set_member($1,$2,$3,$4::jsonb)', [baby, id.B, 'family', '{}']);
     });

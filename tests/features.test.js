@@ -95,7 +95,8 @@ const pickFormula = async (page, scope, name) => {
       const rows = await P.$$eval('.quadlist .ev', r => r.map(x => x.dataset.edit));
       assert.deepEqual(rows, ['fdiaper' + at(13)], 'afternoon has just the 1 PM diaper');
       assert(/Afternoon/.test(await P.textContent('.quadlist')));
-      await P.click('[data-quadclear]'); assert.equal(await P.$$eval('.quadlist', x => x.length), 0);
+      assert.deepEqual([await P.textContent('.clock .qname'), await P.textContent('.clock .qtime')], ['Afternoon', '12 PM – 6 PM'], "the quarter's name and hours, written in the clock's handle");
+      await P.click('[data-quadclear]'); assert.equal(await P.$$eval('.quadlist', x => x.length), 0); assert.equal(await P.$('.clock .qtime'), null, 'the handle is empty again');
     });
 
     await step('the clock: a frame of thin soft-gold lines, a painted panel, a white face with a black rim, Roman numerals with a moon at midnight and a sun at noon, and a hand only on today', async () => {
@@ -128,6 +129,12 @@ const pickFormula = async (page, scope, name) => {
       await P.evaluate(() => document.querySelector('[data-quad="0"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
       assert.deepEqual(await P.$$eval('.quadlist .ev', r => r.map(x => x.dataset.edit)), ['fdiaper' + at(13)]);
       assert(/Early afternoon/.test(await P.textContent('.quadlist')) && /12 PM – 3 PM/.test(await P.textContent('.quadlist')), await P.textContent('.quadlist .qhead'));
+      assert.deepEqual([await P.textContent('.clock .qname'), await P.textContent('.clock .qtime')], ['Early afternoon', '12 PM – 3 PM'], 'in the handle too');
+      // a language with longer words: both lines still fit the handle (squeezed when they must)
+      await P.evaluate(async () => { await I18n.set('de'); render(); });
+      const fit = await P.evaluate(() => [...document.querySelectorAll('.clock .qname, .clock .qtime')].map(t => ({ text: t.textContent, len: Math.round(t.getComputedTextLength()) })));
+      assert.deepEqual(fit.map(f => f.text), ['Früher Nachmittag', '12 Uhr – 15 Uhr'], JSON.stringify(fit)); assert(fit.every(f => f.len <= 127), 'fits the handle: ' + JSON.stringify(fit));
+      await P.evaluate(async () => { await I18n.set(''); render(); });
       await P.click('[data-quadclear]');
       // today: an hour and a minute hand on the half that holds the current time, none on the other half
       const cur = await P.evaluate(() => String(new Date().getHours() >= 12 ? 1 : 0));

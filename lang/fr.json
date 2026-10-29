@@ -2647,5 +2647,7 @@
  "o9u1ld": "Grand-tante ou grand-oncle",
  "6c3wtr": "Cousin ou cousine d'un parent",
  "29z3ip": "Ajouter une grand-tante ou un grand-oncle",
- "k26huc": "Il n'y a plus de place sur l'arbre familial pour d'autres personnes : retirez quelqu'un ou raccourcissez les noms"
+ "k26huc": "Il n'y a plus de place sur l'arbre familial pour d'autres personnes : retirez quelqu'un ou raccourcissez les noms",
+ "12tugp4": "Nom (visible par la famille)",
+ "q5xh9l": "{actor} a renommé {person} en {name}"
 }

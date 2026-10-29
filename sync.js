@@ -331,6 +331,8 @@ const Sync = (() => {
     await loadPeople(); schedule(300);   // losing health access asks for new keys: a parent's phone does that on the next sync
   }
   const resetMfa = user => Auth.rpc('reset_member_mfa', { p_baby: db.meta.babyId, p_user: user });
+  /** A parent gives a member a different name, the one the family sees in this log (other parents included). */
+  const renameMember = async (user, name) => { await Auth.rpc('rename_member', { p_baby: db.meta.babyId, p_user: user, p_name: name }); await loadPeople().catch(() => {}); };
   const setDisplayName = async name => { await Auth.rpc('set_display_name', { p_name: name }); await loadPeople().catch(() => {}); };
   async function removeMember(userId) {
     await Auth.rpc('remove_member', { p_baby: db.meta.babyId, p_user: userId });
@@ -447,6 +449,6 @@ const Sync = (() => {
   }
 
   return { st, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
-    createInvite, rescind, decide, setMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
+    createInvite, rescind, decide, setMember, renameMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
     pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyPeople, retireMember, loadRetired, forgetRetired, loadTree, editTree, get switching() { return switching; }, onChange: null, onSessionLost: null };
 })();

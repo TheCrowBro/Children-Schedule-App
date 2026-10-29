@@ -1071,13 +1071,17 @@ const Acct = (() => {
   function editPerson(userId) {
     const p = Sync.st.people.find(x => x.user_id === userId); if (!p) return;
     const close = showSheet(`<h3>${esc(p.display_name || __('Member'))}</h3><p class="note">${esc(p.email || '')}</p>
+      <label class="f">${__h('Name (shown to the family)')}</label><input id="pName" type="text" maxlength="60" value="${esc(p.display_name || '')}">
       <div id="pForm">${accessFormHtml('p', p.role || 'caregiver', p.perms)}</div>
       <div class="row" style="margin-top:16px"><button class="btn" id="pCancel">${__h('Cancel')}</button><button class="btn p" id="pSave">${__h('Save')}</button></div>
       <div class="row"><button class="btn" id="pMfa">${__h('Reset two-step verification')}</button></div>
       <div class="row"><button class="btn d" id="pRemove">${__h('Remove from this log')}</button></div>`);
     const read = bindAccess($('#pForm'), 'p');
     $('#pCancel').onclick = close;
-    $('#pSave').onclick = async () => { const a = read(); try { await Sync.setMember(userId, a.role, a.perms); close(); toast(__('Saved')); render(); } catch (e) { toast(err(e)); } };
+    $('#pSave').onclick = async () => {
+      const a = read(), name = $('#pName').value.trim(); if (!name) return toast(__('Enter a name'));
+      try { if (name !== p.display_name) await Sync.renameMember(userId, name); await Sync.setMember(userId, a.role, a.perms); close(); toast(__('Saved')); render(); } catch (e) { toast(err(e)); }
+    };
     $('#pMfa').onclick = async () => { if (!confirm(__('Reset two-step verification for {name}? They will set it up again next time they sign in.', { name: p.display_name }))) return; try { await Sync.resetMfa(userId); toast(__('Reset')); } catch (e) { toast(err(e)); } };
     $('#pRemove').onclick = async () => { if (!confirm(__('Remove {name} from this log? They lose access immediately.', { name: p.display_name }))) return; try { await Sync.removeMember(userId); close(); render(); } catch (e) { toast(err(e)); } };
   }
@@ -1095,6 +1099,7 @@ const Acct = (() => {
     role_changed: l => __('{actor} made {person} a {role}', l.v), permissions_changed: l => __('{actor} changed what {person} can do', l.v),
     member_removed: l => __('{actor} removed {person}', l.v), member_retired: l => __('{actor} retired {person}', l.v), tree_changed: l => __('{actor} changed the family tree', l.v), left: l => __('{person} left the log', { person: l.detail.person || l.actor }),
     mfa_reset: l => __('{actor} reset two-step verification for {person}', l.v),
+    member_renamed: l => __('{actor} renamed {person} to {name}', { ...l.v, name: l.detail.name || '' }),
   };
   const activityLine = l => {
     const d = l.detail || {}, by = d.author && d.author !== l.actor ? d.author : '';
