@@ -482,10 +482,65 @@ const FamilyTree = (() => {
     });
     B.push(`<g class="fallen" aria-hidden="true">${falls.join('')}</g>`);
     const box = `viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"`;
-    return { html: `<div class="ftstage" style="width:max(100%, ${Math.round(W * (m.scale || 0.9))}px)"><svg class="ftpaint" ${box} aria-hidden="true" focusable="false">${defs}${A.join('')}</svg>`
-      + `<svg class="ftreesvg${dark ? ' dark' : ''}" ${box} role="group" aria-label="${x(m.title || '')}">${B.join('')}</svg></div>`, keys, width: W, height: H, center: cx0, species: kind };
+    // (the painting carries its one style rule itself, so it looks the same rendered as a picture, where the page's styles do not reach)
+    const paint = `<svg class="ftpaint" ${box} aria-hidden="true" focusable="false"><style>.wash{mix-blend-mode:${dark ? 'normal' : 'multiply'}}</style>${defs}${A.join('')}</svg>`;
+    return { html: `<div class="ftstage" style="width:max(100%, ${Math.round(W * (m.scale || 0.9))}px)">${paint}`
+      + `<svg class="ftreesvg${dark ? ' dark' : ''}" ${box} role="group" aria-label="${x(m.title || '')}">${B.join('')}</svg></div>`, paint, keys, width: W, height: H, center: cx0, species: kind };
   }
   /** A kind of tree's colours, for a little swatch: its crown (or blossom) and its bark. */
   const look = kind => { const k = SPECIES[kind] || SPECIES.oak; return { crown: k.blossom ? k.blossom[1] : k.wash[1], bark: k.bark[0] }; };
-  return { clean, walk, find, add, update, remove, draw, newId, speciesFor, look, KINDS, MAX_SIBS, MAX_KIDS };
+  // ---- the painting as a picture -------------------------------------------------------------------------------------------------
+  // The painting behind the tree is drawn with SVG filters (turbulence, displacement, blur: 17 of them), which rasterize slowly –
+  // seconds at a phone's pixel density – and were run again for every tile a sideways scroll or a redraw uncovered. That showed
+  // as flashing while the tree was moved. So the painting is rendered once into a picture (a canvas, in strips a frame apart so
+  // the screen keeps answering, then a WebP or PNG), kept on the phone for the next time the same drawing is shown, and what
+  // scrolls is a bitmap; only the people layer, with the birds, stays live. The birds also hold still while the tree moves.
+  const PAINT = { key: '', tag: '', url: '', busy: '', latest: '' };
+  const hash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h.toString(36); };
+  const sizeOf = paint => { const m = paint.match(/width="(\d+)" height="(\d+)"/); return m ? { W: +m[1], H: +m[2] } : null; };
+  const pictureEl = (W, H) => { const img = document.createElement('img'); img.className = 'ftpaint'; img.alt = ''; img.draggable = false; img.width = W; img.height = H; img.src = PAINT.url; return img; };
+  /** The stage's markup, with the painting as the kept picture when it is the same drawing as last time. */
+  const stage = (html, paint) => (PAINT.key === paint && PAINT.tag ? html.replace(paint, () => PAINT.tag) : html);
+  /** Rasterizes the painting at `scale` into a WebP (PNG where that is not offered), a strip per frame. */
+  async function rasterize(paint, scale) {
+    const { W, H } = sizeOf(paint), src = URL.createObjectURL(new Blob([paint.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')], { type: 'image/svg+xml' }));
+    try {
+      const img = new Image(); img.src = src; await (img.decode ? img.decode() : new Promise((res, rej) => { img.onload = res; img.onerror = rej; }));
+      const c = document.createElement('canvas'); c.width = Math.round(W * scale); c.height = Math.round(H * scale); const g = c.getContext('2d');
+      const strips = 6, frame = () => new Promise(r => requestAnimationFrame(r));
+      for (let i = 0; i < strips; i++) {
+        await frame(); const y0 = Math.floor((c.height * i) / strips), y1 = Math.floor((c.height * (i + 1)) / strips);
+        g.save(); g.beginPath(); g.rect(0, y0, c.width, y1 - y0); g.clip(); g.drawImage(img, 0, 0, c.width, c.height); g.restore();
+      }
+      return await new Promise(res => c.toBlob(res, 'image/webp', 0.9));
+    } finally { URL.revokeObjectURL(src); }
+  }
+  /** Shows the painting drawn in the tree's wrap as a picture: the kept one at once, else rendered now (and kept, in `store` when given). */
+  function paintOnce(wrap, paint, store) {
+    if (!paint || !sizeOf(paint) || typeof URL === 'undefined' || !URL.createObjectURL || !document.createElement('canvas').getContext) return;
+    PAINT.latest = paint;
+    if (PAINT.key === paint && PAINT.tag) { const svg = wrap && wrap.querySelector('svg.ftpaint'), { W, H } = sizeOf(paint); if (svg) svg.replaceWith(pictureEl(W, H)); return; }
+    if (PAINT.busy) return;   // (one at a time; the latest drawing follows when it is done)
+    PAINT.busy = paint;
+    const scale = Math.min(window.devicePixelRatio || 1, 2), key = hash(paint) + '@' + scale, { W, H } = sizeOf(paint);
+    (async () => {
+      let blob = null, kept = false;
+      try { const k = store && (await store.blobGet('ftpaint')); if (k && k.key === key && k.blob) { blob = k.blob; kept = true; } } catch (e) { /* no store: rendered now */ }
+      if (!blob) blob = await rasterize(paint, scale);
+      if (!blob) throw new Error('no picture');
+      if (PAINT.url) URL.revokeObjectURL(PAINT.url);
+      PAINT.url = URL.createObjectURL(blob); PAINT.key = paint; PAINT.tag = `<img class="ftpaint" src="${PAINT.url}" width="${W}" height="${H}" alt="" draggable="false">`;
+      if (!kept && store) { try { await store.blobPut('ftpaint', { key, blob }); } catch (e) { /* storage blocked: rendered again next time */ } }
+      if (PAINT.latest === paint) { const svg = document.querySelector('.ftreewrap svg.ftpaint'); if (svg) svg.replaceWith(pictureEl(W, H)); }
+    })().catch(() => { /* the drawing stays as it is: the SVG */ }).then(() => {
+      PAINT.busy = '';
+      if (PAINT.latest !== paint) paintOnce(document.querySelector('.ftreewrap'), PAINT.latest, store);
+    });
+  }
+  /** Wires a tree's sideways scroll: it opens at the trunk, stays where it was scrolled to (T.scroll), and the birds hold still while it moves. */
+  function bindScroll(wrap, pic, T) {
+    wrap.scrollLeft = T.scroll != null ? T.scroll : Math.max(0, (T.center * pic.clientWidth) / T.width - wrap.clientWidth / 2);
+    wrap.onscroll = () => { T.scroll = wrap.scrollLeft; pic.classList.add('moving'); clearTimeout(T.still); T.still = setTimeout(() => pic.classList.remove('moving'), 250); };
+  }
+  return { clean, walk, find, add, update, remove, draw, newId, speciesFor, look, stage, paintOnce, bindScroll, KINDS, MAX_SIBS, MAX_KIDS };
 })();

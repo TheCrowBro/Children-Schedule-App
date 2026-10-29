@@ -149,6 +149,10 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   stored in ml, so phones set differently agree. ml until switched
 - **Woke up**: the night-waking entry is "Woke up" (a wake-up), with Pain among the reasons beside hungry, diaper, gas and unknown;
   Stats count wake-ups per night
+- **The family tree's watercolour is painted once**: its filters (turbulence, displacement, blur) take seconds to rasterize at a
+  phone's pixel density and used to run again for every tile a sideways scroll or a redraw uncovered, which showed as flashing
+  while the tree was moved. The painting is now rendered once into a picture, kept on the phone for the next time the same
+  drawing is shown; what scrolls is a bitmap, only the people and the birds stay live, and the birds hold still while the tree moves
 - **Woke up at the top** (the sleep banner) asks whether they are **up for good** (the sleep ends now) or **back to sleep soon**: then
   the wake-up is noted with its reason and drawn as a dashed moon on the clock while the sleep goes on, and the button becomes
   **Asleep again**, which continues the sleep as it was; Up for good while they are up ends the sleep at the moment they woke. The

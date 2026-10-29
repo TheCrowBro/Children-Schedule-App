@@ -190,7 +190,12 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await J.waitForFunction(() => /Banyan · South Asia/.test(document.querySelector('.ftreeimg .fkind').textContent));
       assert.equal(await J.evaluate(() => Sync.st.tree.species), 'banyan');
       assert(!/banyan/i.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
-      assert(await J.evaluate(() => !!document.querySelector('.ftpaint #ftwash') && getComputedStyle(document.querySelector('.ftreesvg')).position === 'absolute'), 'a watercolour, with everyone over it');
+      // the watercolour is rendered once into a picture (its filters are slow to rasterize, and were run again for every tile a scroll uncovered), kept, and a redraw starts from it
+      await J.waitForFunction(() => { const p = document.querySelector('.ftreewrap .ftpaint'); return p && p.tagName === 'IMG' && /^blob:/.test(p.src) && p.complete && p.naturalWidth > 0; }, null, { timeout: 30000 });
+      assert(await J.evaluate(() => getComputedStyle(document.querySelector('.ftreesvg')).position === 'absolute' && !document.querySelector('.ftreewrap svg.ftpaint')), 'a watercolour as a picture, with everyone over it');
+      assert(await J.evaluate(async () => { render(); const p = document.querySelector('.ftreewrap .ftpaint'); const kept = await Store.blobGet('ftpaint'); return p.tagName === 'IMG' && kept && kept.blob && kept.blob.size > 1000; }), 'a redraw shows the kept picture at once, and the phone keeps it');
+      assert(await J.evaluate(() => { const w = document.querySelector('.ftreewrap'), pic = document.querySelector('.ftreesvg'); w.dispatchEvent(new Event('scroll')); return pic.classList.contains('moving'); }), 'the birds hold still while the tree moves');
+      await J.waitForFunction(() => !document.querySelector('.ftreesvg').classList.contains('moving'), null, { timeout: 3000 });
     });
 
     await step('tapping the sister on the tree offers her family; opening it shows her children and her log; what is logged there reaches her phone', async () => {

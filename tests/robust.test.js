@@ -52,7 +52,7 @@ const rng = seed => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = M
       for (const p of [P, X, Z]) {
         for (const t of ['day', 'month', 'stats', 'family', 'more']) { await p.click(`[data-tab=${t}]`); await sleep(120); }
         if (p === P) { await p.click('[data-tab=family]'); await p.evaluate(() => { const d = document.querySelector('details[data-grp=secshare]'); if (d) d.open = true; }); await p.click('#actBtn'); await sleep(500); }
-        const r = await p.evaluate(() => ({ xss: window.__xss, imgs: document.querySelectorAll('#view img, #sheet img, #title img').length, scripts: document.querySelectorAll('#view script, #sheet script, #title script').length, handlers: document.querySelectorAll('[onerror],[onload],[onclick]').length, text: document.body.textContent }));
+        const r = await p.evaluate(() => ({ xss: window.__xss, imgs: document.querySelectorAll('#view img:not(.ftpaint), #sheet img, #title img').length, scripts: document.querySelectorAll('#view script, #sheet script, #title script').length, handlers: document.querySelectorAll('[onerror],[onload],[onclick]').length, text: document.body.textContent }));
         assert.equal(r.xss, undefined, 'script ran'); assert.deepEqual([r.imgs, r.scripts, r.handlers], [0, 0, 0], 'markup was injected');
         if (p === P) await p.evaluate(() => document.querySelector('#actClose') && document.querySelector('#actClose').click());
       }

@@ -36,10 +36,10 @@ const Acct = {
       return T.grow[key] - now;
     };
     const kind = T.kind || FamilyTree.speciesFor(myRegion(), I18n.lang(), Intl.DateTimeFormat().resolvedOptions().timeZone || '');
-    const { html, keys, width, center } = FamilyTree.draw({ ...demoTreeModel(), sprout, species: kind, dark: Theme.isDark() });
-    T.seen = new Set([...(T.seen || []), ...keys]); T.width = width; T.center = center;
+    const { html, paint, keys, width, center } = FamilyTree.draw({ ...demoTreeModel(), sprout, species: kind, dark: Theme.isDark() });
+    T.seen = new Set([...(T.seen || []), ...keys]); T.width = width; T.center = center; T.paint = paint;
     const sw = k => { const c = FamilyTree.look(k); return `<i class="ftsw" style="background:${c.crown};border-color:${c.bark}" aria-hidden="true"></i>`; };
-    const tree = `<h2>🌳 Family tree</h2><div class="card ftreeimg"><div class="ftreewrap">${html}</div>
+    const tree = `<h2>🌳 Family tree</h2><div class="card ftreeimg"><div class="ftreewrap">${FamilyTree.stage(html, paint)}</div>
       <div class="ftfoot"><p class="note fkind">${sw(kind)}${DEMO_TREES[kind][0]} · ${DEMO_TREES[kind][1]} <button class="btn ftchange" id="demoKind">Change tree</button></p>
       <p class="note fhint">The tree is the one most common where your family comes from. Tap someone to see who they are, or a child for their day. Parents add grandparents, great-grandparents, aunts, uncles and cousins with the +: try it, and watch the tree grow.</p>
       <button class="btn" data-demoopen style="width:100%;margin-top:10px">+ Add a family</button></div></div>`;
@@ -56,7 +56,7 @@ const Acct = {
       const kb = $('#demoKind'); if (kb) kb.onclick = demoPickTree;
       if (pic) {
         pic.onclick = e => { const n = e.target.closest('[data-tk]'); if (n) demoTreeTap(n.dataset.tk); };
-        wrap.scrollLeft = T.scroll != null ? T.scroll : Math.max(0, (T.center * pic.clientWidth) / T.width - wrap.clientWidth / 2); wrap.onscroll = () => { T.scroll = wrap.scrollLeft; };
+        FamilyTree.bindScroll(wrap, pic, T); FamilyTree.paintOnce(wrap, T.paint, Store);
       }
     });
     return `${tree}<div class="card"><b>👨‍👩‍👧 Your family log</b><p class="note">In the real app parents invite people with a QR code (valid for two hours, one use) and approve each request. Tap a person to see the details they added. Everything is end-to-end encrypted, the family tree too, and only relatives see the tree.</p></div>

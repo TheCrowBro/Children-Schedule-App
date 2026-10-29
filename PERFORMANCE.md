@@ -54,6 +54,18 @@ storage pressure (on a phone the app's storage is its own already).
 * **The Day page** is mostly the clock (an SVG with a ray per entry, 11 ms) and building the page's DOM (23 ms); nothing to trim
   without changing what it shows.
 
+## The family tree's painting (1.19.1)
+
+The watercolour behind the family tree is drawn with 17 SVG filters (turbulence, displacement maps, blurs, a paper grain). Rendering
+them once for the whole painting takes about 4 seconds here at a phone's pixel density (3×) and 25 ms without them, and Chromium
+rasterizes a scrolling page in tiles: every tile a sideways scroll uncovered, and every redraw (the sync redraws the page every 30
+seconds), ran the filters again, which showed as flashing while the tree was moved. The painting is now rendered once into a picture
+(`FamilyTree.paintOnce`: the SVG drawn onto a canvas in six strips a frame apart, so the screen keeps answering, then a WebP, or a
+PNG where WebP is not offered, at up to 2× the pixel density) and kept on the phone (`Store.blobPut('ftpaint')`), so the next time
+the same drawing is shown it starts from the picture, redraws included (`FamilyTree.stage`). Only the people layer, with the birds,
+stays live, and the birds hold still while the tree scrolls (`.ftreesvg.moving`) so nothing competes with it. A new relative, another
+kind of tree or dark mode make a new drawing, rendered once more. The demo page shares the code.
+
 ## Budgets (tests/perf.test.js)
 
 The speed suite builds the same log and holds every page to a budget, loose enough for a slow CI runner and far below what feels

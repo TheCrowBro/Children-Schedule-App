@@ -447,7 +447,8 @@ details.fgrp{margin:6px 10px}details.fgrp .chips,details.fgrp .note,details.food
 .ftfoot{padding:0 14px 12px}
 .ftreewrap{direction:ltr;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}.ftreewrap::-webkit-scrollbar{display:none}   /* (the drawing is mirrored itself for right-to-left) */
 .ftstage{position:relative}
-.ftpaint{display:block;width:100%;height:auto}.ftpaint .wash{mix-blend-mode:multiply}:root[data-mode="dark"] .ftpaint .wash{mix-blend-mode:normal}
+.ftpaint{display:block;width:100%;height:auto;pointer-events:none}.ftpaint .wash{mix-blend-mode:multiply}:root[data-mode="dark"] .ftpaint .wash{mix-blend-mode:normal}
+.ftreesvg.moving .ftbird{animation-play-state:paused}   /* (while the tree is scrolled, the birds hold still: nothing competes with the scroll) */
 .ftreesvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;-webkit-user-select:none;user-select:none;will-change:transform;--ft-ink:#4a4337;--ft-paper:#fbf8f1}
 .ftreesvg.dark{--ft-ink:#efe9de;--ft-paper:#21252c}
 .ftreesvg text{font:600 10.5px system-ui,-apple-system,sans-serif;fill:var(--ft-ink);text-anchor:middle;pointer-events:none;unicode-bidi:plaintext}

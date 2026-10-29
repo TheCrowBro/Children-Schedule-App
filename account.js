@@ -715,12 +715,12 @@ const Acct = (() => {
       if (now - T.grow[key] > 1000) { delete T.grow[key]; return null; }
       return T.grow[key] - now;
     };
-    const { html, keys, width, center } = FamilyTree.draw({ ...model, species: kind, dark: Theme.isDark() });
-    Object.assign(T, { acts, width, center });
+    const { html, paint, keys, width, center } = FamilyTree.draw({ ...model, species: kind, dark: Theme.isDark() });
+    Object.assign(T, { acts, width, center, paint });
     const all = new Set([...(seen || []), ...keys]);
     if (!seen || all.size > seen.size) { T.seen = all; try { localStorage.setItem(SEEN, JSON.stringify([...all].slice(-500))); } catch (e) { /* storage blocked: it grows in again next time */ } }
     const bare = !t.parents.some(p => p.gp.length || p.sibs.length);
-    return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftreeimg"><div class="ftreewrap">${html}</div>
+    return `<h2>🌳 ${__h('Family tree')}</h2><div class="card ftreeimg"><div class="ftreewrap">${FamilyTree.stage(html, paint)}</div>
       <div class="ftfoot"><p class="note fkind">${swatch(kind)}${__h(TREES[kind][0])} · ${__h(TREES[kind][1])}${edit ? ` <button class="btn ftchange" id="ftKind">${__h('Change tree')}</button>` : ''}</p>
       ${bare ? `<p class="note fhint">${edit ? __h('Tap a + to add grandparents, great-grandparents, aunts, uncles and cousins.') : __h('A parent can add grandparents, aunts, uncles and cousins.')}</p>` : ''}
       ${add}</div></div>`;
@@ -979,9 +979,8 @@ const Acct = (() => {
         if (bird) { const g = bird.querySelector('.ftbird'); g.classList.remove('singing'); void g.getBBox(); g.classList.add('singing'); setTimeout(() => g.classList.remove('singing'), 1800); Birdsong.play(bird.dataset.bird); return; }
         const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act();
       };
-      // a tree wider than the screen scrolls sideways: it opens at the trunk, and stays where it was scrolled to
-      wrap.scrollLeft = T.scroll != null ? T.scroll : Math.max(0, (T.center * pic.clientWidth) / T.width - wrap.clientWidth / 2);
-      wrap.onscroll = () => { T.scroll = wrap.scrollLeft; };
+      FamilyTree.bindScroll(wrap, pic, T);   // (a tree wider than the screen scrolls sideways)
+      FamilyTree.paintOnce(wrap, T.paint, Store);   // (the painting as a picture, kept on the phone: a scroll or a redraw does not run its filters again)
     }
     if (el('ftKind')) el('ftKind').onclick = pickTree;
     document.querySelectorAll('[data-cancelreq]').forEach(b => b.onclick = async () => { try { await Sync.cancelRequest(b.dataset.cancelreq); render(); } catch (e) { toast(err(e)); } });
