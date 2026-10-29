@@ -448,7 +448,8 @@ details.fgrp{margin:6px 10px}details.fgrp .chips,details.fgrp .note,details.food
 .ftreewrap{direction:ltr;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}.ftreewrap::-webkit-scrollbar{display:none}   /* (the drawing is mirrored itself for right-to-left) */
 .ftstage{position:relative}
 .ftpaint{display:block;width:100%;height:auto;pointer-events:none}.ftpaint .wash{mix-blend-mode:multiply}:root[data-mode="dark"] .ftpaint .wash{mix-blend-mode:normal}
-.ftreesvg.moving .ftbird{animation-play-state:paused}   /* (while the tree is scrolled, the birds hold still: nothing competes with the scroll) */
+.ftreewrap.moving .ftbird{animation-play-state:paused}   /* (while the tree is scrolled, the birds hold still: nothing competes with the scroll) */
+.ftreesvg.live{pointer-events:none}.ftreesvg.live .ftbirdbtn{pointer-events:auto}   /* (the birds' and leaves' own layer: taps go through to the people, except on a bird) */
 .ftreesvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;-webkit-user-select:none;user-select:none;will-change:transform;--ft-ink:#4a4337;--ft-paper:#fbf8f1}
 .ftreesvg.dark{--ft-ink:#efe9de;--ft-paper:#21252c}
 .ftreesvg text{font:600 10.5px system-ui,-apple-system,sans-serif;fill:var(--ft-ink);text-anchor:middle;pointer-events:none;unicode-bidi:plaintext}
@@ -468,7 +469,7 @@ details.fgrp{margin:6px 10px}details.fgrp .chips,details.fgrp .note,details.food
 .ftreesvg [role=button]:focus-visible .disc{stroke:var(--brand);stroke-width:3.5}
 .ftreesvg [role=button]:active .disc{stroke:var(--brand);stroke-width:2.5}
 /* gently alive: the birds hop and look about, leaves drift down; whoever is new sprouts in */
-.ftreesvg .ftbird{opacity:.94;transform-box:fill-box;transform-origin:50% 100%;animation:fthop 6s ease-in-out infinite}
+.ftreesvg .ftbird{transform-box:fill-box;transform-origin:50% 100%;animation:fthop 6s ease-in-out infinite}
 .ftreesvg .ftbird.b1{animation-duration:7.5s;animation-delay:-2.5s}.ftreesvg .ftbird.b2{animation-duration:8.5s;animation-delay:-5s}
 .ftreesvg .ftbirdbtn{cursor:pointer}.ftreesvg .ftbirdbtn .hit{fill:transparent}.ftreesvg .ftbirdbtn:focus-visible{outline:none}.ftreesvg .ftbirdbtn:focus-visible .ftbird{filter:drop-shadow(0 0 2px var(--brand))}
 .ftreesvg .ftbird.singing{animation:ftsing .45s ease-in-out 4}

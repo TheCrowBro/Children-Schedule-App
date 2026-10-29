@@ -220,6 +220,14 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.equal(r.sung.length, 1); assert(new RegExp('audio/birds/' + birds[0][0] + '\\.mp3$').test(r.sung[0]), 'its own song: ' + r.sung[0]); assert(r.singing, 'bobbing'); assert(r.sheet, 'no sheet opens');
       await J.waitForFunction(() => !document.querySelector('.ftreesvg .ftbird.singing'), null, { timeout: 4000 });
       await J.focus('.ftreesvg [data-bird]'); await J.keyboard.press('Enter'); assert.equal(await J.evaluate(() => window.__sung.length), 2, 'Enter on a focused bird');
+      // a second bird tapped while the first still sings takes over (one song, one bob), and a tap gives the bird no keyboard focus
+      if (birds.length > 1 && birds[1][0] !== birds[0][0]) {
+        await J.evaluate(() => document.activeElement && document.activeElement.blur());
+        await J.click('.ftreesvg [data-bird]'); await J.waitForTimeout(200); await J.click(`.ftreesvg [data-bird="${birds[1][0]}"]`); await J.waitForTimeout(100);
+        const two = await J.evaluate(() => ({ singing: [...document.querySelectorAll('.ftreesvg .ftbird.singing')].map(g => g.closest('[data-bird]').dataset.bird), n: window.__sung.length, focused: !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('[data-bird]')) }));
+        assert.deepEqual(two.singing, [birds[1][0]], 'the second bird sings alone: ' + JSON.stringify(two)); assert.equal(two.n, 4, 'four songs started in all'); assert(!two.focused, 'a tap gives no focus');
+        assert.equal(await J.evaluate(() => document.querySelectorAll('.ftreewrap .ftreesvg').length), 2, 'the people, and the birds and leaves in a layer of their own');
+      }
     });
 
     await step('the tree is the kind most common where the family comes from (by where the phone is), unless a parent picks another, for everyone', async () => {
@@ -237,8 +245,8 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await J.waitForFunction(() => { const p = document.querySelector('.ftreewrap .ftpaint'); return p && p.tagName === 'IMG' && /^blob:/.test(p.src) && p.complete && p.naturalWidth > 0; }, null, { timeout: 30000 });
       assert(await J.evaluate(() => getComputedStyle(document.querySelector('.ftreesvg')).position === 'absolute' && !document.querySelector('.ftreewrap svg.ftpaint')), 'a watercolour as a picture, with everyone over it');
       assert(await J.evaluate(async () => { render(); const p = document.querySelector('.ftreewrap .ftpaint'); const kept = await Store.blobGet('ftpaint'); return p.tagName === 'IMG' && kept && kept.blob && kept.blob.size > 1000; }), 'a redraw shows the kept picture at once, and the phone keeps it');
-      assert(await J.evaluate(() => { const w = document.querySelector('.ftreewrap'), pic = document.querySelector('.ftreesvg'); w.dispatchEvent(new Event('scroll')); return pic.classList.contains('moving'); }), 'the birds hold still while the tree moves');
-      await J.waitForFunction(() => !document.querySelector('.ftreesvg').classList.contains('moving'), null, { timeout: 3000 });
+      assert(await J.evaluate(() => { const w = document.querySelector('.ftreewrap'), pic = document.querySelector('.ftreesvg'); w.dispatchEvent(new Event('scroll')); return w.classList.contains('moving') && !!pic; }), 'the birds hold still while the tree moves');
+      await J.waitForFunction(() => !document.querySelector('.ftreewrap').classList.contains('moving'), null, { timeout: 3000 });
     });
 
     await step('tapping the sister on the tree offers her family; opening it shows her children and her log; what is logged there reaches her phone', async () => {

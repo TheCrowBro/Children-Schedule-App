@@ -721,6 +721,16 @@ const pickFormula = async (page, scope, name) => {
         await G.click('#helpBtn'); await G.waitForSelector('.tour-tip'); assert.equal((await at()).t, first, t);
         await G.keyboard.press('Escape'); assert.equal(await G.$('.tour'), null, 'Escape closes it');
       }
+      // the More tour opens each twirl-down for its step only, and leaves the page as it found it (nothing stays open, now or after a redraw)
+      await G.click('[data-tab=more]'); await G.waitForTimeout(300);
+      const openNow = () => G.evaluate(() => [...document.querySelectorAll('#view details[data-grp]')].filter(d => d.open).map(d => d.dataset.grp));
+      const before = await openNow();
+      await G.click('#helpBtn'); await G.waitForSelector('.tour-tip');
+      const seen = [];
+      for (let i = 0; i < 20 && (await G.$('.tour')); i++) { seen.push((await openNow()).length); await G.click('.tt-next'); await G.waitForTimeout(150); }
+      assert(seen.length > 3 && Math.max(...seen) <= before.length + 1, 'one twirl-down open at a time during the tour: ' + seen.join(' '));
+      assert.deepEqual(await openNow(), before, 'left as it was found');
+      await G.evaluate(() => render()); assert.deepEqual(await openNow(), before, 'and stays so after a redraw');
       await G.reload(); await G.waitForSelector('#tabs'); await G.waitForTimeout(1200); assert.equal(await G.$('.tour'), null, 'not again after a restart');
       await G.emulateMedia({ reducedMotion: 'reduce' }); await G.click('[data-tab=day]'); await G.click('#helpBtn');
       assert.equal(await G.evaluate(() => getComputedStyle(document.querySelector('.tour-box')).transitionDuration), '0s', 'no gliding with reduced motion');

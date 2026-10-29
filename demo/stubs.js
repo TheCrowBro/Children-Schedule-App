@@ -56,6 +56,7 @@ const Acct = {
       const kb = $('#demoKind'); if (kb) kb.onclick = demoPickTree;
       if (pic) {
         pic.onclick = e => { const n = e.target.closest('[data-tk]'); if (n) demoTreeTap(n.dataset.tk); };
+        FamilyTree.bindBirds(wrap);
         FamilyTree.bindScroll(wrap, pic, T); FamilyTree.paintOnce(wrap, T.paint, Store);
       }
     });

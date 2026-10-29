@@ -29,8 +29,10 @@ const Tour = (() => {
     if (i >= steps.length) return end(true);
     cur.i = i;
     const s = steps[i], el = find(s.sel);
-    // a step inside a closed twirl-down (a chart on the Stats page): open it, or the card would point below the screen
-    for (let d = el.closest('details:not([open])'); d; d = d.parentElement && d.parentElement.closest('details:not([open])')) d.open = true;
+    // a step inside a closed twirl-down (a chart on the Stats page, a setting on More): open it for this step, or the card would point
+    // below the screen; closed again when the tour moves on or ends, so the page is left as it was found
+    cur.opened = (cur.opened || []).filter(d => { if (d.contains(el)) return true; d.open = false; return false; });
+    for (let d = el.closest('details:not([open])'); d; d = d.parentElement && d.parentElement.closest('details:not([open])')) { d.open = true; cur.opened.push(d); }
     const tall = el.getBoundingClientRect().height > window.innerHeight * 0.5;
     el.scrollIntoView({ block: tall ? 'start' : 'center' });
     cur.tip.querySelector('.tt-n').textContent = __('{n} of {total}', { n: i + 1, total: steps.length });
@@ -74,6 +76,7 @@ const Tour = (() => {
   function end(finished) {
     if (!cur) return;
     const c = cur; cur = null;
+    for (const d of c.opened || []) d.open = false;   // (what the tour opened, closed again)
     c.root.remove();
     window.removeEventListener('resize', place); document.removeEventListener('scroll', place, true); document.removeEventListener('keydown', key, true);
     if (c.from && c.from.focus && document.contains(c.from)) c.from.focus({ preventScroll: true });

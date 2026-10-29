@@ -994,11 +994,8 @@ const Acct = (() => {
     el('famAdd').onclick = addFamily;
     const pic = document.querySelector('.ftreesvg'), wrap = pic && pic.closest('.ftreewrap');   // a tap on the tree: someone on it, or a bud to add someone
     if (pic) {
-      pic.onclick = e => {
-        const bird = e.target.closest('[data-bird]');   // (a bird sings its own song, and bobs while it does; Enter on a focused bird is a click too: bind() in app.js)
-        if (bird) { const g = bird.querySelector('.ftbird'); g.classList.remove('singing'); void g.getBBox(); g.classList.add('singing'); setTimeout(() => g.classList.remove('singing'), 1800); Birdsong.play(bird.dataset.bird); return; }
-        const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act();
-      };
+      pic.onclick = e => { const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act(); };
+      FamilyTree.bindBirds(wrap);   // (a bird tapped sings its own song and bobs while it does)
       FamilyTree.bindScroll(wrap, pic, T);   // (a tree wider than the screen scrolls sideways)
       FamilyTree.paintOnce(wrap, T.paint, Store);   // (the painting as a picture, kept on the phone: a scroll or a redraw does not run its filters again)
     }

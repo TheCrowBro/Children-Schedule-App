@@ -501,14 +501,15 @@ const FamilyTree = (() => {
     // ---- over it: hearts, birds, everyone, the buds, and leaves falling ----
     const B = [];
     B.push(`<g class="hearts">${hearts.map(h => `<path class="heart${h.faint ? ' faint' : ''}${h.step ? ' step' : ''}" d="${heart(X(h.x), Y[h.row] + 1, h.big ? 8 : h.small ? 5 : 6.5)}"/>`).join('')}</g>`);
-    // birds of this place on the boughs, well apart (one at least)
-    const seats = [];
+    // birds of this place on the boughs, well apart (one at least); they and the falling leaves go in a layer of their own (L), so
+    // that their animations repaint only that layer, not everyone's names and discs
+    const L = [], seats = [];
     for (const p of perches) if (p[1] < ground - 30 && seats.every(q => Math.hypot(q[0] - p[0], q[1] - p[1]) > 70) && seats.length < 3) seats.push(p);
     if (!seats.length) seats.push([lx * (w1 + 40), ly - 2]);
     seats.forEach(([bx, by], i) => {
       const key = sp.birds[i % 2], b = BIRDS[key], face = (bx < 0) !== !!m.rtl ? 1 : -1;   // (facing the trunk)
       // (tapped, a bird sings its own song: account.js; the hit circle takes the tap)
-      B.push(`<g transform="translate(${X(bx)} ${r1(by + 2)}) scale(${face * (b.small ? 0.82 : 1)} ${b.small ? 0.82 : 1})" class="ftbirdbtn" role="button" tabindex="0" data-bird="${key}" aria-label="${x((m.birds && m.birds[key]) || key)}"><circle class="hit" cx="2" cy="-11" r="16"/><g class="ftbird b${i}">${birdSvg(b)}</g></g>`);
+      L.push(`<g transform="translate(${X(bx)} ${r1(by + 2)}) scale(${face * (b.small ? 0.82 : 1)} ${b.small ? 0.82 : 1})" class="ftbirdbtn" role="button" tabindex="0" data-bird="${key}" aria-label="${x((m.birds && m.birds[key]) || key)}"><circle class="hit" cx="2" cy="-11" r="16"/><g class="ftbird b${i}">${birdSvg(b)}</g></g>`);
     });
     // everyone, and the buds where someone can be added
     const person = n => {
@@ -530,12 +531,13 @@ const FamilyTree = (() => {
       const fx = X(bx + (i % 2 ? 0.4 : -0.45) * rx), fy = r1(by - 8);
       return `<g class="ftfall" style="--fd:${i * 3.1}s;--fdur:${10 + i * 1.7}s;transform-origin:${fx}px ${fy}px">${leafOf(fx, fy, 6.5, 20 + i * 70, deep(sp.fall[i % sp.fall.length]), 0.9)}</g>`;
     });
-    B.push(`<g class="fallen" aria-hidden="true">${falls.join('')}</g>`);
+    L.push(`<g class="fallen" aria-hidden="true">${falls.join('')}</g>`);
     const box = `viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"`;
     // (the painting carries its one style rule itself, so it looks the same rendered as a picture, where the page's styles do not reach)
     const paint = `<svg class="ftpaint" ${box} aria-hidden="true" focusable="false"><style>.wash{mix-blend-mode:${dark ? 'normal' : 'multiply'}}</style>${defs}${A.join('')}</svg>`;
     return { html: `<div class="ftstage" style="width:max(100%, ${Math.round(W * (m.scale || 0.9))}px)">${paint}`
-      + `<svg class="ftreesvg${dark ? ' dark' : ''}" ${box} role="group" aria-label="${x(m.title || '')}">${B.join('')}</svg></div>`, paint, keys, width: W, height: H, center: cx0, species: kind };
+      + `<svg class="ftreesvg${dark ? ' dark' : ''}" ${box} role="group" aria-label="${x(m.title || '')}">${B.join('')}</svg>`
+      + `<svg class="ftreesvg live" ${box}>${L.join('')}</svg></div>`, paint, keys, width: W, height: H, center: cx0, species: kind };
   }
   /** A kind of tree's colours, for a little swatch: its crown (or blossom) and its bark. */
   const look = kind => { const k = SPECIES[kind] || SPECIES.oak; return { crown: k.blossom ? k.blossom[1] : k.wash[1], bark: k.bark[0] }; };
@@ -590,7 +592,25 @@ const FamilyTree = (() => {
   /** Wires a tree's sideways scroll: it opens at the trunk, stays where it was scrolled to (T.scroll), and the birds hold still while it moves. */
   function bindScroll(wrap, pic, T) {
     wrap.scrollLeft = T.scroll != null ? T.scroll : Math.max(0, (T.center * pic.clientWidth) / T.width - wrap.clientWidth / 2);
-    wrap.onscroll = () => { T.scroll = wrap.scrollLeft; pic.classList.add('moving'); clearTimeout(T.still); T.still = setTimeout(() => pic.classList.remove('moving'), 250); };
+    wrap.onscroll = () => { T.scroll = wrap.scrollLeft; wrap.classList.add('moving'); clearTimeout(T.still); T.still = setTimeout(() => wrap.classList.remove('moving'), 250); };
   }
-  return { clean, walk, find, add, update, remove, draw, newId, speciesFor, look, stage, paintOnce, bindScroll, KINDS, MAX_SIBS, MAX_KIDS };
+  // ---- the birds ----------------------------------------------------------------------------------------------------------------
+  const SONG = { t: 0 };
+  /** A bird sings: its song plays (birds.js) and it bobs for a moment. One at a time: another tapped takes over at once. */
+  function sing(bird) {
+    const g = bird.querySelector('.ftbird'); if (!g) return;
+    document.querySelectorAll('.ftbird.singing').forEach(o => { if (o !== g) o.classList.remove('singing'); });
+    clearTimeout(SONG.t);
+    g.classList.remove('singing'); if (g.getAnimations) g.getAnimations().forEach(a => a.cancel()); else void g.getBBox();   // (the bob starts afresh)
+    g.classList.add('singing'); SONG.t = setTimeout(() => g.classList.remove('singing'), 1800);
+    if (typeof Birdsong !== 'undefined') Birdsong.play(bird.dataset.bird);
+  }
+  /** Wires the birds in a tree's wrap: a tap sings (and gives the bird no keyboard focus, so nothing scrolls to it); Enter on a bird
+      reached with the keyboard is a click too (app.js). */
+  function bindBirds(wrap) {
+    const live = wrap && wrap.querySelector('.ftreesvg.live'); if (!live) return;
+    live.onclick = e => { const bird = e.target.closest('[data-bird]'); if (bird) sing(bird); };
+    live.onpointerdown = e => { if (e.target.closest('[data-bird]')) e.preventDefault(); };
+  }
+  return { clean, walk, find, add, update, remove, draw, newId, speciesFor, look, stage, paintOnce, bindScroll, bindBirds, sing, KINDS, MAX_SIBS, MAX_KIDS };
 })();

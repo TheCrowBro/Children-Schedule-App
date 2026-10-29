@@ -149,6 +149,10 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   stored in ml, so phones set differently agree. ml until switched
 - **Woke up**: the night-waking entry is "Woke up" (a wake-up), with Pain among the reasons beside hungry, diaper, gas and unknown;
   Stats count wake-ups per night
+- **The birds sing one at a time**: tapping a second bird while the first still sings makes it take over (one song, one bob), a
+  tap gives a bird no keyboard focus (nothing scrolls to it), and the birds and the falling leaves live in a layer of their own, so
+  their animations repaint neither the painting nor the people. The tutorial opens a twirl-down only for the step that needs it
+  and closes it again when it moves on, so a page is left as the tour found it
 - **Step-families on the tree**: a parent's or a grandparent's **later partner** sits just outside them, joined by a small open
   heart (the original couple stays as it is). A grandparent's later partner is the children's step-grandparent; an aunt or uncle can
   be said to be **whose child** (the grandparent couple's, that grandparent's with the later partner: a half-brother or half-sister of
