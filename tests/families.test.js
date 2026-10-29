@@ -168,6 +168,17 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.equal((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob, before, 'and so does the server');
     });
 
+    await step('an Easter egg: a bird on the tree, tapped, sings its own song (a recording) and bobs while it does; the keyboard works too', async () => {
+      await J.evaluate(() => { window.__sung = []; HTMLMediaElement.prototype.play = function () { window.__sung.push(this.src); window.__bob = !!document.querySelector('.ftreesvg [data-bird] .ftbird.singing'); return Promise.resolve(); }; });   // (the bob is read as the song starts: a sync may redraw the tree a moment later)
+      const birds = await J.$$eval('.ftreesvg [data-bird]', b => b.map(x => [x.dataset.bird, x.getAttribute('aria-label'), x.getAttribute('role')]));
+      assert(birds.length >= 1 && birds.every(b => /^[a-z]+$/.test(b[0]) && b[1] && b[1] !== b[0] && b[2] === 'button'), 'birds with names, as buttons: ' + JSON.stringify(birds));
+      await J.click('.ftreesvg [data-bird]'); await J.waitForTimeout(100);
+      const r = await J.evaluate(() => ({ sung: window.__sung, singing: window.__bob, sheet: document.querySelector('#sheet').hidden }));
+      assert.equal(r.sung.length, 1); assert(new RegExp('audio/birds/' + birds[0][0] + '\\.mp3$').test(r.sung[0]), 'its own song: ' + r.sung[0]); assert(r.singing, 'bobbing'); assert(r.sheet, 'no sheet opens');
+      await J.waitForFunction(() => !document.querySelector('.ftreesvg .ftbird.singing'), null, { timeout: 4000 });
+      await J.focus('.ftreesvg [data-bird]'); await J.keyboard.press('Enter'); assert.equal(await J.evaluate(() => window.__sung.length), 2, 'Enter on a focused bird');
+    });
+
     await step('the tree is the kind most common where the family comes from (by where the phone is), unless a parent picks another, for everyone', async () => {
       await J.evaluate(() => { db.meta.region = 'anz'; tab = 'family'; render(); });
       assert(/Eucalyptus · Australia & New Zealand/.test(await J.textContent('.ftreeimg .fkind')), 'a eucalyptus in Australia');
@@ -286,7 +297,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.equal(await J.evaluate(u => Sync.nameOf(u), amy), 'Amy', 'her entries still say who added them');
       assert(!/Amy/.test(await J.evaluate(() => [...document.querySelectorAll('#helpers > .stat')].map(x => x.textContent).join())), 'no longer among the helpers');
       assert((await J.evaluate(() => Sync.activity().then(r => r.map(l => l.action)))).includes('member_retired'), 'in the activity log');
-      await J.evaluate(() => { document.querySelector('#helpers details.retired').open = true; });
+      await J.click('#helpers details.retired > summary'); await J.waitForSelector('#helpers [data-rview]', { state: 'visible' });
       await J.click('#helpers [data-rview]'); assert(/Westside Pediatrics/.test(await J.textContent('#sheet')), 'her details are kept');
       await J.click('#rtForget'); await J.waitForFunction(() => !document.querySelector('#helpers details.retired'));
     });

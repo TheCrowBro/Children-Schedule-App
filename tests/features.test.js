@@ -376,8 +376,8 @@ const pickFormula = async (page, scope, name) => {
       assert.equal(all.length, 12); assert.deepEqual(all.filter(x => !x[0] || !x[1]), [], 'sizes and descriptions match the files');
       for (const f of all.map(x => x[2])) assert(fs.statSync(path.join(__dirname, '..', 'img', 'guide', f)).size < 100 * 1024, f + ' is small enough to ship');
       await P.click('details[data-grp=credits] > summary');
-      const cr = await P.$$eval('ul.credits li', l => l.map(x => x.textContent));
-      assert.equal(cr.length, 12);
+      const cr = await P.$$eval('ul.credits.pics li', l => l.map(x => x.textContent));
+      assert.equal(cr.length, 12); assert.equal(await P.$$eval('ul.credits.songs li', l => l.length), 19, 'and the bird songs are credited beside them');
       for (const c of cr) {
         assert(/ From https:\/\/commons\.wikimedia\.org\/wiki\/File:\S+/.test(c), 'source: ' + c);
         assert(/Public domain/.test(c) || /\(https:\/\/creativecommons\.org\/(licenses\/by-sa\/[34]\.0|publicdomain\/zero\/1\.0)\/\)/.test(c), 'licence: ' + c);
@@ -866,6 +866,8 @@ const pickFormula = async (page, scope, name) => {
 
     await step('the Routine page shows a nap as soon as it is logged: under "Today so far" before there is a routine, and under "Also today" when it is not one of the routine\'s times', async () => {
       await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; });
+      // (the routine's day starts at 6 AM: before 7 the clock is moved on four hours for this step, so that a nap 50 minutes ago is today's)
+      await P.evaluate(() => { if (new Date().getHours() < 7) { window.__realNow = Date.now.bind(Date); Date.now = () => window.__realNow() + 4 * 3600e3; } });
       const kid = await P.evaluate(() => { const k = Kids.make(kids(), 'Zoe'); k.birth = '2025-03-01'; kids().push(k); (db.meta.ms || (db.meta.ms = {}))[k.id] = 999; saveProfile(); setKid(k.id); return k.id; });
       await P.click('[data-tab=routine]'); assert(/Your routine will show up here after a few days/.test(await P.textContent('#view')));
       assert.equal(await P.$$eval('#view h2', h => h.map(x => x.textContent.trim()).filter(t => /today/i.test(t))).then(x => x.length), 0, 'nothing logged yet');
@@ -873,10 +875,11 @@ const pickFormula = async (page, scope, name) => {
       assert(/Today so far/.test(await P.textContent('#view')), 'the nap shows at once');
       const rows = await P.$$eval('.routine.today .rslot .rb b', x => x.map(b => b.textContent.trim())); assert(rows.length === 1 && /Napped 40m/.test(rows[0]), 'the nap, not the diaper (the routine leaves diapers out): ' + rows);
       // with a routine: a sleep at a time that is part of it is ticked on its row; one at another time is listed under Also today
-      await P.evaluate(k => { const h = (new Date().getHours() + 20) % 24; for (let d = 1; d <= 4; d++) { const t = startOfDay(Date.now()) - d * 864e5 + h * 3600e3; db.events.push({ id: 'zr' + d, type: 'sleep', ts: t, end: t + 3600e3, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: k }); } Store.save(db); render(); }, kid);
+      await P.evaluate(k => { const h = (new Date(Date.now()).getHours() + 20) % 24; for (let d = 1; d <= 4; d++) { const t = startOfDay(Date.now()) - d * 864e5 + h * 3600e3; db.events.push({ id: 'zr' + d, type: 'sleep', ts: t, end: t + 3600e3, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: k }); } Store.save(db); render(); }, kid);
       assert(/Also today/.test(await P.textContent('#view')) && /Logged today at a time that is not part of the routine/.test(await P.textContent('#view')), 'the routine (a nap four hours before now) and today\'s nap at another time');
       assert.equal(await P.$$eval('.routine.today .rslot', x => x.length), 1);
       await P.evaluate(k => { db.events = db.events.filter(e => e.child !== k); db.baby.kids = db.baby.kids.filter(x => x.id !== k); setKid(db.baby.kids[0].id); saveProfile(); }, kid);
+      await P.evaluate(() => { if (window.__realNow) { Date.now = window.__realNow; delete window.__realNow; } });
     });
 
     await step('a drop-off at the grandparents\', a babysitter\'s, a childminder\'s or a friend\'s offers the family\'s own names (the tree\'s grandparents; the babysitters, caregivers and friends in the log), and every place can have a location, remembered for next time', async () => {

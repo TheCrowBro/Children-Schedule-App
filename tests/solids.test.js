@@ -150,7 +150,8 @@ const monthsAgo = (m, d = 2) => { const t = new Date(); t.setMonth(t.getMonth() 
         const real = E2EE.decryptProfile;
         E2EE.decryptProfile = async (...a) => { const p = await real(...a); kids()[0].name = 'Leo James'; Sync.pushBaby(); return p; };   // (saved just as the sync opens the server's copy)
         try { await Sync.run(true); } finally { E2EE.decryptProfile = real; }
-        const kept = kids()[0].name; await Sync.run(true);
+        const settle = async () => { for (let i = 0; i < 200 && Sync.st.state === 'syncing'; i++) await new Promise(r => setTimeout(r, 50)); };
+        const kept = kids()[0].name; for (let k = 0; k < 6 && db.meta.babyDirty; k++) { await settle(); await Sync.run(true); }   // (a sync may be under way from pushBaby: it goes up with the next one)
         return { kept, dirty: !!db.meta.babyDirty, now: kids()[0].name };
       });
       assert.deepEqual(r, { kept: 'Leo James', dirty: false, now: 'Leo James' });
@@ -160,7 +161,8 @@ const monthsAgo = (m, d = 2) => { const t = new Date(); t.setMonth(t.getMonth() 
         const real = Auth.rpc; Auth.rpc = function (name, ...a) { return name === 'update_baby' ? Promise.reject(new TypeError('Failed to fetch')) : real.call(this, name, ...a); };
         kids()[0].name = 'Leo'; Sync.pushBaby();
         try { await Sync.run(true); } finally { Auth.rpc = real; }
-        const kept = [kids()[0].name, !!db.meta.babyDirty]; await Sync.run(true);
+        const settle = async () => { for (let i = 0; i < 200 && Sync.st.state === 'syncing'; i++) await new Promise(r => setTimeout(r, 50)); };
+        const kept = [kids()[0].name, !!db.meta.babyDirty]; for (let k = 0; k < 6 && db.meta.babyDirty; k++) { await settle(); await Sync.run(true); }
         return { kept, after: [kids()[0].name, !!db.meta.babyDirty] };
       });
       assert.deepEqual(off, { kept: ['Leo', true], after: ['Leo', false] });

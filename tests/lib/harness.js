@@ -27,7 +27,16 @@ async function setup({ port = 8126 } = {}) {
   const pages = [];
   const H = { tmp, APP, su, shim, browser, pages, sleep, totp };
   H.q = async (sql, params) => (await su.query(sql, params)).rows;
-  H.syncNow = p => p.evaluate(async () => { for (let i = 0; i < 400 && Sync.st.state === 'syncing'; i++) await new Promise(r => setTimeout(r, 50)); await Sync.run(true); });
+  /** A sync, done: waits for one under way, runs one, and tries again when the run coincided with another (then it returns at once and reruns later). */
+  H.syncNow = p => p.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    for (let k = 0; k < 12; k++) {
+      for (let i = 0; i < 400 && Sync.st.state === 'syncing'; i++) await wait(50);
+      const at = Sync.st.at; await Sync.run(true);
+      if (Sync.st.at !== at || Sync.st.state === 'offline' || Sync.st.state === 'error' || Sync.st.state === 'idle' || Sync.st.state === 'needs-access') return;
+      await wait(150);
+    }
+  });
   /** A new phone. opts.skew shifts that phone's clock (ms); opts.locale sets the phone's language (e.g. 'fr-FR'). */
   H.device = async (opts = {}) => {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 800 }, ...(opts.locale ? { locale: opts.locale } : {}), ...(opts.video ? { recordVideo: { dir: opts.video, size: { width: 390, height: 800 } } } : {}) });

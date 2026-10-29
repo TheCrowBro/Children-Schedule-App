@@ -140,7 +140,7 @@
     "UK: {age}": "When the same check-up happens in the UK; {age} as in '6\u20138 weeks'.",
     "US: {age}": "When the same check-up happens in the US; {age} as in '2 months'.",
     "Pictures": "Guide: opens the pictures (photos or drawings) of a condition. They are hidden until opened.",
-    "Picture credits": "Who made each picture and its licence.",
+    "Picture and sound credits": "Guide: who made each picture and recorded each bird song, and their licences.",
     "From": "The first of the two do-not-disturb times (spoken label of the field).",
     "photo by {by}, {licence}": "Picture credits: {by} is a person's name, {licence} a licence such as 'CC BY-SA 4.0'.",
     "drawing by {by}, {licence}": "Picture credits: {by} is a person's name, {licence} a licence such as 'CC BY-SA 4.0'.",

@@ -2060,9 +2060,12 @@ function picsHtml(id) {
 }
 /** Who made each picture, under which licence, where it comes from and what we changed. */
 function picCreditsHtml() {
-  return `<details class="gd" data-grp="credits" ${openGroups.has('credits') ? 'open' : ''}><summary><span class="gi">📷</span><span class="gt"><b>${__h('Picture credits')}</b><small>${__h('From Wikimedia Commons, under free licences')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
-    <ul class="credits">${Guide.credits().map(c => `<li><b>${__h(c.name)}</b>: ${__h(c.drawing ? 'drawing by {by}, {licence}' : 'photo by {by}, {licence}', { by: c.by, licence: __(c.lic) })}${c.licUrl ? ` <span class="url">(${esc(c.licUrl)})</span>` : ''}. ${__h('From')} <span class="url">${esc(c.page)}</span>${c.edit ? `, ${__h(c.edit)}` : ''}.</li>`).join('')}</ul>
-    <p class="note">${__h('Our versions of the CC BY-SA pictures are shared under the same licence.')}</p></details>`;
+  return `<details class="gd" data-grp="credits" ${openGroups.has('credits') ? 'open' : ''}><summary><span class="gi">📷</span><span class="gt"><b>${__h('Picture and sound credits')}</b><small>${__h('From Wikimedia Commons, under free licences')}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    <ul class="credits pics">${Guide.credits().map(c => `<li><b>${__h(c.name)}</b>: ${__h(c.drawing ? 'drawing by {by}, {licence}' : 'photo by {by}, {licence}', { by: c.by, licence: __(c.lic) })}${c.licUrl ? ` <span class="url">(${esc(c.licUrl)})</span>` : ''}. ${__h('From')} <span class="url">${esc(c.page)}</span>${c.edit ? `, ${__h(c.edit)}` : ''}.</li>`).join('')}</ul>
+    <p class="note">${__h('Our versions of the CC BY-SA pictures are shared under the same licence.')}</p>
+    <p class="note"><b>${__h('The birds on the family tree sing when tapped.')}</b> ${__h('Their songs are a few seconds of these recordings:')}</p>
+    <ul class="credits songs">${Birdsong.credits().map(c => `<li><b>${__h(c.name)}</b> (${esc(c.species)}${c.note ? ', ' + __h(c.note) : ''}): ${__h('recording by {by}, {licence}', { by: c.by, licence: __(c.lic) })}${c.licUrl ? ` <span class="url">(${esc(c.licUrl)})</span>` : ''}. ${__h('From')} <span class="url">${esc(c.page)}</span>, ${__h('trimmed to a few seconds and re-encoded')}.</li>`).join('')}</ul>
+    <p class="note">${__h('Our copies of the CC BY-SA recordings are shared under the same licence.')}</p></details>`;
 }
 /** A medicine's brand names, those sold where you are first. */
 const medBrands = (i, here) => { const at = b => (!i.where || !i.where[b] || i.where[b].split(' ').includes(here) ? 0 : 1), list = __(i.brands).split(' · '); return list.map((b, n) => [at(b), n, b]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]).join(' · '); };
@@ -2697,7 +2700,7 @@ function fold(id, icon, title, sub, html) {
 const THEME_NAMES = { system: N_('Match phone'), light: N_('Light'), dark: N_('Dark'), sun: N_('Sunrise & sunset') };
 let appVersion = '';
 function moreView() {
-  const ks = kids(), acct = Acct.accountHtml(), av = Cloud.available(), cloudOn = ['google', 'dropbox', 'onedrive'].filter(p => av[p] && Cloud.connected(p)).map(Cloud.label);
+  const ks = kids(), acct = Acct.accountHtml();
   const region = Formulas.REGIONS.find(r => r.id === db.meta.region);
   const arts = [...new Set((ks.length > 1 ? [...ks.map(k => k.id), 'all'] : [ks[0].id]).map(id => __(Art.byId(artOf(id)).name)))];
   return `${fold('lang', '🌐', N_('Language'), I18n.chosen() ? I18n.label(I18n.chosen()) : __('Automatic: {language}', { language: I18n.label(I18n.auto()) }), languageHtml())}
@@ -2707,7 +2710,7 @@ function moreView() {
   ${fold('units', '📏', N_('Units'), `${usUnits() ? __('pounds and inches') : __('kg and cm')} · ${volOz() ? __('fl oz') : __('ml')}`, unitsHtml())}
   ${fold('notify', '🔔', N_('Notifications'), Notify.cfg.on ? __('Sleep check after {time} · quiet {from}–{to}', { time: fmtDur(Notify.cfg.after), from: clockAt(ntfMins(Notify.cfg.quiet[0])), to: clockAt(ntfMins(Notify.cfg.quiet[1])) }) : __('Off'), notifyHtml())}
   ${fold('look', '🌗', N_('Appearance and clock art'), `${__(THEME_NAMES[Theme.mode] || THEME_NAMES.system)} · ${arts.join(', ')}`, appearanceHtml() + artHtml())}
-  ${fold('cloud', '☁️', N_('Cloud backup'), cloudOn.length ? cloudOn.join(', ') + (Cloud.auto ? ' · ' + __('daily') : '') : __('Not set up'), Acct.cloudHtml())}
+  ${fold('cloud', '☁️', N_('Cloud backup'), Acct.cloudSummary(), Acct.cloudHtml())}
   ${fold('data', '📄', N_('Your data'), __('Backup, export, the report for the doctor, restore'), `<div class="card"><b>${__h('Your data')}</b><p class="note">${Sync.linked() ? __h('Entries are saved on this device and synced to your family log.') : __h('Everything is stored only on this device.')} ${__h('Export a plain-text copy to share with your pediatrician.')}</p>
     <div class="row"><button class="btn" id="expJson">${__h('Backup (JSON)')}</button><button class="btn" id="expCsv">${__h('Export CSV')}</button></div>
     <div class="row"><button class="btn" id="expPdf">📄 ${__h('Report for the doctor (PDF)')}</button></div>

@@ -149,11 +149,11 @@ const shot = async (p, name) => { if (process.env.LL_SHOTS) await p.screenshot({
 
     await step('the day follows the calendar: paused overnight and resumed, the page is on the new today; a day gone back to on purpose stays through a short pause and returns after a long one; midnight while open; the Month page too; a new entry on a past day says so', async () => {
       const skew = ms => P.evaluate(ms => { if (!window.__real) window.__real = Date.now.bind(Date); Date.now = () => window.__real() + ms; }, ms);
-      const pause = async ms => { await P.evaluate(() => window.__emit('appStateChange', { isActive: false })); await skew(ms); await P.evaluate(() => window.__emit('appStateChange', { isActive: true })); };
+      const pause = async ms => { await P.evaluate(() => window.__emit('appStateChange', { isActive: false })); await skew(ms); await P.evaluate(() => window.__emit('appStateChange', { isActive: true })); await P.waitForFunction(() => viewDay === startOfDay(Date.now()) || Date.now() - shownAt < 1000, null, { timeout: 3000 }).catch(() => {}); };   // (the resume is handled a moment later)
       const shown = () => P.evaluate(() => [viewDay === startOfDay(Date.now()), document.querySelector('.datenav .d').textContent.slice(0, 5)]);
       await more(); await P.click('[name=lockMode][value=off]'); await P.waitForFunction(() => Lock.mode === 'off');   // (the app lock would cover the page after a day away: its own tests are in e2e)
       await P.evaluate(() => { tab = 'day'; viewDay = startOfDay(Date.now()); render(); });
-      await pause(24 * 3600e3); assert.deepEqual(await shown(), [true, 'Today'], 'resumed the next day: today');
+      await pause(24 * 3600e3); assert.deepEqual(await shown(), [true, 'Today'], 'resumed the next day: today; ' + JSON.stringify(await P.evaluate(() => [viewDay, startOfDay(Date.now()), Date.now(), tab, Lock.mode, document.querySelector('.datenav .d') && document.querySelector('.datenav .d').textContent])));
       await P.click('[data-nav="-1"]'); assert.equal((await shown())[0], false, 'yesterday, on purpose');
       await pause(24 * 3600e3 + 10 * 60e3); assert.equal((await shown())[0], false, 'ten minutes away: still the day chosen');
       await pause(24 * 3600e3 + 2 * 3600e3); assert.deepEqual(await shown(), [true, 'Today'], 'two hours away: back to today');

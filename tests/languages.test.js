@@ -81,7 +81,7 @@ const unmarked = (page, data) => page.evaluate(data => {
     const data = () => P.evaluate(() => [
       'Little Log', 'SETUP.md', ...kids().map(k => k.name), 'Mum', 'Gran', ...Formulas.REGIONS.flatMap(r => r.items), ...recentFormulas(kids()),
       ...Guide.TUTORIALS.flatMap(t => t.videos.flatMap(v => [v[1], v[2]])), 'YouTube', ...Object.values(Guide.cleanDoctor(db.baby.doctor)), I18n.chosen() || '',   // (video titles and who made them are names, shown as they are)
-      ...Guide.MEDS.flatMap(c => c.items.flatMap(i => (i.brands || '').split(' · '))), ...Object.values(Guide.PICS).flat().map(p => p.by), 'CC BY-SA 3.0', 'CC BY-SA 4.0', 'CC0 1.0',
+      ...Guide.MEDS.flatMap(c => c.items.flatMap(i => (i.brands || '').split(' · '))), ...Object.values(Guide.PICS).flat().map(p => p.by), 'CC BY-SA 3.0', 'CC BY-SA 4.0', 'CC0 1.0', ...Birdsong.credits().flatMap(c => [c.by, c.species]), 'CC BY-SA 2.5', 'CC BY 2.5', 'KOGL Type 1',
       'Dropbox', 'OneDrive', 'Google Drive', 'Google', 'Apple', 'iPhone', 'Android', 'Face ID', 'Google Authenticator', 'Microsoft Authenticator', 'Authy', '1Password',
       ...I18n.LANGS.map(l => l.name), Theme.todaySun().zone || '',
       ...db.events.flatMap(e => [e.note, e.data && e.data.name, e.data && e.data.dose, e.data && e.data.formula, e.data && e.data.own && e.data.what, e.data && e.data.own && e.data.name, e.data && e.data.place, e.data && e.data.batch, e.data && e.data.who, e.data && e.data.why, e.data && e.data.title, e.data && e.data.subject, ...((e.data && e.data.foods) || []).filter(f => !Foods.known(f))]),

@@ -64,7 +64,8 @@ The activity log records *that* something happened, never the contents of entrie
 
 ## 3. Cloud backup providers (optional; each is independent)
 Backups are encrypted on the phone with the user's passphrase (12+ characters, PBKDF2 600,000 rounds, AES-GCM) before
-upload. Only configured providers appear. Redirect URIs and client types for the **phone app** are in [MOBILE.md](MOBILE.md).
+upload. Only configured providers appear; with none configured, the Cloud backup card says so and offers **Save**, which puts the
+encrypted file in any cloud app on the phone through the share sheet. Redirect URIs and client types for the **phone app** are in [MOBILE.md](MOBILE.md).
 
 | Provider | Create | `config.js` key |
 |---|---|---|

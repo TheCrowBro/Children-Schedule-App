@@ -51,6 +51,11 @@ const ungated = p => p.waitForFunction(() => !document.body.classList.contains('
       await P.evaluate(() => { db.meta.backupNudgeAt = Date.now() - 31 * 864e5; render(); }); assert(await P.$('.backupnudge'), 'back a month later');
       await P.click('[data-backupgo]'); assert.equal(await P.evaluate(() => tab), 'more');
       assert(await P.$('.card.lit #cPass'), 'the Cloud backup card is lit');
+      assert(await P.$('[data-cc=dropbox]') && !(await P.$('.cloudkeys')), 'Dropbox is configured here: its row, with Connect');
+      await P.evaluate(() => { window.__av = Cloud.available; Cloud.available = () => ({ dropbox: false, onedrive: false, google: false }); render(); });   // (no drive registered in config.js)
+      assert(await P.$('.cloudkeys') && !(await P.$('[data-cc]')), 'no drive registered: the card says so once, instead of three rows that lead nowhere');
+      assert(/any cloud app/.test(await P.textContent('details[data-grp=mcloud]')), 'and points to Save, which reaches any cloud app through the share sheet');
+      await P.evaluate(() => { Cloud.available = window.__av; render(); });
     });
 
     await step('a backup file made from More → Cloud backup counts as a backup: the reminder goes; the file is encrypted', async () => {
@@ -58,6 +63,7 @@ const ungated = p => p.waitForFunction(() => !document.body.classList.contains('
       await P.waitForFunction(() => db.meta.fileBackupAt > 0);
       backup = await P.evaluate(async () => (await Cloud.toFile()).text());
       assert(/"app":"littlelog"/.test(backup) && !/"type":"feed"/.test(backup), 'an encrypted backup file');
+      await P.click('[data-tab=more]'); assert(/Saved to a file/.test(await P.textContent('details[data-grp=mcloud] summary')), 'the twirl-down counts the file backup');
       await P.click('[data-tab=day]'); assert.equal(await P.$('.backupnudge'), null, 'backed up: no reminder');
     });
 

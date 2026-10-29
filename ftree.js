@@ -219,7 +219,7 @@ const FamilyTree = (() => {
 
   /** The picture. The model says what to show, already in the app's language:
         { title, rtl, dark, species, edit (show the buds), text: { parent, gp, ggp, sib, gsib } (a bud's label), adds: { … } (what tapping it
-          does), kids: [Node], parents: [Node & { gp: [Node & { gp: [Node], sibs: [Node & { partner, kids: [Node] }] }], sibs: [Node & { partner, kids: [Node] }] }],
+          does), birds: { key → name } (what each bird is called, for screen readers), kids: [Node], parents: [Node & { gp: [Node & { gp: [Node], sibs: [Node & { partner, kids: [Node] }] }], sibs: [Node & { partner, kids: [Node] }] }],
           sprout: key → null, or the ms until that new part starts to grow in (below 0: it is already growing) }
       with Node = { key, label, initial, title, gone, color (a child's) }. A bud's key is +parent, +gp:<parent's key>,
       +ggp:<grandparent's key>, +sib:<parent's key> or +gsib:<grandparent's key>. It is two layers: the painting, which stays still (so its watercolour is
@@ -456,8 +456,9 @@ const FamilyTree = (() => {
     for (const p of perches) if (p[1] < ground - 30 && seats.every(q => Math.hypot(q[0] - p[0], q[1] - p[1]) > 70) && seats.length < 3) seats.push(p);
     if (!seats.length) seats.push([lx * (w1 + 40), ly - 2]);
     seats.forEach(([bx, by], i) => {
-      const b = BIRDS[sp.birds[i % 2]], face = (bx < 0) !== !!m.rtl ? 1 : -1;   // (facing the trunk)
-      B.push(`<g transform="translate(${X(bx)} ${r1(by + 2)}) scale(${face * (b.small ? 0.82 : 1)} ${b.small ? 0.82 : 1})"><g class="ftbird b${i}">${birdSvg(b)}</g></g>`);
+      const key = sp.birds[i % 2], b = BIRDS[key], face = (bx < 0) !== !!m.rtl ? 1 : -1;   // (facing the trunk)
+      // (tapped, a bird sings its own song: account.js; the hit circle takes the tap)
+      B.push(`<g transform="translate(${X(bx)} ${r1(by + 2)}) scale(${face * (b.small ? 0.82 : 1)} ${b.small ? 0.82 : 1})" class="ftbirdbtn" role="button" tabindex="0" data-bird="${key}" aria-label="${x((m.birds && m.birds[key]) || key)}"><circle class="hit" cx="2" cy="-11" r="16"/><g class="ftbird b${i}">${birdSvg(b)}</g></g>`);
     });
     // everyone, and the buds where someone can be added
     const person = n => {

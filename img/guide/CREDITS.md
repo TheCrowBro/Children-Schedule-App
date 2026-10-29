@@ -1,7 +1,7 @@
 # Picture credits
 
 The pictures in the Guide (Common with newborns → a card → Pictures) all come from [Wikimedia Commons](https://commons.wikimedia.org/) under
-free licences. The app shows the author and licence under each picture, and everything below under Guide → Picture credits.
+free licences. The app shows the author and licence under each picture, and everything below under Guide → Picture and sound credits.
 Our versions of the CC BY-SA pictures (cropped, resized or re-saved, as noted) are shared under the same licence as the original.
 Camera details (EXIF) were removed from every photo.
 

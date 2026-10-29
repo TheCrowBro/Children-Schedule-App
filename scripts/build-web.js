@@ -6,7 +6,7 @@ const root = path.join(__dirname, '..');
 const out = process.env.LL_OUT || path.join(root, 'www'), configFile = process.env.LL_CONFIG || path.join(root, 'config.js');
 const cfg = (() => { const sb = { window: {} }; vm.runInNewContext(fs.readFileSync(configFile, 'utf8'), sb); return sb.window.LL_CONFIG || {}; })();
 
-const files = ['style.css', 'config.js', 'crash.js', 'i18n.js', 'theme.js', 'kids.js', 'icons.js', 'guide.js', 'stages.js', 'growth.js', 'formulas.js', 'travel.js', 'calendar.js', 'tour.js', 'routine.js', 'pdf.js', 'foods.js', 'art.js', 'store.js', 'native.js', 'notify.js', 'auth.js', 'e2ee.js', 'media.js', 'sync.js', 'cloud.js', 'lock.js', 'ftree.js', 'account.js', 'app.js'];
+const files = ['style.css', 'config.js', 'crash.js', 'i18n.js', 'theme.js', 'kids.js', 'icons.js', 'guide.js', 'stages.js', 'growth.js', 'formulas.js', 'travel.js', 'calendar.js', 'tour.js', 'routine.js', 'pdf.js', 'foods.js', 'art.js', 'store.js', 'native.js', 'notify.js', 'auth.js', 'e2ee.js', 'media.js', 'sync.js', 'cloud.js', 'lock.js', 'birds.js', 'ftree.js', 'account.js', 'app.js'];
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'vendor'), { recursive: true });
 for (const f of files) fs.copyFileSync(f === 'config.js' ? configFile : path.join(root, f), path.join(out, f));
@@ -15,6 +15,9 @@ for (const f of fs.readdirSync(path.join(root, 'vendor'))) fs.copyFileSync(path.
 const I18n = require('./i18n.js');
 fs.mkdirSync(path.join(out, 'lang'), { recursive: true });
 for (const code of [...I18n.languages(), ...(process.env.LL_PSEUDO ? ['qps'] : [])]) fs.writeFileSync(path.join(out, 'lang', code + '.js'), I18n.catalogue(code));
+// the birds' songs (the family tree)
+fs.mkdirSync(path.join(out, 'audio', 'birds'), { recursive: true });
+for (const f of fs.readdirSync(path.join(root, 'audio', 'birds'))) if (/\.mp3$/.test(f)) fs.copyFileSync(path.join(root, 'audio', 'birds', f), path.join(out, 'audio', 'birds', f));
 // the Guide's pictures
 fs.mkdirSync(path.join(out, 'img', 'guide'), { recursive: true });
 for (const f of fs.readdirSync(path.join(root, 'img', 'guide'))) if (/\.(jpe?g|png)$/.test(f)) fs.copyFileSync(path.join(root, 'img', 'guide', f), path.join(out, 'img', 'guide', f));

@@ -18,6 +18,12 @@ download = async (name, data, type) => {
 };`;
 /** Every language's catalogue, embedded in the page (it is a single file), so each can be tried in the demo. */
 const languages = () => { const I18n = require('./i18n.js'); return I18n.languages().map(code => I18n.catalogue(code)).join(''); };
+/** The birds' songs (the family tree), embedded in the page (it is a single file). */
+const songs = () => {
+  const dir = path.join(root, 'audio', 'birds'), files = fs.readdirSync(dir).filter(f => /\.mp3$/.test(f));
+  const map = Object.fromEntries(files.map(f => [f.replace(/\.mp3$/, ''), `data:audio/mpeg;base64,${fs.readFileSync(path.join(dir, f)).toString('base64')}`]));
+  return `const BIRD_SONGS = ${JSON.stringify(map)};\nBirdsong.src = k => BIRD_SONGS[k] || '';`;
+};
 /** The Guide's pictures, embedded in the page (it is a single file). */
 const pictures = () => {
   const dir = path.join(root, 'img', 'guide'), type = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' };
@@ -44,8 +50,8 @@ const page = `<title>Little Log Demo</title>
 <script>\n${rd('theme.js')}\n</script>
 <script>\n${rd('i18n.js')}\n${languages()}\n</script>
 <div id="phone"><div id="scroll">${head}</div>${rest}</div>
-${['kids.js', 'icons.js', 'guide.js', 'stages.js', 'growth.js', 'formulas.js', 'travel.js', 'calendar.js', 'tour.js', 'routine.js', 'pdf.js', 'foods.js', 'art.js', 'ftree.js', 'media.js', 'notify.js', 'crash.js', 'demo/stubs.js'].map(f => `<script>\n${rd(f).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}
-<script>\n${pictures()}\n</script>
+${['kids.js', 'icons.js', 'guide.js', 'stages.js', 'growth.js', 'formulas.js', 'travel.js', 'calendar.js', 'tour.js', 'routine.js', 'pdf.js', 'foods.js', 'art.js', 'birds.js', 'ftree.js', 'media.js', 'notify.js', 'crash.js', 'demo/stubs.js'].map(f => `<script>\n${rd(f).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}
+<script>\n${pictures()}\n${songs()}\n</script>
 <script>\n${app.replace(/<\/script/gi, '<\\/script')}\n</script>
 <script>\n// The demo has no server: reports of language problems are not sent anywhere.\nReport.can = () => true; Report.send = async () => 'sent';\nCrash.can = () => true; Crash.flush = async () => 'sent';\n</script>
 <script>\n${saving}\n</script>

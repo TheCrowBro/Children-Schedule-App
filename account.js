@@ -696,7 +696,7 @@ const Acct = (() => {
     });
     acts['+parent'] = () => relativeForm({ kind: 'parent' });
     const tr = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, __(v)]));
-    return { model: { title: __('Family tree'), rtl: I18n.rtl(), edit, text: tr({ parent: KIN.parent, gp: KIN.gp, ggp: KIN.ggp, sib: KIN.sib, gsib: KIN.gsib }), adds: tr(ADDS), kids: kidsHere, parents }, acts };
+    return { model: { title: __('Family tree'), rtl: I18n.rtl(), edit, text: tr({ parent: KIN.parent, gp: KIN.gp, ggp: KIN.ggp, sib: KIN.sib, gsib: KIN.gsib }), adds: tr(ADDS), birds: Birdsong.names(), kids: kidsHere, parents }, acts };
   }
   /** The family tree, for the children's relatives; the families you have asked to join, and adding one, for everyone. */
   function treePicHtml() {
@@ -908,7 +908,7 @@ const Acct = (() => {
     // with, on a list of their own), then the people who help, each list on its own
     const roles = s.people.some(m => m.role), help = roles ? s.people.filter(m => HELPERS.includes(m.role)) : [];
     const kinHere = kinFams().some(m => m.id === db.meta.babyId);   // (you are family in the log shown)
-    const retired = s.retired.length ? `<details class="more retired"><summary>${__hn('Retired ({n})', 'Retired ({n})', s.retired.length)}<span class="chev" aria-hidden="true">›</span></summary>
+    const retired = s.retired.length ? `<details class="more retired" data-grp="retired" ${openGroups.has('retired') ? 'open' : ''}><summary>${__hn('Retired ({n})', 'Retired ({n})', s.retired.length)}<span class="chev" aria-hidden="true">›</span></summary>
       ${s.retired.map(r => `<div class="stat"><button class="pbtn" data-rview="${esc(r.id)}"><span>${esc(r.display_name)}<br><small>${esc(roleName(r.role))} · ${esc(retiredLine(r))}</small></span><span class="chev" aria-hidden="true">›</span></button></div>`).join('')}</details>` : '';
     const people = `${famListHtml(person, roles && kinHere)}${helpFamsHtml()}
       ${!s.people.length ? `<h2>${__h('People with access')}</h2><div class="card"><div class="note">${__h('Loading…')}</div></div>`
@@ -972,7 +972,11 @@ const Acct = (() => {
     el('famAdd').onclick = addFamily;
     const pic = document.querySelector('.ftreesvg'), wrap = pic && pic.closest('.ftreewrap');   // a tap on the tree: someone on it, or a bud to add someone
     if (pic) {
-      pic.onclick = e => { const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act(); };
+      pic.onclick = e => {
+        const bird = e.target.closest('[data-bird]');   // (a bird sings its own song, and bobs while it does; Enter on a focused bird is a click too: bind() in app.js)
+        if (bird) { const g = bird.querySelector('.ftbird'); g.classList.remove('singing'); void g.getBBox(); g.classList.add('singing'); setTimeout(() => g.classList.remove('singing'), 1800); Birdsong.play(bird.dataset.bird); return; }
+        const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act();
+      };
       // a tree wider than the screen scrolls sideways: it opens at the trunk, and stays where it was scrolled to
       wrap.scrollLeft = T.scroll != null ? T.scroll : Math.max(0, (T.center * pic.clientWidth) / T.width - wrap.clientWidth / 2);
       wrap.onscroll = () => { T.scroll = wrap.scrollLeft; };
@@ -1142,6 +1146,12 @@ const Acct = (() => {
   }
   /** The line under "Security & account" on the More page. */
   function accountSub() { return `${F.verified ? __('Two-step verification on') : __('Two-step verification off')} · ${Lock.mode !== 'off' ? __('App lock on') : __('App lock off')}`; }
+  /** The line under Cloud backup on the More page: the drives connected, or the last file saved, or Not set up. */
+  function cloudSummary() {
+    const av = Cloud.available(), on = ['google', 'dropbox', 'onedrive'].filter(p => av[p] && Cloud.connected(p)).map(Cloud.label);
+    if (on.length) return on.join(', ') + (Cloud.auto ? ' · ' + __('daily') : '');
+    return db.meta.fileBackupAt ? __('Saved to a file {when}', { when: ago(db.meta.fileBackupAt) }) : __('Not set up');
+  }
   function cloudHtml() {
     const av = Cloud.available(), row = p => {
       const last = Cloud.last(p);
@@ -1156,8 +1166,9 @@ const Acct = (() => {
       <input id="cPass" type="password" autocomplete="new-password" value="${esc(Cloud.pass)}" placeholder="${Cloud.pass ? '' : __h('Choose a long passphrase')}">
       <div class="row"><button class="btn" id="cSavePass">${__h('Save passphrase')}</button><button class="btn" id="cGenPass">${__h('Generate one')}</button></div>
       <div class="chips" style="margin:10px 0">${chip('cAuto', 1, __h('Back up daily'), Cloud.auto)}</div>
-      ${['google', 'dropbox', 'onedrive'].map(row).join('')}
-      <div class="stat"><span>${__h('iCloud Drive / Files')}<br><small>${__h('Save the encrypted file with the share sheet')}</small></span><span class="btns"><button class="btn" id="cFileSave" style="padding:6px 10px">${__h('Save')}</button><button class="btn" id="cFileLoad" style="padding:6px 10px">${__h('Restore')}</button></span></div>
+      ${['google', 'dropbox', 'onedrive'].some(p => av[p]) ? ['google', 'dropbox', 'onedrive'].map(row).join('')
+        : `<p class="note cloudkeys">${__h('Google Drive, Dropbox and OneDrive connect directly once the app is registered with each service: whoever builds the app puts the keys in config.js (SETUP.md, Cloud backup providers). Until then, **Save** below puts the encrypted file in any cloud app on this phone.')}</p>`}
+      <div class="stat"><span>${__h('Files, iCloud Drive or any cloud app')}<br><small>${__h('The share sheet lets you pick the app or folder the encrypted file goes to')}</small></span><span class="btns"><button class="btn" id="cFileSave" style="padding:6px 10px">${__h('Save')}</button><button class="btn" id="cFileLoad" style="padding:6px 10px">${__h('Restore')}</button></span></div>
       <input type="file" id="cFile" accept="application/json,.json" hidden></div>`;
   }
   function applyBackup(d) {
@@ -1207,5 +1218,5 @@ const Acct = (() => {
   /** Called by app.js after each render/sync to keep the Family tab badge current. */
   function updateBadge() { const b = $('#famBadge'); if (!b) return; const n = Sync.isParent() ? Sync.st.requests.length : 0; b.hidden = !n || tab === 'family'; b.textContent = n; }
 
-  return { init, gate, heroHtml, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, accountSub, cloudHtml, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, promptRequests, parseJoin, sessionLost };
+  return { init, gate, heroHtml, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, accountSub, cloudHtml, cloudSummary, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, promptRequests, parseJoin, sessionLost };
 })();

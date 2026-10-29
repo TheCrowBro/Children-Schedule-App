@@ -460,6 +460,9 @@ details.fgrp{margin:6px 10px}details.fgrp .chips,details.fgrp .note,details.food
 /* gently alive: the birds hop and look about, leaves drift down; whoever is new sprouts in */
 .ftreesvg .ftbird{opacity:.94;transform-box:fill-box;transform-origin:50% 100%;animation:fthop 6s ease-in-out infinite}
 .ftreesvg .ftbird.b1{animation-duration:7.5s;animation-delay:-2.5s}.ftreesvg .ftbird.b2{animation-duration:8.5s;animation-delay:-5s}
+.ftreesvg .ftbirdbtn{cursor:pointer}.ftreesvg .ftbirdbtn .hit{fill:transparent}.ftreesvg .ftbirdbtn:focus-visible{outline:none}.ftreesvg .ftbirdbtn:focus-visible .ftbird{filter:drop-shadow(0 0 2px var(--brand))}
+.ftreesvg .ftbird.singing{animation:ftsing .45s ease-in-out 4}
+@keyframes ftsing{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-5px) rotate(-9deg)}60%{transform:translateY(-2px) rotate(6deg)}}
 .ftreesvg .fallen{pointer-events:none}.ftreesvg .ftfall{opacity:0;transform-box:view-box;animation:ftfall var(--fdur,11s) ease-in var(--fd,0s) infinite}
 .ftreesvg .sprout{animation:ftsprout .6s cubic-bezier(.3,1.45,.6,1) both;animation-delay:var(--d,0ms);transform-box:fill-box;transform-origin:center}
 @keyframes fthop{0%,70%,100%{transform:translateY(0) rotate(0)}74%{transform:translateY(-4px) rotate(-6deg)}78%{transform:translateY(0) rotate(0)}86%{transform:rotate(7deg)}92%{transform:rotate(0)}}
