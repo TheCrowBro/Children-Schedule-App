@@ -810,7 +810,6 @@
  "1h6m72q": "Restul",
  "190g610": "Butoanele pentru vârsta copilului tău vin primele, iar ce înregistrezi des urcă singur. Tot restul e la „Altele”.",
  "og3f9t": "Doarme acum",
- "1fayeu3": "Cât timp bebelușul doarme, cronometrul merge aici. Atinge „S-a trezit” când se trezește.",
  "fnzo5w": "La creșă sau la școală",
  "11agiiw": "Cât timp copilul e plecat, aici scrie unde e, de când și cine îl ia. Cine îl ia atinge „A plecat”.",
  "14m3p74": "Ziua dintr-o privire",
@@ -2693,5 +2692,18 @@
  "1aixmvu": "Apoi reconstruiește și instalează aplicația: npm run sync, apoi rulează din Android Studio sau Xcode. Fiecare serviciu configurat arată Conectează aici; autentificarea se deschide în browser și revine în aplicație.",
  "wrs8j3": "iCloud Drive nu are nevoie de configurare: Salvează de mai jos pune fișierul criptat în Fișiere.",
  "hor5fb": "Cum configurezi Google Drive, Dropbox sau OneDrive",
- "o9xm9e": "Se face o singură dată, pe calculator, de cine construiește aplicația: fiecare serviciu dă o cheie publică ce se pune în config.js, apoi aplicația se reconstruiește și serviciul arată Conectează aici. Id-ul aplicației este **{id}**, iar adresa de întoarcere este **{redirect}**."
+ "o9xm9e": "Se face o singură dată, pe calculator, de cine construiește aplicația: fiecare serviciu dă o cheie publică ce se pune în config.js, apoi aplicația se reconstruiește și serviciul arată Conectează aici. Id-ul aplicației este **{id}**, iar adresa de întoarcere este **{redirect}**.",
+ "1yebf1a": "Treaz acum…",
+ "k6ilch": "A adormit la loc – somnul continuă",
+ "1ncdc8a": "S-a trezit de tot, sau adoarme la loc în curând?",
+ "1kzy55r": "Adoarme la loc în curând",
+ "rb5v58": "somnul continuă; trezirea este notată",
+ "a88w34": "S-a trezit de tot",
+ "1yx9ns3": "somnul se încheie acum",
+ "dt2rqf": "Ce l-a trezit? Atinge una pentru a salva",
+ "1hpqu3m": "Omite",
+ "1bcd4q6": "Notat. Atinge „A adormit la loc” când adoarme din nou.",
+ "b2h88z": "Treaz de la {time} ({long}) · doarme de la {start}",
+ "11pv9av": "A adormit la loc",
+ "vzr1m6": "Cât timp bebelușul doarme, aici curge timpul. Atinge „S-a trezit” când se trezește și spune dacă s-a trezit de tot sau adoarme la loc în curând: atunci somnul continuă, trezirea este notată, iar butonul întreabă „A adormit la loc”."
 }

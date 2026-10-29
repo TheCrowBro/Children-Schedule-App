@@ -782,7 +782,6 @@
  "1h6m72q": "De rest",
  "190g610": "De knoppen voor de leeftijd van je kind komen eerst, en wat je vaak noteert schuift vanzelf omhoog. Al het andere zit achter Meer.",
  "og3f9t": "Slaapt nu",
- "1fayeu3": "Terwijl je baby slaapt, loopt hier de timer. Tik op ‘Wakker geworden’ als je baby wakker wordt.",
  "fnzo5w": "Op de opvang of op school",
  "11agiiw": "Zolang je kind weg is, staat hier waar het is, sinds wanneer en wie het ophaalt. Wie het ophaalt tikt op ‘Opgehaald’.",
  "14m3p74": "De dag in één oogopslag",
@@ -2639,5 +2638,18 @@
  "1aixmvu": "Bouw en installeer de app daarna opnieuw: npm run sync, en start hem vanuit Android Studio of Xcode. Elke ingestelde dienst toont hier Koppelen; inloggen opent in de browser en komt terug in de app.",
  "wrs8j3": "iCloud Drive hoeft niet ingesteld te worden: Opslaan hieronder zet het versleutelde bestand in Bestanden.",
  "hor5fb": "Google Drive, Dropbox of OneDrive instellen",
- "o9xm9e": "Dit doet degene die de app bouwt één keer, op een computer: elke dienst geeft een publieke sleutel uit die in config.js komt; daarna wordt de app opnieuw gebouwd en toont die dienst hier Koppelen. De app-id is **{id}** en het terugkeeradres is **{redirect}**."
+ "o9xm9e": "Dit doet degene die de app bouwt één keer, op een computer: elke dienst geeft een publieke sleutel uit die in config.js komt; daarna wordt de app opnieuw gebouwd en toont die dienst hier Koppelen. De app-id is **{id}** en het terugkeeradres is **{redirect}**.",
+ "1yebf1a": "Nu wakker…",
+ "k6ilch": "Weer in slaap – de slaap gaat door",
+ "1ncdc8a": "Voorgoed wakker, of zo weer slapen?",
+ "1kzy55r": "Zo weer slapen",
+ "rb5v58": "de slaap gaat door; het wakker worden wordt genoteerd",
+ "a88w34": "Voorgoed wakker",
+ "1yx9ns3": "de slaap eindigt nu",
+ "dt2rqf": "Waarvan wakker? Tik er een aan om op te slaan",
+ "1hpqu3m": "Overslaan",
+ "1bcd4q6": "Genoteerd. Tik op „Weer in slaap” zodra je kind weer slaapt.",
+ "b2h88z": "Wakker sinds {time} ({long}) · slaapt sinds {start}",
+ "11pv9av": "Weer in slaap",
+ "vzr1m6": "Terwijl je baby slaapt, loopt hier de tijd. Tik op „Wakker geworden” als je kind wakker wordt, en zeg of het voorgoed wakker is of zo weer gaat slapen: dan gaat de slaap door, wordt het wakker worden genoteerd, en vraagt de knop „Weer in slaap”."
 }

@@ -754,7 +754,6 @@
  "1h6m72q": "Yang lainnya",
  "190g610": "Tombol yang sesuai usia anak Anda muncul lebih dulu, dan apa pun yang sering Anda catat naik dengan sendirinya. Sisanya ada di Lainnya.",
  "og3f9t": "Sedang tidur",
- "1fayeu3": "Selama bayi Anda tidur, pengatur waktu berjalan di sini. Ketuk “Sudah bangun” saat ia bangun.",
  "fnzo5w": "Di penitipan atau sekolah",
  "11agiiw": "Selama anak di luar, ini menunjukkan di mana ia berada, sejak kapan, dan siapa yang menjemput. Siapa pun yang menjemput mengetuk “Sudah dijemput”.",
  "14m3p74": "Sehari sekilas pandang",
@@ -2585,5 +2584,18 @@
  "1aixmvu": "Lalu bangun ulang dan pasang aplikasi: npm run sync, kemudian jalankan dari Android Studio atau Xcode. Tiap layanan yang Anda siapkan menampilkan Hubungkan di sini; masuk dibuka di browser dan kembali ke aplikasi.",
  "wrs8j3": "iCloud Drive tidak perlu penyiapan: Simpan di bawah menaruh berkas terenkripsi di Files.",
  "hor5fb": "Cara menyiapkan Google Drive, Dropbox, atau OneDrive",
- "o9xm9e": "Ini dilakukan sekali, di komputer, oleh orang yang membangun aplikasi: tiap layanan memberi kunci publik yang dimasukkan ke config.js, lalu aplikasi dibangun ulang dan layanan itu menampilkan Hubungkan di sini. ID aplikasinya **{id}** dan alamat kembalinya **{redirect}**."
+ "o9xm9e": "Ini dilakukan sekali, di komputer, oleh orang yang membangun aplikasi: tiap layanan memberi kunci publik yang dimasukkan ke config.js, lalu aplikasi dibangun ulang dan layanan itu menampilkan Hubungkan di sini. ID aplikasinya **{id}** dan alamat kembalinya **{redirect}**.",
+ "1yebf1a": "Sedang terjaga…",
+ "k6ilch": "Tidur lagi – tidurnya berlanjut",
+ "1ncdc8a": "Bangun untuk seterusnya, atau segera tidur lagi?",
+ "1kzy55r": "Segera tidur lagi",
+ "rb5v58": "tidurnya berlanjut; terjaganya dicatat",
+ "a88w34": "Bangun untuk seterusnya",
+ "1yx9ns3": "tidurnya berakhir sekarang",
+ "dt2rqf": "Apa yang membangunkannya? Ketuk satu untuk menyimpan",
+ "1hpqu3m": "Lewati",
+ "1bcd4q6": "Dicatat. Ketuk «Tidur lagi» saat ia sudah tidur kembali.",
+ "b2h88z": "Terjaga sejak {time} ({long}) · tidur sejak {start}",
+ "11pv9av": "Tidur lagi",
+ "vzr1m6": "Selama bayi tidur, pengatur waktu berjalan di sini. Ketuk «Sudah bangun» saat ia bangun, lalu katakan apakah ia bangun untuk seterusnya atau akan segera tidur lagi: tidurnya pun berlanjut, terjaganya dicatat, dan tombolnya menanyakan «Tidur lagi»."
 }

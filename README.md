@@ -149,6 +149,10 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   stored in ml, so phones set differently agree. ml until switched
 - **Woke up**: the night-waking entry is "Woke up" (a wake-up), with Pain among the reasons beside hungry, diaper, gas and unknown;
   Stats count wake-ups per night
+- **Woke up at the top** (the sleep banner) asks whether they are **up for good** (the sleep ends now) or **back to sleep soon**: then
+  the wake-up is noted with its reason and drawn as a dashed moon on the clock while the sleep goes on, and the button becomes
+  **Asleep again**, which continues the sleep as it was; Up for good while they are up ends the sleep at the moment they woke. The
+  Sleep button while they are up means asleep again, the sleep check waits, and the pause shows on every phone
 - **The day of the week** on the day clock, above the hands
 - **The family calendar on the phone**: an event on the Month tab (an exam, an appointment, a lesson, a trip) goes straight into the
   phone's own calendar (**Add to phone calendar**: the calendar app's new-event screen on Android, the system's on iOS, no calendar
@@ -169,7 +173,7 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   (a nap that usually ends at 2:30 is asked about at 3:30, and the notification says when they are usually up; More → Notifications can
   turn that off), and never in the **do-not-disturb** hours each parent sets on their own phone (7 PM to 7 AM to start with): a check that falls
   in them is sent when they end, which also catches a sleep from the evening before. Woke up on the notification ends the sleep then
-  and opens the day; the checks are planned from the log on the phone and cancelled when the sleep ends on any phone. More →
+  (closing a wake-up still open) and opens the day; the checks are planned from the log on the phone and cancelled when the sleep ends on any phone. More →
   Notifications has the settings and asks the phone for permission (it is asked the first time there is something to send)
 - **Tutorial**: a ? on every screen starts a short tour of it: a highlight box glides from button to button with a line on why it's there.
   The home screen's tour starts by itself the first time, and so does the first screen's: what Just this phone, Share with family and

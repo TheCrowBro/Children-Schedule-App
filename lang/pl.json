@@ -838,7 +838,6 @@
  "1h6m72q": "Pozostałe",
  "190g610": "Przyciski dla wieku Twojego dziecka są na początku, a to, co zapisujesz często, samo przesuwa się wyżej. Cała reszta jest pod „Więcej”.",
  "og3f9t": "Właśnie śpi",
- "1fayeu3": "Gdy dziecko śpi, tutaj odmierza się czas snu. Gdy się obudzi, dotknij „Pobudka”.",
  "fnzo5w": "W żłobku lub szkole",
  "11agiiw": "Gdy dziecka nie ma w domu, tutaj widać, gdzie jest, od kiedy i kto je odbierze. Osoba, która je odbiera, dotyka „Odebrano”.",
  "14m3p74": "Dzień w pigułce",
@@ -2747,5 +2746,18 @@
  "1aixmvu": "Potem zbuduj i zainstaluj aplikację ponownie: npm run sync, a następnie uruchom ją z Android Studio lub Xcode. Każda skonfigurowana usługa pokazuje tu Połącz; logowanie otwiera się w przeglądarce i wraca do aplikacji.",
  "wrs8j3": "iCloud Drive nie wymaga konfiguracji: Zapisz poniżej umieszcza zaszyfrowany plik w Plikach.",
  "hor5fb": "Jak skonfigurować Google Drive, Dropbox lub OneDrive",
- "o9xm9e": "Robi to raz, na komputerze, osoba budująca aplikację: każda usługa wydaje publiczny klucz, który trafia do config.js; potem aplikacja jest budowana ponownie i ta usługa pokazuje tu Połącz. Identyfikator aplikacji to **{id}**, a jej adres powrotny to **{redirect}**."
+ "o9xm9e": "Robi to raz, na komputerze, osoba budująca aplikację: każda usługa wydaje publiczny klucz, który trafia do config.js; potem aplikacja jest budowana ponownie i ta usługa pokazuje tu Połącz. Identyfikator aplikacji to **{id}**, a jej adres powrotny to **{redirect}**.",
+ "1yebf1a": "Teraz nie śpi…",
+ "k6ilch": "Znów śpi – sen trwa dalej",
+ "1ncdc8a": "Wstaje na dobre, czy zaraz znów zaśnie?",
+ "1kzy55r": "Zaraz znów zaśnie",
+ "rb5v58": "sen trwa dalej; przebudzenie zostaje zapisane",
+ "a88w34": "Wstaje na dobre",
+ "1yx9ns3": "sen kończy się teraz",
+ "dt2rqf": "Co obudziło dziecko? Stuknij jedno, aby zapisać",
+ "1hpqu3m": "Pomiń",
+ "1bcd4q6": "Zapisano. Stuknij „Znów śpi”, gdy dziecko znów zaśnie.",
+ "b2h88z": "Nie śpi od {time} ({long}) · śpi od {start}",
+ "11pv9av": "Znów śpi",
+ "vzr1m6": "Gdy dziecko śpi, tutaj biegnie czas. Stuknij „Pobudka”, gdy się obudzi, i powiedz, czy wstaje na dobre, czy zaraz znów zaśnie: wtedy sen trwa dalej, przebudzenie zostaje zapisane, a przycisk pyta „Znów śpi”."
 }

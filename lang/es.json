@@ -810,7 +810,6 @@
  "1h6m72q": "El resto",
  "190g610": "Los botones para la edad de tu hijo van primero, y lo que anotas a menudo sube solo. Todo lo demás está en Más.",
  "og3f9t": "Durmiendo ahora",
- "1fayeu3": "Mientras tu bebé duerme, aquí corre el cronómetro. Toca «Se despertó» cuando se despierte.",
  "fnzo5w": "En la guardería o la escuela",
  "11agiiw": "Mientras tu hijo está fuera, aquí se indica dónde está, desde cuándo y quién lo recoge. Quien lo recoge toca «Recogida».",
  "14m3p74": "El día de un vistazo",
@@ -2693,5 +2692,18 @@
  "1aixmvu": "Luego recompila e instala la app: npm run sync, y ejecútala desde Android Studio o Xcode. Cada servicio configurado muestra Conectar aquí; el inicio de sesión se abre en el navegador y vuelve a la app.",
  "wrs8j3": "iCloud Drive no necesita configuración: Guardar, abajo, deja el archivo cifrado en Archivos.",
  "hor5fb": "Cómo configurar Google Drive, Dropbox o OneDrive",
- "o9xm9e": "Esto se hace una vez, en un ordenador, por quien compila la app: cada servicio entrega una clave pública que va en config.js; luego se recompila la app y ese servicio muestra Conectar aquí. El id de la app es **{id}** y su dirección de retorno es **{redirect}**."
+ "o9xm9e": "Esto se hace una vez, en un ordenador, por quien compila la app: cada servicio entrega una clave pública que va en config.js; luego se recompila la app y ese servicio muestra Conectar aquí. El id de la app es **{id}** y su dirección de retorno es **{redirect}**.",
+ "1yebf1a": "Despierto ahora…",
+ "k6ilch": "Dormido otra vez – el sueño continúa",
+ "1ncdc8a": "¿Despierto del todo, o pronto a dormir otra vez?",
+ "1kzy55r": "Pronto a dormir otra vez",
+ "rb5v58": "el sueño continúa; el despertar queda anotado",
+ "a88w34": "Despierto del todo",
+ "1yx9ns3": "el sueño termina ahora",
+ "dt2rqf": "¿Qué lo despertó? Toca una opción para guardar",
+ "1hpqu3m": "Omitir",
+ "1bcd4q6": "Anotado. Toca «Dormido otra vez» cuando vuelva a dormirse.",
+ "b2h88z": "Despierto desde {time} ({long}) · durmiendo desde {start}",
+ "11pv9av": "Dormido otra vez",
+ "vzr1m6": "Mientras tu bebé duerme, el tiempo corre aquí. Toca «Se despertó» cuando despierte y di si está despierto del todo o pronto volverá a dormir: entonces el sueño continúa, el despertar queda anotado y el botón pregunta «Dormido otra vez»."
 }

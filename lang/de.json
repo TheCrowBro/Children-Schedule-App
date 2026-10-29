@@ -782,7 +782,6 @@
  "1h6m72q": "Der Rest",
  "190g610": "Die Buttons für das Alter deines Kindes kommen zuerst, und was du oft einträgst, rückt von selbst nach oben. Alles andere steckt hinter „Mehr“.",
  "og3f9t": "Schläft gerade",
- "1fayeu3": "Während dein Baby schläft, läuft hier die Zeit mit. Tippe auf „Aufgewacht“, wenn es wach wird.",
  "fnzo5w": "In der Kita oder Schule",
  "11agiiw": "Solange dein Kind weg ist, steht hier, wo es ist, seit wann und wer es abholt. Wer es abholt, tippt auf „Abgeholt“.",
  "14m3p74": "Der Tag auf einen Blick",
@@ -2639,5 +2638,18 @@
  "1aixmvu": "Dann die App neu bauen und installieren: npm run sync, dann aus Android Studio oder Xcode starten. Jeder eingerichtete Dienst zeigt hier Verbinden; die Anmeldung öffnet sich im Browser und kehrt in die App zurück.",
  "wrs8j3": "iCloud Drive braucht keine Einrichtung: Speichern unten legt die verschlüsselte Datei in Dateien ab.",
  "hor5fb": "So richtest du Google Drive, Dropbox oder OneDrive ein",
- "o9xm9e": "Das macht einmalig, am Computer, wer die App baut: Jeder Dienst gibt einen öffentlichen Schlüssel heraus, der in config.js kommt; dann wird die App neu gebaut und der Dienst zeigt hier Verbinden. Die App-ID ist **{id}**, ihre Rücksprungadresse **{redirect}**."
+ "o9xm9e": "Das macht einmalig, am Computer, wer die App baut: Jeder Dienst gibt einen öffentlichen Schlüssel heraus, der in config.js kommt; dann wird die App neu gebaut und der Dienst zeigt hier Verbinden. Die App-ID ist **{id}**, ihre Rücksprungadresse **{redirect}**.",
+ "1yebf1a": "Jetzt wach…",
+ "k6ilch": "Wieder eingeschlafen – der Schlaf geht weiter",
+ "1ncdc8a": "Endgültig wach, oder bald wieder schlafen?",
+ "1kzy55r": "Bald wieder schlafen",
+ "rb5v58": "der Schlaf geht weiter; das Aufwachen wird notiert",
+ "a88w34": "Endgültig wach",
+ "1yx9ns3": "der Schlaf endet jetzt",
+ "dt2rqf": "Was hat geweckt? Eins antippen, um zu speichern",
+ "1hpqu3m": "Überspringen",
+ "1bcd4q6": "Notiert. Tippe auf „Wieder eingeschlafen“, wenn dein Kind wieder schläft.",
+ "b2h88z": "Wach seit {time} ({long}) · schläft seit {start}",
+ "11pv9av": "Wieder eingeschlafen",
+ "vzr1m6": "Während dein Baby schläft, läuft hier die Uhr. Tippe auf „Aufgewacht“, wenn es aufwacht, und sage, ob es endgültig wach ist oder bald wieder schläft: Dann geht der Schlaf weiter, das Aufwachen wird notiert, und der Knopf fragt „Wieder eingeschlafen“."
 }

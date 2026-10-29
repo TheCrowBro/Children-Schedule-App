@@ -782,7 +782,6 @@
  "1h6m72q": "Ang iba pa",
  "190g610": "Nauuna ang mga button para sa edad ng anak mo, at kusang umaangat ang anumang madalas mong itala. Nasa Iba pa ang lahat ng iba.",
  "og3f9t": "Tulog ngayon",
- "1fayeu3": "Habang tulog si baby, tumatakbo rito ang timer. I-tap ang “Nagising” kapag gising na siya.",
  "fnzo5w": "Nasa daycare o paaralan",
  "11agiiw": "Habang wala ang anak mo, sinasabi nito kung nasaan siya, mula kailan, at kung sino ang susundo. Ita-tap ng sumundo ang “Nasundo na”.",
  "14m3p74": "Ang araw sa isang tingin",
@@ -2639,5 +2638,18 @@
  "1aixmvu": "Pagkatapos, muling buuin at i-install ang app: npm run sync, saka patakbuhin mula sa Android Studio o Xcode. Nagpapakita ng Ikonekta dito ang bawat serbisyong na-setup mo; bumubukas sa browser ang pag-sign in at bumabalik sa app.",
  "wrs8j3": "Hindi kailangan ng setup ang iCloud Drive: inilalagay ng I-save sa ibaba ang naka-encrypt na file sa Files.",
  "hor5fb": "Paano i-setup ang Google Drive, Dropbox o OneDrive",
- "o9xm9e": "Isang beses itong ginagawa, sa computer, ng gumagawa ng app: nagbibigay ang bawat serbisyo ng public key na inilalagay sa config.js, pagkatapos ay muling binubuo ang app at nagpapakita ang serbisyong iyon ng Ikonekta dito. Ang app id ay **{id}** at ang redirect address nito ay **{redirect}**."
+ "o9xm9e": "Isang beses itong ginagawa, sa computer, ng gumagawa ng app: nagbibigay ang bawat serbisyo ng public key na inilalagay sa config.js, pagkatapos ay muling binubuo ang app at nagpapakita ang serbisyong iyon ng Ikonekta dito. Ang app id ay **{id}** at ang redirect address nito ay **{redirect}**.",
+ "1yebf1a": "Gising ngayon…",
+ "k6ilch": "Nakatulog ulit – tuloy ang tulog",
+ "1ncdc8a": "Gising na nang tuluyan, o matutulog ulit sa madaling panahon?",
+ "1kzy55r": "Matutulog ulit sa madaling panahon",
+ "rb5v58": "tuloy ang tulog; naitala ang paggising",
+ "a88w34": "Gising na nang tuluyan",
+ "1yx9ns3": "natatapos na ang tulog ngayon",
+ "dt2rqf": "Ano ang gumising sa kanya? I-tap ang isa para i-save",
+ "1hpqu3m": "Laktawan",
+ "1bcd4q6": "Naitala. I-tap ang «Nakatulog ulit» kapag nakatulog na ulit.",
+ "b2h88z": "Gising mula {time} ({long}) · tulog mula {start}",
+ "11pv9av": "Nakatulog ulit",
+ "vzr1m6": "Habang tulog ang baby, tumatakbo rito ang timer. I-tap ang «Nagising» kapag nagising siya, at sabihin kung gising na siya nang tuluyan o matutulog ulit sa madaling panahon: sa gayon tuloy ang tulog, naitatala ang paggising, at nagtatanong ang button ng «Nakatulog ulit»."
 }

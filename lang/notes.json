@@ -821,6 +821,11 @@
     "Usually up by about {time}.": "The notification's second sentence when the routine knows the usual end of that sleep; {time} a clock time.",
     "Tap Woke up when they are awake.": "The notification's last sentence. 'Woke up' is the button on the notification (translate it the same).",
     "Once the routine is known": "A setting (On / Off) in More \u2192 Notifications: the sleep check follows the routine's usual sleep length.",
-    "Ask an hour after the sleep usually ends instead: a nap that usually ends at 2:30 is asked about at 3:30. The notification says when they are usually up.": "Under that setting."
+    "Ask an hour after the sleep usually ends instead: a nap that usually ends at 2:30 is asked about at 3:30. The notification says when they are usually up.": "Under that setting.",
+    "Up since {time} ({long}) \u00b7 asleep since {start}": "The banner while a sleeping child is up for a moment (\"back to sleep soon\"). {time}: when they woke; {long}: how long ago, e.g. \"12 min\"; {start}: when the sleep began. Keep the middle dot.",
+    "Up for good": "A button: the child is awake for now, the sleep is over (as opposed to \"Back to sleep soon\"). Also shown while they are up for a moment, to end the sleep after all.",
+    "Back to sleep soon": "A button: the child woke in the middle of a sleep and will go back to sleep; the sleep goes on and the wake-up is noted.",
+    "Asleep again": "The button that replaces \"Woke up\" while the child is up for a moment: tapping it continues the sleep as it was.",
+    "Awake now\u2026": "In the list, a wake-up still going on (the child is up for a moment in the middle of a sleep)."
   }
 }

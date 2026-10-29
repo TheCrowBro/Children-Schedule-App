@@ -191,7 +191,7 @@ function describeEntry(e) {
     case 'diaper':
       return [d.pee && d.poo ? __('Pee + Poo') : d.pee ? __('Pee') : d.poo ? __('Poo') : __('Dry'), [d.poo && d.texture && __(d.texture), d.poo && d.color && __(d.color), d.rash && __('rash')].filter(Boolean).join(', ')];
     case 'sleep': { const t = { time: fmtDur((e.end - e.ts) / MIN) }; return e.end ? [isNap(e) ? __('Napped {time}', t) : __('Slept {time}', t), __('until {time}', { time: fmtTime(e.end) })] : [isNap(e) ? __('Napping now…') : __('Sleeping now…'), __('tap to set wake time')]; }
-    case 'wake': return [d.min ? __('Awake {n} min', { n: d.min }) : __('Awake'), d.why ? __(d.why) : ''];
+    case 'wake': return [d.min ? __('Awake {n} min', { n: d.min }) : d.sleep && !e.end && db.events.some(s => s.id === d.sleep && s.type === 'sleep' && !s.end) ? __('Awake now…') : __('Awake'), d.why ? __(d.why) : ''];
     case 'vomit': return [__('Vomit – {amount}', { amount: __(d.amount || N_('small')) }), d.projectile ? __('projectile') : ''];
     case 'play': return [__(d.activity || 'Play'), d.min ? min(d.min) : ''];
     case 'health': return [(d.symptoms || []).map(x => __(x)).join(', ') || __('Note'), d.temp ? __('Temp {t}°', { t: d.temp }) : ''];
@@ -262,6 +262,51 @@ const freshView = () => { logView = null; };
 const scoped = () => viewOf().list;   // (big moments are kept apart)
 const eventsOnDay = day => { const a = viewOf().byDay.get(day); return a ? a.slice() : []; };
 const activeSleep = id => db.events.find(e => e.type === 'sleep' && !e.end && (!id || childOf(e) === id));
+// A wake-up in the middle of a sleep ("back to sleep soon"): a wake entry linked to the sleep (data.sleep), open until "Asleep again";
+// the sleep itself goes on as it was. Drawn dashed on the clock (its ray and its moon).
+const pauseOf = s => db.events.find(w => w.type === 'wake' && w.data && w.data.sleep === s.id && !w.end);
+const pausedSleep = id => { const s = activeSleep(id); return s && pauseOf(s) ? s : null; };
+const isPause = w => w.type === 'wake' && !!(w.data && w.data.sleep);
+/** The sleep is over, at `at`: a pause still open is closed with it (one the sleep ended on stands as a plain wake-up, no length). */
+function endSleep(s, at = Date.now()) {
+  s.end = at; s.updated = stamp();
+  for (const w of db.events) if (isPause(w) && w.data.sleep === s.id && !w.end) {
+    if (at > w.ts + MIN) { w.end = at; w.data.min = Math.round((at - w.ts) / MIN); } else { w.end = w.ts; delete w.data.min; }
+    w.updated = stamp();
+  }
+}
+/** Asleep again after a pause: the wake-up gets its length; the sleep goes on. */
+function resumeSleep(w, at = Date.now()) { w.end = Math.max(at, w.ts); w.data.min = Math.max(1, Math.round((w.end - w.ts) / MIN)); w.updated = stamp(); }
+/** The Sleep button while the child shown is up for a moment means asleep again: no sheet. (Everyone, with a mix: the sheet asks who.) */
+function resumeIfPaused() {
+  if (viewDay !== startOfDay(Date.now())) return false;   // (a past day is being looked at: a sleep is being logged for it)
+  const ids = dayKid() === 'all' ? kids().map(k => k.id) : [dayKid()], ps = ids.map(id => pausedSleep(id)).filter(Boolean);
+  if (!ps.length || ps.length !== ids.length) return false;
+  for (const s of ps) { const w = pauseOf(s); if (!Sync.can('edit', w)) return false; resumeSleep(w); }
+  save(); render(); toast(__('Asleep again – the sleep goes on')); return true;
+}
+/** "Woke up" at the top: up for good (the sleep ends now), or back to sleep soon (the sleep goes on; the wake-up is noted, with why). */
+function askWoke(s) {
+  if (!Sync.can('edit', s)) return toast(__("You can't change this entry"));
+  const k = kids().length > 1 ? kidById(childOf(s)) : null, tag = k ? `<p><span class="ktag" style="--k:${k.color}">${avatar(k)}${esc(kidName(k))}</span></p>` : '';
+  const close = popup(`<h3>🌙 ${__h('Woke up')}</h3>${tag}<p class="note">${__h('Up for good, or back to sleep soon?')}</p>
+    <button class="btn p wakechoice" id="wakeSoon">😴 <span><b>${__h('Back to sleep soon')}</b><small>${__h('the sleep goes on; the wake-up is noted')}</small></span></button>
+    <button class="btn wakechoice" id="wakeUp">☀️ <span><b>${__h('Up for good')}</b><small>${__h('the sleep ends now')}</small></span></button>
+    <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Cancel')}</button></div>`);
+  $('#wakeUp').onclick = () => { endSleep(s); save(); close(); render(); toast(__('Sleep saved')); };
+  $('#wakeSoon').onclick = () => {
+    const close2 = popup(`<h3>🌙 ${__h('Woke up')}</h3>${tag}<p class="note">${__h('What woke them? Tap one to save')}</p>
+      <div class="chips big save">${WAKE_WHY.map(v => chip('wwhy', v, __h(v), false, '', true)).join('')}</div>
+      <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Cancel')}</button><button class="btn" id="wakeSkip">${__h('Skip')}</button></div>`);
+    const note = why => {
+      if (s.end || !db.events.includes(s)) return close2();   // (ended meanwhile, on another phone)
+      db.events.push({ id: uid(), type: 'wake', ts: Date.now(), data: { ...(why ? { why } : {}), sleep: s.id }, note: '', updated: stamp(), by: Auth.id || undefined, child: childOf(s) });
+      save(); close2(); render(); toast(__('Noted. Tap “Asleep again” when they are back asleep.'));
+    };
+    $('#sheet').querySelectorAll('.save input').forEach(i => i.onclick = () => setTimeout(() => note(i.value)));
+    $('#wakeSkip').onclick = () => note('');
+  };
+}
 /** A nap or a night's sleep: as marked on the entry, or else by when it began (from 6 AM to 6 PM, a nap). Naps are drawn dashed on the clock. */
 const napTime = ts => { const h = new Date(ts).getHours(); return h >= 6 && h < 18; };
 const isNap = e => (e.data && typeof e.data.nap === 'boolean' ? e.data.nap : napTime(e.ts));
@@ -633,11 +678,17 @@ function render() {
   const pumping = db.events.filter(e => e.type === 'pump' && e.end === null), awake = kids().map(k => [k, awakeSince(k)]).filter(x => x[1]);
   bn.hidden = !sleepers.length && !away.length && !pumping.length && !awake.length;
   if (!bn.hidden) {
-    bn.innerHTML = sleepers.map(([k, s], i) => `<div class="brow"><span>😴 ${multi ? `<b>${esc(kidName(k))}</b> ` : ''}${isNap(s) ? __h('Napping since {time} ({long})', { time: fmtTime(s.ts), long: fmtDur((Date.now() - s.ts) / MIN) }) : __h('Asleep since {time} ({long})', { time: fmtTime(s.ts), long: fmtDur((Date.now() - s.ts) / MIN) })}</span><button ${i ? '' : 'id="wakeBtn"'} data-wake="${s.id}">${__h('Woke up')}</button></div>`).join('')
+    bn.innerHTML = sleepers.map(([k, s], i) => {
+      const w = pauseOf(s), who = multi ? `<b>${esc(kidName(k))}</b> ` : '', t = { time: fmtTime(s.ts), long: fmtDur((Date.now() - s.ts) / MIN) };
+      if (w) return `<div class="brow paused"><span>🌙 ${who}${__h('Up since {time} ({long}) · asleep since {start}', { time: fmtTime(w.ts), long: fmtDur((Date.now() - w.ts) / MIN), start: fmtTime(s.ts) })}${w.data.why ? `<small>${__h(w.data.why)}</small>` : ''}</span><span class="acts"><button ${i ? '' : 'id="asleepBtn"'} data-resume="${w.id}">${__h('Asleep again')}</button><button class="ghost" ${i ? '' : 'id="upBtn"'} data-upforgood="${s.id}">${__h('Up for good')}</button></span></div>`;
+      return `<div class="brow"><span>😴 ${who}${isNap(s) ? __h('Napping since {time} ({long})', t) : __h('Asleep since {time} ({long})', t)}</span><button ${i ? '' : 'id="wakeBtn"'} data-wake="${s.id}">${__h('Woke up')}</button></div>`;
+    }).join('')
       + away.map(([k, c]) => `<div class="brow care"><span>🏫 ${multi ? `<b>${esc(kidName(k))}</b> ` : ''}${__h('At {place} since {time}', { place: placeName(c.data), time: fmtTime(c.ts) })}${careLine(c.data) ? `<small>${esc(careLine(c.data))}</small>` : ''}</span>${Sync.can('add') ? `<button data-pickup="${c.id}">${__h('Picked up')}</button>` : ''}</div>`).join('')
       + pumping.map(e => `<div class="brow pump"><span>🍶 ${multi ? `<b>${esc(kidName(kidById(childOf(e))))}</b> ` : ''}${__h('Pumping since {time} ({long})', { time: fmtTime(e.ts), long: fmtDur((Date.now() - e.ts) / MIN) })}</span>${Sync.can('edit', e) ? `<button class="btn" data-pumpdone="${e.id}">${__h('Done')}</button>` : ''}</div>`).join('')
       + awake.map(([k, a]) => `<div class="brow awake"><span>☀️ ${multi ? `<b>${esc(kidName(k))}</b> ` : ''}${a.hint ? __h('Awake since {time} ({long}) · usually ready for a nap by about {at}', { time: fmtTime(a.since), long: fmtDur(a.mins), at: fmtTime(a.by) }) : __h('Awake since {time} ({long})', { time: fmtTime(a.since), long: fmtDur(a.mins) })}</span></div>`).join('');
-    bn.querySelectorAll('[data-wake]').forEach(b => b.onclick = () => { const s = db.events.find(x => x.id === b.dataset.wake); if (!s) return; if (!Sync.can('edit', s)) return toast(__("You can't change this entry")); s.end = Date.now(); s.updated = stamp(); save(); render(); toast(__('Sleep saved')); });
+    bn.querySelectorAll('[data-wake]').forEach(b => b.onclick = () => { const s = db.events.find(x => x.id === b.dataset.wake); if (s) askWoke(s); });
+    bn.querySelectorAll('[data-resume]').forEach(b => b.onclick = () => { const w = db.events.find(x => x.id === b.dataset.resume); if (!w) return; if (!Sync.can('edit', w)) return toast(__("You can't change this entry")); resumeSleep(w); save(); render(); toast(__('Asleep again – the sleep goes on')); });
+    bn.querySelectorAll('[data-upforgood]').forEach(b => b.onclick = () => { const s = db.events.find(x => x.id === b.dataset.upforgood); if (!s) return; if (!Sync.can('edit', s)) return toast(__("You can't change this entry")); const w = pauseOf(s); endSleep(s, w ? w.ts : Date.now()); save(); render(); toast(__('Sleep saved')); });   // (up since the wake-up: the sleep ended then)
     bn.querySelectorAll('[data-pumpdone]').forEach(b => b.onclick = () => { const e = db.events.find(x => x.id === b.dataset.pumpdone); if (!e) return; e.end = Date.now(); e.data = { ...e.data, min: Math.max(1, Math.round((e.end - e.ts) / MIN)) }; e.updated = stamp(); save(); openSheet(null, e); });
     bn.querySelectorAll('[data-pickup]').forEach(b => b.onclick = () => { const c = db.events.find(x => x.id === b.dataset.pickup); if (c) openPickup(c); });
     Icons.paint(bn);
@@ -796,11 +847,12 @@ function clockSvg(evs, day) {
     // (a drop-off and a pick-up are dots on the outer track, without a ray)
     const g = groupOf(e.type).id, a = ang(frac(e.ts)), pin = g === 'care', r = pin ? rr(115) : RR[g], [x, y] = P(a, r), [d] = describe(e), k = all ? kidById(childOf(e)) : null;
     const approx = !!(e.data && e.data.approx), when = approx ? __('about {time}', { time: fmtTime(e.ts) }) : fmtTime(e.ts);
-    // the kinds of line: a nap and a snack dashed, a poo a squiggle, a bath a water ripple, an estimated time dotted
-    const snack = e.type === 'meal' && !!(e.data && e.data.meal === 'Snack'), poo = (e.type === 'diaper' || e.type === 'potty') && !!(e.data && e.data.poo), bath = isBath(e);
+    // the kinds of line: a nap and a snack dashed, a poo a squiggle, a bath a water ripple, an estimated time dotted; a wake-up that was
+    // a pause in a sleep (back to sleep soon) dashed too, its moon as well
+    const snack = e.type === 'meal' && !!(e.data && e.data.meal === 'Snack'), poo = (e.type === 'diaper' || e.type === 'potty') && !!(e.data && e.data.poo), bath = isBath(e), pause = isPause(e);
     // the dot at the end of the ray is a small paper disc with a symbol of the entry on it: a bottle, a spoon for solids, a drop, a poo, a moon…
     const sym = Icons.nameOf(bath ? TYPES.bath.icon : e.type === 'feed' && e.data && e.data.kind === 'solids' ? '🥄' : poo ? '💩' : TYPES[e.type].icon) || 'star';
-    data += `<g class="ray${approx ? ' approx' : ''}${e.type === 'sleep' && isNap(e) ? ' nap' : ''}${snack ? ' snack' : ''}${poo ? ' poo' : ''}${bath ? ' bath' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(bath ? 'bath' : e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${bath ? 'bath' : g})">
+    data += `<g class="ray${approx ? ' approx' : ''}${e.type === 'sleep' && isNap(e) ? ' nap' : ''}${snack ? ' snack' : ''}${poo ? ' poo' : ''}${bath ? ' bath' : ''}${pause ? ' pause' : ''}" data-info="${e.id}" role="button" tabindex="0" aria-label="${esc(when + ' ' + __(tLabel(bath ? 'bath' : e.type)) + ': ' + d + (k ? ', ' + kidName(k) : ''))}" style="--c:var(--g-${bath ? 'bath' : g})">
       <title>${esc(when + ' · ' + d + (k ? ' · ' + kidName(k) : ''))}</title>
       ${pin ? '' : `<path d="${poo ? wavy(a, rr(17), r - rr(5)) : bath ? rippled(a, rr(17), r - rr(5)) : `M${xy(a, rr(17))}L${xy(a, r - rr(5))}`}"/><path class="hitl" d="M${xy(a, rr(20))}L${xy(a, r)}"/>`}<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(10))}"/><circle class="dot${symbols ? '' : ' plain'}" cx="${f1(x)}" cy="${f1(y)}" r="${f1(rr(symbols ? 7.3 : 4.6))}"${k ? ` style="stroke:${k.color}"` : ''}/>${symbols ? `<g class="sym" transform="translate(${f1(x)} ${f1(y)})"><g class="mini" data-n="${sym}"><g transform="scale(${(rr(11.8) / 32).toFixed(3)}) translate(-16 -16)">${Icons.mini(sym)}</g></g></g>` : ''}</g>`;
   }
@@ -2412,6 +2464,7 @@ function toggleLeg() {
 }
 /** Travel: a short sheet of big one-tap answers. A rough time is fine ("about 15 minutes ago"); such times are kept as estimates. */
 function openQuick(type) {
+  if (type === 'sleep' && resumeIfPaused()) return;
   if (!Sync.can('add')) return toast(__("You don't have permission to do that"));
   const T = TYPES[type], multi = kids().length > 1, page = dayKid(), pre = page === 'all' ? kids().map(k => k.id) : [page];
   const prev = db.events.filter(e => e.type === type && pre.includes(childOf(e))).sort((a, b) => b.ts - a.ts)[0], pd = (prev && prev.data) || {};
@@ -2441,7 +2494,7 @@ function openQuick(type) {
   const sync = () => { if ($('#qBottle')) { const b = val('qkind') !== 'breast'; $('#qBottle').hidden = !b; $('#qBreast').hidden = b; } };
   S.onchange = sync; sync();
   const commit = () => {
-    const ids = multi ? [...S.querySelectorAll('[name=qkid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
+    let ids = multi ? [...S.querySelectorAll('[name=qkid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
     if (!ids.length) return toast(__('Choose who this is for'));
     const ago = +val('qago') || 0, ts = Date.now() - ago * MIN, est = ago ? { approx: true } : {};
     let data = { ...est };
@@ -2450,7 +2503,7 @@ function openQuick(type) {
     if (type === 'potty') { const v = val('qpot'); data = v === 'accident' ? { pee: false, poo: false, accident: true, ...est } : { pee: v !== 'poo', poo: v !== 'pee', where: 'Potty', ...(v !== 'pee' && val('qtex') ? { texture: val('qtex') } : {}), ...est }; }
     if (type === 'diaper') { const v = val('qdia'); data = { pee: v !== 'poo', poo: v !== 'pee', rash: false, ...(v !== 'pee' && val('qtex') ? { texture: val('qtex') } : {}), ...est }; }
     if (type === 'vomit') data = { amount: val('qvom') || 'Spit-up', projectile: false, ...est };
-    if (type === 'sleep') { const busy = ids.find(id => activeSleep(id)); if (busy) return toast(__('{name} is already asleep', { name: kidName(kidById(busy)) })); data = { nap: val('qnap') === '1', ...est }; }
+    if (type === 'sleep') { const paused = ids.filter(id => pausedSleep(id)); for (const id of paused) resumeSleep(pauseOf(activeSleep(id))); ids = ids.filter(id => !paused.includes(id)); if (!ids.length) { save(); close(); render(); return toast(__('Asleep again – the sleep goes on')); } const busy = ids.find(id => activeSleep(id)); if (busy) return toast(__('{name} is already asleep', { name: kidName(kidById(busy)) })); data = { nap: val('qnap') === '1', ...est }; }
     for (const id of ids) {
       const d = structuredClone(data);
       if (type === 'feed' && d.kind !== 'breast' && d.milk === 'Formula') { const f = usualFormula(kidById(id)); if (f) d.formula = f; }
@@ -2481,7 +2534,7 @@ const TOURS = {
     { sel: '#view .quick [data-add=care]', title: N_('Drop-off and pick-up'), why: N_('Dropping your child off at daycare, preschool or school, and who picks them up and when. While they are there a banner at the top says so, and whoever collects them taps "Picked up".') },
     { sel: '#view .quick [data-add=study]', title: N_('Homework'), why: N_('Homework, reading and practising, with the subject, the minutes and the pages read. The routine learns the school week from it.') },
     { sel: '#view .quick [data-addmore]', title: N_('The rest'), why: N_('The buttons for your child\'s age come first, and anything you log often moves up by itself. Everything else is behind More.') },
-    { sel: '#sleepBanner .brow:not(.care)', title: N_('Asleep right now'), why: N_('While your baby sleeps the timer runs here. Tap "Woke up" when they wake.') },
+    { sel: '#sleepBanner .brow:not(.care)', title: N_('Asleep right now'), why: N_('While your baby sleeps the timer runs here. Tap "Woke up" when they wake, and say whether they are up for good or will be back to sleep soon: then the sleep goes on, the wake-up is noted, and the button asks "Asleep again".') },
     { sel: '#sleepBanner .brow.care', title: N_('At daycare or school'), why: N_('While your child is away this says where, since when, and who picks them up. Whoever collects them taps "Picked up".') },
     { sel: 'svg.clock', title: N_('The day at a glance'), why: N_('Each entry is a ray out to the time it happened, in its own colour. Tap a dot to see what it was, or a quarter of the dial for just those hours.') },
     { sel: '.clockctl .seg', title: N_('24 or 12 hours'), why: N_('The whole day on one dial, or a classic 12-hour face with AM and PM.') },
@@ -2948,6 +3001,7 @@ const feedKid = ev => kidById(ev ? childOf(ev) : dayKid()) || kids()[0];
 function openSheet(type, ev, pre) {
   const editing = !!ev;
   type = ev ? ev.type : type;
+  if (type === 'sleep' && !ev && !pre && resumeIfPaused()) return;   // (up for a moment: back to sleep, no questions)
   if (type === 'bath') { type = 'play'; pre = { activity: 'Bath', ...(pre || {}) }; }   // (the Bath button: a play entry with Bath chosen)
   if (editing ? !Sync.can('edit', ev) : !Sync.can('add')) return toast(__("You don't have permission to do that"));
   if (isPrivate(type) && !Sync.can('health')) return toast(__("You don't have access to health notes"));
@@ -3139,7 +3193,7 @@ function openSheet(type, ev, pre) {
     }
     if (type === 'sleep') { end = $('#end').value ? fromLocalInput($('#end').value) : undefined; if (end && end <= ts) return toast(__('Wake time must be after bedtime')); data = { nap: val('nap') === '1' }; }
     if (type === 'pump') { data = { side: val('side') || 'Both', ml: volOut(n('#ml')), min: n('#min'), store: val('store') || 'now' }; if (ev && ev.data && ev.data.used) data.used = true; if (ev && ev.end != null) end = ev.end; }
-    if (type === 'wake') data = { min: n('#min'), why: val('why') };
+    if (type === 'wake') data = { min: n('#min'), why: val('why'), ...(ev && ev.data && ev.data.sleep ? { sleep: ev.data.sleep } : {}) };   // (a wake-up that was a pause keeps its sleep)
     if (type === 'vomit') data = { amount: val('amount'), projectile: !!checked('projectile') };
     if (type === 'play') data = { activity: val('activity'), min: n('#min') };
     if (type === 'health') {
@@ -3184,14 +3238,21 @@ function openSheet(type, ev, pre) {
       if (data.poo && val('texture')) data.texture = val('texture');
     }
     if (ev && ev.data && ev.data.approx && Math.floor(ts / MIN) === Math.floor(ev.ts / MIN)) data.approx = true;   // still the estimated time
-    const who = multi ? [...S.querySelectorAll('[name=kid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
+    let who = multi ? [...S.querySelectorAll('[name=kid]:checked')].map(c => c.value).filter(id => kidById(id)) : [kids()[0].id];
     if (!who.length) return toast(__('Choose who this is for'));
+    if (type === 'sleep' && !end && !ev) {   // (a child up for a moment: Sleep means asleep again)
+      const paused = who.filter(id => pausedSleep(id));
+      for (const id of paused) resumeSleep(pauseOf(activeSleep(id)));
+      who = who.filter(id => !paused.includes(id));
+      if (!who.length) { save(); close(); render(); return toast(__('Asleep again – the sleep goes on')); }
+    }
     if (type === 'sleep' && !end) { for (const id of who) { const cur = activeSleep(id); if (cur && cur !== ev) return toast(multi ? __('{name} is sleeping – tap “Woke up” first', { name: kidName(kidById(id)) }) : __('Already sleeping – tap “Woke up” first')); } }
     const usualBefore = new Map(who.map(id => [id, type === 'feed' ? usualFormula(kidById(id)) : '']));
     for (const id of who) {
       const rec = ev || { id: uid(), type, by: Auth.id || undefined };
       Object.assign(rec, { ts, data: structuredClone(data), note: $('#note').value.trim(), updated: stamp(), child: id });
-      if (type === 'sleep') { if (end) rec.end = end; else delete rec.end; }
+      if (type === 'sleep') { if (end) endSleep(rec, end); else delete rec.end; }
+      if (type === 'wake' && rec.data.sleep && !rec.end && rec.data.min) rec.end = rec.ts + rec.data.min * MIN;   // (a pause given its length: asleep again then)
       if (!ev) db.events.push(rec);
       if (pickTs) db.events.push({ id: uid(), type: 'pickup', ts: pickTs, data: { place: data.place, ...(data.own ? { own: true } : {}) }, note: '', updated: stamp(), by: Auth.id || undefined, child: id });
     }
@@ -3274,7 +3335,7 @@ Sync.onSessionLost = () => Acct.sessionLost();
     Notify.onAction((action, x) => {
       const s = db.events.find(e => e.id === x.sleep);
       if (action === 'still') return;
-      if (action === 'woke' && s && !s.end) { if (!Sync.can('edit', s)) toast(__("You can't change this entry")); else { s.end = Date.now(); s.updated = stamp(); save(); toast(__('Sleep saved')); } }
+      if (action === 'woke' && s && !s.end) { if (!Sync.can('edit', s)) toast(__("You can't change this entry")); else { endSleep(s); save(); toast(__('Sleep saved')); } }
       tab = 'day'; viewDay = startOfDay(Date.now()); if (s && s.child && kidById(s.child)) setKid(s.child); render();
     });
     Native.onAppState(active => { if (active) { Notify.sync(db.events); followToday(true); } });

@@ -864,6 +864,56 @@ const pickFormula = async (page, scope, name) => {
       await P.evaluate(() => { db.events = db.events.filter(e => !(e.type === 'sleep' && (!e.end || e.data.nap === true))); Store.save(db); render(); });
     });
 
+    await step('Woke up at the top asks "up for good, or back to sleep soon?": back to sleep soon notes a wake-up with its reason (a dashed moon on the clock, "Awake now…" in the list) while the sleep goes on, the banner offers Asleep again and Up for good, the sleep check waits, the Sleep button means asleep again, Up for good ends the sleep when they woke, the edit sheet keeps the link, and Woke up on the notification closes a pause', async () => {
+      await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; });
+      const cfg = { on: true, after: 240, every: 30, times: 3, quiet: ['00:00', '00:00'], routine: false }, checks = () => P.evaluate(c => Notify.plan(db.events, Date.now(), c).length, cfg);
+      const sid = await P.evaluate(() => { const id = 'pz1'; db.events.push({ id, type: 'sleep', ts: Date.now() - 3 * 3600e3, data: { nap: false }, note: '', updated: stamp(), by: Auth.id, child: db.baby.kids[0].id }); save(); render(); return id; });
+      await P.click('[data-tab=day]'); assert.equal(await checks(), 3, 'three checks planned for the sleep');
+      await P.click('#wakeBtn'); assert(/Up for good, or back to sleep soon\?/.test(await P.textContent('#sheet')), 'the question');
+      await P.click('#wakeSoon'); assert(/What woke them\? Tap one to save/.test(await P.textContent('#sheet')), 'then the reason');
+      await P.click('#sheet [name=wwhy][value="Hungry"]'); await P.waitForFunction(() => $('#sheet').hidden);
+      const w1 = await P.evaluate(id => db.events.find(e => e.type === 'wake' && e.data.sleep === id), sid);
+      assert(w1 && w1.data.why === 'Hungry' && w1.end === undefined && Date.now() - w1.ts < 10000, 'a wake-up linked to the sleep, still open: ' + JSON.stringify(w1));
+      assert.equal(await P.evaluate(id => db.events.find(e => e.id === id).end, sid), undefined, 'the sleep goes on');
+      const row = await P.textContent('#sleepBanner .brow.paused'); assert(/Up since .+ · asleep since/.test(row) && /Hungry/.test(row), row);
+      assert((await P.$('#asleepBtn')) && (await P.$('#upBtn')) && !(await P.$('#wakeBtn')), 'Asleep again and Up for good instead of Woke up');
+      const dash = await P.evaluate(id => { const g = document.querySelector(`.clock .ray[data-info="${id}"]`); return { cls: g.className.baseVal, ray: getComputedStyle(g.querySelector('path:not(.hitl)')).strokeDasharray, dot: getComputedStyle(g.querySelector('.dot')).strokeDasharray, moon: g.querySelector('.mini').dataset.n, sym: getComputedStyle(g.querySelector('.mini .ln')).strokeDasharray }; }, w1.id);
+      assert(/\bpause\b/.test(dash.cls) && dash.ray !== 'none' && dash.dot !== 'none' && dash.sym !== 'none' && dash.moon === 'wake', 'a dashed moon: ' + JSON.stringify(dash));
+      assert(/Awake now…/.test(await P.textContent(`.ev[data-edit="${w1.id}"]`)) && /Hungry/.test(await P.textContent(`.ev[data-edit="${w1.id}"]`)), 'the list says Awake now, and why');
+      assert.equal(await checks(), 0, 'no "still asleep?" check while they are up');
+      // asleep again, from the Sleep button (no sheet): the wake-up gets its length and the sleep goes on as it was
+      await P.click('[data-add=sleep]'); await P.waitForFunction(id => { const w = db.events.find(e => e.id === id); return w && w.end; }, w1.id);
+      assert(await P.evaluate(() => $('#sheet').hidden), 'no sheet');
+      const back = await P.evaluate(([sid, wid]) => ({ send: db.events.find(e => e.id === sid).end, w: db.events.find(e => e.id === wid) }), [sid, w1.id]);
+      assert(back.send === undefined && back.w.end >= back.w.ts && back.w.data.min === 1 && back.w.data.sleep === sid, 'back to sleep: ' + JSON.stringify(back));
+      assert((await P.$('#wakeBtn')) && !(await P.$('#sleepBanner .brow.paused')), 'Woke up is back'); assert.equal(await checks(), 3, 'and so are the checks');
+      assert(/Awake 1 min/.test(await P.textContent(`.ev[data-edit="${w1.id}"]`)), 'the list says how long');
+      // the edit sheet keeps the link to the sleep
+      await P.evaluate(id => document.querySelector(`.ev[data-edit="${id}"]`).click(), w1.id); await P.waitForSelector('#sheet [name=why]'); await P.click('#sheet [name=why][value="Pain"]'); await P.click('#save'); await P.waitForFunction(() => $('#sheet').hidden);
+      const w1b = await P.evaluate(id => db.events.find(e => e.id === id), w1.id); assert.equal(w1b.data.sleep, sid); assert.equal(w1b.data.why, 'Pain'); assert.equal(w1b.data.min, 1); assert(w1b.end, 'still closed');
+      // a second wake-up, no reason given (Skip), then Up for good: the sleep ended when they woke, the wake-up stands as a plain one
+      await P.click('#wakeBtn'); await P.click('#wakeSoon'); await P.click('#wakeSkip'); await P.waitForFunction(() => $('#sheet').hidden);
+      const w2 = await P.evaluate(id => db.events.filter(e => e.type === 'wake' && e.data.sleep === id).sort((a, b) => a.ts - b.ts)[1], sid);
+      assert(w2 && !w2.data.why && w2.end === undefined, 'a second open wake-up, no reason: ' + JSON.stringify(w2));
+      await P.click('#upBtn'); await P.waitForFunction(id => db.events.find(e => e.id === id).end, sid);
+      const up = await P.evaluate(([sid, wid]) => { const s = db.events.find(e => e.id === sid), w = db.events.find(e => e.id === wid); return { send: s.end, wts: w.ts, wend: w.end, min: w.data.min }; }, [sid, w2.id]);
+      assert.equal(up.send, up.wts, 'the sleep ended when they woke'); assert.equal(up.wend, up.wts, 'the wake-up closed at its own time'); assert.equal(up.min, undefined, 'no length');
+      assert(!(await P.$('#sleepBanner .brow.paused')) && !(await P.$('#wakeBtn')), 'nobody asleep');
+      assert(/^Awake$/.test((await P.textContent(`.ev[data-edit="${w2.id}"] b`)).trim()), 'a plain wake-up in the list');
+      // Up for good straight away ends the sleep now, as before
+      await P.evaluate(() => { db.events.push({ id: 'pz2', type: 'sleep', ts: Date.now() - 3600e3, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: db.baby.kids[0].id }); save(); render(); });
+      await P.click('#wakeBtn'); await P.click('#wakeUp'); await P.waitForFunction(() => $('#sheet').hidden);
+      const s2 = await P.evaluate(() => db.events.find(e => e.id === 'pz2')); assert(s2.end && Date.now() - s2.end < 10000, 'ended now');
+      // Woke up on the notification ends the sleep now and closes a pause with it
+      await P.evaluate(() => { db.events.push({ id: 'pz3', type: 'sleep', ts: Date.now() - 3600e3, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: db.baby.kids[0].id }); save(); render(); });
+      await P.click('#wakeBtn'); await P.click('#wakeSoon'); await P.click('#sheet [name=wwhy][value="Diaper"]'); await P.waitForFunction(() => $('#sheet').hidden);
+      await P.evaluate(() => window.__emit('ntf.localNotificationActionPerformed', { actionId: 'woke', notification: { extra: { ll: 'sleep', sleep: 'pz3', child: db.baby.kids[0].id } } }));
+      const s3 = await P.evaluate(() => ({ s: db.events.find(e => e.id === 'pz3'), w: db.events.find(e => e.type === 'wake' && e.data.sleep === 'pz3') }));
+      assert(s3.s.end && Date.now() - s3.s.end < 10000 && s3.w.end === s3.w.ts && s3.w.data.why === 'Diaper', 'the sleep ended now; the pause closed as a plain wake-up: ' + JSON.stringify(s3));
+      // (removed properly, with tombstones that reach the server: a plain filter would see them come back with the next pull)
+      await P.evaluate(() => { for (const e of db.events.filter(e => /^pz/.test(e.id) || (e.type === 'wake' && /^pz/.test((e.data && e.data.sleep) || '')))) removeEvent(e); save(); render(); }); await H.syncNow(P);
+    });
+
     await step('the Routine page shows a nap as soon as it is logged: under "Today so far" before there is a routine, and under "Also today" when it is not one of the routine\'s times', async () => {
       await P.evaluate(() => { $('#sheet').hidden = $('#sheetBack').hidden = true; });
       // (the routine's day starts at 6 AM: before 7 the clock is moved on four hours for this step, so that a nap 50 minutes ago is today's)
@@ -914,6 +964,7 @@ const pickFormula = async (page, scope, name) => {
     });
 
     await step('notifications: while a child is logged asleep the phone is asked to check ("Is Leo still asleep?"), after 2 hours then every 30 minutes up to 3 times, never in the quiet hours (7 PM to 7 AM to start with; a check that falls in them waits for their end), with Woke up and Still asleep on it; the sleep ending cancels them', async () => {
+      const pendingIs = async n => { try { await P.waitForFunction(k => window.__ntf.pending.length === k, n, { timeout: 5000 }); } catch (e) { throw new Error(`expected ${n} pending check(s): ` + await P.evaluate(() => JSON.stringify({ n: window.__ntf.pending.length, perm: window.__ntf.perm, asked: window.__ntf.asked, open: db.events.filter(e => e.type === 'sleep' && !e.end).map(e => e.id), sheet: !$('#sheet').hidden }))); } };
       const at = (h, m = 0) => { const x = new Date(); x.setHours(h, m, 0, 0); return x.getTime(); };
       const plan = (ts, now, extra = {}) => P.evaluate(([ts, now, extra]) => Notify.plan([{ id: 's1', type: 'sleep', ts, data: {}, child: 'k' }], now, { on: true, after: 120, every: 30, times: 3, quiet: ['19:00', '07:00'], ...extra }).map(n => { const d = new Date(n.at); return d.getHours() * 60 + d.getMinutes(); }), [ts, now, extra]);
       assert.deepEqual(await plan(at(13), at(13)), [15 * 60, 15 * 60 + 30, 16 * 60], 'a nap at 1 PM: 3, 3:30 and 4 PM');
@@ -926,21 +977,21 @@ const pickFormula = async (page, scope, name) => {
       // through the (fake) phone: logging a sleep asks for permission the first time, and sets the checks
       await P.evaluate(() => { Notify.set({ on: true, after: 120, every: 30, quiet: ['19:00', '07:00'] }); window.__ntf.pending = []; window.__ntf.asked = 0; window.__ntf.perm = 'prompt'; });
       await P.evaluate(() => { const t = Date.now() - 30 * 60e3; db.events.push({ id: 'ntfs1', type: 'sleep', ts: t, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: db.baby.kids[0].id }); save(); render(); });
-      await P.waitForFunction(() => window.__ntf.pending.length === 3, null, { timeout: 5000 });
+      await pendingIs(3);
       const r = await P.evaluate(() => ({ asked: window.__ntf.asked, perm: window.__ntf.perm, types: window.__ntf.types, p: window.__ntf.pending.map(n => ({ title: n.title, body: n.body, type: n.actionTypeId, extra: n.extra, at: new Date(n.schedule.at).getTime(), idle: n.schedule.allowWhileIdle })) }));
       assert.equal(r.asked, 1, 'asked once, when there was something to send'); assert.equal(r.perm, 'granted');
       assert.deepEqual(r.types[0].actions.map(a => a.id + ':' + a.title), ['woke:Woke up', 'still:Still asleep'], 'the buttons on the notification');
       assert(r.p.every(n => n.title === 'Is Leo still asleep?' && /^Asleep since .+ \(.+\)\. Tap Woke up when they are awake\.$/.test(n.body) && n.type === 'll-sleep' && n.extra.sleep === 'ntfs1' && n.idle), JSON.stringify(r.p));
       assert(r.p[1].at - r.p[0].at === 30 * 60e3 && r.p[2].at - r.p[1].at === 30 * 60e3, 'half an hour apart: ' + r.p.map(n => n.at));
-      await P.click('[data-tab=day]'); await P.click('#wakeBtn'); await P.waitForFunction(() => window.__ntf.pending.length === 0, null, { timeout: 5000 });   // Woke up in the app: nothing left to send
+      await P.click('[data-tab=day]'); await P.click('#wakeBtn'); await P.click('#wakeUp'); await pendingIs(0);   // Woke up (up for good) in the app: nothing left to send
       // the buttons on the notification: Still asleep changes nothing; Woke up ends the sleep now and opens the day
       await P.evaluate(() => { const t = Date.now() - 30 * 60e3; db.events.push({ id: 'ntfs2', type: 'sleep', ts: t, data: { nap: true }, note: '', updated: stamp(), by: Auth.id, child: db.baby.kids[0].id }); save(); render(); });
-      await P.waitForFunction(() => window.__ntf.pending.length === 3, null, { timeout: 5000 });
+      await pendingIs(3);
       await P.evaluate(() => window.__emit('ntf.localNotificationActionPerformed', { actionId: 'still', notification: { extra: { ll: 'sleep', sleep: 'ntfs2', child: db.baby.kids[0].id } } }));
       assert.equal(await P.evaluate(() => [db.events.find(e => e.id === 'ntfs2').end === undefined, window.__ntf.pending.length].join()), 'true,3');
       await P.click('[data-tab=month]');
       await P.evaluate(() => window.__emit('ntf.localNotificationActionPerformed', { actionId: 'woke', notification: { extra: { ll: 'sleep', sleep: 'ntfs2', child: db.baby.kids[0].id } } }));
-      await P.waitForFunction(() => window.__ntf.pending.length === 0, null, { timeout: 5000 });
+      await pendingIs(0);
       const w = await P.evaluate(() => ({ end: db.events.find(e => e.id === 'ntfs2').end, tab, now: Date.now() })); assert(w.end && w.now - w.end < 5000, 'woke up now'); assert.equal(w.tab, 'day', 'and the day page opens');
       await P.evaluate(() => { db.events = db.events.filter(e => !/^ntfs/.test(e.id)); Store.save(db); render(); });
     });

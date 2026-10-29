@@ -67,7 +67,8 @@ const Notify = (() => {
   function plan(events, now = Date.now(), c = cfg) {
     if (!c.on) return [];
     const out = [], latest = new Map();   // one sleep per child: the latest still open (a child sleeps once at a time; older ones left open are stale)
-    for (const e of events || []) if (e.type === 'sleep' && !e.end) { const k = e.child || '', cur = latest.get(k); if (!cur || e.ts > cur.ts) latest.set(k, e); }
+    const paused = new Set((events || []).filter(w => w.type === 'wake' && w.data && w.data.sleep && !w.end).map(w => w.data.sleep));   // (up for a moment: no check)
+    for (const e of events || []) if (e.type === 'sleep' && !e.end && !paused.has(e.id)) { const k = e.child || '', cur = latest.get(k); if (!cur || e.ts > cur.ts) latest.set(k, e); }
     for (const e of latest.values()) {
       const u = c.routine !== false ? usual(events, e, now) : null;
       let t = e.ts + (u ? u + 60 : c.after) * MIN;

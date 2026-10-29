@@ -144,14 +144,15 @@ function demoDb() {
   const lily = ks[4], lb = new Date(t0); lb.setFullYear(lb.getFullYear() - 8); lb.setMonth(lb.getMonth() - 5); lily.birth = day0(lb);   // at school
   const sophie = ks[5], sb = new Date(t0); sb.setFullYear(sb.getFullYear() - 18); sb.setDate(sb.getDate() - 12); sophie.birth = day0(sb);   // and the eldest, just 18
   const events = [], FORMULA = { c1: 'Similac 360 Total Care', k2: 'Enfamil NeuroPro' }; let n = 0;   // (Mia's usual formula is learned from her feeds)
-  const add = (type, ts, data, kid, extra = {}) => { if (ts > Date.now()) return; events.push({ id: 'd' + (n++), type, ts, data, note: '', updated: Date.now(), child: kid.id, ...extra }); };
+  const add = (type, ts, data, kid, extra = {}) => { if (ts > Date.now()) return; const id = 'd' + (n++); events.push({ id, type, ts, data, note: '', updated: Date.now(), child: kid.id, ...extra }); return id; };
   for (let day = 6; day >= 0; day--) {
     const b = t0 - day * DAYMS;
     ks.slice(0, 3).forEach((k, i) => {   // (the triplets)
       const o = i * 0.15;
       [0.8, 3.6, 6.4, 9.3, 12.2, 15.1, 18, 21].forEach((x, j) => add('feed', b + (x + o) * h, j % 3 ? { kind: 'bottle', ml: 70 + ((j * 7 + i * 5) % 30), milk: 'Formula', ...(FORMULA[k.id] ? { formula: FORMULA[k.id] } : {}) } : { kind: 'breast', side: j % 2 ? 'Left' : 'Right', min: 12 + j }, k));
       [1.5, 4.5, 7.5, 10.5, 13.5, 16.5, 19.5].forEach((x, j) => add('diaper', b + (x + o) * h, { pee: true, poo: j % 2 === 0, rash: false, color: j % 2 === 0 ? 'Yellow' : undefined }, k));
-      add('sleep', b + (0.3 + o) * h, {}, k, { end: b + (3.2 + o) * h }); add('sleep', b + (10.4 + o) * h, {}, k, { end: b + (12 + o) * h }); add('sleep', b + (14.2 + o) * h, {}, k, { end: b + (15.9 + o) * h });
+      const night = add('sleep', b + (0.3 + o) * h, {}, k, { end: b + (3.2 + o) * h }); add('sleep', b + (10.4 + o) * h, {}, k, { end: b + (12 + o) * h });
+      if (night && (day + i) % 2) add('wake', b + (1.6 + o) * h, { why: 'Hungry', min: 20, sleep: night }, k, { end: b + (1.6 + o) * h + 20 * 60e3 });   // (up for a moment in the night: a dashed moon) add('sleep', b + (14.2 + o) * h, {}, k, { end: b + (15.9 + o) * h });
       if ((day + i) % 3 === 0) add('vomit', b + (8 + o) * h, { amount: 'Spit-up', projectile: false }, k);
       add('play', b + (11 + o) * h, { activity: 'Tummy time', min: 10 }, k);
     });

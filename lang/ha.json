@@ -782,7 +782,6 @@
  "1h6m72q": "Sauran",
  "190g610": "Maɓallan da suka dace da shekarun yaronku na zuwa farko, kuma duk abin da kuke yawan rubutawa na hawa sama da kansa. Sauran duka suna cikin Ƙari.",
  "og3f9t": "Barci a yanzu haka",
- "1fayeu3": "Yayin da jaririnku ke barci, agogo na ƙirga lokaci a nan. Ku danna “An farka” idan jaririn ya farka.",
  "fnzo5w": "A wurin reno ko makaranta",
  "11agiiw": "Yayin da yaronku ba ya nan, wannan na nuna inda yake, tun yaushe, da wanda zai ɗauko shi. Wanda ya ɗauko shi na danna “An ɗauko”.",
  "14m3p74": "Ranar a taƙaice",
@@ -2639,5 +2638,18 @@
  "1aixmvu": "Sannan ka sake gina ka shigar da manhajar: npm run sync, sannan ka gudanar da ita daga Android Studio ko Xcode. Kowace sabis da ka saita tana nuna Haɗa a nan; shiga yana buɗewa a browser ya dawo cikin manhajar.",
  "wrs8j3": "iCloud Drive ba ya buƙatar saiti: Ajiye da ke ƙasa yana sa fayil ɗin da aka ɓoye a cikin Files.",
  "hor5fb": "Yadda ake saita Google Drive, Dropbox ko OneDrive",
- "o9xm9e": "Wanda ya gina manhajar ne yake yin haka sau ɗaya, a kwamfuta: kowace sabis tana ba da maɓallin jama'a da ake sawa a config.js, sannan a sake gina manhajar, sai sabis ɗin ta nuna Haɗa a nan. Lambar manhajar ita ce **{id}** kuma adireshin dawowarta **{redirect}**."
+ "o9xm9e": "Wanda ya gina manhajar ne yake yin haka sau ɗaya, a kwamfuta: kowace sabis tana ba da maɓallin jama'a da ake sawa a config.js, sannan a sake gina manhajar, sai sabis ɗin ta nuna Haɗa a nan. Lambar manhajar ita ce **{id}** kuma adireshin dawowarta **{redirect}**.",
+ "1yebf1a": "A farke yanzu…",
+ "k6ilch": "Ya sake barci – barcin yana ci gaba",
+ "1ncdc8a": "Ya farka gabaki ɗaya, ko zai koma barci nan ba da daɗewa ba?",
+ "1kzy55r": "Zai koma barci nan ba da daɗewa ba",
+ "rb5v58": "barcin yana ci gaba; an rubuta farkawar",
+ "a88w34": "Ya farka gabaki ɗaya",
+ "1yx9ns3": "barcin ya ƙare yanzu",
+ "dt2rqf": "Me ya tashe shi? Taɓa ɗaya don ajiyewa",
+ "1hpqu3m": "Tsallake",
+ "1bcd4q6": "An rubuta. Taɓa «Ya sake barci» idan ya koma barci.",
+ "b2h88z": "A farke tun {time} ({long}) · barci tun {start}",
+ "11pv9av": "Ya sake barci",
+ "vzr1m6": "Yayin da jaririnka ke barci, lokaci yana ƙidaya a nan. Taɓa «An farka» idan ya farka, ka faɗi ko ya farka gabaki ɗaya ko kuwa zai koma barci nan ba da daɗewa ba: a nan barcin yana ci gaba, an rubuta farkawar, kuma maɓallin yana tambaya «Ya sake barci»."
 }

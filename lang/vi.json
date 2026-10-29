@@ -754,7 +754,6 @@
  "1h6m72q": "Phần còn lại",
  "190g610": "Các nút phù hợp với tuổi của bé được xếp trước, và những gì bạn hay ghi sẽ tự chuyển lên trên. Mọi thứ khác nằm trong mục Khác.",
  "og3f9t": "Đang ngủ",
- "1fayeu3": "Khi bé ngủ, đồng hồ đếm giờ chạy ở đây. Chạm “Đã dậy” khi bé thức.",
  "fnzo5w": "Đang ở nhà trẻ hoặc trường",
  "11agiiw": "Khi bé đang ở ngoài, dải này cho biết bé ở đâu, từ lúc nào và ai sẽ đón. Người đón bé chạm vào “Đã đón”.",
  "14m3p74": "Cả ngày trong nháy mắt",
@@ -2585,5 +2584,18 @@
  "1aixmvu": "Sau đó dựng lại và cài ứng dụng: npm run sync, rồi chạy từ Android Studio hoặc Xcode. Mỗi dịch vụ bạn đã thiết lập sẽ hiện \"Kết nối\" ở đây; đăng nhập mở trong trình duyệt rồi quay lại ứng dụng.",
  "wrs8j3": "iCloud Drive không cần thiết lập: nút Lưu bên dưới đưa tệp đã mã hóa vào Tệp.",
  "hor5fb": "Cách thiết lập Google Drive, Dropbox hoặc OneDrive",
- "o9xm9e": "Việc này do người dựng ứng dụng làm một lần, trên máy tính: mỗi dịch vụ cấp một khóa công khai để đặt vào config.js, rồi dựng lại ứng dụng và dịch vụ đó sẽ hiện \"Kết nối\" ở đây. Mã ứng dụng là **{id}** và địa chỉ quay về là **{redirect}**."
+ "o9xm9e": "Việc này do người dựng ứng dụng làm một lần, trên máy tính: mỗi dịch vụ cấp một khóa công khai để đặt vào config.js, rồi dựng lại ứng dụng và dịch vụ đó sẽ hiện \"Kết nối\" ở đây. Mã ứng dụng là **{id}** và địa chỉ quay về là **{redirect}**.",
+ "1yebf1a": "Đang thức…",
+ "k6ilch": "Đã ngủ lại – giấc ngủ tiếp tục",
+ "1ncdc8a": "Dậy hẳn, hay sắp ngủ lại?",
+ "1kzy55r": "Sắp ngủ lại",
+ "rb5v58": "giấc ngủ tiếp tục; lần thức giấc được ghi lại",
+ "a88w34": "Dậy hẳn",
+ "1yx9ns3": "giấc ngủ kết thúc bây giờ",
+ "dt2rqf": "Bé thức vì sao? Chạm một mục để lưu",
+ "1hpqu3m": "Bỏ qua",
+ "1bcd4q6": "Đã ghi lại. Chạm «Đã ngủ lại» khi bé ngủ lại.",
+ "b2h88z": "Thức từ {time} ({long}) · ngủ từ {start}",
+ "11pv9av": "Đã ngủ lại",
+ "vzr1m6": "Khi bé ngủ, đồng hồ chạy ở đây. Chạm «Đã dậy» khi bé thức dậy, và cho biết bé dậy hẳn hay sắp ngủ lại: khi đó giấc ngủ tiếp tục, lần thức giấc được ghi lại, và nút sẽ hỏi «Đã ngủ lại»."
 }

@@ -810,7 +810,6 @@
  "1h6m72q": "O resto",
  "190g610": "Os botões para a idade da criança vêm primeiro, e o que você registra com frequência sobe sozinho. Todo o resto fica em Mais.",
  "og3f9t": "Dormindo agora",
- "1fayeu3": "Enquanto o bebê dorme, o cronômetro corre aqui. Toque em “Acordou” quando ele acordar.",
  "fnzo5w": "Na creche ou na escola",
  "11agiiw": "Enquanto a criança está fora, aqui aparece onde ela está, desde quando e quem vai buscar. Quem busca toca em “Saída”.",
  "14m3p74": "O dia de relance",
@@ -2693,5 +2692,18 @@
  "1aixmvu": "Depois recompile e instale o app: npm run sync, e execute pelo Android Studio ou Xcode. Cada serviço configurado mostra Conectar aqui; o login abre no navegador e volta para o app.",
  "wrs8j3": "O iCloud Drive não precisa de configuração: Salvar, abaixo, coloca o arquivo criptografado em Arquivos.",
  "hor5fb": "Como configurar o Google Drive, o Dropbox ou o OneDrive",
- "o9xm9e": "Isso é feito uma vez, no computador, por quem compila o app: cada serviço entrega uma chave pública que vai em config.js; depois o app é recompilado e esse serviço mostra Conectar aqui. O id do app é **{id}** e seu endereço de retorno é **{redirect}**."
+ "o9xm9e": "Isso é feito uma vez, no computador, por quem compila o app: cada serviço entrega uma chave pública que vai em config.js; depois o app é recompilado e esse serviço mostra Conectar aqui. O id do app é **{id}** e seu endereço de retorno é **{redirect}**.",
+ "1yebf1a": "Acordado agora…",
+ "k6ilch": "Dormindo de novo – o sono continua",
+ "1ncdc8a": "Acordou de vez, ou logo volta a dormir?",
+ "1kzy55r": "Logo volta a dormir",
+ "rb5v58": "o sono continua; o despertar fica anotado",
+ "a88w34": "Acordou de vez",
+ "1yx9ns3": "o sono termina agora",
+ "dt2rqf": "O que acordou o bebê? Toque em uma opção para salvar",
+ "1hpqu3m": "Pular",
+ "1bcd4q6": "Anotado. Toque em «Dormindo de novo» quando voltar a dormir.",
+ "b2h88z": "Acordado desde {time} ({long}) · dormindo desde {start}",
+ "11pv9av": "Dormindo de novo",
+ "vzr1m6": "Enquanto o bebê dorme, o tempo corre aqui. Toque em «Acordou» quando ele acordar e diga se acordou de vez ou se logo volta a dormir: então o sono continua, o despertar fica anotado e o botão pergunta «Dormindo de novo»."
 }

@@ -213,7 +213,7 @@ const E2EE = (() => {
       case 'study': s('kind', 20); s('subject', 60); n('min'); n('pages'); break;
       case 'plan': s('kind', 20); s('title', 80); b('allday'); break;
       case 'diaper': b('pee'); b('poo'); b('rash'); s('color', 20); break;
-      case 'wake': n('min'); s('why', 30); break;
+      case 'wake': n('min'); s('why', 30); s('sleep', 40); break;   // (sleep: the one this wake-up was a pause in)
       case 'vomit': s('amount', 20); b('projectile'); break;
       case 'play': s('activity', 30); n('min'); break;
       case 'health': o.symptoms = Array.isArray(d.symptoms) ? d.symptoms.filter(x => typeof x === 'string').slice(0, 20).map(x => x.slice(0, 60)) : []; n('temp'); break;

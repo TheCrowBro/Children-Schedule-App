@@ -810,7 +810,6 @@
  "1h6m72q": "Le reste",
  "190g610": "Les boutons adaptés à l'âge de votre enfant viennent en premier, et ce que vous notez souvent remonte tout seul. Le reste se trouve derrière Plus.",
  "og3f9t": "Dort en ce moment",
- "1fayeu3": "Pendant que votre bébé dort, le chronomètre tourne ici. Touchez « Réveillé » quand il se réveille.",
  "fnzo5w": "À la crèche ou à l'école",
  "11agiiw": "Pendant que votre enfant n'est pas là, ce bandeau indique où il est, depuis quand et qui vient le chercher. La personne qui vient le chercher touche « Départ ».",
  "14m3p74": "La journée en un coup d'œil",
@@ -2693,5 +2692,18 @@
  "1aixmvu": "Puis recompilez et installez l'app : npm run sync, puis lancez-la depuis Android Studio ou Xcode. Chaque service configuré affiche Connecter ici ; la connexion s'ouvre dans le navigateur et revient dans l'app.",
  "wrs8j3": "iCloud Drive n'a besoin de rien : Enregistrer ci-dessous place le fichier chiffré dans Fichiers.",
  "hor5fb": "Comment configurer Google Drive, Dropbox ou OneDrive",
- "o9xm9e": "C'est fait une fois, sur un ordinateur, par la personne qui compile l'app : chaque service fournit une clé publique à mettre dans config.js, puis l'app est recompilée et ce service affiche Connecter ici. L'identifiant de l'app est **{id}** et son adresse de retour **{redirect}**."
+ "o9xm9e": "C'est fait une fois, sur un ordinateur, par la personne qui compile l'app : chaque service fournit une clé publique à mettre dans config.js, puis l'app est recompilée et ce service affiche Connecter ici. L'identifiant de l'app est **{id}** et son adresse de retour **{redirect}**.",
+ "1yebf1a": "Réveillé en ce moment…",
+ "k6ilch": "Rendormi – le sommeil continue",
+ "1ncdc8a": "Réveillé pour de bon, ou bientôt rendormi ?",
+ "1kzy55r": "Bientôt rendormi",
+ "rb5v58": "le sommeil continue ; le réveil est noté",
+ "a88w34": "Réveillé pour de bon",
+ "1yx9ns3": "le sommeil se termine maintenant",
+ "dt2rqf": "Qu'est-ce qui l'a réveillé ? Touchez une réponse pour enregistrer",
+ "1hpqu3m": "Passer",
+ "1bcd4q6": "Noté. Touchez « Rendormi » quand il se rendort.",
+ "b2h88z": "Réveillé depuis {time} ({long}) · dort depuis {start}",
+ "11pv9av": "Rendormi",
+ "vzr1m6": "Pendant que votre bébé dort, le chronomètre tourne ici. Touchez « Réveillé » quand il se réveille, et dites s'il est réveillé pour de bon ou s'il va bientôt se rendormir : le sommeil continue alors, le réveil est noté, et le bouton demande « Rendormi »."
 }

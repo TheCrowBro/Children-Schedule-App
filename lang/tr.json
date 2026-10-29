@@ -782,7 +782,6 @@
  "1h6m72q": "Diğerleri",
  "190g610": "Çocuğunuzun yaşına uygun düğmeler önce gelir ve sık kaydettikleriniz kendiliğinden yukarı çıkar. Geri kalan her şey Diğer'in arkasındadır.",
  "og3f9t": "Şu an uykuda",
- "1fayeu3": "Bebeğiniz uyurken süre burada işler. Uyandığında “Uyandı” düğmesine dokunun.",
  "fnzo5w": "Kreşte ya da okulda",
  "11agiiw": "Çocuğunuz dışarıdayken burada nerede olduğu, ne zamandan beri orada olduğu ve onu kimin alacağı yazar. Onu alan kişi “Alındı” düğmesine dokunur.",
  "14m3p74": "Bir bakışta gün",
@@ -2639,5 +2638,18 @@
  "1aixmvu": "Sonra uygulamayı yeniden derleyip kurun: npm run sync, ardından Android Studio veya Xcode’dan çalıştırın. Kurduğunuz her hizmet burada Bağlan gösterir; giriş tarayıcıda açılır ve uygulamaya geri döner.",
  "wrs8j3": "iCloud Drive kurulum istemez: aşağıdaki Kaydet, şifreli dosyayı Dosyalar’a koyar.",
  "hor5fb": "Google Drive, Dropbox veya OneDrive nasıl kurulur",
- "o9xm9e": "Bu, uygulamayı derleyen kişi tarafından bilgisayarda bir kez yapılır: her hizmet config.js dosyasına yazılan herkese açık bir anahtar verir, sonra uygulama yeniden derlenir ve o hizmet burada Bağlan gösterir. Uygulama kimliği **{id}**, geri dönüş adresi **{redirect}**."
+ "o9xm9e": "Bu, uygulamayı derleyen kişi tarafından bilgisayarda bir kez yapılır: her hizmet config.js dosyasına yazılan herkese açık bir anahtar verir, sonra uygulama yeniden derlenir ve o hizmet burada Bağlan gösterir. Uygulama kimliği **{id}**, geri dönüş adresi **{redirect}**.",
+ "1yebf1a": "Şu an uyanık…",
+ "k6ilch": "Yeniden uyudu – uyku sürüyor",
+ "1ncdc8a": "Tamamen mi uyandı, yoksa az sonra yeniden mi uyuyacak?",
+ "1kzy55r": "Az sonra yeniden uyuyacak",
+ "rb5v58": "uyku sürer; uyanma not edilir",
+ "a88w34": "Tamamen uyandı",
+ "1yx9ns3": "uyku şimdi biter",
+ "dt2rqf": "Neden uyandı? Kaydetmek için birine dokunun",
+ "1hpqu3m": "Atla",
+ "1bcd4q6": "Not edildi. Yeniden uyuduğunda «Yeniden uyudu»ya dokunun.",
+ "b2h88z": "{time} saatinden beri uyanık ({long}) · {start} saatinden beri uyuyor",
+ "11pv9av": "Yeniden uyudu",
+ "vzr1m6": "Bebeğiniz uyurken sayaç burada işler. Uyandığında «Uyandı»ya dokunun ve tamamen mi uyandığını yoksa az sonra yeniden mi uyuyacağını söyleyin: o zaman uyku sürer, uyanma not edilir ve düğme «Yeniden uyudu» diye sorar."
 }

@@ -158,6 +158,8 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 .clock .ray .dot{fill:var(--paper,#fffdf8);stroke:var(--c);stroke-width:1.3}.clock .ray .dot.plain{fill:var(--c);stroke:var(--paper,#fffdf8);stroke-width:1.6}
 .clock .ray .mini .wash{fill:var(--c);opacity:.32}.clock .ray .mini .ln{fill:none;stroke:var(--c);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.clock .ray .sym{pointer-events:none}
 .clock .ray:hover .mini,.clock .ray:focus-visible .mini{transform:scale(1.35)}
+/* a wake-up that was a pause in a sleep (back to sleep soon): its ray, its dot and its moon drawn dashed */
+.clock .ray.pause path:not(.hitl){stroke-dasharray:4 3}.clock .ray.pause .dot{stroke-dasharray:3 2.2}.clock .ray.pause .mini .ln{stroke-dasharray:4.5 3.5}
 .clock .ray .hit{fill:transparent}
 .clock .ray:hover .dot,.clock .ray:focus-visible .dot{r:9}
 .clegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink);margin:6px 2px 0}
@@ -321,6 +323,11 @@ details.tips ul{margin:0 0 6px;padding-inline-start:20px;line-height:1.5;font-si
 .pinpad .pkeys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pinpad .pk{font:inherit;font-size:22px;padding:12px 0;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);cursor:pointer}.pinpad .pk.p{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}.pinpad .pk:active{opacity:.7}
 .clock .carc{fill:none;stroke:var(--g-care);stroke-width:5;stroke-linecap:round;opacity:.55}
 .banner .brow.care small{display:block;font-weight:400;opacity:.85}
+/* up for a moment: Asleep again, and Up for good as a quieter second button */
+.banner .brow.paused small{display:block;font-weight:400;opacity:.85}.banner .brow .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}
+.banner .brow .acts .ghost{background:transparent;color:var(--on-brand);border:1.5px solid rgba(255,255,255,.55)}
+/* the Woke up question: two choices, each with a line under it */
+.wakechoice{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;text-align:start}.wakechoice span{display:flex;flex-direction:column;gap:2px}.wakechoice small{font-weight:400;opacity:.8;font-size:13px}
 .clock .ray.approx path:not(.hitl){stroke-dasharray:3 3}
 /* a nap: a dashed ray and a dashed arc; a night's sleep stays solid */
 .clock .ray.nap path:not(.hitl){stroke-dasharray:6 4}.clock .sarc.nap{stroke-dasharray:9 8}

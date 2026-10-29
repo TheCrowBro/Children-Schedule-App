@@ -127,7 +127,7 @@ const EMOJI = /[\u{1F300}-\u{1FAFF}⚠✅⚙☁⏳]/u;
       assert.equal(await P.$$eval('#sleepBanner .brow', e => e.length), 2, 'two sleepers');
       await P.click('[data-add=sleep]'); await P.click('#save'); await P.click('#cancel');   // Leo again: refused, the sheet stays open
       assert.equal(await P.evaluate(() => db.events.filter(e => e.type === 'sleep').length), 2, 'refused: Leo is already asleep');
-      await P.click('#wakeBtn');
+      await P.click('#wakeBtn'); await P.click('#wakeUp');   // (Woke up asks: up for good)
       assert.equal(await P.$$eval('#sleepBanner .brow:not(.awake)', e => e.length), 1, 'one still asleep');
       await P.evaluate(() => db.events.filter(e => e.type === 'sleep' && !e.end).forEach(e => { e.end = Date.now(); e.updated = stamp(); })); await P.evaluate(() => render());
     });
