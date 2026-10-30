@@ -111,7 +111,7 @@ const Acct = (() => {
       const ms = Sync.st.memberships;
       if (ms.length) await Sync.choose((ms.find(m => m.id === db.meta.babyId) || ms[0]).id);
       else if (db.meta.babyId && Sync.st.state !== 'offline') { Sync.run(true); }
-    } catch (e) { if (!Auth.signedIn) { await sessionLost(); return; } F.verified = Auth.aal === 'aal2'; }          // offline: trust the session we already have
+    } catch (e) { if (!Auth.hasSession) { await sessionLost(); return; } F.verified = Auth.aal === 'aal2'; }          // offline: trust the session we already have
     F.loading = false; F.loaded = true;
     Sync.start(); render();
     if (pendingJoin && !F.needsMfa()) await processPending().then(render);
@@ -248,6 +248,7 @@ const Acct = (() => {
       identity for the family folder, and the next screen starts a log or joins one. */
   async function cloudReturn(provider) {
     const g = gate();
+    if (db.meta.moveTo && provider === db.meta.moveTo.provider && !folderMode()) { await finishMove(provider); return true; }   // (a log on its way from the family server)
     if (folderMode()) { if (provider && provider === Folder.provider) { Sync.st.reconnect = false; Sync.run(true); } return false; }   // (signed in again after the cloud's sign-in lapsed: the sync goes on)
     if (!g || g.plain || !provider || !Folder.SCOPES[provider] || !folderOk()) return false;
     try { await Folder.attach(provider); C.cands = null; C.err = ''; W.step = 'choose'; } catch (e) { C.err = err(e); }
@@ -617,6 +618,65 @@ const Acct = (() => {
     db = { baby: { name: '', birth: '', kids: Kids.clean([]) }, events: [], deleted: [], meta: {} };
     save(true); tab = 'day'; invite = null; F.loaded = false; F.verified = false; F.enrollRequested = F.enrollForCreate = false; M.enroll = null;
     Sync.st.people = []; Sync.st.requests = []; Sync.st.invites = []; Sync.st.memberships = []; Sync.st.myRequests = []; await Lock.clear();
+  }
+  // ---- moving a log from a family server into the family's own cloud ---------------------------------------------------------
+  // On the parent's phone: the server is synced and every picture and video fetched (opened with the server log's keys, kept on the
+  // phone), the cloud is connected, the server session ends (so the server sync never sees what follows), and the folder is made from
+  // what the phone holds: a new log with new keys, the entries, the pictures sent again, the tree, the family's names
+  // (FolderSync.adoptLog). The server's copy stays as it was until the project is deleted; the others join through the folder.
+  const mediaNames = () => { const out = []; for (const e of db.events) for (const m of (e.data || {}).media || []) out.push([m.id + '.t', 'image/jpeg'], [m.id, m.mime || (m.kind === 'video' ? 'video/mp4' : 'image/jpeg')]); return out; };
+  /** Every picture and video of the log onto this phone. Returns how many could not be had. */
+  async function cacheMedia(progress) {
+    const names = mediaNames(); let missing = 0;
+    for (let i = 0; i < names.length; i++) { if (progress) progress(i + 1, names.length); try { await Media.ensure(names[i][0], names[i][1]); } catch (e) { missing++; } }
+    return missing;
+  }
+  let moveClose = null;
+  const moveSheet = text => { moveClose = showSheet(`<div class="card"><b>☁️ ${__h("Moving to the family's own cloud")}</b><p class="note" id="mvText">${esc(text)}</p></div>`); $('#sheetBack').onclick = null; };
+  const moveSay = text => { const t = $('#mvText'); if (t) t.textContent = text; };
+  const moveDone = () => { if (moveClose) moveClose(); moveClose = null; };
+  async function startMove(provider) {
+    if (folderMode() || !Auth.hasSession || !db.meta.babyId) return;
+    if (db.meta.role !== 'parent') return toast(__('Only a parent can move the log.'));
+    if (!E2EE.hasKeys(db.meta.babyId)) return toast(__('This phone does not have the keys yet.'));
+    const avail = Folder.available(); if (!avail.length) return;
+    if (!provider) {
+      if (avail.length === 1) provider = avail[0];
+      else { showSheet(`<div class="card"><b>☁️ ${__h('Which cloud?')}</b>${avail.map(p => `<button class="btn p" data-mvto="${p}" style="width:100%;margin-top:8px">${__h('Connect {service}', { service: Folder.label(p) })}</button>`).join('')}</div>`); document.querySelectorAll('[data-mvto]').forEach(b => b.onclick = () => startMove(b.dataset.mvto)); return; }
+    }
+    const service = Folder.label(provider);
+    if (!confirm(__("Move {name}'s log to your own cloud? Everything on this phone goes into a folder in your {service}, encrypted as it is now. The others join it again from your Family tab: their phones sign out of the server and join through their own cloud. Make sure everyone has synced first.", { name: db.baby.name, service }))) return;
+    moveSheet(__('Syncing with the server…'));
+    try {
+      try { await Sync.run(true); } catch (e) { /* offline: asked below */ }
+      if (Sync.st.state !== 'ok' && !confirm(__('Could not sync with the server. Move what is on this phone anyway?'))) { moveDone(); return; }
+      const missing = await cacheMedia((n, m) => moveSay(__('Fetching pictures and videos… {n} of {m}', { n, m })));
+      const names = {}; for (const p of Sync.st.people) if (p.display_name && !p.is_you) names[p.user_id] = p.display_name;
+      db.meta.moveTo = { provider, me: Auth.id, baby: db.meta.babyId, names, missing, at: Date.now() }; save(true);
+      moveSay(__('Finish signing in in the browser window'));
+      await Folder.connect(provider);
+    } catch (e) { moveDone(); delete db.meta.moveTo; save(true); toast(err(e)); }
+  }
+  /** The cloud's sign-in came back: this phone leaves the server, and the folder is made from what it holds. */
+  async function finishMove(provider) {
+    const mv = db.meta.moveTo; if (!mv) return;
+    moveSheet(__('Making the family folder…'));
+    try {
+      if (db.meta.babyId !== mv.baby) throw new Error(N_('The log changed meanwhile: start the move again.'));
+      await Folder.attach(provider);
+      if (mediaNames().length) mv.missing = await cacheMedia((n, m) => moveSay(__('Fetching pictures and videos… {n} of {m}', { n, m })));   // (anything not here yet, while the server's keys still are)
+      const mine = (Sync.st.people.find(p => p.is_you) || {}).display_name || Folder.me.name || '';
+      moveSay(__('Making the family folder…'));
+      try { await Auth.signOut(false); } catch (e) { /* the server's record of the session expires by itself */ }   // (the server sync stops here, before the new log exists)
+      const code = await FolderSync.adoptLog({ mine, oldMe: mv.me, names: mv.names });
+      delete db.meta.moveTo; F.recoveryCode = code; F.loaded = true; F.verified = true; Lock.reset(); save(true);
+      moveDone(); tab = 'day'; render();
+      toast(mv.missing ? __hn('{n} picture or video could not be fetched from the server and was left behind.', '{n} pictures or videos could not be fetched from the server and were left behind.', mv.missing) : __('Moved. Share the folder with the family from the Family tab.'));
+    } catch (e) {
+      moveDone(); toast(err(e));
+      if (!Auth.hasSession) { await Folder.forget().catch(() => {}); L.step = 'email'; L.err = N_('The move did not finish. Sign in again and try once more.'); }   // (the server session already ended: back to the sign-in, the log still on the phone)
+      render();
+    }
   }
   /** The server ended this session (signed out everywhere, or the refresh token was revoked): clear this phone. */
   async function sessionLost() { await wipeLocal(); L.step = 'email'; L.err = N_('You were signed out. Please sign in again.'); render(); }
@@ -1340,6 +1400,7 @@ const Acct = (() => {
     return `<div class="card"><b>🔐 ${__h('Security & account')}</b>
       <div class="stat"><span>${__h('Signed in as')}<br><small>${esc(Auth.email)}</small></span></div>
 ${nameRowHtml(me)}
+      ${parent && folderOk() ? `<div class="stat"><span>${__h("Move this log to the family's own cloud")}<br><small>${__h('Everything on this phone goes into a folder in your own cloud, and this phone leaves the server.')}</small></span><button class="btn p" id="moveCloud" style="padding:6px 12px">${__h('Move')}</button></div>` : ''}
       <div class="stat"><span>${__h('Two-step verification')}<br><small>${F.verified ? (parent ? __h('On (required for parents)') : __h('On')) : __h('Off')}</small></span>
         ${F.verified ? (parent ? '' : `<button class="btn" id="mfaOff" style="padding:6px 12px">${__h('Turn off')}</button>`) : `<button class="btn p" id="mfaOn" style="padding:6px 12px">${__h('Turn on')}</button>`}</div>
 ${lockRowsHtml()}      <div class="row"><button class="btn" id="signOut">${__h('Sign out')}</button><button class="btn" id="signOutAll">${__h('Sign out everywhere')}</button></div>
@@ -1409,7 +1470,7 @@ ${lockRowsHtml()}      <div class="row"><button class="btn" id="signOut">${__h('
   function bindMoreAccount() {
     bindReconnect();
     const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
-    on('#signOut', () => signOut(false)); on('#signOutAll', () => signOut(true)); on('#delAcct', deleteAccount);
+    on('#signOut', () => signOut(false)); on('#signOutAll', () => signOut(true)); on('#delAcct', deleteAccount); on('#moveCloud', () => startMove());
     on('#mfaOn', () => { F.enrollRequested = true; M.enroll = null; render(); });
     on('#mfaOff', async () => {
       if (!confirm(__('Turn off two-step verification?'))) return;

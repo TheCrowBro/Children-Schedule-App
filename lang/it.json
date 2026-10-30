@@ -2772,5 +2772,24 @@
  "as7zof": "OneDrive e iCloud Drive arrivano dopo.",
  "1enqvy8": "La cartella di famiglia non è più condivisa con questo account.",
  "1i8ye2r": "{service} ti chiede di accedere di nuovo.",
- "1ffna21": "Ricollega {service}"
+ "1ffna21": "Ricollega {service}",
+ "e3dywa": "Spostamento nel cloud della famiglia",
+ "1mophts": "Solo un genitore può spostare il diario.",
+ "ze917o": "Quale cloud?",
+ "ogu5p5": "Spostare il diario di {name} nel tuo cloud? Tutto ciò che è su questo telefono va in una cartella del tuo {service}, cifrato com'è ora. Gli altri si uniscono di nuovo dalla tua scheda Famiglia: i loro telefoni escono dal server e si uniscono tramite il loro cloud. Assicurati che tutti abbiano sincronizzato prima.",
+ "fd27u": "Sincronizzazione con il server…",
+ "1ojclog": "Impossibile sincronizzare con il server. Spostare comunque ciò che è su questo telefono?",
+ "1hc4v3z": "Recupero di foto e video… {n} di {m}",
+ "yk9h3": "Creazione della cartella di famiglia…",
+ "1yqzulo": "Il diario è cambiato nel frattempo: avvia di nuovo lo spostamento.",
+ "1fdpozv": {
+  "one": "{n} foto o video non è stato recuperato dal server ed è rimasto indietro.",
+  "many": "{n} foto o video non sono stati recuperati dal server e sono rimasti indietro.",
+  "other": "{n} foto o video non sono stati recuperati dal server e sono rimasti indietro."
+ },
+ "k8dvz1": "Spostato. Condividi la cartella con la famiglia dalla scheda Famiglia.",
+ "1bp1yga": "Lo spostamento non è stato completato. Accedi di nuovo e riprova.",
+ "1p05czb": "Sposta questo diario nel cloud della famiglia",
+ "11wmc24": "Tutto ciò che è su questo telefono va in una cartella del tuo cloud, e questo telefono lascia il server.",
+ "zaagxg": "Sposta"
 }

@@ -12,7 +12,7 @@ const ServerSync = (() => {
   // What belongs to one family log; the rest of db.meta belongs to the phone (language, clock face, region, the sync clock …)
   const OWN = ['role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'art', 'solids', 'ms', 'kid', 'tree', 'kinds'];
 
-  const enabled = () => Auth.configured && Auth.signedIn;
+  const enabled = () => Auth.configured && Auth.hasSession;
   const linked = () => enabled() && !!db.meta.babyId;
   const notify = changed => { if (Sync.onChange) Sync.onChange(changed); };
   const q = encodeURIComponent;
@@ -196,7 +196,7 @@ const ServerSync = (() => {
     } catch (e) {
       st.state = (e instanceof TypeError || e.name === 'AbortError' || navigator.onLine === false) ? 'offline' : 'error';
       st.err = e.message; failures++; retryAt = Date.now() + Math.min(300000, 5000 * 2 ** failures);   // 10s, 20s, 40s … up to 5 minutes
-      if (!Auth.signedIn && Sync.onSessionLost) { busy = false; Sync.onSessionLost(); }
+      if (!Auth.hasSession && Sync.onSessionLost) { busy = false; Sync.onSessionLost(); }
     } finally {
       busy = false; save(true); done();
       notify(changed > 0);
@@ -347,7 +347,7 @@ const ServerSync = (() => {
       before 1.21.0 has no schema_version() at all, which says the same. Offline, the question waits for the next time. Parents see the
       answer as a notice (Account.serverNote). */
   async function checkServer(force) {
-    if (!Auth.signedIn || (!force && Date.now() - serverAt < 3600000)) return st.server;
+    if (!Auth.hasSession || (!force && Date.now() - serverAt < 3600000)) return st.server;
     serverAt = Date.now();
     const was = !!(st.server && st.server.behind);
     try { const v = String(await Auth.rpc('schema_version') || ''); st.server = { have: v, behind: older(v, SCHEMA) }; }

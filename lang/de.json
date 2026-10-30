@@ -2718,5 +2718,23 @@
  "as7zof": "OneDrive und iCloud Drive folgen als Nächstes.",
  "1enqvy8": "Der Familienordner wird nicht mehr mit diesem Konto geteilt.",
  "1i8ye2r": "{service} bittet Sie, sich erneut anzumelden.",
- "1ffna21": "{service} erneut verbinden"
+ "1ffna21": "{service} erneut verbinden",
+ "e3dywa": "Umzug in die eigene Cloud der Familie",
+ "1mophts": "Nur ein Elternteil kann das Protokoll verschieben.",
+ "ze917o": "Welche Cloud?",
+ "ogu5p5": "{name}s Protokoll in Ihre eigene Cloud verschieben? Alles auf diesem Telefon kommt in einen Ordner in Ihrer {service}, verschlüsselt wie bisher. Die anderen treten über Ihren Reiter Familie erneut bei: Ihre Telefone melden sich vom Server ab und treten über ihre eigene Cloud bei. Achten Sie darauf, dass alle vorher synchronisiert haben.",
+ "fd27u": "Synchronisiere mit dem Server…",
+ "1ojclog": "Der Server war nicht erreichbar. Trotzdem verschieben, was auf diesem Telefon ist?",
+ "1hc4v3z": "Bilder und Videos werden geholt… {n} von {m}",
+ "yk9h3": "Familienordner wird angelegt…",
+ "1yqzulo": "Das Protokoll hat sich inzwischen geändert: Starten Sie das Verschieben erneut.",
+ "1fdpozv": {
+  "one": "{n} Bild oder Video konnte nicht vom Server geholt werden und blieb zurück.",
+  "other": "{n} Bilder oder Videos konnten nicht vom Server geholt werden und blieben zurück."
+ },
+ "k8dvz1": "Verschoben. Teilen Sie den Ordner im Reiter Familie mit der Familie.",
+ "1bp1yga": "Das Verschieben wurde nicht abgeschlossen. Melden Sie sich erneut an und versuchen Sie es noch einmal.",
+ "1p05czb": "Dieses Protokoll in die eigene Cloud der Familie verschieben",
+ "11wmc24": "Alles auf diesem Telefon kommt in einen Ordner in Ihrer eigenen Cloud, und dieses Telefon verlässt den Server.",
+ "zaagxg": "Verschieben"
 }

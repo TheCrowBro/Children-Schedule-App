@@ -86,7 +86,17 @@ never receives it, so those entries never reach their phone, not even sealed.
 - **Every phone gone**: the recovery code opens the folder on a new phone. Without it, and without the cloud's own version
   history, the sealed files cannot be opened by anyone. Write the code down.
 
-## Clouds
+## Moving a log from a family server
+
+A family on a family server ([SETUP.md](SETUP.md) §1) can move into a folder without losing anything. A parent opens More → *Security &
+account* → **Move this log to the family's own cloud**. Their phone syncs with the server, fetches every picture and video (opened
+with the server log's keys and kept on the phone), signs in to the cloud, ends its server session (so the server sync never sees what
+follows), and makes the family folder from what it holds: a new log with new keys, every entry, the tree, the pictures sent again
+under the new keys, and the family's names, so entries by people who have not joined the folder yet still say who wrote them. The
+parent's own entries move to their new identity (the cloud account); the recovery code shows as for any new log. Then they share the
+folder from the Family tab, and the others sign out of the server on their phones and join through their own cloud. The server's copy
+stays as it was, for the day the project is deleted.
+
 
 **Dropbox** and **Google Drive**, each registered once by whoever builds the app ([SETUP.md](SETUP.md), *The family's own cloud*).
 Each phone signs in to its own account through the system browser (OAuth with PKCE, no secret in the app), and the family folder is

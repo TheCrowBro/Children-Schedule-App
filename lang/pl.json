@@ -2826,5 +2826,25 @@
  "as7zof": "OneDrive i iCloud Drive będą następne.",
  "1enqvy8": "Folder rodzinny nie jest już udostępniony temu kontu.",
  "1i8ye2r": "{service} wymaga ponownego zalogowania.",
- "1ffna21": "Połącz ponownie {service}"
+ "1ffna21": "Połącz ponownie {service}",
+ "e3dywa": "Przenoszenie do własnej chmury rodziny",
+ "1mophts": "Tylko rodzic może przenieść dziennik.",
+ "ze917o": "Która chmura?",
+ "ogu5p5": "Przenieść dziennik {name} do własnej chmury? Wszystko z tego telefonu trafi do folderu w Twoim {service}, zaszyfrowane tak jak teraz. Pozostali dołączą ponownie z Twojej zakładki Rodzina: ich telefony wylogują się z serwera i dołączą przez własną chmurę. Upewnij się, że wszyscy wcześniej zsynchronizowali.",
+ "fd27u": "Synchronizacja z serwerem…",
+ "1ojclog": "Nie udało się zsynchronizować z serwerem. Przenieść mimo to, co jest na tym telefonie?",
+ "1hc4v3z": "Pobieranie zdjęć i filmów… {n} z {m}",
+ "yk9h3": "Tworzenie folderu rodzinnego…",
+ "1yqzulo": "Dziennik zmienił się w międzyczasie: rozpocznij przenoszenie od nowa.",
+ "1fdpozv": {
+  "one": "{n} zdjęcie lub film nie zostało pobrane z serwera i zostało w tyle.",
+  "few": "{n} zdjęcia lub filmy nie zostały pobrane z serwera i zostały w tyle.",
+  "many": "{n} zdjęć lub filmów nie zostało pobranych z serwera i zostało w tyle.",
+  "other": "{n} zdjęcia lub filmu nie zostało pobranych z serwera i zostało w tyle."
+ },
+ "k8dvz1": "Przeniesiono. Udostępnij folder rodzinie z zakładki Rodzina.",
+ "1bp1yga": "Przenoszenie nie zostało ukończone. Zaloguj się ponownie i spróbuj jeszcze raz.",
+ "1p05czb": "Przenieś ten dziennik do własnej chmury rodziny",
+ "11wmc24": "Wszystko z tego telefonu trafia do folderu w Twojej własnej chmurze, a ten telefon opuszcza serwer.",
+ "zaagxg": "Przenieś"
 }

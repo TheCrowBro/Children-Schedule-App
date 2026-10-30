@@ -54,6 +54,11 @@ screen and keeps the server sign-in one tap away (*Use a family server instead*)
 is one tap away (*Use the family's own cloud instead*). Everyone in one family uses the cloud the parent who started the log chose, since the
 folder is shared inside that cloud; different families may choose differently.
 
+**Already on a family server?** A parent moves the log into a folder from More → *Security & account* → *Move this log to the
+family's own cloud* ([FOLDER.md](FOLDER.md), *Moving a log from a family server*); the others then sign out of the server and join
+through their own cloud. Once every family has moved, blank `supabaseUrl` and `supabaseKey` in `config.js` and rebuild: the app is
+then the store build, with no server anywhere.
+
 ## 1. Supabase project (free tier is fine)
 1. Create a project at <https://supabase.com>.
 2. **SQL Editor** → paste and run [`supabase/schema.sql`](supabase/schema.sql) on a fresh project. This is version 3 (end-to-end

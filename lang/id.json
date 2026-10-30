@@ -2664,5 +2664,22 @@
  "as7zof": "OneDrive dan iCloud Drive menyusul.",
  "1enqvy8": "Folder keluarga tidak lagi dibagikan ke akun ini.",
  "1i8ye2r": "{service} meminta Anda masuk lagi.",
- "1ffna21": "Hubungkan kembali {service}"
+ "1ffna21": "Hubungkan kembali {service}",
+ "e3dywa": "Memindahkan ke cloud milik keluarga sendiri",
+ "1mophts": "Hanya orang tua yang dapat memindahkan catatan.",
+ "ze917o": "Cloud yang mana?",
+ "ogu5p5": "Pindahkan catatan {name} ke cloud Anda sendiri? Semua yang ada di ponsel ini masuk ke sebuah folder di {service} Anda, terenkripsi seperti sekarang. Yang lain bergabung lagi dari tab Keluarga Anda: ponsel mereka keluar dari server dan bergabung lewat cloud mereka sendiri. Pastikan semua orang sudah menyinkronkan lebih dulu.",
+ "fd27u": "Menyinkronkan dengan server…",
+ "1ojclog": "Tidak dapat menyinkronkan dengan server. Tetap pindahkan yang ada di ponsel ini?",
+ "1hc4v3z": "Mengambil foto dan video… {n} dari {m}",
+ "yk9h3": "Membuat folder keluarga…",
+ "1yqzulo": "Catatan berubah sementara itu: mulai lagi pemindahannya.",
+ "1fdpozv": {
+  "other": "{n} foto atau video tidak dapat diambil dari server dan tertinggal."
+ },
+ "k8dvz1": "Dipindahkan. Bagikan folder dengan keluarga dari tab Keluarga.",
+ "1bp1yga": "Pemindahan tidak selesai. Masuk lagi dan coba sekali lagi.",
+ "1p05czb": "Pindahkan catatan ini ke cloud milik keluarga sendiri",
+ "11wmc24": "Semua yang ada di ponsel ini masuk ke sebuah folder di cloud Anda sendiri, dan ponsel ini meninggalkan server.",
+ "zaagxg": "Pindahkan"
 }

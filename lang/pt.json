@@ -2772,5 +2772,24 @@
  "as7zof": "OneDrive e iCloud Drive vêm a seguir.",
  "1enqvy8": "A pasta da família já não está compartilhada com esta conta.",
  "1i8ye2r": "O {service} precisa que você entre de novo.",
- "1ffna21": "Reconectar {service}"
+ "1ffna21": "Reconectar {service}",
+ "e3dywa": "Mudança para a nuvem da própria família",
+ "1mophts": "Só uma mãe ou um pai pode mover o registro.",
+ "ze917o": "Qual nuvem?",
+ "ogu5p5": "Mover o registro de {name} para a sua própria nuvem? Tudo o que está neste telefone vai para uma pasta no seu {service}, criptografado como está agora. Os outros entram de novo pela sua aba Família: os telefones deles saem do servidor e entram pela própria nuvem. Confira que todos sincronizaram antes.",
+ "fd27u": "Sincronizando com o servidor…",
+ "1ojclog": "Não foi possível sincronizar com o servidor. Mover mesmo assim o que está neste telefone?",
+ "1hc4v3z": "Buscando fotos e vídeos… {n} de {m}",
+ "yk9h3": "Criando a pasta da família…",
+ "1yqzulo": "O registro mudou nesse meio-tempo: comece a mudança de novo.",
+ "1fdpozv": {
+  "one": "{n} foto ou vídeo não pôde ser buscado do servidor e ficou para trás.",
+  "many": "{n} fotos ou vídeos não puderam ser buscados do servidor e ficaram para trás.",
+  "other": "{n} fotos ou vídeos não puderam ser buscados do servidor e ficaram para trás."
+ },
+ "k8dvz1": "Movido. Compartilhe a pasta com a família pela aba Família.",
+ "1bp1yga": "A mudança não terminou. Entre de novo e tente mais uma vez.",
+ "1p05czb": "Mover este registro para a nuvem da própria família",
+ "11wmc24": "Tudo o que está neste telefone vai para uma pasta na sua própria nuvem, e este telefone sai do servidor.",
+ "zaagxg": "Mover"
 }

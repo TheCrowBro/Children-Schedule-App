@@ -2718,5 +2718,23 @@
  "as7zof": "Susunod ang OneDrive at iCloud Drive.",
  "1enqvy8": "Hindi na ibinabahagi ang family folder sa account na ito.",
  "1i8ye2r": "Kailangan ng {service} na mag-sign in ka ulit.",
- "1ffna21": "Ikonekta ulit ang {service}"
+ "1ffna21": "Ikonekta ulit ang {service}",
+ "e3dywa": "Inililipat sa sariling cloud ng pamilya",
+ "1mophts": "Magulang lang ang maaaring maglipat ng log.",
+ "ze917o": "Aling cloud?",
+ "ogu5p5": "Ilipat ang log ni {name} sa sarili mong cloud? Lahat ng nasa teleponong ito ay mapupunta sa isang folder sa iyong {service}, naka-encrypt tulad ngayon. Sasali ulit ang iba mula sa iyong tab na Pamilya: magsa-sign out sa server ang kanilang mga telepono at sasali sa pamamagitan ng sarili nilang cloud. Siguraduhing naka-sync na ang lahat bago nito.",
+ "fd27u": "Nagsi-sync sa server…",
+ "1ojclog": "Hindi makapag-sync sa server. Ilipat pa rin ang nasa teleponong ito?",
+ "1hc4v3z": "Kinukuha ang mga larawan at video… {n} sa {m}",
+ "yk9h3": "Ginagawa ang family folder…",
+ "1yqzulo": "Nagbago ang log habang hinihintay: simulan ulit ang paglilipat.",
+ "1fdpozv": {
+  "one": "{n} larawan o video ang hindi nakuha mula sa server at naiwan.",
+  "other": "{n} larawan o video ang hindi nakuha mula sa server at naiwan."
+ },
+ "k8dvz1": "Nailipat na. Ibahagi ang folder sa pamilya mula sa tab na Pamilya.",
+ "1bp1yga": "Hindi natapos ang paglilipat. Mag-sign in ulit at subukan pang muli.",
+ "1p05czb": "Ilipat ang log na ito sa sariling cloud ng pamilya",
+ "11wmc24": "Lahat ng nasa teleponong ito ay mapupunta sa isang folder sa sarili mong cloud, at aalis sa server ang teleponong ito.",
+ "zaagxg": "Ilipat"
 }

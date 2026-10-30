@@ -2718,5 +2718,23 @@
  "as7zof": "Sırada OneDrive ve iCloud Drive var.",
  "1enqvy8": "Aile klasörü artık bu hesapla paylaşılmıyor.",
  "1i8ye2r": "{service} yeniden oturum açmanızı istiyor.",
- "1ffna21": "{service} ile yeniden bağlan"
+ "1ffna21": "{service} ile yeniden bağlan",
+ "e3dywa": "Ailenin kendi bulutuna taşınıyor",
+ "1mophts": "Günlüğü yalnızca bir ebeveyn taşıyabilir.",
+ "ze917o": "Hangi bulut?",
+ "ogu5p5": "{name} adlı çocuğun günlüğü kendi bulutunuza taşınsın mı? Bu telefondaki her şey {service} hesabınızdaki bir klasöre, şu anki gibi şifrelenmiş olarak geçer. Diğerleri Aile sekmenizden yeniden katılır: telefonları sunucudan çıkış yapar ve kendi bulutları üzerinden katılır. Önce herkesin eşitlediğinden emin olun.",
+ "fd27u": "Sunucuyla eşitleniyor…",
+ "1ojclog": "Sunucuyla eşitlenemedi. Yine de bu telefondakiler taşınsın mı?",
+ "1hc4v3z": "Fotoğraflar ve videolar alınıyor… {n} / {m}",
+ "yk9h3": "Aile klasörü oluşturuluyor…",
+ "1yqzulo": "Günlük bu arada değişti: taşımayı yeniden başlatın.",
+ "1fdpozv": {
+  "one": "{n} fotoğraf veya video sunucudan alınamadı ve geride kaldı.",
+  "other": "{n} fotoğraf veya video sunucudan alınamadı ve geride kaldı."
+ },
+ "k8dvz1": "Taşındı. Klasörü Aile sekmesinden aileyle paylaşın.",
+ "1bp1yga": "Taşıma tamamlanmadı. Yeniden oturum açıp bir kez daha deneyin.",
+ "1p05czb": "Bu günlüğü ailenin kendi bulutuna taşı",
+ "11wmc24": "Bu telefondaki her şey kendi bulutunuzdaki bir klasöre geçer ve bu telefon sunucudan ayrılır.",
+ "zaagxg": "Taşı"
 }

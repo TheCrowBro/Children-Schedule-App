@@ -2772,5 +2772,24 @@
  "as7zof": "OneDrive și iCloud Drive urmează.",
  "1enqvy8": "Folderul familiei nu mai este partajat cu acest cont.",
  "1i8ye2r": "{service} îți cere să te conectezi din nou.",
- "1ffna21": "Reconectează {service}"
+ "1ffna21": "Reconectează {service}",
+ "e3dywa": "Mutare în cloudul propriu al familiei",
+ "1mophts": "Doar un părinte poate muta jurnalul.",
+ "ze917o": "Care cloud?",
+ "ogu5p5": "Muți jurnalul lui {name} în propriul tău cloud? Tot ce este pe acest telefon ajunge într-un folder din {service}, criptat ca până acum. Ceilalți se alătură din nou din fila ta Familie: telefoanele lor se deconectează de la server și se alătură prin propriul cloud. Asigură-te că toți au sincronizat înainte.",
+ "fd27u": "Se sincronizează cu serverul…",
+ "1ojclog": "Nu s-a putut sincroniza cu serverul. Muți oricum ce este pe acest telefon?",
+ "1hc4v3z": "Se preiau pozele și videoclipurile… {n} din {m}",
+ "yk9h3": "Se creează folderul familiei…",
+ "1yqzulo": "Jurnalul s-a schimbat între timp: începe mutarea din nou.",
+ "1fdpozv": {
+  "one": "{n} poză sau videoclip nu a putut fi preluat de pe server și a rămas în urmă.",
+  "few": "{n} poze sau videoclipuri nu au putut fi preluate de pe server și au rămas în urmă.",
+  "other": "{n} de poze sau videoclipuri nu au putut fi preluate de pe server și au rămas în urmă."
+ },
+ "k8dvz1": "Mutat. Partajează folderul cu familia din fila Familie.",
+ "1bp1yga": "Mutarea nu s-a încheiat. Conectează-te din nou și mai încearcă o dată.",
+ "1p05czb": "Mută acest jurnal în cloudul propriu al familiei",
+ "11wmc24": "Tot ce este pe acest telefon ajunge într-un folder din propriul tău cloud, iar acest telefon părăsește serverul.",
+ "zaagxg": "Mută"
 }

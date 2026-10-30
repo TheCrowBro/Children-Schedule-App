@@ -54,6 +54,8 @@ const Auth = (() => {
     async init() { try { const v = await Native.Secure.get(K); s = v ? JSON.parse(v) : null; } catch (e) { s = null; } },
     /** Signed in to the family server, or in a family folder (folder.js). */
     get signedIn() { return !!s || (typeof Folder !== 'undefined' && Folder.on); },
+    /** A session with the family server (signedIn is also true in a family folder). */
+    get hasSession() { return !!s; },
     /** The session's access token (refreshed when it is about to run out), for calls outside this module. */
     accessToken: token,
     get email() { return s ? s.email : (typeof Folder !== 'undefined' && Folder.attached ? Folder.me.email : null); },

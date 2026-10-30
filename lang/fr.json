@@ -2772,5 +2772,24 @@
  "as7zof": "OneDrive et iCloud Drive arrivent ensuite.",
  "1enqvy8": "Le dossier familial n'est plus partagé avec ce compte.",
  "1i8ye2r": "{service} vous demande de vous reconnecter.",
- "1ffna21": "Reconnecter {service}"
+ "1ffna21": "Reconnecter {service}",
+ "e3dywa": "Déplacement vers le cloud de la famille",
+ "1mophts": "Seul un parent peut déplacer le journal.",
+ "ze917o": "Quel cloud ?",
+ "ogu5p5": "Déplacer le journal de {name} vers votre propre cloud ? Tout ce qui est sur ce téléphone part dans un dossier de votre {service}, chiffré comme aujourd'hui. Les autres le rejoignent à nouveau depuis votre onglet Famille : leurs téléphones se déconnectent du serveur et rejoignent via leur propre cloud. Assurez-vous que tout le monde a synchronisé avant.",
+ "fd27u": "Synchronisation avec le serveur…",
+ "1ojclog": "Impossible de synchroniser avec le serveur. Déplacer quand même ce qui est sur ce téléphone ?",
+ "1hc4v3z": "Récupération des photos et vidéos… {n} sur {m}",
+ "yk9h3": "Création du dossier familial…",
+ "1yqzulo": "Le journal a changé entre-temps : relancez le déplacement.",
+ "1fdpozv": {
+  "one": "{n} photo ou vidéo n'a pas pu être récupérée depuis le serveur et est restée en arrière.",
+  "many": "{n} photos ou vidéos n'ont pas pu être récupérées depuis le serveur et sont restées en arrière.",
+  "other": "{n} photos ou vidéos n'ont pas pu être récupérées depuis le serveur et sont restées en arrière."
+ },
+ "k8dvz1": "Déplacé. Partagez le dossier avec la famille depuis l'onglet Famille.",
+ "1bp1yga": "Le déplacement n'est pas allé au bout. Reconnectez-vous et réessayez.",
+ "1p05czb": "Déplacer ce journal vers le cloud de la famille",
+ "11wmc24": "Tout ce qui est sur ce téléphone part dans un dossier de votre propre cloud, et ce téléphone quitte le serveur.",
+ "zaagxg": "Déplacer"
 }

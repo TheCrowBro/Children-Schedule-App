@@ -2664,5 +2664,22 @@
  "as7zof": "OneDrive và iCloud Drive sẽ có tiếp theo.",
  "1enqvy8": "Thư mục gia đình không còn được chia sẻ với tài khoản này.",
  "1i8ye2r": "{service} cần bạn đăng nhập lại.",
- "1ffna21": "Kết nối lại {service}"
+ "1ffna21": "Kết nối lại {service}",
+ "e3dywa": "Đang chuyển sang đám mây của chính gia đình",
+ "1mophts": "Chỉ phụ huynh mới chuyển được nhật ký.",
+ "ze917o": "Đám mây nào?",
+ "ogu5p5": "Chuyển nhật ký của {name} sang đám mây của chính bạn? Mọi thứ trên điện thoại này sẽ vào một thư mục trên {service} của bạn, được mã hóa như hiện nay. Những người khác tham gia lại từ thẻ Gia đình của bạn: điện thoại của họ đăng xuất khỏi máy chủ và tham gia qua đám mây của chính họ. Hãy chắc rằng mọi người đã đồng bộ trước.",
+ "fd27u": "Đang đồng bộ với máy chủ…",
+ "1ojclog": "Không đồng bộ được với máy chủ. Vẫn chuyển những gì có trên điện thoại này?",
+ "1hc4v3z": "Đang lấy ảnh và video… {n} trên {m}",
+ "yk9h3": "Đang tạo thư mục gia đình…",
+ "1yqzulo": "Nhật ký đã thay đổi trong lúc đó: hãy bắt đầu chuyển lại.",
+ "1fdpozv": {
+  "other": "{n} ảnh hoặc video không lấy được từ máy chủ và bị bỏ lại."
+ },
+ "k8dvz1": "Đã chuyển. Hãy chia sẻ thư mục với gia đình từ thẻ Gia đình.",
+ "1bp1yga": "Việc chuyển chưa hoàn tất. Hãy đăng nhập lại và thử thêm lần nữa.",
+ "1p05czb": "Chuyển nhật ký này sang đám mây của chính gia đình",
+ "11wmc24": "Mọi thứ trên điện thoại này sẽ vào một thư mục trên đám mây của chính bạn, và điện thoại này rời máy chủ.",
+ "zaagxg": "Chuyển"
 }

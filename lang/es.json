@@ -2772,5 +2772,24 @@
  "as7zof": "OneDrive e iCloud Drive son los siguientes.",
  "1enqvy8": "La carpeta familiar ya no está compartida con esta cuenta.",
  "1i8ye2r": "{service} necesita que vuelvas a iniciar sesión.",
- "1ffna21": "Reconectar {service}"
+ "1ffna21": "Reconectar {service}",
+ "e3dywa": "Traslado a la nube propia de la familia",
+ "1mophts": "Solo una madre o un padre puede mover el registro.",
+ "ze917o": "¿Qué nube?",
+ "ogu5p5": "¿Mover el registro de {name} a tu propia nube? Todo lo que hay en este teléfono pasa a una carpeta de tu {service}, cifrado como hasta ahora. Los demás vuelven a unirse desde tu pestaña Familia: sus teléfonos cierran la sesión del servidor y se unen a través de su propia nube. Asegúrate de que todos hayan sincronizado antes.",
+ "fd27u": "Sincronizando con el servidor…",
+ "1ojclog": "No se pudo sincronizar con el servidor. ¿Mover lo que hay en este teléfono de todos modos?",
+ "1hc4v3z": "Obteniendo fotos y vídeos… {n} de {m}",
+ "yk9h3": "Creando la carpeta familiar…",
+ "1yqzulo": "El registro cambió mientras tanto: vuelve a iniciar el traslado.",
+ "1fdpozv": {
+  "one": "{n} foto o vídeo no se pudo obtener del servidor y se quedó atrás.",
+  "many": "{n} fotos o vídeos no se pudieron obtener del servidor y se quedaron atrás.",
+  "other": "{n} fotos o vídeos no se pudieron obtener del servidor y se quedaron atrás."
+ },
+ "k8dvz1": "Movido. Comparte la carpeta con la familia desde la pestaña Familia.",
+ "1bp1yga": "El traslado no terminó. Inicia sesión de nuevo e inténtalo otra vez.",
+ "1p05czb": "Mover este registro a la nube propia de la familia",
+ "11wmc24": "Todo lo que hay en este teléfono pasa a una carpeta de tu propia nube, y este teléfono deja el servidor.",
+ "zaagxg": "Mover"
 }

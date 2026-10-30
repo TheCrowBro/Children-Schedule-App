@@ -3344,5 +3344,5 @@ Sync.onSessionLost = () => Acct.sessionLost();
   if (!Native.is) return;
   const launch = await Native.launchUrl();             // app opened from an invite link
   if (launch) { const m = await Cloud.handleOAuthUrl(launch); if (!m) Acct.receiveJoin(launch); }
-  if (Auth.configured && Auth.signedIn) { await Acct.refreshAuth(); Cloud.autoBackup(); }
+  if (Auth.configured && Auth.hasSession) { await Acct.refreshAuth(); Cloud.autoBackup(); }
 })();

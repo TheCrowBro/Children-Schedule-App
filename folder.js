@@ -393,7 +393,7 @@ const FolderSync = (() => {
     }
     return false;
   }
-  const nameOf = id => { const p = st.people.find(x => x.user_id === id); if (p) return p.is_you ? __('you') : p.display_name; const r = st.retired.find(x => x.user_id === id); return r ? r.display_name : ''; };
+  const nameOf = id => { const p = st.people.find(x => x.user_id === id); if (p) return p.is_you ? __('you') : p.display_name; const r = st.retired.find(x => x.user_id === id); return r ? r.display_name : (mem && mem.names && mem.names[id]) || ''; };   // (names: people from before a move to the folder)
 
   // ---- the index: what is in the folder, by path, and what this phone has read ----
   const idx = () => db.meta.fidx || (db.meta.fidx = { cursor: null, files: {}, seen: {} });
@@ -420,7 +420,7 @@ const FolderSync = (() => {
     const b = db.meta.babyId; if (!E2EE.hasKeys(b)) return false;
     if (!mem || fresh('members.json')) {
       const j = await Folder.read('members.json');
-      if (j && j.blob) { const m = await E2EE.openDoc(b, 'members', j.blob, j.epoch); if (m && m.members) { mem = { members: m.members, retired: m.retired || [], invites: m.invites || {} }; mark('members.json'); } }
+      if (j && j.blob) { const m = await E2EE.openDoc(b, 'members', j.blob, j.epoch); if (m && m.members) { mem = { members: m.members, retired: m.retired || [], invites: m.invites || {}, names: m.names || {} }; mark('members.json'); } }
     }
     if (!mem) return false;   // (the creator writes it a moment after the keys)
     const me = mem.members[Auth.id];
@@ -449,7 +449,7 @@ const FolderSync = (() => {
       await refreshIndex();
       const j = await Folder.read('members.json'), rev = revOf('members.json');
       const m = j && j.blob ? await E2EE.openDoc(b, 'members', j.blob, j.epoch) : null;
-      const cur = m && m.members ? { members: m.members, retired: m.retired || [], invites: m.invites || {} } : { members: {}, retired: [], invites: {} };
+      const cur = m && m.members ? { members: m.members, retired: m.retired || [], invites: m.invites || {}, names: m.names || {} } : { members: {}, retired: [], invites: {}, names: {} };
       if (fn(cur) === false) return cur;
       const { blob, epoch } = await E2EE.sealDoc(b, 'members', cur);
       try { await Folder.write('members.json', { v: 1, epoch, blob, updated: Date.now(), by: Auth.id }, rev ? { update: rev } : 'add'); }
@@ -663,6 +663,30 @@ const FolderSync = (() => {
     save(true); await loadMemberships(); start();
     return code;
   }
+  /** A log moved here from a family server (account.js): the folder is made from what is on this phone: the children, every entry,
+      the tree, the pictures and videos (sent again, sealed with the new keys) and the family's names, so entries by people who have
+      not joined the folder yet still say who wrote them. This phone becomes the parent; `oldMe` is its id on the server, which its
+      own entries carry. Returns the recovery code. */
+  async function adoptLog({ mine, oldMe, names }) {
+    if (!Folder.attached) throw new Error(N_('Connect your cloud first'));
+    const kids = Kids.clean(db.baby.kids && db.baby.kids.length ? db.baby.kids : [{ id: 'c1', name: db.baby.name, birth: db.baby.birth || '' }]);
+    await Folder.createFamily(kids[0].name);
+    db.meta.recoveryAck = false;
+    let created;
+    try { created = await E2EE.createLog({ ...db.baby, kids }, mine); } catch (e) { delete db.meta.recoveryAck; await Folder.disconnect(); save(true); throw e; }
+    const { babyId: id, code } = created, me = Auth.id;
+    const tree = db.meta.tree ? JSON.parse(oldMe ? JSON.stringify(db.meta.tree).split(oldMe).join(me) : JSON.stringify(db.meta.tree)) : null;
+    if (oldMe) { for (const e of db.events) if (e.by === oldMe) e.by = me; for (const t of db.deleted || []) if (t.by === oldMe) t.by = me; }
+    db.meta.babyId = id; db.meta.role = 'parent'; db.meta.perms = null; db.meta.pulledAt = ''; db.meta.pushedAt = 0; db.meta.babyDirty = true; db.meta.unverified = false;
+    for (const k of ['fidx', 'fseq', 'gdid', 'stash', 'mediaDel']) delete db.meta[k];
+    db.baby = { ...db.baby, name: kids[0].name, birth: kids[0].birth, kids };
+    db.meta.mediaUp = [...new Set(db.events.flatMap(e => ((e.data || {}).media || []).map(m => m.id)))];   // (every picture and video goes up again, under the new keys)
+    if (tree) db.meta.tree = tree; else delete db.meta.tree;
+    await saveMembers(m => { m.members[me] = { name: String(mine || Folder.me.name || '').trim().slice(0, 60), email: Folder.me.email, role: 'parent', perms: null, since: Date.now() }; m.names = { ...(m.names || {}), ...(names || {}) }; delete m.names[me]; });
+    if (tree) await editTree(t => t, tree);
+    save(true); await loadMemberships(); start();
+    return code;
+  }
   /** Ask to join a family folder shared with this account: this phone's key goes in, and a parent decides. */
   async function requestJoin(cand, displayName) {
     const family = await Folder.join(cand);
@@ -758,6 +782,6 @@ const FolderSync = (() => {
 
   return { st, SCHEMA: ServerSync.SCHEMA, checkServer, enabled, linked, isParent, can, nameOf, merge: ServerSync.merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, recoverJoin, newRecoveryCode, securityCode, schedule, start,
     loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity, createInvite, rescind, decide, shareWith, setMember, renameMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
-    pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyPeople, retireMember, loadRetired, forgetRetired, loadTree, editTree,
+    pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyPeople, retireMember, loadRetired, forgetRetired, loadTree, editTree, adoptLog,
     refreshIndex, revOf, noteRev, paths, members, get switching() { return false; }, get flight() { return flight; }, onChange: null, onSessionLost: null };
 })();

@@ -868,6 +868,19 @@
     "OneDrive and iCloud Drive are next.": "Small note under the cloud buttons on the first screen: the clouds the app does not offer yet. Keep the product names.",
     "The family folder is no longer shared with this account.": "Error shown when a phone's sync finds the family folder gone from its cloud account (unshared or deleted); the phone then clears the log.",
     "{service} needs you to sign in again.": "Shown on the Family tab and in More when the cloud's sign-in has lapsed (e.g. Google renews it weekly while an app is in testing); {service} is the cloud's name. Nothing is lost; the next line is a Reconnect button.",
-    "Reconnect {service}": "Button: opens the cloud's sign-in again and the sync carries on. {service} is the cloud's name."
+    "Reconnect {service}": "Button: opens the cloud's sign-in again and the sync carries on. {service} is the cloud's name.",
+    "Move this log to the family's own cloud": "Row title in More \u2192 Security & account, for a parent on a family server: moves the whole log into a folder in their own cloud storage.",
+    "Everything on this phone goes into a folder in your own cloud, and this phone leaves the server.": "The line under that row title.",
+    "Move": "Button next to that row. One short word.",
+    "Which cloud?": "Title of the small sheet asking which cloud service to move into, when the app offers more than one.",
+    "Moving to the family's own cloud": "Title of the progress sheet shown during the move.",
+    "Syncing with the server\u2026": "Progress line during the move. Keep the ellipsis.",
+    "Fetching pictures and videos\u2026 {n} of {m}": "Progress line during the move: picture {n} of {m}. Keep the placeholders and the ellipsis.",
+    "Making the family folder\u2026": "Progress line during the move. Keep the ellipsis.",
+    "Could not sync with the server. Move what is on this phone anyway?": "Question (OK / Cancel) when the server could not be reached before the move.",
+    "Moved. Share the folder with the family from the Family tab.": "Short confirmation after the move.",
+    "The move did not finish. Sign in again and try once more.": "Error after a move that failed after the server session ended; the log is still on the phone.",
+    "Only a parent can move the log.": "Error when a non-parent taps Move.",
+    "The log changed meanwhile: start the move again.": "Error when the log on the phone is not the one the move was started for."
   }
 }

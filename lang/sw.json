@@ -2718,5 +2718,23 @@
  "as7zof": "OneDrive na iCloud Drive zinafuata.",
  "1enqvy8": "Folda ya familia haishirikiwi tena na akaunti hii.",
  "1i8ye2r": "{service} inahitaji uingie tena.",
- "1ffna21": "Unganisha {service} tena"
+ "1ffna21": "Unganisha {service} tena",
+ "e3dywa": "Inahamishia kwenye wingu la familia yenyewe",
+ "1mophts": "Mzazi pekee ndiye anayeweza kuhamisha kumbukumbu.",
+ "ze917o": "Wingu lipi?",
+ "ogu5p5": "Uhamishe kumbukumbu ya {name} kwenye wingu lako mwenyewe? Kila kitu kwenye simu hii kinakwenda kwenye folda katika {service} yako, kikiwa kimesimbwa kama ilivyo sasa. Wengine wanajiunga tena kutoka kichupo chako cha Familia: simu zao zinatoka kwenye seva na kujiunga kupitia wingu lao wenyewe. Hakikisha kila mtu amesawazisha kwanza.",
+ "fd27u": "Inasawazisha na seva…",
+ "1ojclog": "Haikuweza kusawazisha na seva. Uhamishe hata hivyo kilicho kwenye simu hii?",
+ "1hc4v3z": "Inapakua picha na video… {n} kati ya {m}",
+ "yk9h3": "Inaunda folda ya familia…",
+ "1yqzulo": "Kumbukumbu imebadilika wakati huo: anza uhamishaji tena.",
+ "1fdpozv": {
+  "one": "Picha au video {n} haikuweza kupakuliwa kutoka kwenye seva na iliachwa nyuma.",
+  "other": "Picha au video {n} hazikuweza kupakuliwa kutoka kwenye seva na ziliachwa nyuma."
+ },
+ "k8dvz1": "Imehamishwa. Shiriki folda na familia kutoka kichupo cha Familia.",
+ "1bp1yga": "Uhamishaji haukukamilika. Ingia tena na ujaribu mara nyingine.",
+ "1p05czb": "Hamisha kumbukumbu hii kwenye wingu la familia yenyewe",
+ "11wmc24": "Kila kitu kwenye simu hii kinakwenda kwenye folda katika wingu lako mwenyewe, na simu hii inaondoka kwenye seva.",
+ "zaagxg": "Hamisha"
 }

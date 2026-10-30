@@ -33,7 +33,7 @@ jobs:
           - name: features
             suites: features routine children app perf
           - name: e2e
-            suites: e2e start report growing expecting folder
+            suites: e2e start report growing expecting folder move
           - name: families
             suites: families languages db teen school health solids media pictures feeding charts
     name: ${{ matrix.name }}

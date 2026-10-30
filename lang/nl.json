@@ -2718,5 +2718,23 @@
  "as7zof": "OneDrive en iCloud Drive volgen.",
  "1enqvy8": "De familiemap wordt niet langer met dit account gedeeld.",
  "1i8ye2r": "{service} vraagt je opnieuw in te loggen.",
- "1ffna21": "{service} opnieuw koppelen"
+ "1ffna21": "{service} opnieuw koppelen",
+ "e3dywa": "Verhuizing naar de eigen cloud van de familie",
+ "1mophts": "Alleen een ouder kan het logboek verplaatsen.",
+ "ze917o": "Welke cloud?",
+ "ogu5p5": "Het logboek van {name} naar je eigen cloud verplaatsen? Alles op deze telefoon gaat naar een map in je {service}, versleuteld zoals nu. De anderen sluiten zich opnieuw aan via je tabblad Familie: hun telefoons loggen uit bij de server en sluiten aan via hun eigen cloud. Zorg dat iedereen eerst heeft gesynchroniseerd.",
+ "fd27u": "Synchroniseren met de server…",
+ "1ojclog": "Kon niet synchroniseren met de server. Toch verplaatsen wat op deze telefoon staat?",
+ "1hc4v3z": "Foto's en video's ophalen… {n} van {m}",
+ "yk9h3": "Familiemap maken…",
+ "1yqzulo": "Het logboek is intussen veranderd: start het verplaatsen opnieuw.",
+ "1fdpozv": {
+  "one": "{n} foto of video kon niet van de server worden opgehaald en bleef achter.",
+  "other": "{n} foto's of video's konden niet van de server worden opgehaald en bleven achter."
+ },
+ "k8dvz1": "Verplaatst. Deel de map met de familie via het tabblad Familie.",
+ "1bp1yga": "Het verplaatsen is niet afgerond. Log opnieuw in en probeer het nog eens.",
+ "1p05czb": "Dit logboek naar de eigen cloud van de familie verplaatsen",
+ "11wmc24": "Alles op deze telefoon gaat naar een map in je eigen cloud, en deze telefoon verlaat de server.",
+ "zaagxg": "Verplaatsen"
 }
