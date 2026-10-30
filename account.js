@@ -182,7 +182,7 @@ const Acct = (() => {
   const markWelcome = () => { try { localStorage.setItem('ll.welcome', '1'); } catch (e) { /* storage blocked: it may show again */ } };
   const SHARE_WHY = N_("Sign in with your email to start a log the family shares, or to join one. It is kept safe in the family's cloud, end-to-end encrypted, so a new phone just signs in.");
   const FOLDER_WHY = N_("The log lives in a folder in your own cloud storage, encrypted on your phones, and you share that folder with the family. No account with anyone else: the folder is yours.");
-  const shareWhy = () => (folderOk() ? FOLDER_WHY : SHARE_WHY);
+  const shareWhy = () => (folderOk() && !Auth.configured ? FOLDER_WHY : SHARE_WHY);   // the route Share with family leads to: the gate sends a phone with a server to sign-in (the folder one tap away)
   const welcomeHtml = () => (W.step === 'restore' ? restoreHtml() : `<div class="card welcome"><b>${__h('How would you like to use Little Log?')}</b>
     ${tile('wLocal', '🔒', 'sleep', N_('Just this phone'), N_('Everything stays on this phone. You can share it with the family later, from the Family tab.'))}
     ${tile('wShare', '👨‍👩‍👧', 'feed', N_('Share with family'), shareWhy())}
