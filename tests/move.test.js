@@ -51,6 +51,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     await mum.click('[data-tab=more]'); await mum.waitForSelector('#moveCloud');
     const before = await opens(mum);
     await mum.click('#moveCloud');   // (the confirmation is accepted by the test's browser)
+    const pick = await mum.waitForSelector('[data-mvto=google]', { timeout: 3000 }).catch(() => null); if (pick) await pick.click();   // (this build offers Dropbox too: the sheet asks which)
     await signInToGoogle(mum, before);
     await mum.waitForSelector('#rcDone', { timeout: 30000 });
     recoveryCode = (await mum.textContent('#view .code')).trim(); assert(/^[A-Z2-9]{4}(-[A-Z2-9]{4}){7}$/.test(recoveryCode), 'a recovery code: ' + recoveryCode);
@@ -70,7 +71,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
     for (const p of ['littlelog.json', 'keyring.json', 'recovery.json', 'profile.json', 'members.json', 'tree.json', `media/${picture}`, `media/${picture}.t`]) assert(paths.includes(p), p + ' in ' + paths.join(' '));
     assert(paths.some(p => /^events\//.test(p)), 'the entries');
     for (const p of ['profile.json', 'members.json', 'tree.json']) assert(sealed(gd.text(p), ['Leo', 'Mum', 'Dad', 'Rose', 'mum@x.com', 'dad@x.com']), p + ' holds no plain names');
-    assert.equal(await mum.evaluate(() => JSON.parse(JSON.stringify(ServerSync.st)).state), 'idle', 'the server sync stayed idle');
+    assert.deepEqual(await mum.evaluate(() => [ServerSync.linked(), ServerSync.st.state === 'error']), [false, false], 'the server sync is off and raised nothing');
     assert.equal(await mum.evaluate(() => Sync.st.state), 'ok');
   });
 
