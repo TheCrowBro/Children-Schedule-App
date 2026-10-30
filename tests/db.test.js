@@ -2,7 +2,8 @@
 //   node tests/db.test.js          (starts a throwaway cluster; or set PGURL to use your own)
 // Entries are opaque blobs here (the server can't read them); crypto itself is exercised in the end-to-end suite.
 const assert = require('assert');
-const { startCluster, freshDb, actor } = require('./lib/pg');
+const fs = require('fs'), path = require('path');
+const { startCluster, freshDb, dbFrom, dropDb, actor } = require('./lib/pg');
 
 let n = 0, failed = 0;
 const t = async (name, fn) => { try { await fn(); n++; console.log('✓', name); } catch (e) { failed++; console.log('✗', name, '\n   ', e.message.split('\n')[0]); } };
@@ -424,6 +425,44 @@ const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       await A('select delete_my_account()'); assert.equal((await q('select count(*)::int c from babies where id=$1', [baby]))[0].c, 1, 'B is now the only parent and the log survives');
       await B('select delete_my_account()');
       for (const tb of ['babies', 'events', 'key_grants', 'members']) assert.equal((await q(`select count(*)::int c from ${tb}`))[0].c, 0, tb + ' emptied');
+    });
+    await t('supabase/upgrade.sql: a 1.0.0 project upgraded is the same as a fresh schema.sql (functions, rules, grants, tables); run again it changes nothing, nor on a fresh project; its data stays; schema_version() is the one the app was built for', async () => {
+      const UP = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'upgrade.sql'), 'utf8');
+      // everything that makes up the schema, as text: function definitions (bodies included) and their grants, tables and columns,
+      // constraints, indexes, policies, triggers, row-level security, table grants, storage buckets
+      const shape = async c => {
+        const rows = async sql => (await c.query(sql)).rows;
+        return {
+          functions: await rows(`select p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' f, pg_get_functiondef(p.oid) def, p.proacl::text acl from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' order by 1`),
+          columns: await rows(`select table_schema, table_name, column_name, data_type, is_nullable, column_default from information_schema.columns where table_schema in ('public', 'storage') order by 1, 2, ordinal_position`),
+          constraints: await rows(`select conrelid::regclass::text t, conname, pg_get_constraintdef(oid) d from pg_constraint where connamespace = 'public'::regnamespace order by 1, 2`),
+          indexes: await rows(`select schemaname, tablename, indexname, indexdef from pg_indexes where schemaname in ('public', 'storage') order by 1, 2, 3`),
+          policies: await rows(`select schemaname, tablename, policyname, permissive, roles::text, cmd, qual, with_check from pg_policies where schemaname in ('public', 'storage') order by 1, 2, 3`),
+          triggers: await rows(`select tgrelid::regclass::text t, tgname, pg_get_triggerdef(oid) d from pg_trigger where not tgisinternal order by 1, 2`),
+          rls: await rows(`select relname, relrowsecurity, relforcerowsecurity from pg_class where relnamespace = 'public'::regnamespace and relkind = 'r' order by 1`),
+          grants: await rows(`select grantee, table_schema, table_name, privilege_type from information_schema.role_table_grants where table_schema in ('public', 'storage') and grantee in ('anon', 'authenticated') order by 1, 2, 3, 4`),
+          buckets: await rows(`select id, name, public, file_size_limit from storage.buckets order by 1`),
+        };
+      };
+      const diff = (a, b) => { for (const k of Object.keys(a)) { const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]); if (x !== y) { let i = 0; while (x[i] === y[i]) i++; return `${k} differs near …${x.slice(Math.max(0, i - 80), i + 120)}… vs …${y.slice(Math.max(0, i - 80), i + 120)}…`; } } return ''; };
+      const fresh = await dbFrom(admin, 'llfresh', ['tests/lib/stub-supabase.sql', 'supabase/schema.sql']);
+      const want = await shape(fresh.su);
+      await fresh.su.query(UP); assert.equal(diff(await shape(fresh.su), want), '', 'on a fresh project it changes nothing');
+      assert.equal((await fresh.su.query('select schema_version() v')).rows[0].v, /SCHEMA = '([\d.]+)'/.exec(fs.readFileSync(path.join(__dirname, '..', 'sync.js'), 'utf8'))[1], 'schema_version() is the one sync.js is built for');
+      await fresh.su.end();
+      const old = await dbFrom(admin, 'llold', ['tests/lib/stub-supabase.sql', 'tests/fixtures/schema-1.0.0.sql']);
+      assert.notEqual(diff(await shape(old.su), want), '', 'the 1.0.0 schema is not the current one');
+      await rejects(old.su.query('select schema_version()'), /does not exist/); await rejects(old.su.query('select rename_member(null, null, null)'), /does not exist/);
+      const uid = (await old.su.query(`insert into auth.users(email) values ('old@x.com') returning id`)).rows[0].id, O = actor(old.url, { sub: uid, email: 'old@x.com' });
+      const d = (await O('select register_device($1,$2::jsonb) d', ['old phone', JSON.stringify(pub())]))[0].d;
+      const b = (await O('select create_baby($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7::jsonb,null,$8) b', ['P'.repeat(40), 'Old', d, JSON.stringify(grant()), JSON.stringify(pub()), 'R'.repeat(40), JSON.stringify(grant()), HC]))[0].b;
+      await O('select push_events($1,$2::jsonb)', [b, JSON.stringify([ev('o1'), ev('o2')])]);
+      await old.su.query(UP); assert.equal(diff(await shape(old.su), want), '', 'a 1.0.0 project plus upgrade.sql');
+      await old.su.query(UP); assert.equal(diff(await shape(old.su), want), '', 'run again');
+      assert.equal((await old.su.query('select count(*)::int c from events where baby_id = $1', [b])).rows[0].c, 2, 'its entries are still there');
+      assert.equal((await O('select display_name from members where baby_id = $1', [b]))[0].display_name, 'Old');
+      await O('select rename_member($1,$2,$3)', [b, uid, 'Older']); assert.equal((await O('select display_name from members where baby_id = $1', [b]))[0].display_name, 'Older', 'and the 1.16.0 function works');
+      await old.su.end(); await dropDb(admin, 'llfresh'); await dropDb(admin, 'llold');
     });
     await su.end();
   } finally { if (startCluster.stop) startCluster.stop(); }

@@ -2789,7 +2789,7 @@ function moreView() {
     <div class="row"><button class="btn" id="impJson">${__h('Restore from JSON')}</button></div>
     <input type="file" id="impFile" accept="application/json" hidden></div>`)}
   ${fold('app', '🌟', N_('App updates'), appVersion ? __('Version {version}', { version: appVersion }) : __('Through the app store'), `<div class="card" id="appCard"><b>${__h('App updates')}</b><p class="note"><span id="appVer"></span>${__h('New versions of Little Log come through the app store.')}</p>
-    <div class="row"><button class="btn" id="appUpdate">${__h('Update app')}</button></div>${crashHtml()}</div>`)}
+    <div class="row"><button class="btn" id="appUpdate">${__h('Update app')}</button></div>${crashHtml()}</div>${Acct.serverNote()}`)}
   ${Sync.isParent() ? `<div class="card"><button class="btn d" id="wipe" style="width:100%">${__h('Delete all entries')}</button></div>` : ''}`;
 }
 /** More → Notifications: the sleep check ("Is Leo still asleep?" after a while, then again a few times) and the quiet hours it keeps

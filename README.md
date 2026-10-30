@@ -219,6 +219,11 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 - **Health checklist** (blue hands/feet, clicking hips, belly bulge, jaundice…) with "call your doctor" prompts
 - **Security and sharing** (Family tab): invites, the activity log, encryption, the security code and your phones in one twirl-down,
   which opens by itself when something needs checking
+- **One file upgrades the cloud project**: after an app update that changed the database, whoever set up the Supabase project runs
+  `supabase/upgrade.sql` in its SQL editor; it brings a project from any release since 1.0.0 to the current one, keeps every row and
+  is safe to run again. The app asks the project which release its database is from and, when it is behind, a parent sees *The cloud
+  project needs an update* on the Family tab and under More → App updates; a feature the project lacks stops with the same plain
+  words, naming the function, instead of the server's "schema cache" reply
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters*, *Medical assistants* and *Friends*; per-person check boxes for exactly what
   they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**: a request to join pops up on the
   parent's phone as it arrives, with the security check and **Approve** / **Deny** there and then, or **Later** (it stays on the Family tab,

@@ -2666,5 +2666,10 @@
  "17jvkzb": "van {a} en {b}",
  "1fpvwni": "van {name}",
  "xhygd9": "van {name}, van eerder",
- "29zjk2": "Wiens kind?"
+ "29zjk2": "Wiens kind?",
+ "428lqp": "Het cloudproject heeft een update nodig",
+ "1oblwbb": "Het project draait databaseversie {have}; deze app heeft {need} nodig.",
+ "32tjut": "De database van het project is van vóór {need}, de versie die deze app nodig heeft.",
+ "64fxpb": "Wie het project heeft ingericht, voert {file} uit in de SQL-editor ervan (SETUP.md, Upgrading an existing project): alle gegevens blijven behouden en het bestand kan veilig nog eens worden uitgevoerd. Tot die tijd stoppen nieuwere functies met een melding van de server.",
+ "wfp63a": "In het cloudproject ontbreekt {fn}: wie het heeft ingericht, moet {file} uitvoeren in de SQL-editor ervan (SETUP.md, Upgrading an existing project)."
 }

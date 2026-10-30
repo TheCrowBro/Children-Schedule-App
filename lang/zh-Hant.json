@@ -2612,5 +2612,10 @@
  "17jvkzb": "{a}和{b}的",
  "1fpvwni": "{name}的",
  "xhygd9": "{name}的，之前所生",
- "29zjk2": "是誰的孩子？"
+ "29zjk2": "是誰的孩子？",
+ "428lqp": "雲端專案需要更新",
+ "1oblwbb": "專案的資料庫版本為 {have}，而此應用程式需要 {need}。",
+ "32tjut": "專案的資料庫早於此應用程式所需的版本 {need}。",
+ "64fxpb": "由設定該專案的人在其 SQL 編輯器中執行 {file}（見 SETUP.md 的 Upgrading an existing project）：所有資料都會保留，重複執行也安全。在此之前，較新的功能會因伺服器的訊息而停止。",
+ "wfp63a": "雲端專案缺少 {fn}：設定該專案的人需要在其 SQL 編輯器中執行 {file}（見 SETUP.md 的 Upgrading an existing project）。"
 }

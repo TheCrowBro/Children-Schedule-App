@@ -9,13 +9,14 @@ once, then fill in `config.js` (all values are public client IDs, not secrets) a
 
 ## 1. Supabase project (free tier is fine)
 1. Create a project at <https://supabase.com>.
-2. **SQL Editor** → paste and run [`supabase/schema.sql`](supabase/schema.sql). This is version 3 (end-to-end encryption, roles,
-   permissions, approvals, audit log). If you ran an earlier version, drop its tables first; there is no data migration.
-   It also holds people's encrypted contact details (`members.details`, written only through `set_my_details`) and room for the larger
-   encrypted profile (children, formula, allergies, pediatrician; 8 KB, which is why a child can have at most 12 allergies).
-   Its last section makes the private storage bucket `media` and its rules, for the pictures and short videos that go with big moments
-   (encrypted on the phones before upload, like the entries). On a project that already ran an earlier version of the file, run just that
-   section (from `-- ── pictures and videos`): it is safe to run again and touches nothing else.
+2. **SQL Editor** → paste and run [`supabase/schema.sql`](supabase/schema.sql) on a fresh project. This is version 3 (end-to-end
+   encryption, roles, permissions, approvals, audit log); a project from the v1 or v2 file, before 1.0.0, has no upgrade path: drop its
+   tables first. It also holds people's encrypted contact details (`members.details`, written only through `set_my_details`) and room
+   for the larger encrypted profile (children, formula, allergies, pediatrician; 8 KB, which is why a child can have at most 12
+   allergies). Its last section makes the private storage bucket `media` and its rules, for the pictures and short videos that go with
+   big moments (encrypted on the phones before upload, like the entries).
+   **A project that already runs the file from an earlier release runs [`supabase/upgrade.sql`](supabase/upgrade.sql) instead**,
+   after each app update that changed the database: see *Upgrading an existing project* at the end. The app says when that is due.
 3. **Project Settings → API**: copy the *Project URL* and *anon public* key into `supabaseUrl` / `supabaseKey`.
 
 ### Lock down sign-in (dashboard settings)
@@ -225,23 +226,29 @@ sent.
 
 ## Upgrading an existing project
 
-The schema file is written for a fresh project. When a release adds something to the database, run just that part in the SQL editor:
+`schema.sql` is written for a fresh project; on one that already has the tables it stops at the first of them. After an app update
+that changed the database, paste and run [`supabase/upgrade.sql`](supabase/upgrade.sql) in the SQL editor instead. It only adds or
+replaces what changed since 1.0.0, keeps every row, and is safe to run again (on a project that is already current it changes
+nothing). Whatever release the project was set up with, the one file brings it to the current one; going back to an older app
+afterwards is fine too, since nothing older is removed.
 
-**1.16.0** adds `rename_member`, which lets a parent rename anyone in the log. Paste and run:
+**The app tells you when it is due.** After sign-in it asks the project which release its database is from (`schema_version()`), and
+when that is behind the release the app was built for, a parent sees **The cloud project needs an update** at the top of the Family
+tab and under More → App updates, with the file to run. A project from before 1.21.0 has no `schema_version()` at all, which says the
+same. Until the file is run, a newer feature that needs something the project lacks stops with the same words, naming the function
+(for example Rename, from 1.16.0: *The cloud project is missing rename_member: whoever set it up needs to run supabase/upgrade.sql in
+its SQL editor…*), and nothing else changes. If the words are still there a minute after running it, run `notify pgrst, 'reload
+schema';` (the file ends with it, but a busy API layer can take a moment to notice).
 
-```sql
-create function rename_member(p_baby uuid, p_user uuid, p_name text) returns void
-language plpgsql security definer set search_path = public as $$
-declare old_name text; new_name text := left(trim(coalesce(p_name, '')), 60);
-begin
-  if not is_parent(p_baby) then raise exception 'Only parents can rename members'; end if;
-  if new_name = '' then raise exception 'Enter a name'; end if;
-  select display_of(p_baby, p_user) into old_name;
-  update members set display_name = new_name where baby_id = p_baby and user_id = p_user;
-  if not found then raise exception 'not a member'; end if;
-  perform log_activity(p_baby, 'member_renamed', null, null, jsonb_build_object('person', old_name, 'name', new_name));
-end $$;
-grant execute on function rename_member(uuid, uuid, text) to authenticated;
-```
+What changed, by release (the file carries all of it):
 
-Until it is run, the app's Rename shows the server's reply ("function rename_member does not exist") and nothing else changes.
+| Release | Change |
+|---|---|
+| 1.5.0 | the private storage bucket `media` and its rules, for the pictures and short videos that go with a big moment |
+| 1.13.0 | removing a phone or deleting an account needs a session that passed two-step verification; invite codes come from cryptographic randomness (`gen_random_uuid`), not `random()` |
+| 1.16.0 | `rename_member`: a parent renames anyone in the log |
+| 1.21.0 | `schema_version()`, which lets the app tell when this file is due |
+
+The database tests prove that a 1.0.0 project plus `upgrade.sql` is the same as a fresh `schema.sql` (functions, rules, grants,
+tables; its entries kept) and that running it twice is harmless, so a release that changes `schema.sql` has to carry the change into
+`upgrade.sql` and raise `schema_version()` too.

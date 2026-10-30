@@ -917,6 +917,12 @@ const Acct = (() => {
   // The invite form's role and boxes as last set: the page is drawn again when the family's people and tree arrive (and every 15 s
   // while a request waits), and that must not undo what the parent was choosing.
   let invForm = null, invFormFor = null;
+  /** For parents, when the project runs an older schema.sql than this app was built for (Sync.checkServer): what to run. */
+  function serverNote() {
+    const s = Sync.st.server; if (!s || !s.behind || !Sync.isParent()) return '';
+    return `<div class="card alert servernote"><b>${__h('The cloud project needs an update')}</b><p class="note">${s.have ? __h('The project runs database version {have}; this app needs {need}.', { have: s.have, need: Sync.SCHEMA }) : __h('The project runs a database from before {need}, which this app needs.', { need: Sync.SCHEMA })}
+      ${__h('Whoever set up the project runs {file} in its SQL editor (SETUP.md, Upgrading an existing project): it keeps all the data and is safe to run again. Until then, newer features stop with a message from the server.', { file: 'supabase/upgrade.sql' })}</p></div>`;
+  }
   function familyHtml() {
     if (invFormFor !== db.meta.babyId) { invForm = null; invFormFor = db.meta.babyId; }   // (another family: its own form)
     if (!Auth.configured || !db.meta.babyId) return `<div class="card"><b>${__h('Family sharing is off')}</b><p class="note">${!Auth.configured ? __h("Account service isn't configured (see {file}), so this device keeps its own private log.", { file: 'SETUP.md' }) : Auth.signedIn ? __h('Create a baby log to share it.') : __h(SHARE_WHY)}</p>
@@ -951,7 +957,7 @@ const Acct = (() => {
       <div class="stat"><span>${__h('My phones')}<br><small>${__h("Remove a lost phone: its keys are deleted and the log's keys are changed")}</small></span></div>
       ${F.myPhones.map(d => `<div class="stat"><span>${esc(phoneName(d.name))}${d.id === thisId ? ` <small>${__h('(this phone)')}</small>` : ''}<br><small>${__h('added {date}', { date: new Date(d.created_at).toLocaleDateString(I18n.locale()) })}</small></span>${d.id === thisId ? '' : `<button class="btn d" data-rmphone="${esc(d.id)}" style="padding:6px 12px">${__h('Remove')}</button>`}</div>`).join('')}
       ${parent ? `<div class="row"><button class="btn" id="newRec">${__h('Create a new recovery code')}</button></div>` : ''}</div>`;
-    return `${treePicHtml()}
+    return `${serverNote()}${treePicHtml()}
     <div class="card"><b>${db.baby.name ? __h("{name}'s shared log", { name: db.baby.name }) : __h("Baby's shared log")}</b>
       <div class="stat"><span>${esc(syncLine())}${s.err && s.state === 'error' ? `<br><small>${esc(__(s.err))}</small>` : ''}</span><button class="btn" id="syncNow" style="padding:6px 12px">${__h('Sync now')}</button></div>
       ${s.denied ? `<div class="note" style="margin-top:6px">⚠️ ${__hn('{n} change was not allowed with your access and was undone.', '{n} changes were not allowed with your access and were undone.', s.denied)}</div>` : ''}
@@ -1259,5 +1265,5 @@ const Acct = (() => {
   /** Called by app.js after each render/sync to keep the Family tab badge current. */
   function updateBadge() { const b = $('#famBadge'); if (!b) return; const n = Sync.isParent() ? Sync.st.requests.length : 0; b.hidden = !n || tab === 'family'; b.textContent = n; }
 
-  return { init, gate, heroHtml, familyHtml, bindFamily, famLabel, familySwitcher, accountHtml, accountSub, cloudHtml, cloudSummary, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, promptRequests, parseJoin, sessionLost };
+  return { init, gate, heroHtml, familyHtml, serverNote, bindFamily, famLabel, familySwitcher, accountHtml, accountSub, cloudHtml, cloudSummary, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, promptRequests, parseJoin, sessionLost };
 })();

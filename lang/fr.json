@@ -2720,5 +2720,10 @@
  "17jvkzb": "de {a} et {b}",
  "1fpvwni": "de {name}",
  "xhygd9": "de {name}, d'une union précédente",
- "29zjk2": "Enfant de qui ?"
+ "29zjk2": "Enfant de qui ?",
+ "428lqp": "Le projet cloud a besoin d'une mise à jour",
+ "1oblwbb": "Le projet utilise la version {have} de la base de données ; cette appli a besoin de la {need}.",
+ "32tjut": "La base de données du projet date d'avant {need}, la version dont cette appli a besoin.",
+ "64fxpb": "La personne qui a configuré le projet exécute {file} dans son éditeur SQL (SETUP.md, Upgrading an existing project) : toutes les données sont conservées et le fichier peut être relancé sans risque. D'ici là, les fonctions les plus récentes s'arrêtent sur un message du serveur.",
+ "wfp63a": "Il manque {fn} au projet cloud : la personne qui l'a configuré doit exécuter {file} dans son éditeur SQL (SETUP.md, Upgrading an existing project)."
 }

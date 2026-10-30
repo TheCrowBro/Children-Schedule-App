@@ -21,14 +21,17 @@ function startCluster() {
   return `postgres://postgres@127.0.0.1:${PORT}/postgres`;
 }
 
-async function freshDb(adminUrl) {
+/** A throwaway database `name` with those SQL files (paths from the repo root) run in order. */
+async function dbFrom(adminUrl, name, files) {
   const admin = new Client({ connectionString: adminUrl }); await admin.connect();
-  await admin.query('drop database if exists lltest with (force)'); await admin.query('create database lltest'); await admin.end();
-  const url = adminUrl.replace(/\/[^/]*$/, '/lltest');
+  await admin.query(`drop database if exists ${name} with (force)`); await admin.query(`create database ${name}`); await admin.end();
+  const url = adminUrl.replace(/\/[^/]*$/, '/' + name);
   const su = new Client({ connectionString: url }); await su.connect();
-  for (const f of ['tests/lib/stub-supabase.sql', 'supabase/schema.sql']) await su.query(fs.readFileSync(path.join(root, f), 'utf8'));
+  for (const f of files) await su.query(fs.readFileSync(path.join(root, f), 'utf8'));
   return { url, su };
 }
+const freshDb = adminUrl => dbFrom(adminUrl, 'lltest', ['tests/lib/stub-supabase.sql', 'supabase/schema.sql']);
+async function dropDb(adminUrl, name) { const admin = new Client({ connectionString: adminUrl }); await admin.connect(); await admin.query(`drop database if exists ${name} with (force)`); await admin.end(); }
 
 /** Runs SQL as a signed-in user. Returns rows, or throws with the Postgres message. */
 function actor(url, { sub = null, email = '', aal = 'aal2', role = 'authenticated' } = {}) {
@@ -41,4 +44,4 @@ function actor(url, { sub = null, email = '', aal = 'aal2', role = 'authenticate
     } catch (e) { await c.query('rollback').catch(() => {}); throw e; } finally { await c.end(); }
   };
 }
-module.exports = { startCluster, freshDb, actor };
+module.exports = { startCluster, freshDb, dbFrom, dropDb, actor };

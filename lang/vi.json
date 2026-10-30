@@ -2612,5 +2612,10 @@
  "17jvkzb": "của {a} và {b}",
  "1fpvwni": "của {name}",
  "xhygd9": "của {name}, từ trước",
- "29zjk2": "Con của ai?"
+ "29zjk2": "Con của ai?",
+ "428lqp": "Dự án đám mây cần được cập nhật",
+ "1oblwbb": "Dự án đang chạy cơ sở dữ liệu phiên bản {have}; ứng dụng này cần phiên bản {need}.",
+ "32tjut": "Cơ sở dữ liệu của dự án có từ trước phiên bản {need}, phiên bản mà ứng dụng này cần.",
+ "64fxpb": "Người đã thiết lập dự án chạy {file} trong trình soạn thảo SQL của dự án (SETUP.md, Upgrading an existing project): toàn bộ dữ liệu được giữ nguyên và có thể chạy lại tệp này một cách an toàn. Cho đến lúc đó, các tính năng mới hơn sẽ dừng lại kèm một thông báo từ máy chủ.",
+ "wfp63a": "Dự án đám mây thiếu {fn}: người đã thiết lập dự án cần chạy {file} trong trình soạn thảo SQL của dự án (SETUP.md, Upgrading an existing project)."
 }

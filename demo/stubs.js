@@ -4,14 +4,14 @@
 const Store = { st: { ok: true, err: '', quarantined: false, recovered: false, onChange: null }, init: async () => {}, load: async () => demoDb(), save() {}, whenSaved: async () => {}, peek: async () => null, backup() {}, quarantine: () => [], usingIndexedDB: false,
   blobPut: async (n, b) => { demoBlobs.set(n, b); }, blobGet: async n => demoBlobs.get(n) || null, blobDel: async n => { demoBlobs.delete(n); } };
 const demoBlobs = new Map();   // (pictures added in the demo live in memory)
-const Native = { is: false, onBack() {}, onUrl() {}, launchUrl() {}, saveFile: () => Promise.reject(new Error('cancelled')), storeUrl: () => null, openExternal() {}, version: async () => '' };
+const Native = { watchInsets() {}, setBarsLight() {}, is: false, onBack() {}, onUrl() {}, launchUrl() {}, saveFile: () => Promise.reject(new Error('cancelled')), storeUrl: () => null, openExternal() {}, version: async () => '' };
 const Auth = { id: 'demo', signedIn: false, configured: false, init: async () => {} };
 const Sync = { st: { people: [{ display_name: 'Mum', is_you: true }, { display_name: 'Dad' }, { display_name: 'Grandpa Joe' }] }, setMyDetails: async () => {}, can: () => true, linked: () => false, isParent: () => true, nameOf: () => '', schedule() {}, pushBaby() {}, onChange: null, onSessionLost: null };
 const Cloud = { init: async () => {}, autoBackup() {}, handleOAuthUrl() {} };
 const Lock = { init: async () => {}, onChange: null, mode: 'off', enabled: false, minutes: 1, bioToo: true, bioAvailable: false, bioAllowed: false, locked: false, pinLength: 0, wait: 0,
   useBio: async () => 'The app lock is in the phone app, not in this demo.', setPin: async () => 'The app lock is in the phone app, not in this demo.', checkPin: async () => ({ ok: true }), off: async () => {}, setMinutes() {}, setBioToo() {}, unlock: async () => true, reset() {}, clear: async () => {} };
 const Acct = {
-  gate: () => null, init: async () => {}, syncLine: () => 'Demo: tap around, nothing here is saved', accountHtml: () => '', cloudHtml: () => '', bindMoreAccount() {}, bindFamily() {},
+  gate: () => null, serverNote: () => '', cloudSummary: () => '', init: async () => {}, syncLine: () => 'Demo: tap around, nothing here is saved', accountHtml: () => '', cloudHtml: () => '', bindMoreAccount() {}, bindFamily() {},
   updateBadge() {}, applyBackup() {}, receiveJoin() {}, refreshAuth() {}, sessionLost() {},
   // the family tree, as it looks for someone who also looks after a sister's and a brother-in-law's children (switching needs the real app)
   famLabel: () => 'Your family',

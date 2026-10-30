@@ -835,6 +835,11 @@
     "{name}'s": "A chip answering \"Whose child?\" when only one grandparent is on the tree. {name} is a name.",
     "{name}'s, from before": "A chip answering \"Whose child?\": the later partner's own child from before they were together. {name} is the later partner.",
     "{parent}'s half-brother or half-sister: {name}'s child with a later partner": "On an aunt or uncle's card. {parent} is the children's parent; {name} is the grandparent.",
-    "{parent}'s step-brother or step-sister: {name}'s child from before": "On an aunt or uncle's card. {parent} is the children's parent; {name} is the grandparent's later partner."
+    "{parent}'s step-brother or step-sister: {name}'s child from before": "On an aunt or uncle's card. {parent} is the children's parent; {name} is the grandparent's later partner.",
+    "The cloud project is missing {fn}: whoever set it up needs to run {file} in its SQL editor (SETUP.md, Upgrading an existing project).": "Error shown when the family's cloud project (its Supabase database) lacks a newer function the app calls, because the project was set up with an older release. {fn} is the function's technical name (for example rename_member) and {file} a file name (supabase/upgrade.sql): keep both as they are. 'SQL editor' and 'SETUP.md' stay in English; 'Upgrading an existing project' is a section title in SETUP.md (translate it, in quotes if that reads better).",
+    "The cloud project needs an update": "Title of a notice shown to parents: the family's cloud project (its Supabase database) runs an older version than the app needs.",
+    "The project runs database version {have}; this app needs {need}.": "In that notice. {have} and {need} are version numbers like 1.16.0 and 1.21.0.",
+    "The project runs a database from before {need}, which this app needs.": "In that notice, when the project is so old it cannot even say which version it runs. {need} is a version number like 1.21.0.",
+    "Whoever set up the project runs {file} in its SQL editor (SETUP.md, Upgrading an existing project): it keeps all the data and is safe to run again. Until then, newer features stop with a message from the server.": "In that notice: what to do. {file} is a file name (supabase/upgrade.sql); 'SQL editor' and 'SETUP.md' stay in English; 'Upgrading an existing project' is a section title in SETUP.md (translate it, in quotes if that reads better)."
   }
 }

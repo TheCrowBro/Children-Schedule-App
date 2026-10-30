@@ -2666,5 +2666,10 @@
  "17jvkzb": "{a} ve {b} adlı kişilerin",
  "1fpvwni": "{name} adlı kişinin",
  "xhygd9": "{name} adlı kişinin, önceden",
- "29zjk2": "Kimin çocuğu?"
+ "29zjk2": "Kimin çocuğu?",
+ "428lqp": "Bulut projesinin güncellenmesi gerekiyor",
+ "1oblwbb": "Proje, veritabanının {have} sürümünü kullanıyor; bu uygulama {need} sürümünü gerektiriyor.",
+ "32tjut": "Projenin veritabanı, bu uygulamanın gerektirdiği {need} sürümünden daha eski.",
+ "64fxpb": "Projeyi kuran kişi, projenin SQL düzenleyicisinde {file} dosyasını çalıştırır (SETUP.md, Upgrading an existing project): tüm veriler korunur ve dosya güvenle yeniden çalıştırılabilir. O zamana kadar daha yeni özellikler sunucudan gelen bir iletiyle durur.",
+ "wfp63a": "Bulut projesinde {fn} eksik: projeyi kuran kişinin, projenin SQL düzenleyicisinde {file} dosyasını çalıştırması gerekiyor (SETUP.md, Upgrading an existing project)."
 }

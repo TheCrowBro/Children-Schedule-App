@@ -354,6 +354,28 @@ const server = http.createServer((req, res) => {
     await A.waitForFunction(() => /Enter a name/.test(document.querySelector('#toast').textContent)); assert.equal(await A.evaluate(() => document.querySelector('#sheet').hidden), false, 'the sheet stays open');
     await A.fill('#pName', 'Nan'); await A.click('#pSave'); await A.waitForFunction(() => document.querySelector('#sheet').hidden);
   });
+  await step('a project that runs an older schema.sql than the app: Rename says in plain words that supabase/upgrade.sql is due (not PostgREST\'s "schema cache"), a parent sees the notice on the Family tab and under App updates (a caregiver does not), it names the version when the project has one, and running upgrade.sql clears it', async () => {
+    const nanId = (await q(`select user_id from members where email='nan@x.com'`))[0].user_id;
+    await q('drop function rename_member(uuid, uuid, text)'); await q('drop function schema_version()');
+    await A.evaluate(() => Sync.checkServer(true)); assert.deepEqual(await A.evaluate(() => Sync.st.server), { have: '', behind: true }, 'no schema_version(): a project from before 1.21.0');
+    await goTab(A, 'family'); await A.waitForSelector('.servernote');
+    assert(await A.evaluate(() => document.querySelector('.servernote').textContent.includes('from before ' + Sync.SCHEMA)), 'the notice says the project is from before the version the app needs');
+    await A.click(`[data-person="${nanId}"]`); await A.waitForSelector('#pName'); await A.fill('#pName', 'Nanny'); await A.click('#pSave');
+    await A.waitForFunction(() => /supabase\/upgrade\.sql/.test(document.querySelector('#toast').textContent));
+    const said = await A.textContent('#toast'); assert(/missing rename_member/.test(said) && !/schema cache/.test(said), 'plain words, naming the function: ' + said);
+    assert.equal(await A.evaluate(() => document.querySelector('#sheet').hidden), false, 'the sheet stays open'); await A.click('#pCancel');
+    await goTab(A, 'more'); assert(await A.$('#appCard + .servernote'), 'the notice is under App updates too');
+    await C.evaluate(() => Sync.checkServer(true)); await goTab(C, 'family'); await sleep(100); assert(!(await C.$('.servernote')), 'a caregiver is not told (nothing they can do)');
+    await q(`create function schema_version() returns text language sql immutable as $$ select '1.16.0' $$`); await q('grant execute on function schema_version() to authenticated');
+    await A.evaluate(() => Sync.checkServer(true)); await goTab(A, 'family'); await A.waitForSelector('.servernote');
+    assert(await A.evaluate(() => document.querySelector('.servernote').textContent.includes('version 1.16.0; this app needs ' + Sync.SCHEMA)), 'with a schema_version(), the notice names it');
+    await su.query(fs.readFileSync(path.join(root, 'supabase', 'upgrade.sql'), 'utf8'));   // what the person who set up the project does
+    await A.evaluate(() => Sync.checkServer(true)); assert.equal(await A.evaluate(() => Sync.st.server.behind), false);
+    await goTab(A, 'family'); await sleep(100); assert(!(await A.$('.servernote')), 'the notice is gone');
+    await A.click(`[data-person="${nanId}"]`); await A.waitForSelector('#pName'); await A.fill('#pName', 'Nanny'); await A.click('#pSave'); await A.waitForFunction(() => document.querySelector('#sheet').hidden);
+    assert(/Nanny/.test(await A.textContent(`[data-pview="${nanId}"]`)), 'and Rename works');
+    await A.click(`[data-person="${nanId}"]`); await A.waitForSelector('#pName'); await A.fill('#pName', 'Nan'); await A.click('#pSave'); await A.waitForFunction(() => document.querySelector('#sheet').hidden);
+  });
   await step('the activity log shows who did what – to parents only', async () => {
     await goTab(A, 'family'); await openSec(A); await A.click('#actBtn'); await A.waitForFunction(() => /Dad added an entry/.test(document.querySelector('#actList').textContent));
     const t = await A.textContent('#actList');

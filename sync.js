@@ -5,7 +5,7 @@
    server's push_events(), which enforces each person's role and permissions. Conflicts: newest `updated` timestamp wins.
    Relies on the globals `db` and `save()` from app.js (read lazily, at call time). */
 const Sync = (() => {
-  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyPeople: {}, retired: [] };
+  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyPeople: {}, retired: [], server: null };   // server: { have, behind }, what the project said about its schema.sql (checkServer)
   const PAGE = 500, OVERLAP_MS = 5000;
   let busy = false, busyAt = 0, again = false, timer = null, started = false, peopleAt = 0, failures = 0, retryAt = 0;
   let flight = Promise.resolve(), switching = false;   // (the sync under way, and a switch to another family log)
@@ -339,9 +339,27 @@ const Sync = (() => {
     if (userId === Auth.id) { lostAccess(); await loadMemberships(); } else { await loadPeople(); schedule(300); }   // the keys are changed on the next sync
   }
 
+  // ---- the project's schema.sql ----------------------------------------------------------------
+  const SCHEMA = '1.21.0';   // the schema.sql this app is built for (schema_version() in it); the database tests hold the two together
+  let serverAt = 0;
+  const older = (a, b) => { const x = String(a).split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0); return false; };
+  /** Asks the project which schema.sql it runs (once an hour, or now with force) and notes whether that is behind SCHEMA: a project from
+      before 1.21.0 has no schema_version() at all, which says the same. Offline, the question waits for the next time. Parents see the
+      answer as a notice (Account.serverNote). */
+  async function checkServer(force) {
+    if (!Auth.signedIn || (!force && Date.now() - serverAt < 3600000)) return st.server;
+    serverAt = Date.now();
+    const was = !!(st.server && st.server.behind);
+    try { const v = String(await Auth.rpc('schema_version') || ''); st.server = { have: v, behind: older(v, SCHEMA) }; }
+    catch (e) { if (e.behind) st.server = { have: '', behind: true }; else { serverAt = 0; return st.server; } }   // (offline: ask again next time)
+    if (was !== st.server.behind) notify();
+    return st.server;
+  }
+  Auth.onBehind = name => { if (name !== 'schema_version') checkServer(true).catch(() => {}); };   // any newer function found missing: say so
+
   // ---- baby / membership management ---------------------------------------------------------
   async function loadMemberships() {
-    membershipsAt = Date.now();
+    membershipsAt = Date.now(); checkServer().catch(() => {});
     const rows = list(await Auth.api(`/members?user_id=eq.${Auth.id}&select=baby_id,role,perms`));
     // Baby names are encrypted: show the ones this phone already has the key for.
     let profiles = [];
@@ -441,14 +459,14 @@ const Sync = (() => {
 
   function start() {
     if (started) return run(true);
-    started = true;
+    started = true; checkServer().catch(() => {});
     setInterval(() => { if (!document.hidden) run(); }, 30000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) run(); });
     window.addEventListener('online', () => run(true));
     run(true);
   }
 
-  return { st, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
+  return { st, SCHEMA, checkServer, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
     createInvite, rescind, decide, setMember, renameMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
     pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyPeople, retireMember, loadRetired, forgetRetired, loadTree, editTree, get switching() { return switching; }, onChange: null, onSessionLost: null };
 })();

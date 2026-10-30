@@ -2666,5 +2666,10 @@
  "17jvkzb": "kina {a} at {b}",
  "1fpvwni": "kay {name}",
  "xhygd9": "kay {name}, mula sa dati",
- "29zjk2": "Kaninong anak?"
+ "29zjk2": "Kaninong anak?",
+ "428lqp": "Kailangan ng update ng cloud project",
+ "1oblwbb": "Tumatakbo ang project sa database version {have}; kailangan ng app na ito ang {need}.",
+ "32tjut": "Mas luma ang database ng project kaysa sa version {need}, na kailangan ng app na ito.",
+ "64fxpb": "Ang nag-set up ng project ang magpapatakbo ng {file} sa SQL editor nito (SETUP.md, Upgrading an existing project): mananatili ang lahat ng data at ligtas itong patakbuhin muli. Hanggang doon, hihinto ang mga mas bagong feature na may mensahe mula sa server.",
+ "wfp63a": "Wala sa cloud project ang {fn}: kailangang patakbuhin ng nag-set up nito ang {file} sa SQL editor nito (SETUP.md, Upgrading an existing project)."
 }

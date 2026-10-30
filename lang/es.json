@@ -2720,5 +2720,10 @@
  "17jvkzb": "de {a} y {b}",
  "1fpvwni": "de {name}",
  "xhygd9": "de {name}, de antes",
- "29zjk2": "¿De quién es hijo?"
+ "29zjk2": "¿De quién es hijo?",
+ "428lqp": "El proyecto en la nube necesita una actualización",
+ "1oblwbb": "El proyecto usa la versión {have} de la base de datos; esta app necesita la {need}.",
+ "32tjut": "La base de datos del proyecto es anterior a {need}, la versión que esta app necesita.",
+ "64fxpb": "Quien configuró el proyecto ejecuta {file} en su editor SQL (SETUP.md, Upgrading an existing project): conserva todos los datos y se puede ejecutar de nuevo sin riesgo. Hasta entonces, las funciones más nuevas se detienen con un mensaje del servidor.",
+ "wfp63a": "Al proyecto en la nube le falta {fn}: quien lo configuró debe ejecutar {file} en su editor SQL (SETUP.md, Upgrading an existing project)."
 }

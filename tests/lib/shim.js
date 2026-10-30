@@ -148,7 +148,10 @@ function createShim(superUrl, opts = {}) {
       if (rm) {
         const meta = (await su.query(`select p.proretset, p.proargnames, (select array_agg(format_type(t,null)) from unnest(p.proargtypes) t) types
           from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname=$1`, [rm[1]])).rows[0];
-        if (!meta) return J(404, { message: 'function not found' });
+        if (!meta) {   // PostgREST's reply, word for word (the app turns it into plain words about supabase/upgrade.sql)
+          const ps = Object.keys(body || {}).sort().join(', ');
+          return J(404, { code: 'PGRST202', details: `Searched for the function public.${rm[1]}${ps ? ' with parameters ' + ps : ' without parameters'} or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.`, hint: null, message: `Could not find the function public.${rm[1]}${ps ? '(' + ps + ')' : ' without parameters'} in the schema cache` });
+        }
         const keys = Object.keys(body || {}), vals = [], args = keys.map((k, i) => {
           const t = meta.types[meta.proargnames.indexOf(k)]; const v = body[k];
           vals.push(v !== null && typeof v === 'object' ? JSON.stringify(v) : v); return `${k} => $${i + 1}::${t}`;

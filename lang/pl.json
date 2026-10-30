@@ -2774,5 +2774,10 @@
  "17jvkzb": "{a} i {b}",
  "1fpvwni": "{name}",
  "xhygd9": "{name}, z wcześniejszego związku",
- "29zjk2": "Czyje dziecko?"
+ "29zjk2": "Czyje dziecko?",
+ "428lqp": "Projekt w chmurze wymaga aktualizacji",
+ "1oblwbb": "Projekt działa na wersji bazy danych {have}; ta aplikacja wymaga wersji {need}.",
+ "32tjut": "Baza danych projektu pochodzi sprzed wersji {need}, której wymaga ta aplikacja.",
+ "64fxpb": "Osoba, która skonfigurowała projekt, uruchamia {file} w jego edytorze SQL (SETUP.md, Upgrading an existing project): wszystkie dane zostają zachowane, a plik można bezpiecznie uruchomić ponownie. Do tego czasu nowsze funkcje zatrzymują się z komunikatem serwera.",
+ "wfp63a": "W projekcie w chmurze brakuje {fn}: osoba, która go skonfigurowała, musi uruchomić {file} w jego edytorze SQL (SETUP.md, Upgrading an existing project)."
 }

@@ -2666,5 +2666,10 @@
  "17jvkzb": "wa {a} na {b}",
  "1fpvwni": "wa {name}",
  "xhygd9": "wa {name}, wa awali",
- "29zjk2": "Mtoto wa nani?"
+ "29zjk2": "Mtoto wa nani?",
+ "428lqp": "Mradi wa wingu unahitaji sasisho",
+ "1oblwbb": "Mradi unatumia hifadhidata toleo la {have}; programu hii inahitaji {need}.",
+ "32tjut": "Hifadhidata ya mradi ni ya kabla ya toleo la {need}, ambalo programu hii inahitaji.",
+ "64fxpb": "Aliyeweka mradi anaendesha {file} katika kihariri chake cha SQL (SETUP.md, Upgrading an existing project): data yote inabaki, na ni salama kuiendesha tena. Hadi wakati huo, vipengele vipya husimama na ujumbe kutoka kwa seva.",
+ "wfp63a": "Mradi wa wingu hauna {fn}: aliyeuweka anahitaji kuendesha {file} katika kihariri chake cha SQL (SETUP.md, Upgrading an existing project)."
 }

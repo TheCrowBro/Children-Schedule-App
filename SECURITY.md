@@ -44,7 +44,7 @@ No live project was attacked and no real phones were used: the findings come fro
 
 | # | Severity | What | Status |
 |---|---|---|---|
-| 1 | High | `delete_my_account()` only checked for a signed-in session, not for two-step verification, so a parent session obtained with just an email code (phished, or read off a lock screen) could delete a family's whole log by calling the function directly | **Fixed in 1.13.0**: the function refuses a session that has not passed two-step verification when the account has it set up (`Two-step verification is required`); the database tests cover it. Run the latest `schema.sql` |
+| 1 | High | `delete_my_account()` only checked for a signed-in session, not for two-step verification, so a parent session obtained with just an email code (phished, or read off a lock screen) could delete a family's whole log by calling the function directly | **Fixed in 1.13.0**: the function refuses a session that has not passed two-step verification when the account has it set up (`Two-step verification is required`); the database tests cover it. A project from before 1.13.0 gets it by running `supabase/upgrade.sql` (SETUP.md, Upgrading an existing project) |
 | 2 | Medium | `remove_device()` had the same gap: an email-code session could cut a parent's phones off (and force a key rotation that leaves them out) | **Fixed in 1.13.0** the same way. `register_device()`, `my_devices()` and `set_display_name()` still run without it, because the app calls the first two right after signing in and before the two-step check; a planted phone still needs a parent to approve it on another phone after comparing the fingerprint, which the app shows. Open: require a verified session for those too once sign-in registers the phone after the two-step check |
 | 3 | Medium | Deleting an account (or a log) leaves that log's encrypted pictures and videos in storage, unreachable but present, and the deleted person's email in the activity log of other logs they asked to join | **Open.** Recommended: a service-role cleanup job that removes objects under a `baby_id` that no longer exists, and `delete_my_account()` blanking the email in other logs' activity rows. The README says what remains |
 | 4 | Medium | Signing out, being removed from a log, and deleting the account cleared the log but not the decrypted pictures and videos kept beside it, the hourly backup copy of the log, or quarantined copies, so a retired helper's phone (or one handed on) kept photos and possibly a whole log | **Fixed in 1.13.0**: `Store.purge()` removes them whenever the log leaves the phone; the app suite checks it after a sign-out |
@@ -86,7 +86,8 @@ No live project was attacked and no real phones were used: the findings come fro
 These depend on the project, not on the code; the tests cannot see them.
 - [ ] Supabase Auth: TOTP on; email codes of 8 digits that expire in 10 minutes; CAPTCHA on; access tokens of 15 minutes with refresh
       token rotation; your own SMTP with SPF and DKIM; the default rate limits left in place ([SETUP.md](SETUP.md) §1).
-- [ ] `schema.sql` run as `postgres` and re-run after every update; after adding any function of your own, re-run the `revoke` block,
+- [ ] `schema.sql` run as `postgres` on a fresh project, and `supabase/upgrade.sql` after every app update that changes the database (the app
+      tells a parent when); after adding any function of your own, re-run the `revoke` block,
       because Supabase grants `execute` on new functions to `anon` and `authenticated` by default.
 - [ ] Edge Functions deployed with the gateway's JWT check on; `REPORT_SALT`, `REPORT_TO`, `REPORT_FROM` and `RESEND_API_KEY` set as
       secrets, the Resend key limited to sending; the service-role key never leaves Supabase.

@@ -2612,5 +2612,10 @@
  "17jvkzb": "{a} dan {b}",
  "1fpvwni": "{name}",
  "xhygd9": "{name}, dari sebelumnya",
- "29zjk2": "Anak siapa?"
+ "29zjk2": "Anak siapa?",
+ "428lqp": "Proyek cloud perlu diperbarui",
+ "1oblwbb": "Proyek menjalankan basis data versi {have}; aplikasi ini membutuhkan versi {need}.",
+ "32tjut": "Basis data proyek berasal dari sebelum versi {need}, yang dibutuhkan aplikasi ini.",
+ "64fxpb": "Orang yang menyiapkan proyek menjalankan {file} di editor SQL proyek (SETUP.md, Upgrading an existing project): semua data tetap tersimpan dan berkas ini aman dijalankan lagi. Sampai saat itu, fitur-fitur yang lebih baru berhenti dengan pesan dari server.",
+ "wfp63a": "Proyek cloud tidak memiliki {fn}: orang yang menyiapkannya perlu menjalankan {file} di editor SQL proyek (SETUP.md, Upgrading an existing project)."
 }

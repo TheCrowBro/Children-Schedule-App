@@ -1,6 +1,7 @@
 -- Little Log – Supabase schema (v3: end-to-end encryption, roles, permissions, MFA, approved invites, audit log).
--- Run once in the Supabase SQL editor on a fresh project. It replaces any earlier version of this file
--- (drop the old tables first if you ran v1; there is no data migration).
+-- Run once in the Supabase SQL editor on a FRESH project. A project that already runs this file from an earlier release (1.0.0 or
+-- later) keeps its data and runs supabase/upgrade.sql instead, after each app update that changes the database: the app says when
+-- (SETUP.md, Upgrading an existing project). A project from the v1 or v2 file, before 1.0.0, has no upgrade path: drop its tables first.
 --
 -- Security model
 --   * Clients can only READ babies / their own membership row / events (row-level security).
@@ -843,6 +844,12 @@ begin
 end $$;
 do $$ begin if exists (select 1 from pg_roles where rolname = 'service_role') then grant execute on function language_report_allow(text) to service_role; end if; end $$;
 
+-- ── schema version ────────────────────────────────────────────────────────────────────────────
+-- The Little Log release whose database this is. The app asks for it after sign-in and, when the project is behind the release the
+-- app was built for (or has no such function at all: a project from before 1.21.0), tells a parent that supabase/upgrade.sql is due.
+-- Raise it, and carry the change into upgrade.sql, whenever this file changes: the database tests hold the two files together.
+create function schema_version() returns text language sql immutable as $$ select '1.21.0' $$;
+
 -- ── privileges: clients read three tables and call the functions below; nothing else ──────────
 revoke all on all tables in schema public from anon, authenticated;
 grant select on babies, members, events to authenticated;
@@ -857,7 +864,7 @@ grant execute on function
   retire_member(uuid, uuid, text), list_retired(uuid), forget_retired(uuid), is_relative(uuid), get_tree(uuid), set_tree(uuid, text, int),
   create_invite(uuid, text, jsonb), list_invites(uuid), rescind_invite(text), redeem_invite(text, text, uuid, text),
   my_requests(), cancel_my_request(uuid), list_requests(uuid), decide_request(uuid, boolean, text, jsonb, jsonb),
-  push_events(uuid, jsonb), activity_log(uuid, int, bigint), delete_my_account()
+  push_events(uuid, jsonb), activity_log(uuid, int, bigint), delete_my_account(), schema_version()
 to authenticated;
 
 -- ── pictures and videos: the private storage bucket "media" ───────────────────────────────────

@@ -117,6 +117,19 @@ const Auth = (() => {
         await refresh(); return call(s.access);
       }
     },
-    rpc(name, args) { return this.api('/rpc/' + name, { method: 'POST', body: args || {} }); },
+    /** A database function. A project that runs an older schema.sql than this app was built for lacks the newer ones, and PostgREST
+        answers "Could not find the function public.x(…) in the schema cache": that becomes plain words about supabase/upgrade.sql,
+        the error is marked (e.behind) and onBehind is told, so the app can show the notice (Sync.checkServer). */
+    async rpc(name, args) {
+      try { return await this.api('/rpc/' + name, { method: 'POST', body: args || {} }); }
+      catch (e) {
+        if (e.status === 404 && /schema cache/i.test(e.message || '')) {
+          e.behind = true; e.message = __('The cloud project is missing {fn}: whoever set it up needs to run {file} in its SQL editor (SETUP.md, Upgrading an existing project).', { fn: name, file: 'supabase/upgrade.sql' });
+          if (this.onBehind) this.onBehind(name);
+        }
+        throw e;
+      }
+    },
+    onBehind: null,
   };
 })();

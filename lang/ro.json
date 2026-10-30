@@ -2720,5 +2720,10 @@
  "17jvkzb": "al lui {a} și {b}",
  "1fpvwni": "al lui {name}",
  "xhygd9": "al lui {name}, de dinainte",
- "29zjk2": "Al cui copil?"
+ "29zjk2": "Al cui copil?",
+ "428lqp": "Proiectul din cloud are nevoie de o actualizare",
+ "1oblwbb": "Proiectul rulează versiunea {have} a bazei de date; această aplicație are nevoie de {need}.",
+ "32tjut": "Baza de date a proiectului este dinainte de {need}, versiunea de care are nevoie această aplicație.",
+ "64fxpb": "Cine a configurat proiectul rulează {file} în editorul SQL al acestuia (SETUP.md, Upgrading an existing project): păstrează toate datele și poate fi rulat din nou fără riscuri. Până atunci, funcțiile mai noi se opresc cu un mesaj de la server.",
+ "wfp63a": "Proiectului din cloud îi lipsește {fn}: cine l-a configurat trebuie să ruleze {file} în editorul SQL al acestuia (SETUP.md, Upgrading an existing project)."
 }

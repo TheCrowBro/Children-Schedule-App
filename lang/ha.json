@@ -2666,5 +2666,10 @@
  "17jvkzb": "na {a} da {b}",
  "1fpvwni": "na {name}",
  "xhygd9": "na {name}, na da",
- "29zjk2": "Ɗan wa?"
+ "29zjk2": "Ɗan wa?",
+ "428lqp": "Aikin cloud yana buƙatar sabuntawa",
+ "1oblwbb": "Aikin yana amfani da sigar rumbun bayanai ta {have}; wannan manhaja tana buƙatar {need}.",
+ "32tjut": "Rumbun bayanan aikin ya fi tsufa fiye da sigar {need} da wannan manhaja take buƙata.",
+ "64fxpb": "Wanda ya kafa aikin zai gudanar da {file} a cikin editan SQL nasa (SETUP.md, Upgrading an existing project): dukkan bayanai sun tsaya, kuma ana iya sake gudanar da shi lafiya. Har zuwa lokacin, sababbin abubuwa suna tsayawa da saƙo daga uwar garke.",
+ "wfp63a": "Aikin cloud ba shi da {fn}: wanda ya kafa shi yana buƙatar gudanar da {file} a cikin editan SQL nasa (SETUP.md, Upgrading an existing project)."
 }

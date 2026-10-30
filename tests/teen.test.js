@@ -95,7 +95,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       const up = await P.$$eval('#view .upcoming .prow', x => x.map(b => b.textContent.replace(/\s+/g, ' ').trim()));
       assert.equal(up.length, 2, 'one row for the holiday of both children: ' + up.join(' | '));
       assert(/Maths exam .* 9:30 AM · Exam · Sophie/.test(up[0]), up[0]); assert(/Half term .* – .* · School holiday · Sophie and Tom/.test(up[1]), up[1]);
-      await P.evaluate(() => { tab = 'month'; render(); });
+      await P.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 3); viewDay = startOfDay(d.getTime()); calMonth = new Date(viewDay); tab = 'month'; render(); });   // (the month the holiday is in: in a month's last days, the next one)
       const marks = await P.evaluate(() => document.querySelectorAll('#view .cal .pmark').length);
       assert(marks >= 1, 'days marked on the calendar'); assert(/On the calendar/.test(await P.textContent('#view .legend')));
       await P.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 2); viewDay = startOfDay(d.getTime()); render(); });
