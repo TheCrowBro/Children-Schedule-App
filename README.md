@@ -3,8 +3,8 @@
 A **phone app** (Android and iOS; Windows and Mac later) that grows with a child: a newborn's feeds, pee/poo, sleep, night wakings,
 vomit, play, health observations and medication; then meals, potty training and the big moments of growing up, with a calendar and
 easy-to-read stats, until the child turns 18. Built with plain web code wrapped by Capacitor. The family's log can live in **a folder
-in the family's own cloud storage** (Dropbox or Google Drive), shared out from the app with no server anywhere, or on a server the family runs;
-either way it is end-to-end encrypted on the phones.
+in the family's own cloud storage** (Google Drive or Dropbox), shared out from the app with no server anywhere, end-to-end encrypted on
+the phones. A family server stays in the code for later; the store build has none.
 To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 
 ## Features
@@ -233,9 +233,9 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   project needs an update* on the Family tab and under More → App updates; a feature the project lacks stops with the same plain
   words, naming the function, instead of the server's "schema cache" reply
 - **Family sharing with roles**: *Parents* (admins), *Family members*, *Caregivers*, *Babysitters*, *Medical assistants* and *Friends*; per-person check boxes for exactly what
-  they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**: a request to join pops up on the
+  they can do. (With a family server, kept for later: joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**: a request to join pops up on the
   parent's phone as it arrives, with the security check and **Approve** / **Deny** there and then, or **Later** (it stays on the Family tab,
-  with the badge). Parents get a private **activity log** of who did what.
+  with the badge). Parents get a private **activity log** of who did what.)
 - **The family's own cloud** (the store build; [FOLDER.md](FOLDER.md)): the log lives in a folder named *Little Log* in a parent's own
   Dropbox or Google Drive, with no server anywhere. The parent connects the cloud on the first screen, starts the log and shares the
   folder with each relative's email from the Family tab; relatives connect their own account with the same cloud, ask to join and are

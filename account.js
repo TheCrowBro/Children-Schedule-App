@@ -184,6 +184,14 @@ const Acct = (() => {
   const SHARE_WHY = N_("Sign in with your email to start a log the family shares, or to join one. It is kept safe in the family's cloud, end-to-end encrypted, so a new phone just signs in.");
   const FOLDER_WHY = N_("The log lives in a folder in your own cloud storage, encrypted on your phones, and you share that folder with the family. No account with anyone else: the folder is yours.");
   const shareWhy = () => (cloudFirst() ? FOLDER_WHY : SHARE_WHY);   // the route Share with family leads to
+  // How a family shares its folder, step by step (on the first screen, the start-or-join screen and the Family tab)
+  const HOW_FAMILY = [N_('A parent connects their cloud and starts the log: a folder named Little Log appears in their cloud, holding only encrypted files.'),
+    N_("On the Family tab the parent shares the folder with each relative's email for that cloud, and picks what they may see and do."),
+    N_('The relative installs Little Log, connects the same cloud with that email and taps Join. Their phone shows a security code while it waits.'),
+    N_("The request pops up on the parent's phone. The relative reads the code out, the parent ticks that it matches and taps Approve: that hands the relative's phone the keys."),
+    N_('Health notes and medication reach only the phones allowed to see them; everything else reaches everyone in the family.'),
+    N_('A lost phone is removed under My phones, and someone who leaves is removed on the Family tab: the keys change for everyone else by themselves. Write the recovery code down: it gets a parent back in when every phone is gone.')];
+  const howFamilyHtml = () => `<details class="more" data-grp="howfam" ${openGroups.has('howfam') ? 'open' : ''}><summary>${__h('How sharing works')}<span class="chev" aria-hidden="true">›</span></summary><div class="howbody"><ol class="steps">${HOW_FAMILY.map(s => `<li>${__h(s)}</li>`).join('')}</ol></div></details>`;
   /** When the cloud's sign-in lapsed (Google renews it weekly while an app is in testing): sign in again and the sync goes on, nothing cleared. */
   const reconnectHtml = () => (folderMode() && Sync.st.reconnect ? `<div class="note" style="margin-top:6px">⚠️ ${__h('{service} needs you to sign in again.', { service: Folder.label(Folder.provider) })}</div><button class="btn p" id="fReconnect" style="width:100%;margin-top:8px">${__h('Reconnect {service}', { service: Folder.label(Folder.provider) })}</button>` : '');
   const bindReconnect = () => { const b = $('#fReconnect'); if (b) b.onclick = async () => { try { await Folder.connect(Folder.provider); toast(__('Finish signing in in the browser window')); } catch (e) { toast(err(e)); } }; };
@@ -234,7 +242,7 @@ const Acct = (() => {
   const cloudPickHtml = () => `<div class="card welcome"><b>☁️ ${__h("The family's own cloud")}</b>
     <p class="note">${__h('Little Log keeps the log in a folder in your own cloud storage, encrypted on your phones before anything is written there. Nobody else runs a server: you share the folder with the family, and that is who gets in.')}</p>
     ${Folder.available().map(p => `<button class="btn p" data-fconnect="${p}" style="width:100%;margin-top:8px">${__h('Connect {service}', { service: Folder.label(p) })}</button>`).join('')}
-    <p class="note">${__h('OneDrive and iCloud Drive are next.')}</p>
+    <p class="note">${__h('OneDrive and iCloud Drive are next.')}</p>${howFamilyHtml()}
     ${Auth.configured ? `<button class="btn" id="fcServer" style="width:100%;margin-top:8px">${__h('Use a family server instead')}</button>` : ''}
     <button class="btn" id="fcLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>
     <div class="row"><button class="btn" id="fcBack">${__h('Back')}</button></div>${alertP(C.err)}</div>`;
@@ -272,7 +280,7 @@ const Acct = (() => {
       ${C.cands === null ? `<div class="empty">${__h('Looking…')}</div>` : C.cands.length ? C.cands.map(x => `<div class="stat"><span>${esc(x.name)}</span><button class="btn p" data-fjoin="${esc(x.id)}" style="padding:6px 12px" ${C.busy ? 'disabled' : ''}>${__h('Join')}</button></div>`).join('') : `<p class="note">${__h('Nothing has been shared with {email} yet.', { email: me.email })}</p>`}
       <div class="row"><button class="btn" id="fjCheck">${__h('Check again')}</button></div></div>
     ${alertP(C.err)}
-    <div class="card"><button class="btn" id="fOut" style="width:100%">${__h('Disconnect {service}', { service })}</button></div>`;
+    <div class="card">${howFamilyHtml()}<button class="btn" id="fOut" style="width:100%;margin-top:8px">${__h('Disconnect {service}', { service })}</button></div>`;
   };
   function bindFolderOnboard() {
     if (C.cands === null && !C.busy) Folder.candidates().then(x => { C.cands = x; }, e => { C.cands = []; C.err = err(e); }).then(() => { if ($('#fjCheck')) render(); });
@@ -1189,7 +1197,7 @@ const Acct = (() => {
   /** Sharing the family folder with someone (folder mode): their cloud email and what they may do, and who has not joined yet. */
   function shareHtml(s) {
     const service = Folder.label(Folder.provider);
-    return `<h2>${__h('Share with someone')}</h2><div class="card" id="invCard">
+    return `<h2>${__h('Share with someone')}</h2>${howFamilyHtml()}<div class="card" id="invCard">
       <p class="note" style="margin-top:0">${__h('The family folder is shared with their own {service}. When they open Little Log and connect {service} with that email, they ask to join and you approve them here.', { service })}</p>
       <label class="f">${__h('Their {service} email', { service })}</label><input id="shEmail" type="email" inputmode="email" autocomplete="off" placeholder="${__h('you@example.com')}">
       ${accessFormHtml('inv', invForm ? invForm.role : 'caregiver', invForm && invForm.perms)}
@@ -1416,16 +1424,20 @@ ${lockRowsHtml()}      <div class="row"><button class="btn" id="signOut">${__h('
   }
   // How to set up the three drives: done once, on a computer, by whoever builds the app (each step is one text, so it reads well in every language)
   const CLOUD_HOW = {
-    intro: N_('This is done once, on a computer, by whoever builds the app: each service hands out a public key that goes into config.js, then the app is rebuilt and that service shows Connect here. The app id is **{id}** and its redirect address is **{redirect}**.'),
-    dropbox: [N_('Go to dropbox.com/developers/apps and choose Create app: scoped access, App folder, any name.'), N_('Under Permissions tick files.content.write and files.content.read, then Submit.'),
-      N_('Under Settings add the redirect address to OAuth 2 → Redirect URIs.'), N_('Copy the App key into config.js as dropboxKey.')],
-    google: [N_('In the Google Cloud console (console.cloud.google.com) create a project and turn on the Google Drive API under APIs & Services → Library.'),
-      N_('Under OAuth consent screen choose External, name the app, add the scope …/auth/drive.appdata and add yourself as a test user (until the app is published, only test users can sign in).'),
-      N_('Under Credentials create an OAuth client ID of type iOS, with the app id as its bundle id.'), N_('Copy the client ID (it ends in .apps.googleusercontent.com) into config.js as googleClientId; the build registers its redirect scheme for you.')],
+    intro: N_('This is done once, on a computer, by whoever builds the app: each service hands out a public key that goes into config.js, then the app is rebuilt and that service shows Connect here and on the first screen, where a family keeps its log in a folder of that cloud. The app id is **{id}** and its redirect address is **{redirect}**.'),
+    dropbox: [N_('Go to dropbox.com/developers/apps and choose Create app: scoped access, Full Dropbox (the family folder is a shared folder, which App folder access cannot reach), and any name: people see it when they sign in.'),
+      N_('Under Permissions tick account_info.read, files.metadata.read, files.content.read, files.content.write, sharing.read and sharing.write, then Submit.'),
+      N_('Under Settings add the redirect address to OAuth 2 → Redirect URIs.'), N_('Copy the App key into config.js as dropboxKey. A new Dropbox app is in Development status, which lets 50 people sign in; apply for Production in its console before publishing.')],
+    google: [N_('In the Google Cloud console (console.cloud.google.com) create a project, open APIs & Services → Library, find Google Drive API and tap Enable.'),
+      N_('On the Drive API page tap Create credentials: choose Google Drive API and User data, name the app, give your email as the support and developer contact, and continue.'),
+      N_('Under Scopes paste https://www.googleapis.com/auth/drive and https://www.googleapis.com/auth/drive.appdata into the Manually add scopes box, tap Add to table, then Update and Save and continue. The full Drive scope is needed: a folder someone else shared cannot be opened with a narrower one.'),
+      N_('Under OAuth Client ID choose the type iOS, any name, and the app id as the bundle ID; tap Create and copy the client ID (it ends in .apps.googleusercontent.com) into config.js as googleClientId. The build registers its redirect scheme for you.'),
+      N_('Under Google Auth Platform → Audience → Test users add the Google email of everyone who should sign in while the app is in Testing (up to 100); anyone else sees Access blocked.'),
+      N_('While in Testing, each sign-in shows "Google hasn\'t verified this app" (tap Continue) and lasts about a week; the app then offers Reconnect. For everyone to sign in, publish the consent screen and submit the app for Google\'s verification.')],
     onedrive: [N_('In the Azure portal (portal.azure.com) go to Microsoft Entra ID → App registrations → New registration: any name; accounts in any organisational directory and personal Microsoft accounts.'),
       N_('Under Authentication add a platform, Mobile and desktop applications, with the redirect address as a custom redirect URI, and allow public client flows.'),
       N_('Under API permissions add Microsoft Graph → Delegated → Files.ReadWrite.AppFolder and offline_access.'), N_('Copy the Application (client) ID into config.js as msClientId.')],
-    done: N_('Then rebuild and install the app: npm run sync, then run it from Android Studio or Xcode. Each service you set up shows Connect here; signing in opens in the browser and comes back to the app.'),
+    done: N_('Then rebuild and install the app: npm run sync, then run it from Android Studio or Xcode. Each service you set up shows Connect here and on the first screen; signing in opens in the browser and comes back to the app.'),
     icloud: N_('iCloud Drive needs no setup: Save below puts the encrypted file in Files.'),
   };
   function cloudHowHtml() {

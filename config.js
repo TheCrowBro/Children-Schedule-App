@@ -2,8 +2,8 @@
 // enforced by the row-level security and functions in supabase/schema.sql). Leave a value empty to disable that feature.
 // See SETUP.md and MOBILE.md.
 window.LL_CONFIG = {
-  supabaseUrl: 'https://drsyzyrkighlqninmdxm.supabase.co',      // the family's own Supabase project (SETUP.md §1)
-  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyc3l6eXJraWdobHFuaW5tZHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwNjc1ODYsImV4cCI6MjEwODY0MzU4Nn0.yuo1ow6b2s1dQqxJRejgdDhSgTuBx5CbPwr8iyD05zA',      // its anon / public key: public by design, access is enforced by the database rules
+  supabaseUrl: '',      // a family server (Supabase, SETUP.md §1): kept in the code for later, off while this is empty (the store build)
+  supabaseKey: '',      // its anon / public key (public by design, access is enforced by the database rules); empty with the address above
   captchaSiteKey: '',   // Cloudflare Turnstile site key (turns on the security check at sign-in; also set the secret in Supabase)
   dropboxKey: '',       // Dropbox app key: Full Dropbox access for the family's own cloud (SETUP.md), which serves the cloud backup too
   googleClientId: '421294379745-fbl6v68vb9saa37nth733vqap4fb9i65.apps.googleusercontent.com',   // Google OAuth client ID of type "iOS": the family's own cloud (full Drive scope, SETUP.md) and the cloud backup (drive.appdata)

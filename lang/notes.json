@@ -881,6 +881,13 @@
     "Moved. Share the folder with the family from the Family tab.": "Short confirmation after the move.",
     "The move did not finish. Sign in again and try once more.": "Error after a move that failed after the server session ended; the log is still on the phone.",
     "Only a parent can move the log.": "Error when a non-parent taps Move.",
-    "The log changed meanwhile: start the move again.": "Error when the log on the phone is not the one the move was started for."
+    "The log changed meanwhile: start the move again.": "Error when the log on the phone is not the one the move was started for.",
+    "How sharing works": "Title of a twirl-down (on the first screen, the start-or-join screen and the Family tab) with six steps explaining how a family shares its folder.",
+    "A parent connects their cloud and starts the log: a folder named Little Log appears in their cloud, holding only encrypted files.": "Step 1 of How sharing works. 'Little Log' is the folder's name as the app makes it: keep it.",
+    "On the Family tab the parent shares the folder with each relative's email for that cloud, and picks what they may see and do.": "Step 2 of How sharing works.",
+    "The relative installs Little Log, connects the same cloud with that email and taps Join. Their phone shows a security code while it waits.": "Step 3 of How sharing works. Join is the button's label.",
+    "The request pops up on the parent's phone. The relative reads the code out, the parent ticks that it matches and taps Approve: that hands the relative's phone the keys.": "Step 4 of How sharing works. Approve is the button's label.",
+    "Health notes and medication reach only the phones allowed to see them; everything else reaches everyone in the family.": "Step 5 of How sharing works.",
+    "A lost phone is removed under My phones, and someone who leaves is removed on the Family tab: the keys change for everyone else by themselves. Write the recovery code down: it gets a parent back in when every phone is gone.": "Step 6 of How sharing works. My phones is a section title on the Family tab."
   }
 }

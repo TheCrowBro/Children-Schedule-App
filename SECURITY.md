@@ -41,6 +41,31 @@ maintainers by email through the Edge Functions; the address is a server secret 
   On Google Drive the app asks for the full Drive scope, because the narrower per-file scope cannot open a folder someone else
   shared; it only ever touches the family folder, and Google's review of that scope is what a public store build waits on (SETUP.md).
 
+## The family folder: what to harden next
+
+The folder route replaces a server that enforced roles with files the apps interpret. The encryption is the same; what a server used
+to referee is now the family's own honesty plus the cloud's sharing. Reviewed in October 2026, in order of worth:
+
+1. **The family list and the tree are sealed, not signed.** Every member holds the main key, so any member's phone could rewrite
+   `members.json` (giving itself the parent role, say) or `tree.json`, and the other phones would believe it. The fix: each phone signs
+   what it writes with its own key, and a change to the family list, a grant or the tree is accepted only when it comes from a phone the
+   previous, verified list says belongs to a parent, with the folder's creator as the root of that chain and each approved phone tied
+   to its person by the parent who approved it.
+2. **A join request says who it is from.** The name and email in `join/<phone>.json` are the asking phone's word; the spoken security
+   code is the safeguard. The fix: take the writer's identity from the cloud (Drive's owner of the file, Dropbox's modifier) rather than
+   the file's contents, so a request can only claim the account that wrote it; and a one-time join code typed on the joining phone,
+   so the parent's approval shows *Verified* without reading digits across the room.
+3. **An entry's author is a claim.** Rows in `events/<phone>/` carry `created_by`; a phone could write rows in another's name. The
+   fix: accept rows only in the name of the person that phone was approved for.
+4. **Edit access can damage the folder.** Anyone the folder is shared with can empty or overwrite any file, as with any shared folder;
+   the cloud's own version history (30 days on Drive and Dropbox) is the safety net, and a parent's phone could put a damaged
+   `keyring.json` or `members.json` back from its last good copy by itself.
+5. **The cloud account is the first factor.** The app cannot enforce 2-step verification on a Google or Dropbox account; a reminder at
+   connect time is the most it can do. Drive also lets every editor share further by default; the folder's owner can turn that off, at
+   the price that only the owner's phone can then share from the Family tab.
+6. **Google's testing status** limits sign-ins to listed accounts, for about a week each; the app's Reconnect covers it, and Google's
+   verification lifts it.
+
 ## The review
 A static review of the whole code base in October 2026 by the people building it, plus an independent second reading of the schema,
 the encryption, sign-in, sync, media, the app lock, cloud backups, the account flows, the report functions and the native settings.

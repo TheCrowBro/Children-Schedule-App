@@ -242,6 +242,22 @@ const FamilyTree = (() => {
   const CELL = 62, KCELL = 54, GCELL = 58, GAP = 16, RA = 17, RK = 15, RG = 14, KPR = 6, CPR = 4;
   const x = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const cut = (s, n) => { const a = [...String(s)]; return a.length > n ? a.slice(0, n - 1).join('') + '…' : a.join(''); };
+  // Names are fitted to their place: measured in the tree's font (a canvas, where there is one), put on two lines when long, shortened
+  // with an ellipsis when still too long, and squeezed a little when a line still runs over, so that neighbours never overlap.
+  let mctx = null;
+  const measure = (s, fs) => {
+    if (mctx === null) { try { mctx = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : false; } catch (e) { mctx = false; } }
+    if (mctx) { mctx.font = `600 ${fs}px system-ui, -apple-system, sans-serif`; return mctx.measureText(String(s)).width; }
+    return [...String(s)].reduce((w, c) => w + (/[\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF\uFF00-\uFFEF]/.test(c) ? fs : fs * 0.58), 0);
+  };
+  const splitTwo = s => { const a = [...String(s)]; let at = -1; a.forEach((c, i) => { if (/[\s/・、-]/.test(c) && i > 0 && i < a.length - 1 && (at < 0 || Math.abs(i - a.length / 2) < Math.abs(at - a.length / 2))) at = i; }); return at < 0 ? null : [a.slice(0, at + (/[/-]/.test(a[at]) ? 1 : 0)).join('').trim(), a.slice(at + 1).join('').trim()]; };
+  const shrink = (s, maxW, fs) => { const a = [...String(s)]; let n = a.length; while (n > 2 && measure(a.slice(0, n).join('') + '…', fs) > maxW) n--; return n < a.length ? a.slice(0, n).join('') + '…' : s; };
+  /** A label as one or two lines for a place `maxW` wide: [{ text, squeeze }], squeeze when the line is drawn a little narrower than its glyphs. */
+  function fitLabel(s, maxW, fs) {
+    if (measure(s, fs) <= maxW * 1.12) return [{ text: s, squeeze: measure(s, fs) > maxW }];
+    const parts = splitTwo(s) || [s];
+    return parts.map(t => { let w = measure(t, fs); if (w > maxW * 1.25) { t = shrink(t, maxW * 1.25, fs); w = measure(t, fs); } return { text: t, squeeze: w > maxW }; });
+  }
   /** A long label on two lines, broken at the space or slash nearest its middle. */
   function lines(s, n) {
     const a = [...String(s)]; if (a.length <= n) return [s];
@@ -552,12 +568,12 @@ const FamilyTree = (() => {
     });
     // everyone, and the buds where someone can be added
     const person = n => {
-      const px = X(n.x), py = r1(yOf(n)), r = n.r, d = n.n, label = cut(d.label, n.small ? 10 : 12), ring = n.kid ? (d.color ? mixHex(d.color, '#2a2420', 0.3) : '#888') : deep(sp.bark[0]);
+      const px = X(n.x), py = r1(yOf(n)), r = n.r, d = n.n, fs = n.small ? 9.5 : 10.5, maxW = (n.kid ? KCELL : n.small ? GCELL : CELL) - 6, ls = fitLabel(d.label, maxW, fs), ring = n.kid ? (d.color ? mixHex(d.color, '#2a2420', 0.3) : '#888') : deep(sp.bark[0]);
       return `<g ${grow(d.key, `tnode${n.kid ? ' kid' : ''}${n.small ? ' small' : ''}${d.gone ? ' gone' : ''}`)} role="button" tabindex="0" data-tk="${x(d.key)}" aria-label="${x(d.title)}">`
         + `<circle class="hit" cx="${px}" cy="${r1(py + 6)}" r="${r + 10}"/>${n.kid && d.color ? `<circle class="bleed" cx="${r1(px + 1.2)}" cy="${r1(py + 0.8)}" r="${r + 2}" style="fill:${x(d.color)}"/>` : ''}`
         + `<circle class="disc" cx="${px}" cy="${py}" r="${r}"${n.kid && d.color ? ` style="fill:${x(d.color)}"` : ''}/><circle class="ring" cx="${r1(px + 0.6)}" cy="${r1(py - 0.5)}" r="${r1(r + 0.6)}" stroke="${ring}"/>`
         + `<text x="${px}" y="${r1(py + (n.small ? 4 : 5))}" class="fti">${x(d.initial)}</text>${d.gone ? star(px - r * 0.8, py - r * 0.8, n.small ? 3.4 : 4) : ''}`
-        + `<text x="${px}" y="${r1(py + r + 13)}" class="ftl">${x(label)}</text></g>`;
+        + `<text x="${px}" y="${r1(py + r + 13)}" class="ftl">${ls.map((l, i) => `<tspan x="${px}" dy="${i ? r1(fs + 1) : 0}"${l.squeeze ? ` textLength="${maxW}" lengthAdjust="spacingAndGlyphs"` : ''}>${x(l.text)}</tspan>`).join('')}</text></g>`;
     };
     const budNode = n => {
       const px = X(n.x), py = r1(yOf(n)), r = n.r, b = n.bud;

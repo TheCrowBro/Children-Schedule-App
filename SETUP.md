@@ -1,14 +1,13 @@
 # Setup: accounts, family sync, security and cloud backup
 
-Little Log is a **phone app only** (iOS and Android; desktop apps later). Without any setup it works as a private,
-on-device tracker ("Use on this device only"). To turn on sign-in, family sharing and cloud backup, do the steps below
-once, then fill in `config.js` (all values are public client IDs, not secrets) and rebuild (`npm run sync`).
-
-A family's log can instead live in **their own cloud storage**, with no server at all: that is the store build, and its only setup is
-the Dropbox app in the next section.
+Little Log is a **phone app only** (iOS and Android; desktop apps later). Without any setup it works as a private, on-device
+tracker ("Use on this device only"). The **store build keeps each family's log in a folder of their own cloud storage**, and the one
+setup is registering the app with that cloud, once, by whoever builds it: the next section. A **family server** (Supabase, §1 to §6)
+is kept in the code for later: the app only uses one when `config.js` names it, and the store build names none. All values in
+`config.js` are public client ids, not secrets; after changing it, rebuild (`npm run sync`).
 
 > ⚠️ The app's network access is locked down by a Content-Security-Policy that `npm run build:web` generates **from
-> `config.js`**. Fill in `config.js` *before* building, or the app can't reach your Supabase project.
+> `config.js`**. Fill in `config.js` *before* building, or the app can't reach the services you set up.
 
 ## The family's own cloud (the store build: no server)
 Little Log can keep a family's log in **a folder in the family's own cloud storage** instead of on a server: a parent connects their
@@ -28,15 +27,27 @@ Whoever **builds** the app registers it once with each cloud it should offer (on
 A Dropbox app starts in *Development* status, which lets up to 50 people sign in; apply for *Production* in its console before
 publishing (a short form about what the app does with each permission).
 
-**Google Drive** → `googleClientId`
-1. In the [Google Cloud console](https://console.cloud.google.com) create a project (or use the one from §3) and turn on the
-   **Google Drive API** (*APIs & Services → Library*).
-2. *APIs & Services → OAuth consent screen*: **External**, the app's name and your email. Under **Scopes** add
-   `https://www.googleapis.com/auth/drive` (and `…/auth/drive.appdata`, which the cloud backup uses). Under **Test users** add the
-   Google emails of everyone who should sign in while the app is in *Testing* (up to 100).
-3. *Credentials → Create credentials → OAuth client ID*, type **iOS**, bundle id = the app id. No client secret is needed.
-4. Copy the client ID (it ends in `.apps.googleusercontent.com`) into `config.js` as `googleClientId`, then `npm run sync` (it
-   registers the client's reverse-client-id redirect scheme in the app for you).
+**Google Drive** → `googleClientId` (about fifteen minutes; the console changes its layout now and then, so the names below may differ a little)
+1. Go to <https://console.cloud.google.com> and sign in with your own Google account. Create a project (the ▾ next to the project
+   name at the top → *New project*), any name, for example *Little Log*.
+2. ☰ menu → *APIs & Services* → *Library*. Search for **Google Drive API**, open it, tap **Enable**.
+3. On the Drive API page tap **Create credentials**. In the wizard: *Which API are you using?* Google Drive API; *What data will you be
+   accessing?* **User data**; *Next*.
+4. *OAuth consent screen*: app name *Little Log*, your email as the user support email, a logo if you like, your email under developer
+   contact. *Save and continue*.
+5. *Scopes*: tap *Add or remove scopes*. The two Drive scopes do not appear in the table until the API is enabled and the page refreshed,
+   so paste them into the **Manually add scopes** box, one per line, then *Add to table*, *Update*, *Save and continue*:
+   ```
+   https://www.googleapis.com/auth/drive
+   https://www.googleapis.com/auth/drive.appdata
+   ```
+6. *OAuth Client ID*: application type **iOS** (the type that returns to a phone app through its own URL scheme and needs no secret;
+   it serves the Android build too), any name, bundle ID `app.littlelog.newborn` (the app id). *Create*. Copy **Your Client ID**, the
+   string ending in `.apps.googleusercontent.com`, into `config.js` as `googleClientId`. There is no secret to copy.
+7. ☰ menu → **Google Auth Platform** → **Audience** (older layouts: *APIs & Services → OAuth consent screen*). Under **Test users**
+   tap *Add users* and enter the Google email of everyone who should sign in while the app is in *Testing*, yourself included. The
+   project's owner is not a test user by itself; an account not on the list is refused with *Access blocked*.
+8. `npm run sync` (it registers the client's reverse-client-id redirect scheme in the app for you), then build and install.
 
 The family folder needs the **full Drive scope**: a parent shares the folder, and the narrower per-file scope (`drive.file`) can only
 reach files the app itself made or the user picked, so relatives' phones could not open it. Google calls that scope *restricted*:
@@ -60,6 +71,9 @@ through their own cloud. Once every family has moved, blank `supabaseUrl` and `s
 then the store build, with no server anywhere.
 
 ## 1. Supabase project (free tier is fine)
+*Kept for later.* Not in the store build: the app uses a family server only when `config.js` names one, and §1 to §6 describe that
+route. A family on a server moves into their own cloud from More (*Moving a log from a family server* in [FOLDER.md](FOLDER.md)).
+
 1. Create a project at <https://supabase.com>.
 2. **SQL Editor** → paste and run [`supabase/schema.sql`](supabase/schema.sql) on a fresh project. This is version 3 (end-to-end
    encryption, roles, permissions, approvals, audit log); a project from the v1 or v2 file, before 1.0.0, has no upgrade path: drop its

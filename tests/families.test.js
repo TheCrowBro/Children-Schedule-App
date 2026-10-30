@@ -274,6 +274,15 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       }
     });
 
+    await step('long names on the tree go on two lines, shortened and fitted to their place, and never run into their neighbours', async () => {
+      await J.evaluate(() => Sync.editTree(t => { for (const p of t.parents) for (const g of p.gp) g.name = g.name === 'Rose Miller' ? 'Wilhelmina Josephine Montgomery-Smythe' : 'Bartholomew Fitzgerald ' + g.name; return t; }));
+      await J.waitForFunction(() => [...document.querySelectorAll('.ftreesvg [data-tk]')].some(x => /^Wilhelmina/.test(x.getAttribute('aria-label'))));
+      const boxes = await J.evaluate(() => [...document.querySelectorAll('.ftreesvg text.ftl')].map(t => { const b = t.getBBox(); return { x: Math.round(b.x), w: Math.round(b.width), y: Math.round(b.y), h: Math.round(b.height), lines: t.querySelectorAll('tspan').length, text: t.textContent }; }));
+      assert(boxes.some(b => b.lines === 2), 'a long name on two lines: ' + JSON.stringify(boxes.map(b => b.text)));
+      for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) { const a = boxes[i], b = boxes[j]; if (Math.abs(a.y - b.y) < Math.max(a.h, b.h)) assert(a.x + a.w <= b.x + 1 || b.x + b.w <= a.x + 1, 'labels overlap: ' + JSON.stringify([a, b])); }
+      await J.evaluate(() => Sync.editTree(t => { for (const p of t.parents) for (const g of p.gp) g.name = g.name.startsWith('Wilhelmina') ? 'Rose Miller' : g.name.replace('Bartholomew Fitzgerald ', ''); return t; }));
+    });
+
     await step('the tree is the kind most common where the family comes from (by where the phone is), unless a parent picks another, for everyone', async () => {
       await J.evaluate(() => { db.meta.region = 'anz'; tab = 'family'; render(); });
       assert(/Eucalyptus · Australia & New Zealand/.test(await J.textContent('.ftreeimg .fkind')), 'a eucalyptus in Australia');
