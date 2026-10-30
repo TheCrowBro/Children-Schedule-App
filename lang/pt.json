@@ -2725,5 +2725,7 @@
  "1oblwbb": "O projeto usa a versão {have} do banco de dados; este app precisa da {need}.",
  "32tjut": "O banco de dados do projeto é anterior à {need}, a versão de que este app precisa.",
  "64fxpb": "Quem configurou o projeto executa {file} no editor SQL dele (SETUP.md, Upgrading an existing project): mantém todos os dados e pode ser executado de novo sem risco. Até lá, os recursos mais novos param com uma mensagem do servidor.",
- "wfp63a": "Falta {fn} no projeto na nuvem: quem o configurou precisa executar {file} no editor SQL dele (SETUP.md, Upgrading an existing project)."
+ "wfp63a": "Falta {fn} no projeto na nuvem: quem o configurou precisa executar {file} no editor SQL dele (SETUP.md, Upgrading an existing project).",
+ "1sycpsw": "Quem é para as crianças",
+ "16kc09a": "As pessoas adicionadas através de {name} não podem acompanhar para esse lugar: mova-as ou remova-as primeiro."
 }

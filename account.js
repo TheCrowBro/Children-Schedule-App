@@ -791,25 +791,56 @@ const Acct = (() => {
     const partner = (Sync.st.familyPeople[m.id] || []).find(q => q.role === 'parent' && q.id !== pick.user), names = famKidNames(m);
     return { family: m.id, ...(partner ? { partner: { id: FamilyTree.newId(), name: partner.name, user: partner.id } } : {}), kids: famKids(m).map((k, i) => ({ id: FamilyTree.newId(), name: names[i], kid: k.id })) };
   }
-  /** Add someone to the tree (kind, at: who they hang from), or change someone on it (id). Parents only. */
+  /** Every place on the tree someone could be moved to: with room, not through themselves (kind and whom they hang from, in plain
+      words with whose relative they would be), grouped by the side of the family; the place they are in is among them (now). */
+  function treeSlots(t, w) {
+    const nm = treeName, mine = new Set(FamilyTree.under(w.p)), upId = w.up ? w.up.id : null, groups = [];
+    const slot = (g, kind, at) => { if (at && mine.has(at.id)) return; g.push({ kind, at: at ? at.id : null, now: kind === w.kind && (at ? at.id : null) === upId, label: at ? `${__(KIN[kind])} · ${__(WHOSE[kind], { name: nm(at) })}` : __(KIN[kind]) }); };
+    const room = (list, max) => (list || []).includes(w.p) || (list || []).length < max, free = x => !x.partner || x.partner === w.p;
+    const top = []; if (room(t.parents, 2)) slot(top, 'parent', null); if (top.length) groups.push({ label: '', slots: top });
+    for (const s of t.parents) {
+      const g = [];
+      if (free(s)) slot(g, 'pstep', s);
+      if (s.partner && room(s.partner.kids, FamilyTree.MAX_KIDS)) slot(g, 'stepkid', s.partner);
+      if (room(s.gp, 2)) slot(g, 'gp', s);
+      for (const q of s.gp) {
+        if (free(q)) slot(g, 'gstep', q); if (room(q.gp, 2)) slot(g, 'ggp', q); if (room(q.sibs, FamilyTree.MAX_SIBS)) slot(g, 'gsib', q);
+        for (const b of q.sibs || []) { if (free(b)) slot(g, 'gpartner', b); if (room(b.kids, FamilyTree.MAX_KIDS)) slot(g, 'gcousin', b); }
+      }
+      if (room(s.sibs, FamilyTree.MAX_SIBS)) slot(g, 'sib', s);
+      for (const b of s.sibs) { if (free(b)) slot(g, 'partner', b); if (room(b.kids, FamilyTree.MAX_KIDS)) slot(g, 'cousin', b); }
+      if (g.length) groups.push({ label: __("{name}'s side", { name: nm(s) }), slots: g });
+    }
+    return groups;
+  }
+  /** Add someone to the tree (kind, at: who they hang from), or change someone on it (id): their name, what the children call them,
+      who they are to the children (any place with room; an aunt or uncle's partner and children come along to a great-aunt or
+      great-uncle's place and back, a parent's or grandparent's parents and siblings to the other's), and whose child an aunt or uncle
+      is. Parents only. */
   function relativeForm({ kind, at, id }) {
     const t = shownTree(), w = id ? FamilyTree.find(t, id) : null, up = w ? w.up : at ? (FamilyTree.find(t, at) || {}).p : null;
     if (id && !w) return;
     kind = w ? w.kind : kind;
     const p = w ? w.p : {}, picks = w ? [] : treeCandidates(t, kind), whose = WHOSE[kind] && up ? __(WHOSE[kind], { name: treeName(up) }) : '';
-    // an aunt or uncle, once a grandparent has a later partner: whose child (the couple's, that grandparent's with the partner, or the partner's from before)
-    const side = kind === 'sib' ? (w ? w.side : up) : null, gps = side ? side.gp : [];
-    const vias = gps.some(g => g.partner) ? [['', gps.length === 2 ? __("{a} and {b}'s", { a: treeName(gps[0]), b: treeName(gps[1]) }) : __("{name}'s", { name: treeName(gps[0]) })],
-      ...gps.flatMap(g => (g.partner ? [[g.id, __("{a} and {b}'s", { a: treeName(g), b: treeName(g.partner) })], [g.partner.id, __("{name}'s, from before", { name: treeName(g.partner) })]] : []))] : [];
+    // an aunt or uncle, once a grandparent of that side has a later partner: whose child (the couple's, that grandparent's with the partner, or the partner's from before)
+    const viasFor = side => { const gps = side ? side.gp : []; return gps.some(g => g.partner) ? [['', gps.length === 2 ? __("{a} and {b}'s", { a: treeName(gps[0]), b: treeName(gps[1]) }) : __("{name}'s", { name: treeName(gps[0]) })],
+      ...gps.flatMap(g => (g.partner ? [[g.id, __("{a} and {b}'s", { a: treeName(g), b: treeName(g.partner) })], [g.partner.id, __("{name}'s, from before", { name: treeName(g.partner) })]] : []))] : []; };
+    const viasHtml = (vias, via) => (vias.length ? `<label class="f">${__h('Whose child?')}</label><div class="chips">${vias.map(([v, l]) => chip('rlVia', v, esc(l), (via || '') === v, '', true)).join('')}</div>` : '');
+    let vias = viasFor(kind === 'sib' ? (w ? w.side : up) : null);
+    // who they are to the children: every place with room, the one they are in selected
+    const groups = w ? treeSlots(t, w) : [], slots = groups.flatMap(g => g.slots); slots.forEach((s, i) => { s.i = i; });
     const close = showSheet(`<h3>🌱 ${w ? esc(treeName(p)) : __h(ADDS[kind])}</h3>${whose ? `<p class="note" style="margin-top:0">${esc(whose)}</p>` : ''}
       ${picks.length ? `<label class="f">${__h('Already in Little Log')}</label><div class="chips">${picks.map((c, i) => chip('rlPick', i, `${esc(c.name)}${c.fam ? ` <small>· ${esc(c.fam)}</small>` : ''}`, false, '', true)).join('')}</div>` : ''}
       <label class="f" for="rlName">${__h('Name')}</label><input id="rlName" type="text" maxlength="40" value="${esc(p.name || '')}">
       <label class="f" for="rlCall">${__h('What the children call them')}</label><input id="rlCall" type="text" maxlength="24" value="${esc(p.call || '')}" placeholder="${__h('e.g. Nana, Grandpa Joe')}">
-      ${vias.length ? `<label class="f">${__h('Whose child?')}</label><div class="chips">${vias.map(([v, l]) => chip('rlVia', v, esc(l), (p.via || '') === v, '', true)).join('')}</div>` : ''}
+      ${slots.length > 1 ? `<label class="f" for="rlRel">${__h('Who they are to the children')}</label><select id="rlRel" class="fsel">${groups.map(g => { const o = g.slots.map(s => `<option value="${s.i}"${s.now ? ' selected' : ''}>${esc(s.label)}</option>`).join(''); return g.label ? `<optgroup label="${esc(g.label)}">${o}</optgroup>` : o; }).join('')}</select>` : ''}
+      <div id="rlVias">${viasHtml(vias, p.via)}</div>
       <div class="chips" style="margin-top:12px">${chip('rlGone', '1', __h('In loving memory'), !!p.gone)}</div>
       <div class="row" style="margin-top:14px"><button class="btn" data-close>${__h('Cancel')}</button><button class="btn p" id="rlSave">${w ? __h('Save') : __h('Add')}</button></div>
       ${w ? `<div class="row"><button class="btn d" id="rlRemove">${__h('Remove from the tree')}</button></div>` : ''}`);
     $('#sheet [data-close]').onclick = close;
+    const chosen = () => { const sel = $('#rlRel'); return sel ? slots[+sel.value] : null; };
+    if ($('#rlRel')) $('#rlRel').onchange = () => { const s = chosen(), side = s && s.kind === 'sib' ? t.parents.find(x => x.id === s.at) : null; vias = viasFor(side); $('#rlVias').innerHTML = viasHtml(vias, side === w.side ? p.via : ''); };
     const pick = () => picks[(document.querySelector('#sheet [name=rlPick]:checked') || {}).value];
     document.querySelectorAll('#sheet [name=rlPick]').forEach(r => r.onchange = () => { const c = pick(); if (c) $('#rlName').value = c.name; });
     $('#rlName').oninput = () => { const c = pick(); if (c && $('#rlName').value.trim() !== c.name) document.querySelector('#sheet [name=rlPick]:checked').checked = false; };   // (typed someone else)
@@ -821,7 +852,11 @@ const Acct = (() => {
       const name = $('#rlName').value.trim(), call = $('#rlCall').value.trim(), gone = !!document.querySelector('#sheet [name=rlGone]:checked'), c = pick();
       if (!name) return toast(__('Enter a name'));
       const via = vias.length ? ((document.querySelector('#sheet [name=rlVia]:checked') || {}).value || '') : undefined;
-      if (w) return save(tr => FamilyTree.update(tr, id, { name, call, gone, ...(via !== undefined ? { via } : {}) }), N_('Saved'));
+      if (w) {
+        const to = chosen(), moved = !!to && !to.now;
+        if (moved && !FamilyTree.movable(w, to.kind)) return toast(__('The people added through {name} cannot come along to that place: move or remove them first.', { name: treeName(p) }));
+        return save(tr => (!moved || FamilyTree.move(tr, id, to.kind, to.at, via)) && FamilyTree.update(tr, id, { name, call, gone, ...(via !== undefined ? { via } : {}) }), N_('Saved'));
+      }
       const person = { id: FamilyTree.newId(), name, call, gone, ...(via ? { via } : {}), ...(c ? { user: c.user } : {}), ...(c && c.family && kind === 'sib' ? fromFamily(c) : {}) };
       save(tr => FamilyTree.add(tr, kind, at, person), N_('Saved'));
     };

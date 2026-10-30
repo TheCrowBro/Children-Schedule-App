@@ -2671,5 +2671,7 @@
  "1oblwbb": "Het project draait databaseversie {have}; deze app heeft {need} nodig.",
  "32tjut": "De database van het project is van vóór {need}, de versie die deze app nodig heeft.",
  "64fxpb": "Wie het project heeft ingericht, voert {file} uit in de SQL-editor ervan (SETUP.md, Upgrading an existing project): alle gegevens blijven behouden en het bestand kan veilig nog eens worden uitgevoerd. Tot die tijd stoppen nieuwere functies met een melding van de server.",
- "wfp63a": "In het cloudproject ontbreekt {fn}: wie het heeft ingericht, moet {file} uitvoeren in de SQL-editor ervan (SETUP.md, Upgrading an existing project)."
+ "wfp63a": "In het cloudproject ontbreekt {fn}: wie het heeft ingericht, moet {file} uitvoeren in de SQL-editor ervan (SETUP.md, Upgrading an existing project).",
+ "1sycpsw": "Wie ze zijn voor de kinderen",
+ "16kc09a": "De mensen die via {name} zijn toegevoegd kunnen niet mee naar die plek: verplaats of verwijder ze eerst."
 }

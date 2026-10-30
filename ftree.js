@@ -133,6 +133,45 @@ const FamilyTree = (() => {
     return true;
   }
 
+  /** Everyone added through someone (ids, theirs first): a parent's or grandparent's parents, siblings and later partner, a brother
+      or sister's partner and children, a later partner's children. */
+  function under(p) {
+    const out = [p.id];
+    for (const k of ['gp', 'sibs', 'kids']) for (const q of p[k] || []) out.push(...under(q));
+    if (p.partner) out.push(...under(p.partner));
+    return out;
+  }
+  /** Whether everyone added through w.p can come along when they become `kind`: a brother or sister's partner and children to any
+      brother-or-sister place (an aunt or uncle's, a great-aunt or great-uncle's); a parent's or a grandparent's parents, siblings and
+      later partner to the other of those two places (a later partner with children of their own only to a parent's); nobody anywhere
+      else. True as well when nobody hangs from them. */
+  function movable(w, kind) {
+    const p = w.p;
+    if (!(['gp', 'sibs', 'kids'].some(k => (p[k] || []).length) || p.partner)) return true;
+    const sibs = ['sib', 'gsib'], tops = ['parent', 'gp'];
+    if (sibs.includes(w.kind) && sibs.includes(kind)) return true;
+    if (tops.includes(w.kind) && tops.includes(kind)) return !(kind === 'gp' && p.partner && (p.partner.kids || []).length);
+    return false;
+  }
+  /** Move someone to another place on the tree (kind and at as for add; via for a brother or sister), with everyone added through
+      them when movable says they can come along. Anyone said to be their child (via) stays, as the couple's child. False when there
+      is no room there, when they would hang from themselves or from someone added through them, or when their people cannot come. */
+  function move(t, id, kind, at, via) {
+    const w = find(t, id); if (!w || !movable(w, kind)) return false;
+    if (kind === w.kind && (w.up ? w.up.id : null) === (at || null)) return true;
+    if (at && under(w.p).includes(at)) return false;
+    const c = clean(t), v = find(c, id); if (!v) return false;
+    const p = { ...v.p }; delete p.via; if (kind === 'sib' && via) p.via = via;
+    for (const s of v.side.sibs) if (s.via === id || (v.p.partner && s.via === v.p.partner.id)) delete s.via;   // (they stay, as the couple's: remove would take them)
+    if (p.sibs) p.sibs = p.sibs.map(s => { const o = { ...s }; delete o.via; return o; });   // (whose child they are refers to this side's grandparents)
+    remove(c, id);
+    if (!add(c, kind, at, p)) return false;
+    const n = find(c, id).p;
+    if (kind === 'parent' || kind === 'gp') { n.gp = p.gp || []; n.sibs = p.sibs || []; }   // (add starts those empty)
+    t.parents = clean(c).parents;
+    return true;
+  }
+
   // ---- the picture: a soft watercolour of the family's tree ------------------------------------------------------------------
   // Each kind of tree has its bark, crown, leaves (the ones that fall), ground and two of the birds that sit in it where it grows.
   const SPECIES = {
@@ -612,5 +651,5 @@ const FamilyTree = (() => {
     live.onclick = e => { const bird = e.target.closest('[data-bird]'); if (bird) sing(bird); };
     live.onpointerdown = e => { if (e.target.closest('[data-bird]')) e.preventDefault(); };
   }
-  return { clean, walk, find, add, update, remove, draw, newId, speciesFor, look, stage, paintOnce, bindScroll, bindBirds, sing, KINDS, MAX_SIBS, MAX_KIDS };
+  return { clean, walk, find, add, update, remove, under, movable, move, draw, newId, speciesFor, look, stage, paintOnce, bindScroll, bindBirds, sing, KINDS, MAX_SIBS, MAX_KIDS };
 })();

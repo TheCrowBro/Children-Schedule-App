@@ -2617,5 +2617,7 @@
  "1oblwbb": "Dự án đang chạy cơ sở dữ liệu phiên bản {have}; ứng dụng này cần phiên bản {need}.",
  "32tjut": "Cơ sở dữ liệu của dự án có từ trước phiên bản {need}, phiên bản mà ứng dụng này cần.",
  "64fxpb": "Người đã thiết lập dự án chạy {file} trong trình soạn thảo SQL của dự án (SETUP.md, Upgrading an existing project): toàn bộ dữ liệu được giữ nguyên và có thể chạy lại tệp này một cách an toàn. Cho đến lúc đó, các tính năng mới hơn sẽ dừng lại kèm một thông báo từ máy chủ.",
- "wfp63a": "Dự án đám mây thiếu {fn}: người đã thiết lập dự án cần chạy {file} trong trình soạn thảo SQL của dự án (SETUP.md, Upgrading an existing project)."
+ "wfp63a": "Dự án đám mây thiếu {fn}: người đã thiết lập dự án cần chạy {file} trong trình soạn thảo SQL của dự án (SETUP.md, Upgrading an existing project).",
+ "1sycpsw": "Họ là ai đối với các con",
+ "16kc09a": "Những người được thêm qua {name} không thể cùng chuyển sang vị trí đó: hãy chuyển hoặc xóa họ trước."
 }

@@ -8693,1126 +8693,1138 @@
   {
    "id": "17jvkzb",
    "en": "{a} and {b}'s",
-   "where": "account.js:802",
+   "where": "account.js:826",
    "note": "A chip answering \"Whose child?\": the child of these two people (a grandparent couple, or a grandparent and their later partner). {a} and {b} are names."
   },
   {
    "id": "1fpvwni",
    "en": "{name}'s",
-   "where": "account.js:802",
+   "where": "account.js:826",
    "note": "A chip answering \"Whose child?\" when only one grandparent is on the tree. {name} is a name."
   },
   {
    "id": "xhygd9",
    "en": "{name}'s, from before",
-   "where": "account.js:803",
+   "where": "account.js:827",
    "note": "A chip answering \"Whose child?\": the later partner's own child from before they were together. {name} is the later partner."
+  },
+  {
+   "id": "29zjk2",
+   "en": "Whose child?",
+   "where": "account.js:828",
+   "note": "On the aunt-or-uncle form once a grandparent has a later partner: the chip row that follows says whose child this aunt or uncle is."
   },
   {
    "id": "gqu694",
    "en": "Already in Little Log",
-   "where": "account.js:805",
+   "where": "account.js:833",
    "note": "Above a list of people who use the app (in this family or a relative's), to pick one instead of typing a name, when adding someone to the family tree."
   },
   {
    "id": "jw6dsg",
    "en": "e.g. Nana, Grandpa Joe",
-   "where": "account.js:807",
+   "where": "account.js:835",
    "note": "Example in the field 'What the children call them'. Use names children in your language would use for grandparents."
   },
   {
-   "id": "29zjk2",
-   "en": "Whose child?",
-   "where": "account.js:808",
-   "note": "On the aunt-or-uncle form once a grandparent has a later partner: the chip row that follows says whose child this aunt or uncle is."
+   "id": "1sycpsw",
+   "en": "Who they are to the children",
+   "where": "account.js:836",
+   "note": "Label of a drop-down on the family tree's edit sheet: the person's place on the tree (parent, grandparent, aunt or uncle, cousin, step-parent…), which a parent can change here."
   },
   {
    "id": "157u7bc",
    "en": "Remove from the tree",
-   "where": "account.js:811",
+   "where": "account.js:840",
    "note": "Red button on the sheet that changes someone on the family tree."
+  },
+  {
+   "id": "16kc09a",
+   "en": "The people added through {name} cannot come along to that place: move or remove them first.",
+   "where": "account.js:857",
+   "note": "Shown when a parent tries to move someone on the family tree to a place where the people added through them (a partner, children, parents, siblings) cannot follow. {name} is the person's name."
   },
   {
    "id": "9ztoc9",
    "en": "Remove {name} from the family tree? Anyone added through them goes too.",
-   "where": "account.js:829",
+   "where": "account.js:864",
    "note": "Question before taking someone off the family tree: their parents, partner and children on the tree are removed with them."
   },
   {
    "id": "fzlb29",
    "en": "Latest big moments",
-   "where": "account.js:840",
+   "where": "account.js:875",
    "note": "On the family tree: a child's most recent big moments."
   },
   {
    "id": "wo8v8p",
    "en": "Show {name}'s day",
-   "where": "account.js:841",
+   "where": "account.js:876",
    "note": "Button on a child's card, opened by tapping the child on the family tree: show that child's Day page (switching to their family first). {name} is the child's name."
   },
   {
    "id": "1j6rifw",
    "en": "Showing",
-   "where": "account.js:861",
+   "where": "account.js:896",
    "note": "Shown next to the child whose log is open."
   },
   {
    "id": "n6hn1l",
    "en": "Open",
-   "where": "account.js:861",
+   "where": "account.js:896",
    "note": "Button in the family tree: show this family's log."
   },
   {
    "id": "svogpz",
    "en": "Family: {names}",
-   "where": "account.js:863",
+   "where": "account.js:898",
    "note": "In the family tree, under a family: its relatives (parents and family members), e.g. \"Family: Dad and Gran\"."
   },
   {
    "id": "11didv",
    "one": "{n} change not sent yet: it goes when you open this family.",
    "other": "{n} changes not sent yet: they go when you open this family.",
-   "where": "account.js:864",
+   "where": "account.js:899",
    "note": "In the family tree, on a family kept on the phone that has changes made offline that have not reached the server yet."
   },
   {
    "id": "1d71jrf",
    "one": "{n} waiting for your approval",
    "other": "{n} waiting for your approval",
-   "where": "account.js:867",
+   "where": "account.js:902",
    "note": "Under the title of the families list (folded up): how many people asked to join one of the families you are a parent in; their requests are inside the list."
   },
   {
    "id": "1q9d67b",
    "en": "Families you help with",
-   "where": "account.js:874",
+   "where": "account.js:909",
    "note": "Heading in the Family tab: the families this person looks after as a caregiver, babysitter, medical assistant or friend (not a relative), listed apart from the family tree."
   },
   {
    "id": "195vm2m",
    "en": "Looking after someone else's children? Ask one of their parents to open Family → Invite someone in their Little Log, choose what you may do, and show you the QR code. Scan it here. Once they approve, their family appears here: in your family tree if you are family, or with the families you help with. You can switch between families at any time.",
-   "where": "account.js:885"
+   "where": "account.js:920"
   },
   {
    "id": "r0rx4m",
    "en": "Or enter a code",
-   "where": "account.js:887"
+   "where": "account.js:922"
   },
   {
    "id": "1b0i0ln",
    "en": "Switching…",
-   "where": "account.js:896",
+   "where": "account.js:931",
    "note": "On a button while the app switches to another family's log."
   },
   {
    "id": "1p7x3j8",
    "en": "Now showing {family}",
-   "where": "account.js:899",
+   "where": "account.js:934",
    "note": "Short message after switching to another family's log."
   },
   {
    "id": "1uu4057",
    "en": "Could not switch: {reason}",
-   "where": "account.js:900",
+   "where": "account.js:935",
    "note": "Short message when switching to another family's log failed; {reason} says why."
   },
   {
    "id": "428lqp",
    "en": "The cloud project needs an update",
-   "where": "account.js:923",
+   "where": "account.js:958",
    "note": "Title of a notice shown to parents: the family's cloud project (its Supabase database) runs an older version than the app needs."
   },
   {
    "id": "1oblwbb",
    "en": "The project runs database version {have}; this app needs {need}.",
-   "where": "account.js:923",
+   "where": "account.js:958",
    "note": "In that notice. {have} and {need} are version numbers like 1.16.0 and 1.21.0."
   },
   {
    "id": "32tjut",
    "en": "The project runs a database from before {need}, which this app needs.",
-   "where": "account.js:923",
+   "where": "account.js:958",
    "note": "In that notice, when the project is so old it cannot even say which version it runs. {need} is a version number like 1.21.0."
   },
   {
    "id": "64fxpb",
    "en": "Whoever set up the project runs {file} in its SQL editor (SETUP.md, Upgrading an existing project): it keeps all the data and is safe to run again. Until then, newer features stop with a message from the server.",
-   "where": "account.js:924",
+   "where": "account.js:959",
    "note": "In that notice: what to do. {file} is a file name (supabase/upgrade.sql); 'SQL editor' and 'SETUP.md' stay in English; 'Upgrading an existing project' is a section title in SETUP.md (translate it, in quotes if that reads better)."
   },
   {
    "id": "1gq61a6",
    "en": "Family sharing is off",
-   "where": "account.js:928"
+   "where": "account.js:963"
   },
   {
    "id": "ky2bmd",
    "en": "Account service isn't configured (see {file}), so this device keeps its own private log.",
-   "where": "account.js:928"
+   "where": "account.js:963"
   },
   {
    "id": "1h3zh7v",
    "en": "Create a baby log to share it.",
-   "where": "account.js:928"
+   "where": "account.js:963"
   },
   {
    "id": "fwc5ed",
    "en": "(you)",
-   "where": "account.js:933",
+   "where": "account.js:968",
    "note": "After your own name in the list of people."
   },
   {
    "id": "rgquxi",
    "en": "Retire",
-   "where": "account.js:934",
+   "where": "account.js:969",
    "note": "Button for a parent: mark a caregiver, babysitter, medical assistant or friend as no longer helping (they moved away, stopped, or died). Their access ends; a note of them stays."
   },
   {
    "id": "1pfop4f",
    "one": "Retired ({n})",
    "other": "Retired ({n})",
-   "where": "account.js:939",
+   "where": "account.js:974",
    "note": "Heading of a twirl-down list of the helpers who were retired, with how many there are."
   },
   {
    "id": "1btxyhw",
    "en": "People with access",
-   "where": "account.js:942"
+   "where": "account.js:977"
   },
   {
    "id": "1n21p20",
    "en": "No caregivers, babysitters or medical assistants yet. A parent invites them below.",
-   "where": "account.js:944",
+   "where": "account.js:979",
    "note": "Shown when the list of caregivers and helpers is empty."
   },
   {
    "id": "n79ifp",
    "en": "Waiting for your approval",
-   "where": "account.js:946"
+   "where": "account.js:981"
   },
   {
    "id": "dkqsq6",
    "en": "Phones waiting for access",
-   "where": "account.js:948"
+   "where": "account.js:983"
   },
   {
    "id": "1o9wpqf",
    "en": "Their phone shows a security code. Check it matches:",
-   "where": "account.js:949"
+   "where": "account.js:984"
   },
   {
    "id": "ig5t6m",
    "en": "Approve phone",
-   "where": "account.js:950",
+   "where": "account.js:985",
    "note": "Button: let this phone see the family log (it gets the encryption keys)."
   },
   {
    "id": "1jjth6k",
    "en": "Encryption",
-   "where": "account.js:952",
+   "where": "account.js:987",
    "note": "End-to-end encryption of the log."
   },
   {
    "id": "1eszant",
    "en": "Everything in this log is end-to-end encrypted. The server only stores scrambled data and can't read the baby's name, entries or notes.",
-   "where": "account.js:953"
+   "where": "account.js:988"
   },
   {
    "id": "1man39a",
    "en": "Check this security code",
-   "where": "account.js:954"
+   "where": "account.js:989"
   },
   {
    "id": "wvkb9y",
    "en": "You joined without scanning a QR code. Make sure this code matches the one on a parent's phone. If it doesn't, tell them straight away.",
-   "where": "account.js:954"
+   "where": "account.js:989"
   },
   {
    "id": "vj8u8n",
    "en": "No recovery code confirmed",
-   "where": "account.js:955"
+   "where": "account.js:990"
   },
   {
    "id": "26fbm2",
    "en": "If you lose your only phone you could lose access for good. Create a recovery code and keep it somewhere safe.",
-   "where": "account.js:955"
+   "where": "account.js:990"
   },
   {
    "id": "easolq",
    "en": "Log security code",
-   "where": "account.js:956"
+   "where": "account.js:991"
   },
   {
    "id": "suup5f",
    "en": "Everyone sharing the log sees the same code",
-   "where": "account.js:956"
+   "where": "account.js:991"
   },
   {
    "id": "1sbkyvk",
    "en": "My phones",
-   "where": "account.js:957",
+   "where": "account.js:992",
    "note": "The phones (and browsers) signed in to your account."
   },
   {
    "id": "odg6sd",
    "en": "Remove a lost phone: its keys are deleted and the log's keys are changed",
-   "where": "account.js:957"
+   "where": "account.js:992"
   },
   {
    "id": "1msk5mq",
    "en": "(this phone)",
-   "where": "account.js:958",
+   "where": "account.js:993",
    "note": "After the name of the phone you are using, in the list of phones."
   },
   {
    "id": "1xgge4v",
    "en": "added {date}",
-   "where": "account.js:958",
+   "where": "account.js:993",
    "note": "When a phone was added: {date} is a date."
   },
   {
    "id": "1lihafo",
    "en": "Create a new recovery code",
-   "where": "account.js:959"
+   "where": "account.js:994"
   },
   {
    "id": "5m2rd5",
    "en": "{name}'s shared log",
-   "where": "account.js:961"
+   "where": "account.js:996"
   },
   {
    "id": "mva0w2",
    "en": "Baby's shared log",
-   "where": "account.js:961"
+   "where": "account.js:996"
   },
   {
    "id": "19b75z2",
    "en": "Sync now",
-   "where": "account.js:962"
+   "where": "account.js:997"
   },
   {
    "id": "1rf4sym",
    "one": "{n} change was not allowed with your access and was undone.",
    "other": "{n} changes were not allowed with your access and were undone.",
-   "where": "account.js:963"
+   "where": "account.js:998"
   },
   {
    "id": "dl32el",
    "en": "Signed in as {email} · {role}",
-   "where": "account.js:964"
+   "where": "account.js:999"
   },
   {
    "id": "l63xh3",
    "en": "Invites, the activity log, encryption and your phones",
-   "where": "account.js:967"
+   "where": "account.js:1002"
   },
   {
    "id": "1y408m1",
    "en": "Encryption and your phones",
-   "where": "account.js:967"
+   "where": "account.js:1002"
   },
   {
    "id": "1x66rwc",
    "en": "Invite someone",
-   "where": "account.js:968"
+   "where": "account.js:1003"
   },
   {
    "id": "15iktob",
    "en": "Invites work once and last 2 hours. After they scan it, you approve them.",
-   "where": "account.js:969"
+   "where": "account.js:1004"
   },
   {
    "id": "5u117i",
    "en": "Create invite QR code",
-   "where": "account.js:971"
+   "where": "account.js:1006"
   },
   {
    "id": "d92jy7",
    "en": "Open invites",
-   "where": "account.js:973",
+   "where": "account.js:1008",
    "note": "Invites that have not been used yet."
   },
   {
    "id": "bi2jq4",
    "en": "Show",
-   "where": "account.js:974",
+   "where": "account.js:1009",
    "note": "Button: show (an invite code, or another child's log)."
   },
   {
    "id": "ba228f",
    "en": "Rescind",
-   "where": "account.js:974",
+   "where": "account.js:1009",
    "note": "Button: cancel an invite."
   },
   {
    "id": "zz67iu",
    "en": "Activity log",
-   "where": "account.js:975",
+   "where": "account.js:1010",
    "note": "Heading and sheet: the log of who added, changed or deleted what."
   },
   {
    "id": "11j1iq1",
    "en": "Who added, changed or deleted what, and who joined or left.",
-   "where": "account.js:975"
+   "where": "account.js:1010"
   },
   {
    "id": "v83ftp",
    "en": "Only parents can see this.",
-   "where": "account.js:975"
+   "where": "account.js:1010"
   },
   {
    "id": "q5w460",
    "en": "View",
-   "where": "account.js:975",
+   "where": "account.js:1010",
    "note": "Button: open the activity log."
   },
   {
    "id": "1ay4pfi",
    "en": "Leave this log",
-   "where": "account.js:977"
+   "where": "account.js:1012"
   },
   {
    "id": "1u7tgh6",
    "en": "Could not draw the QR code – use the code instead.",
-   "where": "account.js:980"
+   "where": "account.js:1015"
   },
   {
    "id": "ofmudc",
    "en": "Invite QR code",
-   "where": "account.js:981"
+   "where": "account.js:1016"
   },
   {
    "id": "yuaehp",
    "en": "{role} · works once · lasts 2 hours. They scan this inside Little Log (best: it also proves it's really their phone), or type the code and you compare security codes. You'll get a request to approve.",
-   "where": "account.js:983"
+   "where": "account.js:1018"
   },
   {
    "id": "5gnh65",
    "en": "Share code",
-   "where": "account.js:984",
+   "where": "account.js:1019",
    "note": "Button: share an invite code."
   },
   {
    "id": "1e17m8",
    "en": "Thanks",
-   "where": "account.js:995",
+   "where": "account.js:1030",
    "note": "Message: thanks for checking."
   },
   {
    "id": "nnyvo1",
    "en": "Remove this phone? Its keys are deleted and the log changes to new keys, so it can read nothing new.",
-   "where": "account.js:997"
+   "where": "account.js:1032"
   },
   {
    "id": "19gda77",
    "en": "Phone removed",
-   "where": "account.js:998"
+   "where": "account.js:1033"
   },
   {
    "id": "jv7qqc",
    "en": "Leave this log? You will lose access unless invited again.",
-   "where": "account.js:1015"
+   "where": "account.js:1050"
   },
   {
    "id": "1nw10jo",
    "en": "Little Log invite",
-   "where": "account.js:1024"
+   "where": "account.js:1059"
   },
   {
    "id": "1d0iu8f",
    "en": "Join {name}'s log in the Little Log app. Invite code: {code} (valid for 2 hours)",
-   "where": "account.js:1024"
+   "where": "account.js:1059"
   },
   {
    "id": "h5eyua",
    "en": "Join our baby's log in the Little Log app. Invite code: {code} (valid for 2 hours)",
-   "where": "account.js:1024"
+   "where": "account.js:1059"
   },
   {
    "id": "1oikyat",
    "en": "Rescind this invite? The code stops working immediately.",
-   "where": "account.js:1027"
+   "where": "account.js:1062"
   },
   {
    "id": "6gk2v1",
    "en": "Compare the security code with that phone, then tick \"It matches\"",
-   "where": "account.js:1033"
+   "where": "account.js:1068"
   },
   {
    "id": "qrv7vm",
    "en": "Phone approved",
-   "where": "account.js:1034"
+   "where": "account.js:1069"
   },
   {
    "id": "a0v0yx",
    "en": "Create a new recovery code? The old one stops working.",
-   "where": "account.js:1037"
+   "where": "account.js:1072"
   },
   {
    "id": "7fp6jf",
    "en": "Relationship",
-   "where": "account.js:1047",
+   "where": "account.js:1082",
    "note": "Field: how this person is related to the child (grandparent, nanny …)."
   },
   {
    "id": "1r1ym0a",
    "en": "Place of work",
-   "where": "account.js:1047",
+   "where": "account.js:1082",
    "note": "Field: where this person works (to reach them)."
   },
   {
    "id": "v2ytgc",
    "en": "Work phone",
-   "where": "account.js:1047",
+   "where": "account.js:1082",
    "note": "Field: the person's work phone number."
   },
   {
    "id": "1wvf3o6",
    "en": "retired {date}",
-   "where": "account.js:1049",
+   "where": "account.js:1084",
    "note": "On the Retired list, after a person's role: when they were retired, e.g. \"Babysitter · retired Mar 3, 2026 · Moved away\"."
   },
   {
    "id": "1udxrmv",
    "en": "Retire {name}",
-   "where": "account.js:1054",
+   "where": "account.js:1089",
    "note": "Title of the sheet for retiring a caregiver, babysitter, medical assistant or friend."
   },
   {
    "id": "1ld6him",
    "en": "For a caregiver, babysitter, medical assistant or friend who no longer helps. Their access ends now, as if they were removed, and the log changes its keys. They stay on the Retired list with their details, and their entries still say who added them. To have them back, invite them again.",
-   "where": "account.js:1055"
+   "where": "account.js:1090"
   },
   {
    "id": "1xy3x59",
    "en": "{name} is retired",
-   "where": "account.js:1061",
+   "where": "account.js:1096",
    "note": "Short message after a parent retired a helper."
   },
   {
    "id": "1ove7hz",
    "en": "No details were added.",
-   "where": "account.js:1068",
+   "where": "account.js:1103",
    "note": "On a retired helper's card, when they never added contact details."
   },
   {
    "id": "xio9ig",
    "en": "Remove from the list",
-   "where": "account.js:1070",
+   "where": "account.js:1105",
    "note": "Button on a retired helper's card: delete the note about them from the Retired list."
   },
   {
    "id": "15d4rna",
    "en": "Remove {name} from the Retired list? Their details are deleted.",
-   "where": "account.js:1073",
+   "where": "account.js:1108",
    "note": "Question before deleting the note about a retired helper."
   },
   {
    "id": "13u6tkc",
    "en": "Everyone who can see the family list sees these. They are end-to-end encrypted like the rest of the log.",
-   "where": "account.js:1082"
+   "where": "account.js:1117"
   },
   {
    "id": "h800lh",
    "en": "Relationship to the baby",
-   "where": "account.js:1083"
+   "where": "account.js:1118"
   },
   {
    "id": "17925i2",
    "en": "e.g. Mum, Grandma, Nanny",
-   "where": "account.js:1083"
+   "where": "account.js:1118"
   },
   {
    "id": "w5m8mg",
    "en": "e.g. best times to call, allergies, car seat in my car",
-   "where": "account.js:1085"
+   "where": "account.js:1120"
   },
   {
    "id": "8466ij",
    "en": "No details yet. People add their own phone number and work details from their phone: Family → tap their name.",
-   "where": "account.js:1088"
+   "where": "account.js:1123"
   },
   {
    "id": "1mc867p",
    "en": "Change access",
-   "where": "account.js:1090",
+   "where": "account.js:1125",
    "note": "Button: change this person's role and permissions."
   },
   {
    "id": "12tugp4",
    "en": "Name (shown to the family)",
-   "where": "account.js:1102"
+   "where": "account.js:1137"
   },
   {
    "id": "trf43a",
    "en": "Reset two-step verification",
-   "where": "account.js:1105"
+   "where": "account.js:1140"
   },
   {
    "id": "1p6956n",
    "en": "Remove from this log",
-   "where": "account.js:1106"
+   "where": "account.js:1141"
   },
   {
    "id": "17veo81",
    "en": "Reset two-step verification for {name}? They will set it up again next time they sign in.",
-   "where": "account.js:1113"
+   "where": "account.js:1148"
   },
   {
    "id": "2zps2o",
    "en": "Reset",
-   "where": "account.js:1113",
+   "where": "account.js:1148",
    "note": "Message: two-step verification was reset for that person."
   },
   {
    "id": "ammfqg",
    "en": "Remove {name} from this log? They lose access immediately.",
-   "where": "account.js:1114"
+   "where": "account.js:1149"
   },
   {
    "id": "1qrdk3r",
    "en": "{actor} created the log",
-   "where": "account.js:1118"
+   "where": "account.js:1153"
   },
   {
    "id": "ampxxo",
    "en": "{actor} changed the children's details",
-   "where": "account.js:1118"
+   "where": "account.js:1153"
   },
   {
    "id": "14cm2g5",
    "en": "{actor} added a private (health) entry",
-   "where": "account.js:1120"
+   "where": "account.js:1155"
   },
   {
    "id": "17xppqf",
    "en": "{actor} added an entry",
-   "where": "account.js:1120"
+   "where": "account.js:1155"
   },
   {
    "id": "mynqpr",
    "en": "{actor} edited a private entry added by {author}",
-   "where": "account.js:1121"
+   "where": "account.js:1156"
   },
   {
    "id": "7vya2e",
    "en": "{actor} edited an entry added by {author}",
-   "where": "account.js:1121"
+   "where": "account.js:1156"
   },
   {
    "id": "e8smwf",
    "en": "{actor} edited a private entry",
-   "where": "account.js:1121"
+   "where": "account.js:1156"
   },
   {
    "id": "1yrmi8m",
    "en": "{actor} edited an entry",
-   "where": "account.js:1121"
+   "where": "account.js:1156"
   },
   {
    "id": "yn3v4j",
    "en": "{actor} deleted a private entry added by {author}",
-   "where": "account.js:1122"
+   "where": "account.js:1157"
   },
   {
    "id": "79w3zm",
    "en": "{actor} deleted an entry added by {author}",
-   "where": "account.js:1122"
+   "where": "account.js:1157"
   },
   {
    "id": "18wra8j",
    "en": "{actor} deleted a private entry",
-   "where": "account.js:1122"
+   "where": "account.js:1157"
   },
   {
    "id": "aw8e5u",
    "en": "{actor} deleted an entry",
-   "where": "account.js:1122"
+   "where": "account.js:1157"
   },
   {
    "id": "19jvp2e",
    "en": "{actor} approved {person}'s phone",
-   "where": "account.js:1123"
+   "where": "account.js:1158"
   },
   {
    "id": "yv8prm",
    "en": "{actor} changed the encryption keys",
-   "where": "account.js:1123"
+   "where": "account.js:1158"
   },
   {
    "id": "81j82f",
    "en": "{actor} created a new recovery code",
-   "where": "account.js:1123"
+   "where": "account.js:1158"
   },
   {
    "id": "krdrbg",
    "en": "{actor} created a {role} invite",
-   "where": "account.js:1124",
+   "where": "account.js:1159",
    "note": "Activity log. {actor} is a person's name, {role} a role (Parent, Friend …, translated). Reword freely, e.g. 'created an invite for a {role}'."
   },
   {
    "id": "18924q9",
    "en": "{actor} rescinded a {role} invite",
-   "where": "account.js:1124",
+   "where": "account.js:1159",
    "note": "Activity log. {actor} is a person's name, {role} a role. Rescinded = cancelled."
   },
   {
    "id": "d5iije",
    "en": "{email} asked to join as {role}",
-   "where": "account.js:1125",
+   "where": "account.js:1160",
    "note": "Activity log. {email} is an email address, {role} a role."
   },
   {
    "id": "lnhg5v",
    "en": "{actor} approved {email} as {role}",
-   "where": "account.js:1126",
+   "where": "account.js:1161",
    "note": "Activity log. {actor} is a person's name, {email} an email address, {role} a role."
   },
   {
    "id": "5hayu3",
    "en": "{actor} denied {email}",
-   "where": "account.js:1126"
+   "where": "account.js:1161"
   },
   {
    "id": "1px2t7n",
    "en": "{actor} made {person} a {role}",
-   "where": "account.js:1127",
+   "where": "account.js:1162",
    "note": "Activity log. {actor} and {person} are people's names, {role} a role."
   },
   {
    "id": "wtajz6",
    "en": "{actor} changed what {person} can do",
-   "where": "account.js:1127"
+   "where": "account.js:1162"
   },
   {
    "id": "1mkuiqt",
    "en": "{actor} removed {person}",
-   "where": "account.js:1128"
+   "where": "account.js:1163"
   },
   {
    "id": "arar4a",
    "en": "{actor} retired {person}",
-   "where": "account.js:1128",
+   "where": "account.js:1163",
    "note": "A line of the activity log: a parent retired a helper."
   },
   {
    "id": "3pjyx9",
    "en": "{actor} changed the family tree",
-   "where": "account.js:1128",
+   "where": "account.js:1163",
    "note": "A line of the activity log (parents only)."
   },
   {
    "id": "17l8jqe",
    "en": "{person} left the log",
-   "where": "account.js:1128"
+   "where": "account.js:1163"
   },
   {
    "id": "1qsfyq7",
    "en": "{actor} reset two-step verification for {person}",
-   "where": "account.js:1129"
+   "where": "account.js:1164"
   },
   {
    "id": "q5xh9l",
    "en": "{actor} renamed {person} to {name}",
-   "where": "account.js:1130"
+   "where": "account.js:1165"
   },
   {
    "id": "1abafpd",
    "en": "Older",
-   "where": "account.js:1138",
+   "where": "account.js:1173",
    "note": "Button: show older activity."
   },
   {
    "id": "1oep3py",
    "en": "Nothing yet.",
-   "where": "account.js:1147"
+   "where": "account.js:1182"
   },
   {
    "id": "pgomd8",
    "en": "Signed in as",
-   "where": "account.js:1160"
+   "where": "account.js:1195"
   },
   {
    "id": "9lqocm",
    "en": "On (required for parents)",
-   "where": "account.js:1162",
+   "where": "account.js:1197",
    "note": "Two-step verification is on, and parents must have it."
   },
   {
    "id": "1kvu7gr",
    "en": "Turn off",
-   "where": "account.js:1163",
+   "where": "account.js:1198",
    "note": "Button: turn a setting off."
   },
   {
    "id": "363enf",
    "en": "App lock",
-   "where": "account.js:1164",
+   "where": "account.js:1199",
    "note": "Locking the app with the phone's fingerprint, face or passcode."
   },
   {
    "id": "j4duii",
    "en": "When Little Log opens, and after time away",
-   "where": "account.js:1164"
+   "where": "account.js:1199"
   },
   {
    "id": "1uednk",
    "en": "Face ID / fingerprint",
-   "where": "account.js:1164"
+   "where": "account.js:1199"
   },
   {
    "id": "1voxu44",
    "en": "PIN",
-   "where": "account.js:1164"
+   "where": "account.js:1199"
   },
   {
    "id": "w6yug5",
    "en": "4 to 8 digits, known only to you",
-   "where": "account.js:1165"
+   "where": "account.js:1200"
   },
   {
    "id": "1hymary",
    "en": "Change PIN",
-   "where": "account.js:1165"
+   "where": "account.js:1200"
   },
   {
    "id": "dr8d3t",
    "en": "Also unlock with Face ID / fingerprint",
-   "where": "account.js:1166"
+   "where": "account.js:1201"
   },
   {
    "id": "skr3f0",
    "en": "Lock after",
-   "where": "account.js:1167",
+   "where": "account.js:1202",
    "note": "How soon the app locks after you leave it."
   },
   {
    "id": "1adt119",
    "en": "when you leave the app",
-   "where": "account.js:1167",
+   "where": "account.js:1202",
    "note": "Under 'Lock after'."
   },
   {
    "id": "1doizj5",
    "en": "Immediately",
-   "where": "account.js:1167",
+   "where": "account.js:1202",
    "note": "Lock after: straight away."
   },
   {
    "id": "1u24fbg",
    "one": "{n} minute",
    "other": "{n} minutes",
-   "where": "account.js:1167"
+   "where": "account.js:1202"
   },
   {
    "id": "1dqy10a",
    "en": "Sign out everywhere",
-   "where": "account.js:1168"
+   "where": "account.js:1203"
   },
   {
    "id": "wx8j6p",
    "en": "Delete account",
-   "where": "account.js:1169"
+   "where": "account.js:1204"
   },
   {
    "id": "1v9mt2q",
    "en": "Two-step verification on",
-   "where": "account.js:1172"
+   "where": "account.js:1207"
   },
   {
    "id": "tfuj44",
    "en": "Two-step verification off",
-   "where": "account.js:1172"
+   "where": "account.js:1207"
   },
   {
    "id": "1lm3iak",
    "en": "App lock on",
-   "where": "account.js:1172"
+   "where": "account.js:1207"
   },
   {
    "id": "2xpsd2",
    "en": "App lock off",
-   "where": "account.js:1172"
+   "where": "account.js:1207"
   },
   {
    "id": "1szs466",
    "en": "daily",
-   "where": "account.js:1176"
+   "where": "account.js:1211"
   },
   {
    "id": "1h3vyoo",
    "en": "Saved to a file {when}",
-   "where": "account.js:1177"
+   "where": "account.js:1212"
   },
   {
    "id": "11pg53j",
    "en": "Not set up",
-   "where": "account.js:1177"
+   "where": "account.js:1212"
   },
   {
    "id": "o9xm9e",
    "en": "This is done once, on a computer, by whoever builds the app: each service hands out a public key that goes into config.js, then the app is rebuilt and that service shows Connect here. The app id is **{id}** and its redirect address is **{redirect}**.",
-   "where": "account.js:1181"
+   "where": "account.js:1216"
   },
   {
    "id": "jg1q5l",
    "en": "Go to dropbox.com/developers/apps and choose Create app: scoped access, App folder, any name.",
-   "where": "account.js:1182"
+   "where": "account.js:1217"
   },
   {
    "id": "uhk631",
    "en": "Under Permissions tick files.content.write and files.content.read, then Submit.",
-   "where": "account.js:1182"
+   "where": "account.js:1217"
   },
   {
    "id": "17ow82r",
    "en": "Under Settings add the redirect address to OAuth 2 → Redirect URIs.",
-   "where": "account.js:1183"
+   "where": "account.js:1218"
   },
   {
    "id": "t6jmx9",
    "en": "Copy the App key into config.js as dropboxKey.",
-   "where": "account.js:1183"
+   "where": "account.js:1218"
   },
   {
    "id": "1teixn4",
    "en": "In the Google Cloud console (console.cloud.google.com) create a project and turn on the Google Drive API under APIs & Services → Library.",
-   "where": "account.js:1184"
+   "where": "account.js:1219"
   },
   {
    "id": "w6rjzy",
    "en": "Under OAuth consent screen choose External, name the app, add the scope …/auth/drive.appdata and add yourself as a test user (until the app is published, only test users can sign in).",
-   "where": "account.js:1185"
+   "where": "account.js:1220"
   },
   {
    "id": "1x6sf91",
    "en": "Under Credentials create an OAuth client ID of type iOS, with the app id as its bundle id.",
-   "where": "account.js:1186"
+   "where": "account.js:1221"
   },
   {
    "id": "16qtgyl",
    "en": "Copy the client ID (it ends in .apps.googleusercontent.com) into config.js as googleClientId; the build registers its redirect scheme for you.",
-   "where": "account.js:1186"
+   "where": "account.js:1221"
   },
   {
    "id": "luuh8l",
    "en": "In the Azure portal (portal.azure.com) go to Microsoft Entra ID → App registrations → New registration: any name; accounts in any organisational directory and personal Microsoft accounts.",
-   "where": "account.js:1187"
+   "where": "account.js:1222"
   },
   {
    "id": "1seattu",
    "en": "Under Authentication add a platform, Mobile and desktop applications, with the redirect address as a custom redirect URI, and allow public client flows.",
-   "where": "account.js:1188"
+   "where": "account.js:1223"
   },
   {
    "id": "16x7ei9",
    "en": "Under API permissions add Microsoft Graph → Delegated → Files.ReadWrite.AppFolder and offline_access.",
-   "where": "account.js:1189"
+   "where": "account.js:1224"
   },
   {
    "id": "1w02qbl",
    "en": "Copy the Application (client) ID into config.js as msClientId.",
-   "where": "account.js:1189"
+   "where": "account.js:1224"
   },
   {
    "id": "1aixmvu",
    "en": "Then rebuild and install the app: npm run sync, then run it from Android Studio or Xcode. Each service you set up shows Connect here; signing in opens in the browser and comes back to the app.",
-   "where": "account.js:1190"
+   "where": "account.js:1225"
   },
   {
    "id": "wrs8j3",
    "en": "iCloud Drive needs no setup: Save below puts the encrypted file in Files.",
-   "where": "account.js:1191"
+   "where": "account.js:1226"
   },
   {
    "id": "hor5fb",
    "en": "How to set up Google Drive, Dropbox or OneDrive",
-   "where": "account.js:1196"
+   "where": "account.js:1231"
   },
   {
    "id": "xpkizn",
    "en": "Not set up by the app owner",
-   "where": "account.js:1204"
+   "where": "account.js:1239"
   },
   {
    "id": "2j5a67",
    "en": "Last backup {when}",
-   "where": "account.js:1204"
+   "where": "account.js:1239"
   },
   {
    "id": "ye8ewg",
    "en": "Connected",
-   "where": "account.js:1204",
+   "where": "account.js:1239",
    "note": "Cloud backup: connected to this service."
   },
   {
    "id": "b9v859",
    "en": "Not connected",
-   "where": "account.js:1204",
+   "where": "account.js:1239",
    "note": "Cloud backup: not connected to this service."
   },
   {
    "id": "u5dmwr",
    "en": "Back up",
-   "where": "account.js:1206",
+   "where": "account.js:1241",
    "note": "Button: save a backup to the cloud service now (verb)."
   },
   {
    "id": "4fiyr5",
    "en": "Restore",
-   "where": "account.js:1206",
+   "where": "account.js:1241",
    "note": "Button: bring back the log from the backup."
   },
   {
    "id": "iom7js",
    "en": "Disconnect {service}",
-   "where": "account.js:1206",
+   "where": "account.js:1241",
    "note": "Spoken label of the ✕ button: {service} is Google Drive, Dropbox or OneDrive."
   },
   {
    "id": "1owwfx5",
    "en": "Connect",
-   "where": "account.js:1207",
+   "where": "account.js:1242",
    "note": "Button: connect a cloud service (Google Drive, Dropbox, OneDrive)."
   },
   {
    "id": "k57a00",
    "en": "Keep a private, encrypted copy in your own cloud storage. It is scrambled on this phone with your passphrase, so the provider can't read it. The passphrase is kept in the phone's secure storage. **If you lose it, the backup can't be recovered**, so write it down.",
-   "where": "account.js:1210"
+   "where": "account.js:1245"
   },
   {
    "id": "kyvpxh",
    "en": "Choose a long passphrase",
-   "where": "account.js:1212"
+   "where": "account.js:1247"
   },
   {
    "id": "1rcg3rw",
    "en": "Save passphrase",
-   "where": "account.js:1213",
+   "where": "account.js:1248",
    "note": "Button: save the passphrase that encrypts the backups."
   },
   {
    "id": "sw7gda",
    "en": "Generate one",
-   "where": "account.js:1213",
+   "where": "account.js:1248",
    "note": "Button: make up a strong passphrase."
   },
   {
    "id": "ei16ky",
    "en": "Back up daily",
-   "where": "account.js:1214"
+   "where": "account.js:1249"
   },
   {
    "id": "9ipbyk",
    "en": "Google Drive, Dropbox and OneDrive connect directly once the app is registered with each service: whoever builds the app puts the keys in config.js (SETUP.md, Cloud backup providers). Until then, **Save** below puts the encrypted file in any cloud app on this phone.",
-   "where": "account.js:1216"
+   "where": "account.js:1251"
   },
   {
    "id": "10bn2jh",
    "en": "Files, iCloud Drive or any cloud app",
-   "where": "account.js:1217"
+   "where": "account.js:1252"
   },
   {
    "id": "xy0hej",
    "en": "The share sheet lets you pick the app or folder the encrypted file goes to",
-   "where": "account.js:1217"
+   "where": "account.js:1252"
   },
   {
    "id": "g64axp",
    "en": "That file has no entries in it",
-   "where": "account.js:1222"
+   "where": "account.js:1257"
   },
   {
    "id": "pne89v",
    "en": "That backup is too large",
-   "where": "account.js:1223"
+   "where": "account.js:1258"
   },
   {
    "id": "1k8p9p1",
    "en": "You do not have permission to add entries",
-   "where": "account.js:1224"
+   "where": "account.js:1259"
   },
   {
    "id": "17iky8b",
    "one": "Restored {n} entry",
    "other": "Restored {n} entries",
-   "where": "account.js:1230"
+   "where": "account.js:1265"
   },
   {
    "id": "1i9gser",
    "en": "Nothing new to restore",
-   "where": "account.js:1230"
+   "where": "account.js:1265"
   },
   {
    "id": "14j2lmy",
    "en": "Turn off two-step verification?",
-   "where": "account.js:1237"
+   "where": "account.js:1272"
   },
   {
    "id": "1vwl6za",
    "en": "Turned off",
-   "where": "account.js:1238",
+   "where": "account.js:1273",
    "note": "Message: a setting was turned off."
   },
   {
    "id": "ldz5nq",
    "en": "Choose a new PIN",
-   "where": "account.js:1242"
+   "where": "account.js:1277"
   },
   {
    "id": "fvzg7n",
    "en": "Passphrase saved in secure storage",
-   "where": "account.js:1246"
+   "where": "account.js:1281"
   },
   {
    "id": "1vr78cs",
    "en": "Your backup passphrase",
-   "where": "account.js:1249"
+   "where": "account.js:1284"
   },
   {
    "id": "1w1kflq",
    "en": "Write this down and keep it somewhere safe. Without it a backup can't be opened. It will be saved in this phone's secure storage.",
-   "where": "account.js:1249"
+   "where": "account.js:1284"
   },
   {
    "id": "22nji4",
    "en": "I've written it down",
-   "where": "account.js:1251"
+   "where": "account.js:1286"
   },
   {
    "id": "tjwj7u",
    "en": "Passphrase saved",
-   "where": "account.js:1253"
+   "where": "account.js:1288"
   },
   {
    "id": "1q5m5ae",
    "en": "Set a passphrase to enable daily backups",
-   "where": "account.js:1255"
+   "where": "account.js:1290"
   },
   {
    "id": "1puhp9v",
    "en": "Connecting…",
-   "where": "account.js:1257"
+   "where": "account.js:1292"
   },
   {
    "id": "4xvtfg",
    "en": "Finish signing in in the browser window",
-   "where": "account.js:1257"
+   "where": "account.js:1292"
   },
   {
    "id": "1xrrb43",
    "en": "Backing up…",
-   "where": "account.js:1259"
+   "where": "account.js:1294"
   },
   {
    "id": "ite4n2",
    "en": "Backed up to {service}",
-   "where": "account.js:1259"
+   "where": "account.js:1294"
   },
   {
    "id": "10e5lnw",
    "en": "Restoring…",
-   "where": "account.js:1260"
+   "where": "account.js:1295"
   },
   {
    "id": "fa3urw",

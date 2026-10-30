@@ -153,6 +153,12 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   tap gives a bird no keyboard focus (nothing scrolls to it), and the birds and the falling leaves live in a layer of their own, so
   their animations repaint neither the painting nor the people. The tutorial opens a twirl-down only for the step that needs it
   and closes it again when it moves on, so a page is left as the tour found it
+- **Who someone is can be changed from Edit**: a person's sheet on the tree has *Who they are to the children*, a list of every
+  place on the tree with room, grouped by side and saying whose relative they would be (Step-brother or step-sister · Pat's child,
+  Great-aunt or great-uncle · Rose's brother or sister, Grandparent · Jo's parent…). Choosing one moves them there, with the picture
+  and their card following: an aunt or uncle's partner and children come along to a great-aunt or great-uncle's place and back, a
+  parent's or grandparent's parents and siblings to the other of those two; anyone else with people added through them is asked to
+  move those first. Nobody can be hung from themselves or from someone added through them
 - **Step-families on the tree**: a parent's or a grandparent's **later partner** sits just outside them, joined by a small open
   heart (the original couple stays as it is). A grandparent's later partner is the children's step-grandparent; an aunt or uncle can
   be said to be **whose child** (the grandparent couple's, that grandparent's with the later partner: a half-brother or half-sister of

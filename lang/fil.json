@@ -2671,5 +2671,7 @@
  "1oblwbb": "Tumatakbo ang project sa database version {have}; kailangan ng app na ito ang {need}.",
  "32tjut": "Mas luma ang database ng project kaysa sa version {need}, na kailangan ng app na ito.",
  "64fxpb": "Ang nag-set up ng project ang magpapatakbo ng {file} sa SQL editor nito (SETUP.md, Upgrading an existing project): mananatili ang lahat ng data at ligtas itong patakbuhin muli. Hanggang doon, hihinto ang mga mas bagong feature na may mensahe mula sa server.",
- "wfp63a": "Wala sa cloud project ang {fn}: kailangang patakbuhin ng nag-set up nito ang {file} sa SQL editor nito (SETUP.md, Upgrading an existing project)."
+ "wfp63a": "Wala sa cloud project ang {fn}: kailangang patakbuhin ng nag-set up nito ang {file} sa SQL editor nito (SETUP.md, Upgrading an existing project).",
+ "1sycpsw": "Kung sino sila para sa mga bata",
+ "16kc09a": "Hindi makakasama sa lugar na iyon ang mga taong idinagdag sa pamamagitan ni {name}: ilipat o alisin muna sila."
 }

@@ -2617,5 +2617,7 @@
  "1oblwbb": "项目的数据库版本为 {have}，而此应用需要 {need}。",
  "32tjut": "项目的数据库早于此应用所需的版本 {need}。",
  "64fxpb": "由设置该项目的人在其 SQL 编辑器中运行 {file}（见 SETUP.md 的 Upgrading an existing project）：所有数据都会保留，重复运行也安全。在此之前，较新的功能会因服务器的提示而停止。",
- "wfp63a": "云项目缺少 {fn}：设置该项目的人需要在其 SQL 编辑器中运行 {file}（见 SETUP.md 的 Upgrading an existing project）。"
+ "wfp63a": "云项目缺少 {fn}：设置该项目的人需要在其 SQL 编辑器中运行 {file}（见 SETUP.md 的 Upgrading an existing project）。",
+ "1sycpsw": "与孩子们的关系",
+ "16kc09a": "通过 {name} 添加的人无法一起移到该位置：请先移动或移除他们。"
 }

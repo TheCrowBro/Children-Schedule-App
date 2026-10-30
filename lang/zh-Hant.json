@@ -2617,5 +2617,7 @@
  "1oblwbb": "專案的資料庫版本為 {have}，而此應用程式需要 {need}。",
  "32tjut": "專案的資料庫早於此應用程式所需的版本 {need}。",
  "64fxpb": "由設定該專案的人在其 SQL 編輯器中執行 {file}（見 SETUP.md 的 Upgrading an existing project）：所有資料都會保留，重複執行也安全。在此之前，較新的功能會因伺服器的訊息而停止。",
- "wfp63a": "雲端專案缺少 {fn}：設定該專案的人需要在其 SQL 編輯器中執行 {file}（見 SETUP.md 的 Upgrading an existing project）。"
+ "wfp63a": "雲端專案缺少 {fn}：設定該專案的人需要在其 SQL 編輯器中執行 {file}（見 SETUP.md 的 Upgrading an existing project）。",
+ "1sycpsw": "與孩子們的關係",
+ "16kc09a": "透過 {name} 新增的人無法一起移到該位置：請先移動或移除他們。"
 }

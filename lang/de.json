@@ -2671,5 +2671,7 @@
  "1oblwbb": "Das Projekt läuft mit Datenbankversion {have}; diese App braucht {need}.",
  "32tjut": "Die Datenbank des Projekts stammt aus der Zeit vor {need}, der Version, die diese App braucht.",
  "64fxpb": "Wer das Projekt eingerichtet hat, führt {file} in dessen SQL-Editor aus (SETUP.md, Upgrading an existing project): alle Daten bleiben erhalten, und die Datei kann gefahrlos erneut ausgeführt werden. Bis dahin brechen neuere Funktionen mit einer Meldung des Servers ab.",
- "wfp63a": "Dem Cloud-Projekt fehlt {fn}: Wer es eingerichtet hat, muss {file} in dessen SQL-Editor ausführen (SETUP.md, Upgrading an existing project)."
+ "wfp63a": "Dem Cloud-Projekt fehlt {fn}: Wer es eingerichtet hat, muss {file} in dessen SQL-Editor ausführen (SETUP.md, Upgrading an existing project).",
+ "1sycpsw": "Wer sie für die Kinder sind",
+ "16kc09a": "Die über {name} hinzugefügten Personen können an diese Stelle nicht mitkommen: zuerst verschieben oder entfernen."
 }

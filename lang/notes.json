@@ -840,6 +840,8 @@
     "The cloud project needs an update": "Title of a notice shown to parents: the family's cloud project (its Supabase database) runs an older version than the app needs.",
     "The project runs database version {have}; this app needs {need}.": "In that notice. {have} and {need} are version numbers like 1.16.0 and 1.21.0.",
     "The project runs a database from before {need}, which this app needs.": "In that notice, when the project is so old it cannot even say which version it runs. {need} is a version number like 1.21.0.",
-    "Whoever set up the project runs {file} in its SQL editor (SETUP.md, Upgrading an existing project): it keeps all the data and is safe to run again. Until then, newer features stop with a message from the server.": "In that notice: what to do. {file} is a file name (supabase/upgrade.sql); 'SQL editor' and 'SETUP.md' stay in English; 'Upgrading an existing project' is a section title in SETUP.md (translate it, in quotes if that reads better)."
+    "Whoever set up the project runs {file} in its SQL editor (SETUP.md, Upgrading an existing project): it keeps all the data and is safe to run again. Until then, newer features stop with a message from the server.": "In that notice: what to do. {file} is a file name (supabase/upgrade.sql); 'SQL editor' and 'SETUP.md' stay in English; 'Upgrading an existing project' is a section title in SETUP.md (translate it, in quotes if that reads better).",
+    "Who they are to the children": "Label of a drop-down on the family tree's edit sheet: the person's place on the tree (parent, grandparent, aunt or uncle, cousin, step-parent\u2026), which a parent can change here.",
+    "The people added through {name} cannot come along to that place: move or remove them first.": "Shown when a parent tries to move someone on the family tree to a place where the people added through them (a partner, children, parents, siblings) cannot follow. {name} is the person's name."
   }
 }

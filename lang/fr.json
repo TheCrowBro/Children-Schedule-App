@@ -2725,5 +2725,7 @@
  "1oblwbb": "Le projet utilise la version {have} de la base de données ; cette appli a besoin de la {need}.",
  "32tjut": "La base de données du projet date d'avant {need}, la version dont cette appli a besoin.",
  "64fxpb": "La personne qui a configuré le projet exécute {file} dans son éditeur SQL (SETUP.md, Upgrading an existing project) : toutes les données sont conservées et le fichier peut être relancé sans risque. D'ici là, les fonctions les plus récentes s'arrêtent sur un message du serveur.",
- "wfp63a": "Il manque {fn} au projet cloud : la personne qui l'a configuré doit exécuter {file} dans son éditeur SQL (SETUP.md, Upgrading an existing project)."
+ "wfp63a": "Il manque {fn} au projet cloud : la personne qui l'a configuré doit exécuter {file} dans son éditeur SQL (SETUP.md, Upgrading an existing project).",
+ "1sycpsw": "Ce qu'ils sont pour les enfants",
+ "16kc09a": "Les personnes ajoutées via {name} ne peuvent pas suivre à cet endroit : déplacez-les ou retirez-les d'abord."
 }

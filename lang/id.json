@@ -2617,5 +2617,7 @@
  "1oblwbb": "Proyek menjalankan basis data versi {have}; aplikasi ini membutuhkan versi {need}.",
  "32tjut": "Basis data proyek berasal dari sebelum versi {need}, yang dibutuhkan aplikasi ini.",
  "64fxpb": "Orang yang menyiapkan proyek menjalankan {file} di editor SQL proyek (SETUP.md, Upgrading an existing project): semua data tetap tersimpan dan berkas ini aman dijalankan lagi. Sampai saat itu, fitur-fitur yang lebih baru berhenti dengan pesan dari server.",
- "wfp63a": "Proyek cloud tidak memiliki {fn}: orang yang menyiapkannya perlu menjalankan {file} di editor SQL proyek (SETUP.md, Upgrading an existing project)."
+ "wfp63a": "Proyek cloud tidak memiliki {fn}: orang yang menyiapkannya perlu menjalankan {file} di editor SQL proyek (SETUP.md, Upgrading an existing project).",
+ "1sycpsw": "Siapa mereka bagi anak-anak",
+ "16kc09a": "Orang-orang yang ditambahkan melalui {name} tidak dapat ikut ke tempat itu: pindahkan atau hapus mereka terlebih dahulu."
 }

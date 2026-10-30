@@ -2617,5 +2617,7 @@
  "1oblwbb": "프로젝트의 데이터베이스는 {have} 버전이지만 이 앱에는 {need} 버전이 필요합니다.",
  "32tjut": "프로젝트의 데이터베이스가 이 앱에 필요한 {need} 버전보다 오래되었습니다.",
  "64fxpb": "프로젝트를 설정한 사람이 프로젝트의 SQL 편집기에서 {file}을 실행합니다(SETUP.md의 Upgrading an existing project). 모든 데이터는 그대로 유지되며 다시 실행해도 안전합니다. 그때까지 새로운 기능은 서버의 메시지와 함께 중단됩니다.",
- "wfp63a": "클라우드 프로젝트에 {fn}이 없습니다. 프로젝트를 설정한 사람이 프로젝트의 SQL 편집기에서 {file}을 실행해야 합니다(SETUP.md의 Upgrading an existing project)."
+ "wfp63a": "클라우드 프로젝트에 {fn}이 없습니다. 프로젝트를 설정한 사람이 프로젝트의 SQL 편집기에서 {file}을 실행해야 합니다(SETUP.md의 Upgrading an existing project).",
+ "1sycpsw": "아이들에게 어떤 사람인지",
+ "16kc09a": "{name}을(를) 통해 추가된 사람들은 그 자리로 함께 옮길 수 없습니다. 먼저 그 사람들을 옮기거나 제거하세요."
 }

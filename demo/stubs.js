@@ -90,6 +90,28 @@ function demoPickTree() {
   $('#dmKindSave').onclick = () => { DEMO_TREE.kind = (S.querySelector('[name=dmKind]:checked') || {}).value || ''; DEMO_TREE.scroll = null; close(); render(); };
 }
 const DEMO_KIN = { parent: 'Parent', gp: 'Grandparent', ggp: 'Great-grandparent', sib: 'Aunt or uncle', partner: 'Aunt or uncle', cousin: 'Cousin', gsib: 'Great-aunt or great-uncle', gpartner: 'Great-aunt or great-uncle', gcousin: "A parent's cousin", pstep: 'Step-parent', stepkid: 'Step-brother or step-sister', gstep: 'Step-grandparent' };
+const DEMO_WHOSE = { gp: "{name}'s parent", ggp: "{name}'s parent", sib: "{name}'s brother or sister", partner: "{name}'s partner", cousin: "{name}'s child", gsib: "{name}'s brother or sister", gpartner: "{name}'s partner", gcousin: "{name}'s child", pstep: "{name}'s later partner", stepkid: "{name}'s child", gstep: "{name}'s later partner" };
+/** Every place on the demo's tree someone could be moved to (as Account.treeSlots in the app). */
+function demoSlots(t, w) {
+  const mine = new Set(FamilyTree.under(w.p)), upId = w.up ? w.up.id : null, groups = [];
+  const slot = (g, kind, at) => { if (at && mine.has(at.id)) return; g.push({ kind, at: at ? at.id : null, now: kind === w.kind && (at ? at.id : null) === upId, label: at ? `${DEMO_KIN[kind]} · ${DEMO_WHOSE[kind].replace('{name}', at.name)}` : DEMO_KIN[kind] }); };
+  const room = (list, max) => (list || []).includes(w.p) || (list || []).length < max, free = x => !x.partner || x.partner === w.p;
+  const top = []; if (room(t.parents, 2)) slot(top, 'parent', null); if (top.length) groups.push({ label: '', slots: top });
+  for (const s of t.parents) {
+    const g = [];
+    if (free(s)) slot(g, 'pstep', s);
+    if (s.partner && room(s.partner.kids, FamilyTree.MAX_KIDS)) slot(g, 'stepkid', s.partner);
+    if (room(s.gp, 2)) slot(g, 'gp', s);
+    for (const q of s.gp) {
+      if (free(q)) slot(g, 'gstep', q); if (room(q.gp, 2)) slot(g, 'ggp', q); if (room(q.sibs, FamilyTree.MAX_SIBS)) slot(g, 'gsib', q);
+      for (const b of q.sibs || []) { if (free(b)) slot(g, 'gpartner', b); if (room(b.kids, FamilyTree.MAX_KIDS)) slot(g, 'gcousin', b); }
+    }
+    if (room(s.sibs, FamilyTree.MAX_SIBS)) slot(g, 'sib', s);
+    for (const b of s.sibs) { if (free(b)) slot(g, 'partner', b); if (room(b.kids, FamilyTree.MAX_KIDS)) slot(g, 'cousin', b); }
+    if (g.length) groups.push({ label: `${s.name}'s side`, slots: g });
+  }
+  return groups;
+}
 const DEMO_ADDS = { parent: "Add the children's other parent", gp: 'Add a grandparent', ggp: 'Add a great-grandparent', sib: 'Add an aunt or uncle', partner: 'Add a partner', cousin: 'Add a cousin', gsib: 'Add a great-aunt or great-uncle' };
 const COUSIN_COLOURS = ['#c2577a', '#3f78b5', '#2f8f83', '#8a5cc2', '#c98a3d'];
 function demoTreeModel() {
@@ -128,13 +150,20 @@ function demoTreeTap(key) {
     return;
   }
   const w = FamilyTree.find(t, key.slice(2)); if (!w) return;
+  const groups = demoSlots(t, w), slots = groups.flatMap(g => g.slots); slots.forEach((s, i) => { s.i = i; });
   const via = w.kind === 'sib' && w.p.via ? FamilyTree.find(t, w.p.via) : null;
   const how = w.kind === 'gstep' ? `${w.up.name}'s later partner · ${w.side.name}'s step-parent, the children's step-grandparent` : via ? (via.kind === 'gp' ? `${w.side.name}'s half-brother or half-sister: ${via.p.name}'s child with a later partner` : `${w.side.name}'s step-brother or step-sister: ${via.p.name}'s child from before`) : '';
   show(`<h3>${w.p.name}</h3><p class="note" style="margin-top:0">${DEMO_KIN[w.kind]}${w.kind === 'parent' ? '' : ` · ${w.side.name}'s side`}</p>${how ? `<p class="note" style="margin-top:0">${how}</p>` : ''}
     ${w.p.call ? `<div class="stat"><span>What the children call them<br><b>${w.p.call}</b></span></div>` : ''}${w.p.gone ? '<p class="note">✦ In loving memory</p>' : ''}
-    <p class="note">In the real app a parent can change or remove them here, and someone in Little Log shows their phone number and work details.</p>
-    <div class="row" style="margin-top:16px"><button class="btn" data-close>Close</button>${w.kind === 'parent' ? '' : '<button class="btn d" id="dmRemove">Remove from the tree</button>'}</div>`);
+    ${slots.length > 1 ? `<label class="f" for="dmRel">Who they are to the children</label><select id="dmRel" class="fsel">${groups.map(g => { const o = g.slots.map(s => `<option value="${s.i}"${s.now ? ' selected' : ''}>${s.label}</option>`).join(''); return g.label ? `<optgroup label="${g.label}">${o}</optgroup>` : o; }).join('')}</select>` : ''}
+    <p class="note">In the real app a parent can also rename them here, and someone in Little Log shows their phone number and work details.</p>
+    <div class="row" style="margin-top:16px"><button class="btn" data-close>Close</button>${w.kind === 'parent' ? '' : '<button class="btn d" id="dmRemove">Remove from the tree</button>'}${slots.length > 1 ? '<button class="btn p" id="dmSave">Save</button>' : ''}</div>`);
   if ($('#dmRemove')) $('#dmRemove').onclick = () => { FamilyTree.remove(t, w.p.id); DEMO_TREE.tree = FamilyTree.clean(t); close(); render(); };
+  if ($('#dmSave')) $('#dmSave').onclick = () => {
+    const s = slots[+$('#dmRel').value]; if (!s || s.now) return close();
+    if (!FamilyTree.movable(w, s.kind)) return toast(`The people added through ${w.p.name} cannot come along to that place: move or remove them first.`);
+    FamilyTree.move(t, w.p.id, s.kind, s.at); DEMO_TREE.tree = FamilyTree.clean(t); close(); render(); toast('Saved');
+  };
 }
 const DEMO_FAMILIES = [['Your family', 'Sophie, Lily, Ella, Leo, Mia, Sam', 'Parent'], ["Sarah's family", 'Ava, Jack', 'Family member'], ["Tom's family", 'Noah', 'Family member']];
 window.confirm = () => true; window.alert = () => {};
