@@ -2625,7 +2625,6 @@
  "11zji3": "Cloud milik keluarga sendiri",
  "o9569b": "Little Log menyimpan catatan di sebuah folder di penyimpanan cloud Anda sendiri, dienkripsi di ponsel Anda sebelum apa pun ditulis ke sana. Tidak ada pihak lain yang menjalankan server: Anda membagikan folder dengan keluarga, dan merekalah yang masuk.",
  "1wdcru": "Hubungkan {service}",
- "1600ilq": "Google Drive, OneDrive, dan iCloud Drive menyusul.",
  "imhl02": "Gunakan server keluarga saja",
  "7eq8sl": "{service} terhubung: {email}",
  "18a996g": "Mulai catatan keluarga Anda di sini, atau bergabung dengan catatan yang dibagikan ke email ini.",
@@ -2661,5 +2660,7 @@
  "c6n7ht": "Daftar keluarga berubah sementara itu: coba lagi",
  "he01pb": "Hubungkan cloud Anda dulu",
  "e5jota": "Permintaan Anda ditolak.",
- "u8f21p": "Bagikan folder keluarga saja (tab Keluarga)."
+ "u8f21p": "Bagikan folder keluarga saja (tab Keluarga).",
+ "as7zof": "OneDrive dan iCloud Drive menyusul.",
+ "1enqvy8": "Folder keluarga tidak lagi dibagikan ke akun ini."
 }

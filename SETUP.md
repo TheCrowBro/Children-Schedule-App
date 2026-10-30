@@ -12,11 +12,12 @@ the Dropbox app in the next section.
 
 ## The family's own cloud (the store build: no server)
 Little Log can keep a family's log in **a folder in the family's own cloud storage** instead of on a server: a parent connects their
-Dropbox, the app makes a folder named *Little Log* there and keeps the log in it (encrypted on the phones, as always), and the parent
-shares the folder with the family from the Family tab; each relative connects their own Dropbox, asks to join and is approved on a
-parent's phone. How it works, file by file, is in [FOLDER.md](FOLDER.md). Families set nothing up. Whoever **builds** the app registers
-one Dropbox app, once:
+Dropbox or Google Drive, the app makes a folder named *Little Log* there and keeps the log in it (encrypted on the phones, as always),
+and the parent shares the folder with the family from the Family tab; each relative connects their own account with the same cloud,
+asks to join and is approved on a parent's phone. How it works, file by file, is in [FOLDER.md](FOLDER.md). Families set nothing up.
+Whoever **builds** the app registers it once with each cloud it should offer (one, or both):
 
+**Dropbox** → `dropboxKey`
 1. Go to <https://www.dropbox.com/developers/apps> → **Create app**: *Scoped access*, **Full Dropbox** (a shared folder lives wherever
    each member's Dropbox mounts it, so *App folder* access is not enough), any name (people see it when they sign in).
 2. **Permissions**: tick `account_info.read`, `files.metadata.read`, `files.content.read`, `files.content.write`, `sharing.read` and
@@ -24,11 +25,31 @@ one Dropbox app, once:
 3. **Settings** → *OAuth 2* → *Redirect URIs*: add `app.littlelog.newborn://oauth`.
 4. Copy the **App key** into `config.js` as `dropboxKey` (a public client id, not a secret), then `npm run sync`.
 
-The same key serves the encrypted cloud backup (§3), so one Dropbox app does both. The **store build** is `dropboxKey` set and
-`supabaseUrl` **empty**: the first screen then offers the family's own cloud, and no server of anyone's is involved. With both set, the
-first screen offers the family server and keeps the family's own cloud one tap away (*Use the family's own cloud instead*). A Dropbox
-app starts in *Development* status, which lets up to 50 people sign in; apply for *Production* in its console before publishing (a
-short form about what the app does with each permission).
+A Dropbox app starts in *Development* status, which lets up to 50 people sign in; apply for *Production* in its console before
+publishing (a short form about what the app does with each permission).
+
+**Google Drive** → `googleClientId`
+1. In the [Google Cloud console](https://console.cloud.google.com) create a project (or use the one from §3) and turn on the
+   **Google Drive API** (*APIs & Services → Library*).
+2. *APIs & Services → OAuth consent screen*: **External**, the app's name and your email. Under **Scopes** add
+   `https://www.googleapis.com/auth/drive` (and `…/auth/drive.appdata`, which the cloud backup uses). Under **Test users** add the
+   Google emails of everyone who should sign in while the app is in *Testing* (up to 100).
+3. *Credentials → Create credentials → OAuth client ID*, type **iOS**, bundle id = the app id. No client secret is needed.
+4. Copy the client ID (it ends in `.apps.googleusercontent.com`) into `config.js` as `googleClientId`, then `npm run sync` (it
+   registers the client's reverse-client-id redirect scheme in the app for you).
+
+The family folder needs the **full Drive scope**: a parent shares the folder, and the narrower per-file scope (`drive.file`) can only
+reach files the app itself made or the user picked, so relatives' phones could not open it. Google calls that scope *restricted*:
+while the consent screen is in *Testing*, only the test users can sign in, and they see *Google hasn't verified this app* (tap
+*Continue*). To let everyone sign in, publish the consent screen and submit the app for **verification**, which for a restricted
+scope includes a security assessment by a Google-authorised lab (CASA); that takes weeks and may cost a fee. The app only ever
+touches the family folder, which is what the review asks you to show.
+
+The same keys serve the encrypted cloud backup (§3), so one registration per cloud does both. The **store build** is `dropboxKey`
+and/or `googleClientId` set and `supabaseUrl` **empty**: the first screen then offers the family's own cloud, and no server of
+anyone's is involved. With a server set too, the first screen offers the family server and keeps the family's own cloud one tap
+away (*Use the family's own cloud instead*). Everyone in one family uses the cloud the parent who started the log chose, since the
+folder is shared inside that cloud; different families may choose differently.
 
 ## 1. Supabase project (free tier is fine)
 1. Create a project at <https://supabase.com>.
@@ -94,7 +115,7 @@ encrypted file in any cloud app on the phone through the share sheet. Redirect U
 | Provider | Create | `config.js` key |
 |---|---|---|
 | Dropbox | App folder app with `files.content.write/read`, or the Full Dropbox app of *The family's own cloud* above (one key serves both) | `dropboxKey` |
-| Google Drive | OAuth client of type **iOS** (bundle id = app id), Drive API enabled, scope `drive.appdata` | `googleClientId` |
+| Google Drive | OAuth client of type **iOS** (bundle id = app id), Drive API enabled, scope `drive.appdata`; the client registered for *The family's own cloud* above serves both | `googleClientId` |
 | OneDrive | Azure app registration, *Mobile and desktop* platform, Graph `Files.ReadWrite.AppFolder` | `msClientId` |
 | iCloud Drive | nothing to configure: "Save" opens the share sheet → *Save to Files* | – |
 

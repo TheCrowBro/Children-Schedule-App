@@ -38,6 +38,8 @@ maintainers by email through the Edge Functions; the address is a server secret 
   the keys decide what opens; roles and permissions are applied by the apps rather than enforced by a server. First keys still need a
   parent's spoken security-code check, a key change still needs a key holder's signature, and the health key still goes only to the
   phones allowed health notes. There is no activity log yet. The cloud sees file names, sizes and who wrote what, nothing else.
+  On Google Drive the app asks for the full Drive scope, because the narrower per-file scope cannot open a folder someone else
+  shared; it only ever touches the family folder, and Google's review of that scope is what a public store build waits on (SETUP.md).
 
 ## The review
 A static review of the whole code base in October 2026 by the people building it, plus an independent second reading of the schema,

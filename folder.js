@@ -1,5 +1,5 @@
 'use strict';
-/* The family folder: a family's log kept in THEIR OWN cloud storage (a folder in a parent's Dropbox, shared with the family), with
+/* The family folder: a family's log kept in THEIR OWN cloud storage (a folder in a parent's Dropbox or Google Drive, shared with the family), with
    no server of ours anywhere. Everything is end-to-end encrypted on the phones exactly as in server mode (e2ee.js): the cloud sees
    file names, sizes and who wrote what, nothing else. The folder plays the server's part:
 
@@ -25,7 +25,7 @@ const Folder = (() => {
   const enc = new TextEncoder(), dec = new TextDecoder();
   let c = null;   // { provider, root ('ns:<shared folder id>'), id, name, me: { id, email, name } }
   const persist = () => (c ? Native.Secure.set(K, JSON.stringify(c)) : Native.Secure.remove(K));
-  const NAMES = { dropbox: 'Dropbox' };
+  const NAMES = { dropbox: 'Dropbox', google: 'Google Drive' };
   const available = () => Object.keys(NAMES).filter(p => Cloud.available()[p]);
   const TOP = ['littlelog.json', 'keyring.json', 'recovery.json', 'profile.json', 'members.json', 'tree.json', 'devices', 'keys', 'join', 'events', 'media'];
   const J = o => enc.encode(JSON.stringify(o));
@@ -37,10 +37,10 @@ const Folder = (() => {
   }
 
   // ---- Dropbox: full-Dropbox access, the family folder a shared folder addressed by its namespace (ns:<id>), the same for everyone ----
-  const SCOPES = { dropbox: 'account_info.read files.metadata.read files.content.read files.content.write sharing.read sharing.write' };
+  const SCOPES = { dropbox: 'account_info.read files.metadata.read files.content.read files.content.write sharing.read sharing.write', google: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.appdata' };
   const fail = (status, j, text) => {
     const e = new Error((j && (j.error_summary || j.error_description || (typeof j.error === 'string' && j.error))) || (text || '').slice(0, 200) || __('Request failed ({status})', { status }));
-    e.status = status; e.tag = (j && j.error_summary) || ''; e.conflict = /conflict/.test(e.tag); e.missing = /not_found/.test(e.tag); e.denied = /no_permission|access_error|insufficient|no_write_permission/.test(e.tag);
+    e.status = status; e.tag = (j && j.error_summary) || ''; e.conflict = /conflict/.test(e.tag); e.missing = /not_found/.test(e.tag); e.denied = status === 403 || /no_permission|access_error|insufficient|no_write_permission/.test(e.tag);
     return e;
   };
   const ascii = s => s.replace(/[\u007f-￿]/g, ch => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));   // (HTTP headers carry ASCII only)
@@ -58,6 +58,7 @@ const Folder = (() => {
   /** A listing entry's path inside the family folder (the cloud reports it under the folder's name, which differs per phone). */
   const rel = p => { const seg = String(p || '').split('/').filter(Boolean); const i = seg.findIndex(s => TOP.includes(s.toLowerCase())); return i < 0 ? null : seg.slice(i).join('/'); };
   const DBX = {
+    root: id => 'ns:' + id,
     async account() { const j = await rpc('users/get_current_account', null); return { account: j.account_id, email: String(j.email || '').toLowerCase(), name: (j.name && (j.name.display_name || j.name.given_name)) || '' }; },
     /** Everything in the folder (cursor null), or only what changed since `cursor`: { entries: [{ path, rev, deleted, folder }], cursor }, or { reset: true }. */
     async list(cursor) {
@@ -98,7 +99,178 @@ const Folder = (() => {
     },
     async mount(id) { try { await rpc('sharing/mount_folder', { shared_folder_id: id }); } catch (e) { if (!/already_mounted/.test(e.tag) && e.status !== 409) throw e; } },
   };
-  const backend = () => DBX;
+
+  // ---- Google Drive: the family folder a folder in a parent's Drive, shared with the family, addressed by its id (the same for everyone) ----
+  // Drive has no "write only if nobody wrote since": a shared document is written, then the file's revision list says whether another
+  // phone wrote in between; if so, that copy is kept for the next read of the path and the write reports a conflict, so FolderSync
+  // applies its change again on top of theirs. Deleting a file is its owner's: another phone empties it instead, and an empty file
+  // counts as gone everywhere. Drive's ids for the paths are kept with the log on the phone (db.meta.gdid).
+  const GAPI = 'https://www.googleapis.com/drive/v3/', GUP = 'https://www.googleapis.com/upload/drive/v3/', FOLDER_MIME = 'application/vnd.google-apps.folder';
+  const GFIELDS = 'id,name,mimeType,size,headRevisionId,md5Checksum,parents,trashed,capabilities(canDelete,canTrash)';
+  const gfail = (status, j, text) => {
+    const err = j && j.error, reason = (err && err.errors && err.errors[0] && err.errors[0].reason) || (err && err.status) || '';
+    const e = new Error((err && err.message) || (text || '').slice(0, 200) || __('Request failed ({status})', { status }));
+    e.status = status; e.tag = reason; e.missing = status === 404; e.conflict = false;
+    e.denied = status === 403 && !/rate|quota|limit/i.test(reason);   // (403 is also how Drive says "slow down")
+    return e;
+  };
+  async function gcall(method, url, { json, body, type } = {}) {
+    const h = { Authorization: 'Bearer ' + await Cloud.token('google') };
+    let b;
+    if (json !== undefined) { h['Content-Type'] = 'application/json'; b = JSON.stringify(json); }
+    else if (body !== undefined) { h['Content-Type'] = type || 'application/octet-stream'; b = body; }
+    const r = await Native.fetch(url, { method, headers: h, body: b }, body !== undefined ? 180000 : 30000);
+    if (!r.ok) { const text = await r.text(); let j = null; try { j = JSON.parse(text); } catch (e) { /* plain text */ } throw gfail(r.status, j, text); }
+    return r;
+  }
+  const gjson = async (method, url, opts) => { const t = await (await gcall(method, url, opts)).text(); return t ? JSON.parse(t) : null; };
+  const gq = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const gone = () => { const e = new Error(N_('The family folder is no longer shared with this account.')); e.status = 403; e.denied = true; return e; };
+  const gstash = new Map(), gmine = new Set();   // a copy lost a race to, kept for the next read of its path; the revisions this phone wrote
+  const GD = {
+    root: id => id,
+    /** The paths' Drive ids, kept with the log on the phone (and dropped when the folder changes). */
+    ids() { let m = db.meta.gdid; if (!m || m.root !== c.root) m = db.meta.gdid = { root: c.root, files: {}, dirs: {} }; return m; },
+    async account() { const u = (await gjson('GET', GAPI + 'about?fields=user')).user || {}; return { account: u.permissionId, email: String(u.emailAddress || '').toLowerCase(), name: u.displayName || '' }; },
+    dirOf: p => { const i = p.lastIndexOf('/'); return i < 0 ? '' : p.slice(0, i); },
+    nameOf: p => p.slice(p.lastIndexOf('/') + 1),
+    /** A folder's id by path ('' is the family folder), made when `make`. */
+    async dirId(d, make) {
+      if (!d) return c.root;
+      const m = GD.ids(), k = d.toLowerCase(); if (m.dirs[k]) return m.dirs[k];
+      const pid = await GD.dirId(GD.dirOf(d), make); if (!pid) return null;
+      const name = GD.nameOf(d);
+      const j = await gjson('GET', GAPI + `files?q=${encodeURIComponent(`'${pid}' in parents and name = '${gq(name)}' and mimeType = '${FOLDER_MIME}' and trashed = false`)}&fields=files(id)&pageSize=5`);
+      let id = j.files && j.files[0] && j.files[0].id;
+      if (!id && make) id = (await gjson('POST', GAPI + 'files?fields=id', { json: { name, mimeType: FOLDER_MIME, parents: [pid] } })).id;
+      if (id) m.dirs[k] = id;
+      return id || null;
+    },
+    /** A file's metadata by path (null when there is none): by its remembered id, else by name in its folder. */
+    async meta(p) {
+      const m = GD.ids(), k = p.toLowerCase();
+      if (m.files[k]) { try { const j = await gjson('GET', GAPI + `files/${m.files[k]}?fields=${GFIELDS}`); if (!j.trashed) return j; } catch (e) { if (!e.missing) throw e; } delete m.files[k]; }
+      const pid = await GD.dirId(GD.dirOf(p)); if (!pid) return null;
+      const j = await gjson('GET', GAPI + `files?q=${encodeURIComponent(`'${pid}' in parents and name = '${gq(GD.nameOf(p))}' and trashed = false`)}&fields=files(${GFIELDS})&pageSize=5`);
+      const f = (j.files || []).find(x => x.mimeType !== FOLDER_MIME) || null;
+      if (f) m.files[k] = f.id;
+      return f;
+    },
+    async get(p) {
+      const m = GD.ids(), k = p.toLowerCase(), s = gstash.get(k);
+      if (s) { if (s.heads.includes(revOf(p))) return s.bytes; gstash.delete(k); }
+      let id = m.files[k];
+      if (!id) { const f = await GD.meta(p); if (!f) return null; id = f.id; }
+      try { const b = new Uint8Array(await (await gcall('GET', GAPI + `files/${id}?alt=media`)).arrayBuffer()); return b.length ? b : null; }
+      catch (e) { if (e.missing) { delete m.files[k]; return null; } throw e; }
+    },
+    async upload(id, bytes) { const rev = (await gjson('PATCH', GUP + `files/${id}?uploadType=media&fields=id,headRevisionId`, { body: bytes })).headRevisionId || null; if (rev) gmine.add(rev); return rev; },
+    async make(p, bytes) {
+      const pid = await GD.dirId(GD.dirOf(p), true);
+      const id = (await gjson('POST', GAPI + 'files?fields=id', { json: { name: GD.nameOf(p), parents: [pid] } })).id;
+      GD.ids().files[p.toLowerCase()] = id;
+      return { rev: await GD.upload(id, bytes) };
+    },
+    /** mode: 'add' (fails when the file exists), 'overwrite', or { update: rev }: written, then checked against the revision list; when
+        another phone wrote in between, its copy is what the next read of this path returns, and the write reports a conflict. */
+    async put(p, bytes, mode = 'overwrite') {
+      const conflict = () => { const e = new Error('conflict'); e.conflict = true; e.status = 409; return e; };
+      if (mode === 'overwrite') { const id = GD.ids().files[p.toLowerCase()]; if (id) { try { return { rev: await GD.upload(id, bytes) }; } catch (e) { if (!e.missing) throw e; } } }
+      const f = await GD.meta(p);
+      if (mode === 'add') { if (f && +f.size > 0) throw conflict(); return f ? { rev: await GD.upload(f.id, bytes) } : GD.make(p, bytes); }
+      if (mode === 'overwrite') return f ? { rev: await GD.upload(f.id, bytes) } : GD.make(p, bytes);
+      const want = mode.update || null, head = f ? f.headRevisionId || null : null;
+      if (!f || (head !== want && !gmine.has(head))) throw conflict();   // (a head this phone wrote is fine: the copy being written was read past it)
+      const rev = await GD.upload(f.id, bytes);
+      const rs = ((await gjson('GET', GAPI + `files/${f.id}/revisions?fields=revisions(id,modifiedTime)&pageSize=1000`)).revisions || []).slice().sort((a, b) => String(a.modifiedTime || '').localeCompare(String(b.modifiedTime || '')));
+      const i = rs.findIndex(r => r.id === rev), prev = i > 0 ? rs[i - 1].id : null;
+      if (i > 0 && prev !== want && !gmine.has(prev)) {   // lost the race: their copy is what this path reads as until someone else writes
+        const b = new Uint8Array(await (await gcall('GET', GAPI + `files/${f.id}/revisions/${prev}?alt=media`)).arrayBuffer());
+        gstash.set(p.toLowerCase(), { heads: [want, rev], bytes: b });
+        throw conflict();
+      }
+      return { rev };
+    },
+    async del(p) {
+      const f = await GD.meta(p); if (!f) return;
+      const cap = f.capabilities || {};
+      try {
+        if (cap.canDelete) await gcall('DELETE', GAPI + `files/${f.id}`);
+        else if (cap.canTrash) await gjson('PATCH', GAPI + `files/${f.id}?fields=id`, { json: { trashed: true } });
+        else await GD.upload(f.id, new Uint8Array(0));   // (another member's file: emptied, which counts as gone)
+      } catch (e) { if (!e.missing) throw e; }
+      delete GD.ids().files[p.toLowerCase()];
+    },
+    /** Everything in the folder (cursor null), or what changed since: Drive's changes feed, kept to this folder's files. */
+    async list(cursor) {
+      const m = GD.ids(), entries = [];
+      if (!cursor) {
+        let root; try { root = await gjson('GET', GAPI + `files/${c.root}?fields=id,name,trashed`); } catch (e) { if (e.missing) throw gone(); throw e; }
+        if (root.trashed) throw gone();
+        const start = (await gjson('GET', GAPI + 'changes/startPageToken')).startPageToken;
+        m.files = {}; m.dirs = {};
+        const queue = [['', c.root]];
+        while (queue.length) {
+          const [d, id] = queue.shift();
+          let page = null;
+          do {
+            const j = await gjson('GET', GAPI + `files?q=${encodeURIComponent(`'${id}' in parents and trashed = false`)}&fields=nextPageToken,files(${GFIELDS})&pageSize=1000${page ? '&pageToken=' + encodeURIComponent(page) : ''}`);
+            for (const f of j.files || []) {
+              const p = d ? d + '/' + f.name : f.name;
+              if (f.mimeType === FOLDER_MIME) { if (!m.dirs[p.toLowerCase()]) { m.dirs[p.toLowerCase()] = f.id; queue.push([p, f.id]); } entries.push({ path: p, rev: null, deleted: false, folder: true }); }
+              else { m.files[p.toLowerCase()] = f.id; entries.push({ path: p, rev: f.headRevisionId || f.md5Checksum || null, deleted: !(+f.size > 0), folder: false }); }
+            }
+            page = j.nextPageToken || null;
+          } while (page);
+        }
+        return { entries, cursor: start };
+      }
+      let token = cursor, next;
+      for (;;) {
+        let j;
+        try { j = await gjson('GET', GAPI + `changes?pageToken=${encodeURIComponent(token)}&includeRemoved=true&pageSize=1000&spaces=drive&fields=nextPageToken,newStartPageToken,changes(fileId,removed,file(${GFIELDS}))`); }
+        catch (e) { if (e.status === 404 || e.status === 410 || (e.status === 400 && /token/i.test(e.message))) return { reset: true }; throw e; }
+        const ch = j.changes || [], paths = {}, dirs = {};
+        for (const [k, v] of Object.entries(m.files)) paths[v] = k;
+        for (const [k, v] of Object.entries(m.dirs)) dirs[v] = k;
+        for (const x of ch) if (x.fileId === c.root && (x.removed || (x.file && x.file.trashed))) throw gone();
+        for (const x of ch) {   // folders first: a file's folder may be new in the same page
+          const f = x.file; if (x.removed || !f || f.mimeType !== FOLDER_MIME || f.trashed) continue;
+          const pd = f.parents && f.parents[0], d = pd === c.root ? '' : dirs[pd];
+          if (d === undefined) continue;
+          const p = (d ? d + '/' : '') + f.name; m.dirs[p.toLowerCase()] = f.id; dirs[f.id] = p.toLowerCase(); entries.push({ path: p, rev: null, deleted: false, folder: true });
+        }
+        for (const x of ch) {
+          const f = x.file, known = paths[x.fileId];
+          if (x.removed || !f || f.trashed) { if (known) { entries.push({ path: known, rev: null, deleted: true, folder: false }); delete m.files[known]; } continue; }
+          if (f.mimeType === FOLDER_MIME) continue;
+          const pd = f.parents && f.parents[0], d = pd === c.root ? '' : dirs[pd];
+          if (d === undefined) { if (known) { entries.push({ path: known, rev: null, deleted: true, folder: false }); delete m.files[known]; } continue; }   // (moved out of the folder)
+          const p = (d ? d + '/' : '') + f.name; m.files[p.toLowerCase()] = f.id;
+          entries.push({ path: p, rev: f.headRevisionId || f.md5Checksum || null, deleted: !(+f.size > 0), folder: false });
+        }
+        if (j.newStartPageToken) { next = j.newStartPageToken; break; }
+        token = j.nextPageToken; if (!token) { next = cursor; break; }
+      }
+      return { entries, cursor: next };
+    },
+    /** A parent's new family folder: made in their Drive (shared with nobody yet). */
+    async create(name) { const j = await gjson('POST', GAPI + 'files?fields=id,name', { json: { name, mimeType: FOLDER_MIME } }); return { id: j.id, name: j.name }; },
+    async share(emails, message) { for (const emailAddress of emails) await gjson('POST', GAPI + `files/${c.root}/permissions?sendNotificationEmail=true${message ? '&emailMessage=' + encodeURIComponent(message) : ''}&fields=id`, { json: { role: 'writer', type: 'user', emailAddress } }); },
+    perms: async () => (await gjson('GET', GAPI + `files/${c.root}/permissions?fields=permissions(id,emailAddress,role)&pageSize=100`)).permissions || [],
+    async unshare(email) { for (const p of await GD.perms()) if (String(p.emailAddress || '').toLowerCase() === email && p.role !== 'owner') await gcall('DELETE', GAPI + `files/${c.root}/permissions/${p.id}`).catch(e => { if (!e.missing) throw e; }); },
+    async leave() { try { await gcall('DELETE', GAPI + `files/${c.root}/permissions/${c.me.acct}`); } catch (e) { /* the owner, or already out: the folder stays theirs */ } },
+    /** The Little Log family folders this account can open: shared with it, or its own. */
+    async candidates() {
+      const out = [], q = async cond => (await gjson('GET', GAPI + `files?q=${encodeURIComponent(`${cond} and mimeType = '${FOLDER_MIME}' and name contains 'Little Log' and trashed = false`)}&fields=files(id,name)&pageSize=100`)).files || [];
+      for (const f of [...await q('sharedWithMe = true'), ...await q("'me' in owners")]) if (/^little log/i.test(f.name || '') && !out.some(x => x.id === f.id)) out.push({ id: f.id, name: f.name, mounted: true });
+      return out;
+    },
+    mount: async () => {},
+  };
+  const BY = { dropbox: DBX, google: GD };
+  const backend = () => BY[(c && c.provider) || 'dropbox'];
+  const B = () => backend();
 
   // ---- files, read and written as JSON, with a small cache by revision ----
   const cache = new Map();   // path (lower) → { rev, json }
@@ -106,12 +278,15 @@ const Folder = (() => {
   async function read(p) {
     const r = revOf(p), hit = cache.get(p.toLowerCase());
     if (hit && r && hit.rev === r) return hit.json;
-    const b = await DBX.get(p); if (!b) return null;
+    const b = await B().get(p); if (!b) return null;
     let j = null; try { j = JSON.parse(dec.decode(b)); } catch (e) { return null; }
     cache.set(p.toLowerCase(), { rev: r, json: j });
     return j;
   }
-  async function write(p, o, mode = 'overwrite') { const r = await DBX.put(p, J(o), mode); cache.set(p.toLowerCase(), { rev: r.rev, json: o }); if (typeof FolderSync !== 'undefined') FolderSync.noteRev(p, r.rev); return r; }
+  async function write(p, o, mode = 'overwrite') {
+    let r; try { r = await B().put(p, J(o), mode); } catch (e) { if (e.conflict) cache.delete(p.toLowerCase()); throw e; }   // (lost a race: the next read is the newer copy)
+    cache.set(p.toLowerCase(), { rev: r.rev, json: o }); if (typeof FolderSync !== 'undefined') FolderSync.noteRev(p, r.rev); return r;
+  }
   const paths = prefix => (typeof FolderSync !== 'undefined' ? FolderSync.paths(prefix) : []);
   async function readAll(prefix) { const out = []; for (const p of paths(prefix)) { const j = await read(p); if (j) out.push(j); } return out; }
 
@@ -152,7 +327,7 @@ const Folder = (() => {
     setRecovery: (baby, a) => write('recovery.json', { epoch: E2EE.epoch(baby), recovery_pub: a.pub, recovery_priv_wrapped: a.priv_wrapped, wrap_main: a.wrap_main, wrap_health: a.wrap_health, tag: a.tag }),
   };
   /** Pictures and videos, as files in the folder (media.js). */
-  const media = { up: (b, name, bytes) => DBX.put('media/' + name, bytes, 'overwrite'), down: (b, name) => DBX.get('media/' + name), del: (b, name) => DBX.del('media/' + name) };
+  const media = { up: (b, name, bytes) => B().put('media/' + name, bytes, 'overwrite'), down: (b, name) => B().get('media/' + name), del: (b, name) => B().del('media/' + name) };
 
   return {
     NAMES, SCOPES, available, label: p => NAMES[p] || p, dir, media, read, write, readAll, backend, safeName,
@@ -168,17 +343,17 @@ const Folder = (() => {
     connect: p => Cloud.connect(p, SCOPES[p]),
     /** The cloud account just signed in becomes this phone's identity for the family folder. */
     async attach(p) {
-      const a = await DBX.account();
-      c = { provider: p, root: null, id: null, name: '', me: { id: await memberId(p, a.account), email: a.email, name: a.name } };
+      const a = await BY[p].account();
+      c = { provider: p, root: null, id: null, name: '', me: { id: await memberId(p, a.account), acct: a.account, email: a.email, name: a.name } };
       await persist(); E2EE.setDir(dir); cache.clear();
     },
     /** A parent's new family folder in their cloud. */
-    async createFamily(name) { const f = await DBX.create('Little Log (' + safeName(name) + ')'); c.root = 'ns:' + f.id; c.id = f.id; c.name = f.name; await persist(); cache.clear(); },
-    candidates: () => DBX.candidates(),
+    async createFamily(name) { const f = await B().create('Little Log (' + safeName(name) + ')'); c.root = B().root(f.id); c.id = f.id; c.name = f.name; await persist(); cache.clear(); },
+    candidates: () => B().candidates(),
     /** Use a family folder shared with this account: returns the family's id, or throws when it is not one of ours. */
     async join(cand) {
-      if (!cand.mounted) await DBX.mount(cand.id);
-      c.root = 'ns:' + cand.id; c.id = cand.id; c.name = cand.name; cache.clear();
+      if (!cand.mounted) await B().mount(cand.id);
+      c.root = B().root(cand.id); c.id = cand.id; c.name = cand.name; cache.clear();
       let mk = null; try { mk = await read('littlelog.json'); } catch (e) { c.root = null; c.id = null; throw e; }
       if (!mk || typeof mk.family !== 'string') { c.root = null; c.id = null; throw new Error(N_('That folder is not a Little Log family folder (yet). Ask the parent to open their Little Log once.')); }
       await persist(); return mk.family;
@@ -525,7 +700,7 @@ const FolderSync = (() => {
   function lostAccess() {
     const b = db.meta.babyId; if (b) E2EE.forget(b);
     db.events = []; db.deleted = []; Store.purge().catch(() => {});
-    for (const k of ['babyId', 'role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'tree', 'fidx', 'fseq', 'fjoin', 'mediaUp', 'mediaDel']) delete db.meta[k];
+    for (const k of ['babyId', 'role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'tree', 'fidx', 'fseq', 'fjoin', 'gdid', 'mediaUp', 'mediaDel']) delete db.meta[k];
     db.baby = { name: '', birth: '', kids: Kids.clean([]) };
     st.people = []; st.requests = []; st.devices = []; st.myRequests = []; st.memberships = []; st.invites = []; st.retired = []; st.tree = undefined; st.needsAccess = false; mem = null;
     Folder.disconnect().catch(() => {}); save(true); notify();
@@ -556,7 +731,7 @@ const FolderSync = (() => {
         } else if (!st.needsAccess) st.state = 'idle';
       }
     } catch (e) {
-      if (e && (e.status === 401 || (e.status === 409 && (e.denied || e.missing)) || e.status === 403) && !(e.tag || '').includes('conflict')) {   // the folder is no longer shared with this account
+      if (e && (e.status === 401 || e.denied || (e.status === 409 && e.missing)) && !e.conflict) {   // the folder is no longer shared with this account
         lostAccess(); st.state = 'idle'; st.err = '';
       } else {
         st.state = (e instanceof TypeError || e.name === 'AbortError' || navigator.onLine === false) ? 'offline' : 'error';

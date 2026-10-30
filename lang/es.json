@@ -2733,7 +2733,6 @@
  "11zji3": "La nube propia de la familia",
  "o9569b": "Little Log guarda el registro en una carpeta de tu propio almacenamiento en la nube, cifrado en vuestros teléfonos antes de escribir nada allí. Nadie más gestiona un servidor: compartes la carpeta con la familia, y eso decide quién entra.",
  "1wdcru": "Conectar {service}",
- "1600ilq": "Google Drive, OneDrive e iCloud Drive son los siguientes.",
  "imhl02": "Usar un servidor familiar en su lugar",
  "7eq8sl": "{service} conectado: {email}",
  "18a996g": "Empieza aquí el registro de tu familia, o únete a uno compartido con este correo.",
@@ -2769,5 +2768,7 @@
  "c6n7ht": "La lista familiar cambió mientras tanto: inténtalo de nuevo",
  "he01pb": "Conecta primero tu nube",
  "e5jota": "Tu solicitud fue rechazada.",
- "u8f21p": "Comparte la carpeta familiar en su lugar (pestaña Familia)."
+ "u8f21p": "Comparte la carpeta familiar en su lugar (pestaña Familia).",
+ "as7zof": "OneDrive e iCloud Drive son los siguientes.",
+ "1enqvy8": "La carpeta familiar ya no está compartida con esta cuenta."
 }

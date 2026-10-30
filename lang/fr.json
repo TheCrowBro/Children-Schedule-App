@@ -2733,7 +2733,6 @@
  "11zji3": "Le cloud de la famille",
  "o9569b": "Little Log garde le journal dans un dossier de votre propre espace cloud, chiffré sur vos téléphones avant que quoi que ce soit n'y soit écrit. Personne d'autre ne fait tourner de serveur : vous partagez le dossier avec la famille, et c'est elle qui entre.",
  "1wdcru": "Connecter {service}",
- "1600ilq": "Google Drive, OneDrive et iCloud Drive arrivent ensuite.",
  "imhl02": "Utiliser plutôt un serveur familial",
  "7eq8sl": "{service} connecté : {email}",
  "18a996g": "Commencez ici le journal de votre famille, ou rejoignez celui partagé avec cette adresse e-mail.",
@@ -2769,5 +2768,7 @@
  "c6n7ht": "La liste de la famille a changé entre-temps : réessayez",
  "he01pb": "Connectez d'abord votre cloud",
  "e5jota": "Votre demande a été refusée.",
- "u8f21p": "Partagez plutôt le dossier familial (onglet Famille)."
+ "u8f21p": "Partagez plutôt le dossier familial (onglet Famille).",
+ "as7zof": "OneDrive et iCloud Drive arrivent ensuite.",
+ "1enqvy8": "Le dossier familial n'est plus partagé avec ce compte."
 }

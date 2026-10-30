@@ -864,6 +864,8 @@
     "Security & your cloud": "More page card title in the family's-own-cloud mode (in place of 'Security & account').",
     "Your cloud": "Row label: the cloud service this phone is connected to.",
     "Disconnect this phone": "Button in More: clears the log from this phone and disconnects the cloud; the folder stays in the cloud.",
-    "Your own cloud": "Short line under the More card title: this phone uses the family's own cloud storage, not a server."
+    "Your own cloud": "Short line under the More card title: this phone uses the family's own cloud storage, not a server.",
+    "OneDrive and iCloud Drive are next.": "Small note under the cloud buttons on the first screen: the clouds the app does not offer yet. Keep the product names.",
+    "The family folder is no longer shared with this account.": "Error shown when a phone's sync finds the family folder gone from its cloud account (unshared or deleted); the phone then clears the log."
   }
 }

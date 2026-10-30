@@ -2733,7 +2733,6 @@
  "11zji3": "A nuvem da própria família",
  "o9569b": "O Little Log guarda o registro numa pasta do seu próprio armazenamento na nuvem, criptografado nos seus telefones antes de qualquer coisa ser escrita lá. Ninguém mais mantém um servidor: você compartilha a pasta com a família, e é ela que entra.",
  "1wdcru": "Conectar {service}",
- "1600ilq": "Google Drive, OneDrive e iCloud Drive vêm a seguir.",
  "imhl02": "Usar um servidor da família em vez disso",
  "7eq8sl": "{service} conectado: {email}",
  "18a996g": "Comece aqui o registro da sua família, ou entre em um que foi compartilhado com este e-mail.",
@@ -2769,5 +2768,7 @@
  "c6n7ht": "A lista da família mudou nesse meio-tempo: tente de novo",
  "he01pb": "Conecte a sua nuvem primeiro",
  "e5jota": "O seu pedido foi recusado.",
- "u8f21p": "Compartilhe a pasta da família em vez disso (aba Família)."
+ "u8f21p": "Compartilhe a pasta da família em vez disso (aba Família).",
+ "as7zof": "OneDrive e iCloud Drive vêm a seguir.",
+ "1enqvy8": "A pasta da família já não está compartilhada com esta conta."
 }

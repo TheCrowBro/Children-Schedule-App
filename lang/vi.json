@@ -2625,7 +2625,6 @@
  "11zji3": "Đám mây của chính gia đình",
  "o9569b": "Little Log giữ nhật ký trong một thư mục trên bộ nhớ đám mây của chính bạn, được mã hóa trên điện thoại của các bạn trước khi bất cứ thứ gì được ghi vào đó. Không ai khác vận hành máy chủ: bạn chia sẻ thư mục với gia đình, và chính họ là người được vào.",
  "1wdcru": "Kết nối {service}",
- "1600ilq": "Google Drive, OneDrive và iCloud Drive sẽ có tiếp theo.",
  "imhl02": "Dùng máy chủ gia đình thay vào đó",
  "7eq8sl": "Đã kết nối {service}: {email}",
  "18a996g": "Bắt đầu nhật ký của gia đình bạn tại đây, hoặc tham gia nhật ký đã được chia sẻ với email này.",
@@ -2661,5 +2660,7 @@
  "c6n7ht": "Danh sách gia đình đã thay đổi trong lúc đó: hãy thử lại",
  "he01pb": "Kết nối đám mây của bạn trước",
  "e5jota": "Yêu cầu của bạn đã bị từ chối.",
- "u8f21p": "Hãy chia sẻ thư mục gia đình thay vào đó (thẻ Gia đình)."
+ "u8f21p": "Hãy chia sẻ thư mục gia đình thay vào đó (thẻ Gia đình).",
+ "as7zof": "OneDrive và iCloud Drive sẽ có tiếp theo.",
+ "1enqvy8": "Thư mục gia đình không còn được chia sẻ với tài khoản này."
 }

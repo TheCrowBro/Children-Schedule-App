@@ -2733,7 +2733,6 @@
  "11zji3": "Cloudul propriu al familiei",
  "o9569b": "Little Log păstrează jurnalul într-un folder din propriul tău spațiu cloud, criptat pe telefoanele voastre înainte ca ceva să fie scris acolo. Nimeni altcineva nu ține un server: partajezi folderul cu familia, și ea este cea care intră.",
  "1wdcru": "Conectează {service}",
- "1600ilq": "Google Drive, OneDrive și iCloud Drive urmează.",
  "imhl02": "Folosește în schimb un server de familie",
  "7eq8sl": "{service} conectat: {email}",
  "18a996g": "Începe aici jurnalul familiei tale sau alătură-te unuia partajat cu acest e-mail.",
@@ -2769,5 +2768,7 @@
  "c6n7ht": "Lista familiei s-a schimbat între timp: încearcă din nou",
  "he01pb": "Conectează mai întâi cloudul tău",
  "e5jota": "Cererea ta a fost refuzată.",
- "u8f21p": "Partajează în schimb folderul familiei (fila Familie)."
+ "u8f21p": "Partajează în schimb folderul familiei (fila Familie).",
+ "as7zof": "OneDrive și iCloud Drive urmează.",
+ "1enqvy8": "Folderul familiei nu mai este partajat cu acest cont."
 }

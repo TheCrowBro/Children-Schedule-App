@@ -2679,7 +2679,6 @@
  "11zji3": "Sariling cloud ng pamilya",
  "o9569b": "Itinatago ng Little Log ang log sa isang folder sa sarili mong cloud storage, naka-encrypt sa inyong mga telepono bago may maisulat doon. Walang ibang nagpapatakbo ng server: ibinabahagi mo ang folder sa pamilya, at sila ang nakakapasok.",
  "1wdcru": "Ikonekta ang {service}",
- "1600ilq": "Susunod ang Google Drive, OneDrive, at iCloud Drive.",
  "imhl02": "Gumamit na lang ng family server",
  "7eq8sl": "Nakakonekta ang {service}: {email}",
  "18a996g": "Simulan dito ang log ng iyong pamilya, o sumali sa isang ibinahagi sa email na ito.",
@@ -2715,5 +2714,7 @@
  "c6n7ht": "Nagbago ang listahan ng pamilya habang hinihintay: subukan ulit",
  "he01pb": "Ikonekta muna ang iyong cloud",
  "e5jota": "Tinanggihan ang iyong kahilingan.",
- "u8f21p": "Ibahagi na lang ang family folder (tab na Pamilya)."
+ "u8f21p": "Ibahagi na lang ang family folder (tab na Pamilya).",
+ "as7zof": "Susunod ang OneDrive at iCloud Drive.",
+ "1enqvy8": "Hindi na ibinabahagi ang family folder sa account na ito."
 }

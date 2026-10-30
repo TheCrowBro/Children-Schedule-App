@@ -1,7 +1,7 @@
 # The family folder: the family's log in their own cloud
 
 Little Log can keep a family's log in **a folder in the family's own cloud storage**, with no server of ours anywhere. A parent
-installs the app, connects their Dropbox, starts the log, and shares the folder with the family from the Family tab. Each relative
+installs the app, connects their Dropbox or Google Drive, starts the log, and shares the folder with the family from the Family tab. Each relative
 installs the app, connects the same cloud with the email the folder was shared with, asks to join, and a parent approves them on
 their phone. The folder is the family's: whoever can open it in their cloud is who can be in the log, and the family can look at it,
 back it up or delete it from their cloud's own apps.
@@ -31,12 +31,14 @@ names, sizes and who wrote what, nothing else. The folder plays the server's par
 
 Every phone **appends only its own** `events/<phone>/` files, numbered in order, so two phones never write the same file and nothing
 conflicts. The documents that are shared (`members.json`, `tree.json`) are written with the cloud's "update only if unchanged"
-mode: a phone that lost the race reads the newer copy and applies its change again.
+mode: a phone that lost the race reads the newer copy and applies its change again. (Google Drive has no such mode: the phone
+writes, then reads the file's revision list; when another phone's revision slipped in just before its own, it reads that copy back
+and writes again with both changes in.)
 
 ## How a sync goes
 
-1. **What changed?** The phone asks the cloud for the changes since its last cursor (Dropbox's `list_folder/continue`). A sync with
-   nothing new is that one small call.
+1. **What changed?** The phone asks the cloud for the changes since its last cursor (Dropbox's `list_folder/continue`, Drive's
+   changes feed). A sync with nothing new is that one small call.
 2. **Keys.** If the folder's key epoch moved on, or this phone has no keys yet, it reads its `keys/<phone>.json` and checks it the
    way server mode does: first keys only with a parent's proof (the security code compared out loud; the QR route is server-only),
    a key change only when signed by someone who held the previous keys, the health key only when it matches the check the main
@@ -83,21 +85,30 @@ never receives it, so those entries never reach their phone, not even sealed.
 
 ## Clouds
 
-Dropbox first. The app needs a Dropbox app registered by whoever builds it, with **Full Dropbox** access (the family folder is a
-shared folder, which a member's Dropbox mounts wherever they like) and the permissions `files.metadata.read`, `files.content.read`,
-`files.content.write`, `sharing.read`, `sharing.write` and `account_info.read` ([SETUP.md](SETUP.md), *The family's own cloud*).
-Each phone signs in to its own Dropbox through the system browser (OAuth with PKCE, no secret in the app) and the family folder is
-addressed by its shared-folder id, the same from every account.
+**Dropbox** and **Google Drive**, each registered once by whoever builds the app ([SETUP.md](SETUP.md), *The family's own cloud*).
+Each phone signs in to its own account through the system browser (OAuth with PKCE, no secret in the app), and the family folder is
+addressed by an id that is the same from every account: Dropbox's shared-folder id, Drive's folder id.
 
-The protocol does not depend on Dropbox: a backend is `list(cursor)`, `get`, `put` (add / overwrite / update-if-unchanged),
-`delete`, `share`, `unshare`, `leave`, `candidates`, `mount`. Google Drive, OneDrive and iCloud Drive (through the Files app on
-iPhones) are next, and the files are the same.
+- **Dropbox** needs *Full Dropbox* access (the family folder is a shared folder, which each member's Dropbox mounts wherever they
+  like) and the permissions `files.metadata.read`, `files.content.read`, `files.content.write`, `sharing.read`, `sharing.write`
+  and `account_info.read`. Sharing invites people; they accept, and the app mounts the folder for them.
+- **Google Drive** needs the full Drive scope: the narrower per-file scope only reaches files the app made or the user picked, never
+  a folder someone else shared. The app still only touches the family folder. Drive differs in three ways the backend absorbs:
+  there is no "write only if unchanged", so a shared document is checked against the file's revision list after writing (above);
+  only a file's owner may delete it, so another phone empties it instead and an empty file counts as gone; and sharing is immediate
+  (no invitation to accept). Drive's ids for the folder's paths are kept with the log on the phone (`db.meta.gdid`).
+
+The protocol does not depend on either: a backend is `list(cursor)`, `get`, `put` (add / overwrite / update-if-unchanged),
+`delete`, `share`, `unshare`, `leave`, `candidates`, `mount`. OneDrive and iCloud Drive (through the Files app on iPhones) are
+next, and the files are the same.
 
 ## What the tests prove
 
 [tests/folder.test.js](tests/folder.test.js) runs the real app, built without a family server as the store build is, on three
-phones against a fake Dropbox ([tests/lib/fake-dropbox.js](tests/lib/fake-dropbox.js): shared folders, revisions, delta cursors,
-invitations). It walks the whole life of a family folder: starting the log, sharing out, joining and approving, a caregiver who
-never receives health notes, pictures, the family tree, offline edits, the newest edit winning, removing someone (new keys, phone
+phones against a fake of each cloud ([tests/lib/fake-dropbox.js](tests/lib/fake-dropbox.js): shared folders, revisions, delta
+cursors, invitations; [tests/lib/fake-gdrive.js](tests/lib/fake-gdrive.js): files by id, revisions, the changes feed, permissions,
+shared-with-me, owner-only deletion). It walks the whole life of a family folder, once per cloud: starting the log, sharing out, joining and approving, a caregiver who
+never receives health notes, pictures, the family tree (two parents changing it at the same moment, both changes kept), offline
+edits, the newest edit winning, removing someone (new keys, phone
 cleared), a parent's new phone with the recovery code and another approved from the first phone, leaving, disconnecting, and
 that no plain name is ever in the folder.

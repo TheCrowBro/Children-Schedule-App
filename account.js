@@ -230,7 +230,7 @@ const Acct = (() => {
   const cloudPickHtml = () => `<div class="card welcome"><b>☁️ ${__h("The family's own cloud")}</b>
     <p class="note">${__h('Little Log keeps the log in a folder in your own cloud storage, encrypted on your phones before anything is written there. Nobody else runs a server: you share the folder with the family, and that is who gets in.')}</p>
     ${Folder.available().map(p => `<button class="btn p" data-fconnect="${p}" style="width:100%;margin-top:8px">${__h('Connect {service}', { service: Folder.label(p) })}</button>`).join('')}
-    <p class="note">${__h('Google Drive, OneDrive and iCloud Drive are next.')}</p>
+    <p class="note">${__h('OneDrive and iCloud Drive are next.')}</p>
     ${Auth.configured ? `<button class="btn" id="fcServer" style="width:100%;margin-top:8px">${__h('Use a family server instead')}</button>` : ''}
     <button class="btn" id="fcLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>
     <div class="row"><button class="btn" id="fcBack">${__h('Back')}</button></div>${alertP(C.err)}</div>`;

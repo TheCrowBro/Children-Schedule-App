@@ -2679,7 +2679,6 @@
  "11zji3": "De eigen cloud van de familie",
  "o9569b": "Little Log bewaart het logboek in een map in je eigen cloudopslag, versleuteld op jullie telefoons voordat er iets wordt weggeschreven. Niemand anders draait een server: je deelt de map met de familie, en zij komen erin.",
  "1wdcru": "{service} koppelen",
- "1600ilq": "Google Drive, OneDrive en iCloud Drive volgen.",
  "imhl02": "Liever een familieserver gebruiken",
  "7eq8sl": "{service} gekoppeld: {email}",
  "18a996g": "Begin hier het logboek van je familie, of sluit je aan bij een logboek dat met dit e-mailadres is gedeeld.",
@@ -2715,5 +2714,7 @@
  "c6n7ht": "De familielijst is intussen veranderd: probeer het opnieuw",
  "he01pb": "Koppel eerst je cloud",
  "e5jota": "Je verzoek is afgewezen.",
- "u8f21p": "Deel in plaats daarvan de familiemap (tabblad Familie)."
+ "u8f21p": "Deel in plaats daarvan de familiemap (tabblad Familie).",
+ "as7zof": "OneDrive en iCloud Drive volgen.",
+ "1enqvy8": "De familiemap wordt niet langer met dit account gedeeld."
 }

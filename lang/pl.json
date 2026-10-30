@@ -2787,7 +2787,6 @@
  "11zji3": "Własna chmura rodziny",
  "o9569b": "Little Log trzyma dziennik w folderze w Twojej własnej chmurze, zaszyfrowany na Waszych telefonach, zanim cokolwiek tam trafi. Nikt inny nie prowadzi serwera: udostępniasz folder rodzinie i to ona ma dostęp.",
  "1wdcru": "Połącz {service}",
- "1600ilq": "Google Drive, OneDrive i iCloud Drive będą następne.",
  "imhl02": "Zamiast tego użyj serwera rodzinnego",
  "7eq8sl": "Połączono {service}: {email}",
  "18a996g": "Zacznij tu dziennik swojej rodziny albo dołącz do takiego, który udostępniono na ten e-mail.",
@@ -2823,5 +2822,7 @@
  "c6n7ht": "Lista rodziny zmieniła się w międzyczasie: spróbuj ponownie",
  "he01pb": "Najpierw połącz swoją chmurę",
  "e5jota": "Twoja prośba została odrzucona.",
- "u8f21p": "Zamiast tego udostępnij folder rodzinny (zakładka Rodzina)."
+ "u8f21p": "Zamiast tego udostępnij folder rodzinny (zakładka Rodzina).",
+ "as7zof": "OneDrive i iCloud Drive będą następne.",
+ "1enqvy8": "Folder rodzinny nie jest już udostępniony temu kontu."
 }

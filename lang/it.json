@@ -2733,7 +2733,6 @@
  "11zji3": "Il cloud della famiglia",
  "o9569b": "Little Log tiene il diario in una cartella del tuo spazio cloud, cifrato sui vostri telefoni prima che vi venga scritto qualsiasi cosa. Nessun altro gestisce un server: condividi la cartella con la famiglia, ed è lei a entrare.",
  "1wdcru": "Collega {service}",
- "1600ilq": "Google Drive, OneDrive e iCloud Drive arrivano dopo.",
  "imhl02": "Usa invece un server di famiglia",
  "7eq8sl": "{service} collegato: {email}",
  "18a996g": "Inizia qui il diario della tua famiglia, oppure unisciti a uno condiviso con questa email.",
@@ -2769,5 +2768,7 @@
  "c6n7ht": "L'elenco della famiglia è cambiato nel frattempo: riprova",
  "he01pb": "Collega prima il tuo cloud",
  "e5jota": "La tua richiesta è stata rifiutata.",
- "u8f21p": "Condividi invece la cartella di famiglia (scheda Famiglia)."
+ "u8f21p": "Condividi invece la cartella di famiglia (scheda Famiglia).",
+ "as7zof": "OneDrive e iCloud Drive arrivano dopo.",
+ "1enqvy8": "La cartella di famiglia non è più condivisa con questo account."
 }

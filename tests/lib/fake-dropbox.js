@@ -110,9 +110,15 @@ function createFakeDropbox() {
   }
   const only = () => { const ks = Object.keys(folders); if (ks.length !== 1) throw new Error(`${ks.length} folders`); return folders[ks[0]]; };
   return {
-    install, users, folders, calls, offline,
+    install, users, folders, calls, offline, label: 'Dropbox',
     /** The one family folder of a test. */
     only,
+    /** Whether this account is a member of the family folder. */
+    access: email => only().members.has(email.toLowerCase()),
+    /** Invited, not yet accepted (Dropbox asks people to accept a shared folder). */
+    pending: email => only().pending.has(email.toLowerCase()),
+    /** The calls a sync with nothing new makes. */
+    idle: ['files/list_folder/continue'],
     /** The paths in it (display case), sorted. */
     paths: fo => [...(fo || only()).files.values()].map(f => f.path).sort(),
     /** A file's text. */

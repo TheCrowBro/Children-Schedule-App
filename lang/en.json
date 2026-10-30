@@ -7669,9 +7669,10 @@
    "note": "Button; {service} is the cloud service's name (Dropbox)."
   },
   {
-   "id": "1600ilq",
-   "en": "Google Drive, OneDrive and iCloud Drive are next.",
-   "where": "account.js:233"
+   "id": "as7zof",
+   "en": "OneDrive and iCloud Drive are next.",
+   "where": "account.js:233",
+   "note": "Small note under the cloud buttons on the first screen: the clouds the app does not offer yet. Keep the product names."
   },
   {
    "id": "imhl02",
@@ -13570,32 +13571,38 @@
   {
    "id": "2c2zd8",
    "en": "Dropbox could not share the folder. Please try again.",
-   "where": "folder.js:86"
+   "where": "folder.js:87"
+  },
+  {
+   "id": "1enqvy8",
+   "en": "The family folder is no longer shared with this account.",
+   "where": "folder.js:128",
+   "note": "Error shown when a phone's sync finds the family folder gone from its cloud account (unshared or deleted); the phone then clears the log."
   },
   {
    "id": "10iq3zx",
    "en": "That folder is not a Little Log family folder (yet). Ask the parent to open their Little Log once.",
-   "where": "folder.js:183"
+   "where": "folder.js:358"
   },
   {
    "id": "c6n7ht",
    "en": "The family list changed meanwhile: try again",
-   "where": "folder.js:283"
+   "where": "folder.js:458"
   },
   {
    "id": "he01pb",
    "en": "Connect your cloud first",
-   "where": "folder.js:477"
+   "where": "folder.js:652"
   },
   {
    "id": "e5jota",
    "en": "Your request was turned down.",
-   "where": "folder.js:503"
+   "where": "folder.js:678"
   },
   {
    "id": "u8f21p",
    "en": "Share the family folder instead (Family tab).",
-   "where": "folder.js:524"
+   "where": "folder.js:699"
   },
   {
    "id": "xtu8dm",

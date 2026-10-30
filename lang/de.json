@@ -2679,7 +2679,6 @@
  "11zji3": "Die eigene Cloud der Familie",
  "o9569b": "Little Log bewahrt das Protokoll in einem Ordner in Ihrem eigenen Cloud-Speicher auf, auf Ihren Telefonen verschlüsselt, bevor dort etwas geschrieben wird. Niemand sonst betreibt einen Server: Sie teilen den Ordner mit der Familie, und genau die kommt hinein.",
  "1wdcru": "{service} verbinden",
- "1600ilq": "Google Drive, OneDrive und iCloud Drive folgen als Nächstes.",
  "imhl02": "Stattdessen einen Familienserver verwenden",
  "7eq8sl": "{service} verbunden: {email}",
  "18a996g": "Beginnen Sie hier das Protokoll Ihrer Familie, oder treten Sie einem bei, das mit dieser E-Mail-Adresse geteilt wurde.",
@@ -2715,5 +2714,7 @@
  "c6n7ht": "Die Familienliste hat sich inzwischen geändert: Versuchen Sie es erneut",
  "he01pb": "Verbinden Sie zuerst Ihre Cloud",
  "e5jota": "Ihre Anfrage wurde abgelehnt.",
- "u8f21p": "Teilen Sie stattdessen den Familienordner (Reiter Familie)."
+ "u8f21p": "Teilen Sie stattdessen den Familienordner (Reiter Familie).",
+ "as7zof": "OneDrive und iCloud Drive folgen als Nächstes.",
+ "1enqvy8": "Der Familienordner wird nicht mehr mit diesem Konto geteilt."
 }

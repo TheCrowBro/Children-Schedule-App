@@ -2679,7 +2679,6 @@
  "11zji3": "Ailenin kendi bulutu",
  "o9569b": "Little Log günlüğü, kendi bulut depolamanızdaki bir klasörde, oraya herhangi bir şey yazılmadan önce telefonlarınızda şifrelenmiş olarak tutar. Başka kimse sunucu işletmez: klasörü aileyle paylaşırsınız ve içeri giren onlardır.",
  "1wdcru": "{service} bağla",
- "1600ilq": "Sırada Google Drive, OneDrive ve iCloud Drive var.",
  "imhl02": "Bunun yerine bir aile sunucusu kullan",
  "7eq8sl": "{service} bağlandı: {email}",
  "18a996g": "Ailenizin günlüğüne burada başlayın ya da bu e-postayla paylaşılmış bir günlüğe katılın.",
@@ -2715,5 +2714,7 @@
  "c6n7ht": "Aile listesi bu arada değişti: tekrar deneyin",
  "he01pb": "Önce bulutunuzu bağlayın",
  "e5jota": "İsteğiniz reddedildi.",
- "u8f21p": "Bunun yerine aile klasörünü paylaşın (Aile sekmesi)."
+ "u8f21p": "Bunun yerine aile klasörünü paylaşın (Aile sekmesi).",
+ "as7zof": "Sırada OneDrive ve iCloud Drive var.",
+ "1enqvy8": "Aile klasörü artık bu hesapla paylaşılmıyor."
 }
