@@ -163,6 +163,21 @@ async function suite(cloud) {
     assert.equal(await mum.evaluate(() => db.events.find(x => x.id === 'm-feed-1').note), 'mum edited later');
   });
 
+  await step(`the cloud's sign-in lapses (${name} rejects the phone's token): the phone keeps the log and offers Reconnect; signing in again through the browser resumes the sync`, async () => {
+    fake.expired.add('dad@x.com');
+    await dad.evaluate(() => Sync.run(true)); await dad.waitForFunction(() => Sync.st.reconnect === true, null, { timeout: 10000 });
+    assert(await dad.evaluate(() => !!db.meta.babyId && db.events.length > 0), 'nothing cleared');
+    await goTab(dad, 'family'); await dad.waitForSelector('#fReconnect');
+    const n = await dad.evaluate(() => window.__calls.filter(c => c[0] === 'Browser.open').length);
+    await dad.click('#fReconnect'); await dad.waitForFunction(k => window.__calls.filter(c => c[0] === 'Browser.open').length > k, n);
+    const u = new URL(await dad.evaluate(() => window.__calls.filter(c => c[0] === 'Browser.open').pop()[1])); assert.equal(u.hostname, CL.host);
+    fake.expired.delete('dad@x.com');
+    await dad.evaluate(url => window.__emit('appUrlOpen', { url }), CL.back(u.searchParams.get('state')));
+    await dad.waitForFunction(() => Sync.st.state === 'ok' && !Sync.st.reconnect, null, { timeout: 15000 });
+    await add(dad, { id: 'd-feed-3', type: 'feed', ts: Date.now() - 50e3, data: { kind: 'bottle', ml: 60 } }); await syncNow(dad); await syncNow(mum);
+    assert((await entries(mum)).some(e => e.id === 'd-feed-3'), 'syncing again');
+  });
+
   await step("removing Nan: the folder is no longer shared with her, the keys change (epoch 2), Dad still reads old and new entries, and Nan's phone loses the log at its next sync", async () => {
     const nanId = await nan.evaluate(() => Auth.id);
     await goTab(mum, 'family'); await mum.waitForSelector(`[data-person="${nanId}"]`); await mum.click(`[data-person="${nanId}"]`); await mum.waitForSelector('#pRemove'); await mum.click('#pRemove');

@@ -12,6 +12,7 @@ const Acct = (() => {
   const C = { cands: null, busy: false, err: '', mine: '', name: '', birth: '', sex: '' };
   const folderMode = () => typeof Folder !== 'undefined' && Folder.on;                      // this phone is in a family folder (or asking to join one)
   const folderOk = () => typeof Folder !== 'undefined' && Folder.available().length > 0;   // the app is registered with a cloud the folder can live in
+  const cloudFirst = () => folderOk() && (!Auth.configured || CFG.firstScreen === 'cloud');   // the family's own cloud is the first screen's default: always without a server, by config.js with one
   const outLabel = () => (folderMode() ? __('Disconnect') : __('Sign out'));
 
   // ---- roles & permissions (mirrors supabase/schema.sql; the server enforces them) -------------
@@ -133,7 +134,7 @@ const Acct = (() => {
     else if (!signedIn && !db.meta.localOnly) {
       if (!welcomed() || W.back) return { html: welcomeHtml(), bind: bindWelcome, tour: W.step === 'choose' ? 'welcome' : null };   // (the first screen has a tour of its own)
       if (cloud && typeof Folder !== 'undefined' && Folder.attached) return { html: folderOnboardHtml(), bind: bindFolderOnboard };   // a cloud connected: start the family's log, or join one
-      if (cloud && (W.step === 'cloud' || !Auth.configured)) return { html: cloudPickHtml(), bind: bindCloudPick };   // (with a family server configured too, the email sign-in stays the default)
+      if (cloud && (W.step === 'cloud' || (cloudFirst() && W.step !== 'server'))) return { html: cloudPickHtml(), bind: bindCloudPick };   // (with a family server configured too, config.js says which comes first; the other is one tap away)
       return { html: loginHtml(), bind: bindLogin };
     }
     if (Lock.locked) return { html: lockHtml(), bind: bindLock, plain: true };   // (no badge over the lock)
@@ -182,7 +183,10 @@ const Acct = (() => {
   const markWelcome = () => { try { localStorage.setItem('ll.welcome', '1'); } catch (e) { /* storage blocked: it may show again */ } };
   const SHARE_WHY = N_("Sign in with your email to start a log the family shares, or to join one. It is kept safe in the family's cloud, end-to-end encrypted, so a new phone just signs in.");
   const FOLDER_WHY = N_("The log lives in a folder in your own cloud storage, encrypted on your phones, and you share that folder with the family. No account with anyone else: the folder is yours.");
-  const shareWhy = () => (folderOk() && !Auth.configured ? FOLDER_WHY : SHARE_WHY);   // the route Share with family leads to: the gate sends a phone with a server to sign-in (the folder one tap away)
+  const shareWhy = () => (cloudFirst() ? FOLDER_WHY : SHARE_WHY);   // the route Share with family leads to
+  /** When the cloud's sign-in lapsed (Google renews it weekly while an app is in testing): sign in again and the sync goes on, nothing cleared. */
+  const reconnectHtml = () => (folderMode() && Sync.st.reconnect ? `<div class="note" style="margin-top:6px">⚠️ ${__h('{service} needs you to sign in again.', { service: Folder.label(Folder.provider) })}</div><button class="btn p" id="fReconnect" style="width:100%;margin-top:8px">${__h('Reconnect {service}', { service: Folder.label(Folder.provider) })}</button>` : '');
+  const bindReconnect = () => { const b = $('#fReconnect'); if (b) b.onclick = async () => { try { await Folder.connect(Folder.provider); toast(__('Finish signing in in the browser window')); } catch (e) { toast(err(e)); } }; };
   const welcomeHtml = () => (W.step === 'restore' ? restoreHtml() : `<div class="card welcome"><b>${__h('How would you like to use Little Log?')}</b>
     ${tile('wLocal', '🔒', 'sleep', N_('Just this phone'), N_('Everything stays on this phone. You can share it with the family later, from the Family tab.'))}
     ${tile('wShare', '👨‍👩‍👧', 'feed', N_('Share with family'), shareWhy())}
@@ -195,7 +199,7 @@ const Acct = (() => {
   function bindWelcome() {
     const on = (id, f) => { const e = $(id); if (e) e.onclick = () => { W.back = false; f(); }; };
     on('#wLocal', () => { markWelcome(); db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); });
-    on('#wShare', () => { markWelcome(); W.step = folderOk() && !Auth.configured ? 'cloud' : 'choose'; render(); });
+    on('#wShare', () => { markWelcome(); W.step = cloudFirst() ? 'cloud' : 'choose'; render(); });
     on('#wRestore', () => { W.step = 'restore'; W.err = ''; render(); });
     on('#rsBack', () => { W.step = 'choose'; W.err = ''; render(); });
     const passOk = () => { const p = $('#rsPass').value; if (p && p.length >= Cloud.MIN_PASS) return p; W.err = __('Set a backup passphrase ({n}+ characters) first', { n: Cloud.MIN_PASS }); render(); return null; };
@@ -238,13 +242,14 @@ const Acct = (() => {
     document.querySelectorAll('[data-fconnect]').forEach(b => b.onclick = async () => { C.err = ''; try { await Folder.connect(b.dataset.fconnect); toast(__('Finish signing in in the browser window')); } catch (e) { C.err = err(e); render(); } });
     $('#fcBack').onclick = () => { W.step = 'choose'; W.back = true; C.err = ''; render(); };
     $('#fcLocal').onclick = () => { markWelcome(); db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); };
-    if ($('#fcServer')) $('#fcServer').onclick = () => { W.step = 'choose'; render(); };
+    if ($('#fcServer')) $('#fcServer').onclick = () => { W.step = 'server'; render(); };
   }
   /** The cloud sign-in came back (app.js). True when the first screens were waiting for it: that account is now this phone's
       identity for the family folder, and the next screen starts a log or joins one. */
   async function cloudReturn(provider) {
     const g = gate();
-    if (!g || g.plain || folderMode() || !provider || !Folder.SCOPES[provider] || !folderOk()) return false;
+    if (folderMode()) { if (provider && provider === Folder.provider) { Sync.st.reconnect = false; Sync.run(true); } return false; }   // (signed in again after the cloud's sign-in lapsed: the sync goes on)
+    if (!g || g.plain || !provider || !Folder.SCOPES[provider] || !folderOk()) return false;
     try { await Folder.attach(provider); C.cands = null; C.err = ''; W.step = 'choose'; } catch (e) { C.err = err(e); }
     render(); return true;
   }
@@ -558,9 +563,10 @@ const Acct = (() => {
     <button class="btn d" id="wCancel" style="width:100%;margin-top:8px">${__h('Cancel request')}</button>
     ${folderMode() ? `<label class="f">${__h('A parent with the recovery code? Enter it to get straight in')}</label><input id="wCode" type="text" autocapitalize="characters" autocomplete="off" placeholder="XXXX-XXXX-XXXX-…">
     <button class="btn" id="wRecover" style="width:100%;margin-top:8px">${__h('Unlock with recovery code')}</button>` : ''}
-    <button class="btn" id="wOut" style="width:100%;margin-top:8px">${outLabel()}</button></div>`;
+    ${reconnectHtml()}<button class="btn" id="wOut" style="width:100%;margin-top:8px">${outLabel()}</button></div>`;
   function bindWaiting() {
-    const check = async () => { try { if (await Sync.checkApproval()) { toast(__("You're in!")); tab = 'day'; render(); } else if (!Sync.pendingRequest()) render(); } catch (e) {} };
+    const check = async () => { try { if (await Sync.checkApproval()) { toast(__("You're in!")); tab = 'day'; render(); } else if (!Sync.pendingRequest()) render(); } catch (e) { if (e && e.auth && !Sync.st.reconnect) { Sync.st.reconnect = true; render(); } } };
+    bindReconnect();
     $('#wCheck').onclick = check;
     $('#wCancel').onclick = async () => { try { await Sync.cancelRequest(Sync.pendingRequest().id); } catch (e) { toast(err(e)); } render(); };
     $('#wOut').onclick = () => signOut(false);
@@ -1104,7 +1110,7 @@ const Acct = (() => {
       ${parent ? `<div class="row"><button class="btn" id="newRec">${__h('Create a new recovery code')}</button></div>` : ''}</div>`;
     return `${serverNote()}${treePicHtml()}
     <div class="card"><b>${db.baby.name ? __h("{name}'s shared log", { name: db.baby.name }) : __h("Baby's shared log")}</b>
-      <div class="stat"><span>${esc(syncLine())}${s.err && s.state === 'error' ? `<br><small>${esc(__(s.err))}</small>` : ''}</span><button class="btn" id="syncNow" style="padding:6px 12px">${__h('Sync now')}</button></div>
+      <div class="stat"><span>${esc(syncLine())}${s.err && s.state === 'error' ? `<br><small>${esc(__(s.err))}</small>` : ''}</span><button class="btn" id="syncNow" style="padding:6px 12px">${__h('Sync now')}</button></div>${reconnectHtml()}
       ${s.denied ? `<div class="note" style="margin-top:6px">⚠️ ${__hn('{n} change was not allowed with your access and was undone.', '{n} changes were not allowed with your access and were undone.', s.denied)}</div>` : ''}
       <div class="note" style="margin-top:6px">${folderMode() ? __h('{service} · {email} · {role}', { service: Folder.label(Folder.provider), email: Auth.email, role: roleName(db.meta.role) }) : __h('Signed in as {email} · {role}', { email: Auth.email, role: roleName(db.meta.role) })}</div></div>
     ${reqs}${phonesCard}
@@ -1138,6 +1144,7 @@ const Acct = (() => {
       <div class="row"><button class="btn" id="invShare">${__h('Share code')}</button></div></div>`;
   }
   function bindFamily() {
+    bindReconnect();
     const el = id => document.getElementById(id);
     if (el('famShare')) el('famShare').onclick = () => { delete db.meta.localOnly; markWelcome(); save(true); render(); };   // (a log kept on this phone so far: sign in to share it)
     if (!el('syncNow')) return;
@@ -1324,7 +1331,7 @@ const Acct = (() => {
     if (folderMode()) {
       const me = Sync.st.people.find(p => p.is_you), service = Folder.label(Folder.provider);
       return `<div class="card"><b>🔐 ${__h('Security & your cloud')}</b>
-      <div class="stat"><span>${__h('Your cloud')}<br><small>${esc(service)} · ${esc(Folder.me.email)}</small></span></div>${nameRowHtml(me)}${lockRowsHtml()}
+      <div class="stat"><span>${__h('Your cloud')}<br><small>${esc(service)} · ${esc(Folder.me.email)}</small></span></div>${reconnectHtml()}${nameRowHtml(me)}${lockRowsHtml()}
       <p class="note">${__h('The log lives in the family folder in your cloud. Disconnecting clears it from this phone only: connect again to get it back.')}</p>
       <div class="row"><button class="btn" id="signOut">${__h('Disconnect this phone')}</button></div></div>`;
     }
@@ -1400,6 +1407,7 @@ ${lockRowsHtml()}      <div class="row"><button class="btn" id="signOut">${__h('
     save(); render(); toast(n ? __n('Restored {n} entry', 'Restored {n} entries', n) : __('Nothing new to restore'));
   }
   function bindMoreAccount() {
+    bindReconnect();
     const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
     on('#signOut', () => signOut(false)); on('#signOutAll', () => signOut(true)); on('#delAcct', deleteAccount);
     on('#mfaOn', () => { F.enrollRequested = true; M.enroll = null; render(); });

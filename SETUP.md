@@ -41,14 +41,17 @@ publishing (a short form about what the app does with each permission).
 The family folder needs the **full Drive scope**: a parent shares the folder, and the narrower per-file scope (`drive.file`) can only
 reach files the app itself made or the user picked, so relatives' phones could not open it. Google calls that scope *restricted*:
 while the consent screen is in *Testing*, only the test users can sign in, and they see *Google hasn't verified this app* (tap
-*Continue*). To let everyone sign in, publish the consent screen and submit the app for **verification**, which for a restricted
+*Continue*), and Google renews their sign-in only for about a week at a time: the app then shows **Reconnect Google Drive** on the
+Family tab and under More, which signs in again and carries on with nothing cleared. To let everyone sign in, publish the consent
+screen and submit the app for **verification**, which for a restricted
 scope includes a security assessment by a Google-authorised lab (CASA); that takes weeks and may cost a fee. The app only ever
 touches the family folder, which is what the review asks you to show.
 
 The same keys serve the encrypted cloud backup (§3), so one registration per cloud does both. The **store build** is `dropboxKey`
 and/or `googleClientId` set and `supabaseUrl` **empty**: the first screen then offers the family's own cloud, and no server of
-anyone's is involved. With a server set too, the first screen offers the family server and keeps the family's own cloud one tap
-away (*Use the family's own cloud instead*). Everyone in one family uses the cloud the parent who started the log chose, since the
+anyone's is involved. With a server set too, `firstScreen: 'cloud'` in `config.js` puts the family's own cloud first on the first
+screen and keeps the server sign-in one tap away (*Use a family server instead*); left empty, the sign-in comes first and the cloud
+is one tap away (*Use the family's own cloud instead*). Everyone in one family uses the cloud the parent who started the log chose, since the
 folder is shared inside that cloud; different families may choose differently.
 
 ## 1. Supabase project (free tier is fine)

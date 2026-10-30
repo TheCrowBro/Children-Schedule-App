@@ -52,7 +52,12 @@ const Cloud = (() => {
   async function tokenCall(p, body) {
     const r = await Native.fetch(PKCE[p].token, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: PKCE[p].id(), ...body }).toString() });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error_description || j.error || __('Sign-in with {service} failed', { service: label(p) }));
+    if (!r.ok) {
+      const e = new Error(j.error_description || j.error || __('Sign-in with {service} failed', { service: label(p) }));
+      e.auth = r.status === 401 || j.error === 'invalid_grant';   // (the refresh token lapsed or was revoked: a sign-in is needed again)
+      if (e.auth && body.grant_type === 'refresh_token') { delete c.tokens[p]; await persist(); }
+      throw e;
+    }
     c.tokens[p] = { access: j.access_token, refresh: j.refresh_token || (c.tokens[p] && c.tokens[p].refresh), exp: Date.now() + (j.expires_in || 3600) * 1000 };
     await persist();
   }
@@ -78,9 +83,9 @@ const Cloud = (() => {
   }
   async function token(p) {
     const t = c.tokens[p];
-    if (!t) throw new Error(N_('Not connected'));
+    if (!t) { const e = new Error(N_('Not connected')); e.auth = true; throw e; }
     if (t.exp - Date.now() < 60000) {
-      if (!t.refresh) throw new Error(__('Session expired – reconnect {service}', { service: label(p) }));
+      if (!t.refresh) { const e = new Error(__('Session expired – reconnect {service}', { service: label(p) })); e.auth = true; throw e; }
       await tokenCall(p, { grant_type: 'refresh_token', refresh_token: t.refresh });
     }
     return c.tokens[p].access;

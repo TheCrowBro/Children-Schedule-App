@@ -40,7 +40,7 @@ const Folder = (() => {
   const SCOPES = { dropbox: 'account_info.read files.metadata.read files.content.read files.content.write sharing.read sharing.write', google: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.appdata' };
   const fail = (status, j, text) => {
     const e = new Error((j && (j.error_summary || j.error_description || (typeof j.error === 'string' && j.error))) || (text || '').slice(0, 200) || __('Request failed ({status})', { status }));
-    e.status = status; e.tag = (j && j.error_summary) || ''; e.conflict = /conflict/.test(e.tag); e.missing = /not_found/.test(e.tag); e.denied = status === 403 || /no_permission|access_error|insufficient|no_write_permission/.test(e.tag);
+    e.status = status; e.tag = (j && j.error_summary) || ''; e.conflict = /conflict/.test(e.tag); e.missing = /not_found/.test(e.tag); e.denied = status === 403 || /no_permission|access_error|insufficient|no_write_permission/.test(e.tag); e.auth = status === 401;
     return e;
   };
   const ascii = s => s.replace(/[\u007f-￿]/g, ch => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));   // (HTTP headers carry ASCII only)
@@ -112,6 +112,7 @@ const Folder = (() => {
     const e = new Error((err && err.message) || (text || '').slice(0, 200) || __('Request failed ({status})', { status }));
     e.status = status; e.tag = reason; e.missing = status === 404; e.conflict = false;
     e.denied = status === 403 && !/rate|quota|limit/i.test(reason);   // (403 is also how Drive says "slow down")
+    e.auth = status === 401;
     return e;
   };
   async function gcall(method, url, { json, body, type } = {}) {
@@ -368,7 +369,7 @@ const Folder = (() => {
 /* The sync for a family folder: what ServerSync is for a family server, over files (see the top of this file). The app talks to
    `Sync`, which is whichever of the two this phone uses. */
 const FolderSync = (() => {
-  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyPeople: {}, retired: [], server: null, tree: undefined };
+  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, reconnect: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyPeople: {}, retired: [], server: null, tree: undefined };
   let busy = false, busyAt = 0, again = false, timer = null, started = false, failures = 0, retryAt = 0, mem = null, flight = Promise.resolve();
   const notify = changed => { if (FolderSync.onChange) FolderSync.onChange(changed); };
   const B = () => Folder.backend();
@@ -727,11 +728,12 @@ const FolderSync = (() => {
           if (fresh('tree.json') || st.tree === undefined) await loadTree().catch(() => {});
           if (isParent()) { await loadAdmin(); await loadDevices().catch(() => {}); }
           if (db.meta.role !== 'parent' && !(db.meta.perms || {}).view_health) db.events = db.events.filter(e => !E2EE.isSensitive(e.type));
-          st.state = 'ok'; st.at = Date.now(); st.err = ''; failures = 0; retryAt = 0;
+          st.state = 'ok'; st.at = Date.now(); st.err = ''; st.reconnect = false; failures = 0; retryAt = 0;
         } else if (!st.needsAccess) st.state = 'idle';
       }
     } catch (e) {
-      if (e && (e.status === 401 || e.denied || (e.status === 409 && e.missing)) && !e.conflict) {   // the folder is no longer shared with this account
+      if (e && e.auth) { st.state = 'error'; st.err = e.message; st.reconnect = true; }   // the cloud's sign-in lapsed: sign in again, nothing is cleared
+      else if (e && (e.denied || (e.status === 409 && e.missing)) && !e.conflict) {   // the folder is no longer shared with this account
         lostAccess(); st.state = 'idle'; st.err = '';
       } else {
         st.state = (e instanceof TypeError || e.name === 'AbortError' || navigator.onLine === false) ? 'offline' : 'error';

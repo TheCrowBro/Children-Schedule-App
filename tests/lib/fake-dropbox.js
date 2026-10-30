@@ -3,7 +3,7 @@
 // account. In memory, shared by every phone in a test; each phone's Playwright context gets its own routes, bound to the Dropbox
 // account it signed in with, so three phones are three accounts sharing one folder, as in life.
 function createFakeDropbox() {
-  const users = {}, folders = {}, calls = [], offline = new Set();   // offline: accounts whose phone has no connection right now
+  const users = {}, folders = {}, calls = [], offline = new Set(), expired = new Set();   // offline: accounts whose phone has no connection right now; expired: whose token Dropbox rejects
   let revs = 0, ids = 0;
   const J = (status, body) => ({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: body === null ? 'null' : JSON.stringify(body) });
   const fail = (status, tag) => J(status, { error_summary: tag + '/..', error: { '.tag': tag.split('/')[0] } });
@@ -97,12 +97,14 @@ function createFakeDropbox() {
     await ctx.route('https://api.dropboxapi.com/**', r => {
       if (offline.has(email)) return r.abort('internetdisconnected');
       const q = r.request(), ep = new URL(q.url()).pathname.replace(/^\/2\//, '').replace(/^\//, '');
+      if (expired.has(email) && ep !== 'oauth2/token') return r.fulfill(J(401, { error_summary: 'expired_access_token/...', error: { '.tag': 'expired_access_token' } }));
       let arg = null; try { arg = JSON.parse(q.postData() || 'null'); } catch (e) { arg = null; }
       return r.fulfill(api(email, ep, arg));
     });
     await ctx.route('https://content.dropboxapi.com/**', r => {
       if (offline.has(email)) return r.abort('internetdisconnected');
       const q = r.request(), ep = new URL(q.url()).pathname.replace(/^\/2\//, '');
+      if (expired.has(email)) return r.fulfill(J(401, { error_summary: 'expired_access_token/...', error: { '.tag': 'expired_access_token' } }));
       let arg = {}; try { arg = JSON.parse(q.headers()['dropbox-api-arg'] || '{}'); } catch (e) { arg = {}; }
       const b = q.postDataBuffer();
       return r.fulfill(api(email, ep, arg, b ? Buffer.from(b) : Buffer.alloc(0)));
@@ -110,7 +112,7 @@ function createFakeDropbox() {
   }
   const only = () => { const ks = Object.keys(folders); if (ks.length !== 1) throw new Error(`${ks.length} folders`); return folders[ks[0]]; };
   return {
-    install, users, folders, calls, offline, label: 'Dropbox',
+    install, users, folders, calls, offline, expired, label: 'Dropbox',
     /** The one family folder of a test. */
     only,
     /** Whether this account is a member of the family folder. */

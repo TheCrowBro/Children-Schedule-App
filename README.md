@@ -242,7 +242,7 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   approved on a parent's phone, with the same security-code check, roles and check boxes. Everything in the folder is end-to-end
   encrypted as it is on a server; the family can look at, back up or delete the folder from the cloud's own apps. Removing someone,
   leaving, a lost phone, a parent's new phone and the recovery code all work as they do with a server; the activity log and the QR
-  invite are server-only. OneDrive and iCloud Drive are next
+  invite are server-only. A lapsed cloud sign-in asks for a one-tap *Reconnect* and loses nothing. OneDrive and iCloud Drive are next
 - **Family tree** (Family tab): the family as the tree's **roots**: a detailed tree above the ground (its crown, boughs and birds, the
   sun or the moon, the hill with its flowers) and below it the children as the newest root tips just under the trunk, the parents
   below them, the grandparents deeper and the great-grandparents deepest, aunts and uncles as side roots with their children, and each

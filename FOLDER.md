@@ -78,6 +78,9 @@ never receives it, so those entries never reach their phone, not even sealed.
 - **Someone leaves**: their phone drops its own keys, asks the parents' phones to change the keys (`rotate_needed` in
   `keyring.json`), and leaves the shared folder in their cloud.
 - **A lost phone**: Family tab → My phones → Remove. Its keys go and the keys are changed.
+- **A lapsed cloud sign-in** (the cloud rejects the phone's token: a revoked app, or Google's weekly renewal while an app is in
+  testing): nothing is cleared. The sync stops with *Reconnect* on the Family tab and under More, which opens the cloud's sign-in
+  again and carries on. Only a folder no longer shared with the account clears the phone.
 - **A parent's new phone**: it asks to join like anyone, and either another phone approves it under *Phones waiting for access*,
   or the parent types the recovery code on the waiting screen and is in at once.
 - **Every phone gone**: the recovery code opens the folder on a new phone. Without it, and without the cloud's own version

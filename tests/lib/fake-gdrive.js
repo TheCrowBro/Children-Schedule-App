@@ -4,7 +4,7 @@
 // phone in a test; each phone's Playwright context gets its own routes, bound to the Google account it signed in with, so three
 // phones are three accounts sharing one folder, as in life.
 function createFakeGoogleDrive() {
-  const users = {}, files = {}, log = [], calls = [], offline = new Set();   // log: the changes feed, one line per write, trash, delete, access gained or lost
+  const users = {}, files = {}, log = [], calls = [], offline = new Set(), expired = new Set();   // log: the changes feed, one line per write, trash, delete, access gained or lost; expired: accounts whose token Drive rejects
   let seq = 0, ids = 0, revs = 0, clock = Date.now();
   const FOLDER = 'application/vnd.google-apps.folder';
   const J = (status, body) => ({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: body === null ? '' : JSON.stringify(body) });
@@ -135,6 +135,7 @@ function createFakeGoogleDrive() {
     const handle = r => {
       if (offline.has(email)) return r.abort('internetdisconnected');
       const q = r.request(), b = q.postDataBuffer();
+      if (expired.has(email) && !/oauth2\.googleapis\.com/.test(q.url())) return r.fulfill(fail(401, 'authError', 'Invalid Credentials'));
       return r.fulfill(api(email, q.method(), q.url(), b ? Buffer.from(b) : Buffer.alloc(0)));
     };
     await ctx.route('https://www.googleapis.com/**', handle);
@@ -144,7 +145,7 @@ function createFakeGoogleDrive() {
   const walk = (f, d, out) => { for (const x of Object.values(files)) { if (x.parents[0] !== f.id || x.trashed) continue; const p = d ? d + '/' + x.name : x.name; if (x.mime === FOLDER) walk(x, p, out); else if (x.bytes.length) out.push({ path: p, file: x }); } return out; };
   const find = p => (walk(only(), '', []).find(x => x.path.toLowerCase() === p.toLowerCase()) || {}).file || null;
   return {
-    install, users, files, log, calls, offline, label: 'Google Drive',
+    install, users, files, log, calls, offline, expired, label: 'Google Drive',
     /** The one family folder of a test: its owner and name. */
     only: () => { const f = only(); return { owner: f.owner, name: f.name }; },
     /** The paths in it, sorted (an emptied file counts as gone, as it does for the app). */

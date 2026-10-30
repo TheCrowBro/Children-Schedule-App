@@ -866,6 +866,8 @@
     "Disconnect this phone": "Button in More: clears the log from this phone and disconnects the cloud; the folder stays in the cloud.",
     "Your own cloud": "Short line under the More card title: this phone uses the family's own cloud storage, not a server.",
     "OneDrive and iCloud Drive are next.": "Small note under the cloud buttons on the first screen: the clouds the app does not offer yet. Keep the product names.",
-    "The family folder is no longer shared with this account.": "Error shown when a phone's sync finds the family folder gone from its cloud account (unshared or deleted); the phone then clears the log."
+    "The family folder is no longer shared with this account.": "Error shown when a phone's sync finds the family folder gone from its cloud account (unshared or deleted); the phone then clears the log.",
+    "{service} needs you to sign in again.": "Shown on the Family tab and in More when the cloud's sign-in has lapsed (e.g. Google renews it weekly while an app is in testing); {service} is the cloud's name. Nothing is lost; the next line is a Reconnect button.",
+    "Reconnect {service}": "Button: opens the cloud's sign-in again and the sync carries on. {service} is the cloud's name."
   }
 }
