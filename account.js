@@ -8,6 +8,11 @@ const Acct = (() => {
   const M = { enroll: null, busy: false, err: '' };                                              // two-step verification
   const O = { busy: false, err: '', name: '', birth: '', sex: '', mine: '', create: null };               // onboarding
   let invite = null, pendingJoin = null, waitTimer = null;
+  // ---- the family folder (folder.js): the family's own cloud, no server of ours ----
+  const C = { cands: null, busy: false, err: '', mine: '', name: '', birth: '', sex: '' };
+  const folderMode = () => typeof Folder !== 'undefined' && Folder.on;                      // this phone is in a family folder (or asking to join one)
+  const folderOk = () => typeof Folder !== 'undefined' && Folder.available().length > 0;   // the app is registered with a cloud the folder can live in
+  const outLabel = () => (folderMode() ? __('Disconnect') : __('Sign out'));
 
   // ---- roles & permissions (mirrors supabase/schema.sql; the server enforces them) -------------
   const PERM_KEYS = [
@@ -74,9 +79,17 @@ const Acct = (() => {
   function qrSvg(text) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); }
 
   // An invite link opened while the app runs (OS hands it over) is remembered until the user is ready (in the Keychain: it holds the QR secret).
-  async function init() { try { pendingJoin = JSON.parse(await Native.Secure.get('e2ee.pendingjoin')); } catch (e) { pendingJoin = null; } }
+  async function init() {
+    try { pendingJoin = JSON.parse(await Native.Secure.get('e2ee.pendingjoin')); } catch (e) { pendingJoin = null; }
+    if (folderMode()) {   // (a family folder needs no sign-in: this phone's key, then the sync)
+      F.loaded = true; F.verified = true;
+      E2EE.ensureDevice().then(d => (d ? E2EE.fingerprint(d.pub) : '')).then(fp => { F.fp = fp; }).catch(() => {});
+      Sync.start();
+    }
+  }
   const clearPending = () => { pendingJoin = null; Native.Secure.remove('e2ee.pendingjoin'); };
   function receiveJoin(text) {
+    if (folderMode()) return false;   // (invite links belong to the family server)
     const link = parseJoinLink(text); if (!link) return false;
     pendingJoin = link; Native.Secure.set('e2ee.pendingjoin', JSON.stringify(link));
     if (Auth.signedIn && F.loaded) processPending().then(render); else render();
@@ -108,8 +121,21 @@ const Acct = (() => {
   // ---- gate -----------------------------------------------------------------------------------
   function gate() {
     if (!Native.is) return { html: appOnlyHtml(), bind() {} };
-    if (!Auth.configured) { if (!db.meta.localOnly) return { html: setupHtml(), bind: bindSetup }; }
-    else if (!Auth.signedIn && !db.meta.localOnly) return welcomed() ? { html: loginHtml(), bind: bindLogin } : { html: welcomeHtml(), bind: bindWelcome, tour: W.step === 'choose' ? 'welcome' : null };   // (the first screen has a tour)
+    if (folderMode()) {   // in a family folder (or asking to join one): the family's own cloud, so none of the account screens
+      if (Lock.locked) return { html: lockHtml(), bind: bindLock, plain: true };
+      if (!db.meta.babyId) return Sync.pendingRequest() ? { html: waitingHtml(), bind: bindWaiting } : { html: folderOnboardHtml(), bind: bindFolderOnboard };
+      if (F.recoveryCode) return { html: recoveryHtml(), bind: bindRecovery };
+      if (Sync.st.needsAccess) return { html: accessHtml(), bind: bindAccessScreen };
+      return null;
+    }
+    const cloud = folderOk(), signedIn = Auth.configured && Auth.signedIn;
+    if (!Auth.configured && !cloud) { if (!db.meta.localOnly) return { html: setupHtml(), bind: bindSetup }; }
+    else if (!signedIn && !db.meta.localOnly) {
+      if (!welcomed() || W.back) return { html: welcomeHtml(), bind: bindWelcome, tour: W.step === 'choose' ? 'welcome' : null };   // (the first screen has a tour of its own)
+      if (cloud && typeof Folder !== 'undefined' && Folder.attached) return { html: folderOnboardHtml(), bind: bindFolderOnboard };   // a cloud connected: start the family's log, or join one
+      if (cloud && (W.step === 'cloud' || !Auth.configured)) return { html: cloudPickHtml(), bind: bindCloudPick };   // (with a family server configured too, the email sign-in stays the default)
+      return { html: loginHtml(), bind: bindLogin };
+    }
     if (Lock.locked) return { html: lockHtml(), bind: bindLock, plain: true };   // (no badge over the lock)
     if (db.meta.backupStep && !Auth.signedIn) return { html: backupHtml(), bind: bindBackupStep };
     if (Auth.configured && Auth.signedIn) {   // (a log kept on this phone only skips the account's screens)
@@ -155,9 +181,11 @@ const Acct = (() => {
   const welcomed = () => { try { return localStorage.getItem('ll.welcome') === '1'; } catch (e) { return false; } };
   const markWelcome = () => { try { localStorage.setItem('ll.welcome', '1'); } catch (e) { /* storage blocked: it may show again */ } };
   const SHARE_WHY = N_("Sign in with your email to start a log the family shares, or to join one. It is kept safe in the family's cloud, end-to-end encrypted, so a new phone just signs in.");
+  const FOLDER_WHY = N_("The log lives in a folder in your own cloud storage, encrypted on your phones, and you share that folder with the family. No account with anyone else: the folder is yours.");
+  const shareWhy = () => (folderOk() ? FOLDER_WHY : SHARE_WHY);
   const welcomeHtml = () => (W.step === 'restore' ? restoreHtml() : `<div class="card welcome"><b>${__h('How would you like to use Little Log?')}</b>
     ${tile('wLocal', '🔒', 'sleep', N_('Just this phone'), N_('Everything stays on this phone. You can share it with the family later, from the Family tab.'))}
-    ${tile('wShare', '👨‍👩‍👧', 'feed', N_('Share with family'), SHARE_WHY)}
+    ${tile('wShare', '👨‍👩‍👧', 'feed', N_('Share with family'), shareWhy())}
     ${tile('wRestore', '☁️', 'diaper', N_('Moving from another phone?'), N_('Restore the backup you made there.'))}</div>`);
   const restoreHtml = () => `<div class="card"><b>☁️ ${__h('Restore a backup')}</b>
     <p class="note">${__h('Type the passphrase you chose when you made the backup, then choose the backup file (from iCloud Drive, Google Drive, Dropbox, OneDrive or wherever you saved it).')}</p>
@@ -165,9 +193,9 @@ const Acct = (() => {
     <button class="btn p" id="rsFile" style="width:100%;margin-top:12px">${__h('Choose the backup file')}</button><input type="file" id="rsFileIn" accept="application/json,.json" hidden>
     <div class="row"><button class="btn" id="rsBack">${__h('Back')}</button></div>${alertP(W.err)}</div>`;
   function bindWelcome() {
-    const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
+    const on = (id, f) => { const e = $(id); if (e) e.onclick = () => { W.back = false; f(); }; };
     on('#wLocal', () => { markWelcome(); db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); });
-    on('#wShare', () => { markWelcome(); render(); });
+    on('#wShare', () => { markWelcome(); W.step = folderOk() && !Auth.configured ? 'cloud' : 'choose'; render(); });
     on('#wRestore', () => { W.step = 'restore'; W.err = ''; render(); });
     on('#rsBack', () => { W.step = 'choose'; W.err = ''; render(); });
     const passOk = () => { const p = $('#rsPass').value; if (p && p.length >= Cloud.MIN_PASS) return p; W.err = __('Set a backup passphrase ({n}+ characters) first', { n: Cloud.MIN_PASS }); render(); return null; };
@@ -196,6 +224,72 @@ const Acct = (() => {
     const c = $('#cPass') && $('#cPass').closest('.card'); if (!c) return;   // (no :has(): an older WebView would throw on it)
     const d = c.closest('details'); if (d && !d.open) { d.open = true; openGroups.add(d.dataset.grp); }   // (Cloud backup is a twirl-down on More)
     c.scrollIntoView({ block: 'start' }); c.classList.add('lit'); setTimeout(() => c.classList.remove('lit'), 2500);
+  }
+
+  // ---- the family's own cloud: connect it, then start the family's log or join one shared with you ----------------------------
+  const cloudPickHtml = () => `<div class="card welcome"><b>☁️ ${__h("The family's own cloud")}</b>
+    <p class="note">${__h('Little Log keeps the log in a folder in your own cloud storage, encrypted on your phones before anything is written there. Nobody else runs a server: you share the folder with the family, and that is who gets in.')}</p>
+    ${Folder.available().map(p => `<button class="btn p" data-fconnect="${p}" style="width:100%;margin-top:8px">${__h('Connect {service}', { service: Folder.label(p) })}</button>`).join('')}
+    <p class="note">${__h('Google Drive, OneDrive and iCloud Drive are next.')}</p>
+    ${Auth.configured ? `<button class="btn" id="fcServer" style="width:100%;margin-top:8px">${__h('Use a family server instead')}</button>` : ''}
+    <button class="btn" id="fcLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>
+    <div class="row"><button class="btn" id="fcBack">${__h('Back')}</button></div>${alertP(C.err)}</div>`;
+  function bindCloudPick() {
+    document.querySelectorAll('[data-fconnect]').forEach(b => b.onclick = async () => { C.err = ''; try { await Folder.connect(b.dataset.fconnect); toast(__('Finish signing in in the browser window')); } catch (e) { C.err = err(e); render(); } });
+    $('#fcBack').onclick = () => { W.step = 'choose'; W.back = true; C.err = ''; render(); };
+    $('#fcLocal').onclick = () => { markWelcome(); db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); };
+    if ($('#fcServer')) $('#fcServer').onclick = () => { W.step = 'choose'; render(); };
+  }
+  /** The cloud sign-in came back (app.js). True when the first screens were waiting for it: that account is now this phone's
+      identity for the family folder, and the next screen starts a log or joins one. */
+  async function cloudReturn(provider) {
+    const g = gate();
+    if (!g || g.plain || folderMode() || !provider || !Folder.SCOPES[provider] || !folderOk()) return false;
+    try { await Folder.attach(provider); C.cands = null; C.err = ''; W.step = 'choose'; } catch (e) { C.err = err(e); }
+    render(); return true;
+  }
+  const folderOnboardHtml = () => {
+    const me = Folder.me, n = db.events.length, service = Folder.label(Folder.provider);
+    return `<div class="card"><b>☁️ ${__h('{service} connected: {email}', { service, email: me.email })}</b>
+      <p class="note">${__h("Start your family's log here, or join one that was shared with this email.")}</p>
+      <label class="f">${__h('Your name (shown to the family)')}</label><input id="oMine" type="text" maxlength="60" value="${esc(C.mine || me.name || '')}" placeholder="${__h('e.g. Mum')}"></div>
+    <div class="card"><b>👶 ${__h('New baby log')}</b>
+      <p class="note">${__h('A folder named Little Log is made in your {service} and the log is kept in it, encrypted on your phones: the folder only ever holds scrambled files. You become a parent (admin).', { service })}</p>
+      <label class="f">${__h("Baby's name")}</label><input id="oName" type="text" value="${esc(C.name || db.baby.name)}" placeholder="${__h('Name')}">
+      <label class="f">${__h('Birth date')}</label><input id="oBirth" type="date" value="${esc(C.birth || db.baby.birth)}">
+      <label class="f">${__h('Boy or girl')} <small>${__h('(sets their colour – you can change it later)')}</small></label><div class="chips">${chip('oSex', 'boy', __h('Boy'), C.sex === 'boy', '', true)}${chip('oSex', 'girl', __h('Girl'), C.sex === 'girl', '', true)}</div>
+      <p class="note">${__h('More than one child? Add the others after the log is created (More → Children).')}</p>
+      ${n ? `<p class="note">${__hn('Your {n} existing entry on this device will be added to the new log.', 'Your {n} existing entries on this device will be added to the new log.', n)}</p>` : ''}
+      <button class="btn p" id="oCreate" style="width:100%;margin-top:12px" ${C.busy ? 'disabled' : ''}>${C.busy ? __h('Setting up…') : __h('Create log')}</button></div>
+    <div class="card"><b>🔗 ${__h('Join a family')}</b>
+      <p class="note">${__h('A parent shares the family folder with your {service} email, from the Family tab of their Little Log. It then shows here: you ask to join, and they approve you.', { service })}</p>
+      ${C.cands === null ? `<div class="empty">${__h('Looking…')}</div>` : C.cands.length ? C.cands.map(x => `<div class="stat"><span>${esc(x.name)}</span><button class="btn p" data-fjoin="${esc(x.id)}" style="padding:6px 12px" ${C.busy ? 'disabled' : ''}>${__h('Join')}</button></div>`).join('') : `<p class="note">${__h('Nothing has been shared with {email} yet.', { email: me.email })}</p>`}
+      <div class="row"><button class="btn" id="fjCheck">${__h('Check again')}</button></div></div>
+    ${alertP(C.err)}
+    <div class="card"><button class="btn" id="fOut" style="width:100%">${__h('Disconnect {service}', { service })}</button></div>`;
+  };
+  function bindFolderOnboard() {
+    if (C.cands === null && !C.busy) Folder.candidates().then(x => { C.cands = x; }, e => { C.cands = []; C.err = err(e); }).then(() => { if ($('#fjCheck')) render(); });
+    const mine = () => { C.mine = $('#oMine').value.trim(); return C.mine; };
+    $('#oCreate').onclick = async () => {
+      const name = $('#oName').value.trim(); if (!name) return toast(__("Enter your baby's name"));
+      const sx = document.querySelector('[name=oSex]:checked'); C.name = name; C.birth = $('#oBirth').value; C.sex = sx ? sx.value : ''; mine();
+      C.busy = true; C.err = ''; render();
+      try { F.recoveryCode = await FolderSync.createBaby(name, C.birth, C.mine, C.sex); F.loaded = true; F.verified = true; Lock.reset(); } catch (e) { C.err = err(e); }
+      C.busy = false; render();
+    };
+    document.querySelectorAll('[data-fjoin]').forEach(b => b.onclick = async () => {
+      const x = (C.cands || []).find(k => k.id === b.dataset.fjoin); if (!x) return;
+      mine(); C.busy = true; C.err = ''; render();
+      try { await FolderSync.requestJoin(x, C.mine); const d = E2EE.device; if (d) F.fp = await E2EE.fingerprint(d.pub); F.loaded = true; F.verified = true; Lock.reset(); toast(__('Request sent – a parent needs to approve it')); }
+      catch (e) { C.err = err(e); }
+      C.busy = false; render();
+    });
+    $('#fjCheck').onclick = () => { C.cands = null; C.err = ''; render(); };
+    $('#fOut').onclick = async () => {
+      const p = Folder.provider; if (!confirm(__('Disconnect {service} from this phone?', { service: Folder.label(p) }))) return;
+      await Folder.forget(); Cloud.disconnect(p); C.cands = null; W.step = 'choose'; W.back = true; render();
+    };
   }
 
   // ---- app lock -------------------------------------------------------------------------------
@@ -307,7 +401,8 @@ const Acct = (() => {
          <label class="f">${__h('Email')}</label><input id="lEmail" type="email" inputmode="email" autocomplete="email" value="${esc(L.email)}" placeholder="${__h('you@example.com')}">
          ${CFG.captchaSiteKey ? '<div id="captcha" style="margin-top:12px"></div>' : ''}
          <button class="btn p" id="lSend" style="width:100%;margin-top:12px" ${L.busy ? 'disabled' : ''}>${L.busy ? __h('Sending…') : __h('Email me a code')}</button>
-         <button class="btn" id="lLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>`
+         <button class="btn" id="lLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>
+         ${folderOk() ? `<button class="btn" id="lCloud" style="width:100%;margin-top:8px">${__h("Use the family's own cloud instead")}</button>` : ''}`
       : `<p class="note">${__h('We sent a code to **{email}**. It works for 10 minutes.', { email: L.email })}</p>
          <label class="f">${__h('Code')}</label><input id="lCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="12345678">
          <button class="btn p" id="lVerify" style="width:100%;margin-top:12px" ${L.busy ? 'disabled' : ''}>${L.busy ? __h('Checking…') : __h('Sign in')}</button>
@@ -323,6 +418,7 @@ const Acct = (() => {
   }
   function bindLogin() {
     if ($('#lLocal')) $('#lLocal').onclick = () => { db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); };
+    if ($('#lCloud')) $('#lCloud').onclick = () => { W.step = 'cloud'; render(); };
     const go = async fn => { L.busy = true; L.err = ''; render(); try { await fn(); } catch (e) { L.err = err(e); } L.busy = false; render(); };
     // Read the inputs *before* go() re-renders the form (which replaces them).
     const send = () => {
@@ -460,12 +556,19 @@ const Acct = (() => {
     <div class="code" style="font:700 17px ui-monospace,Menlo,monospace;margin:8px 0">${esc(F.fp)}</div>
     <button class="btn" id="wCheck" style="width:100%">${__h('Check now')}</button>
     <button class="btn d" id="wCancel" style="width:100%;margin-top:8px">${__h('Cancel request')}</button>
-    <button class="btn" id="wOut" style="width:100%;margin-top:8px">${__h('Sign out')}</button></div>`;
+    ${folderMode() ? `<label class="f">${__h('A parent with the recovery code? Enter it to get straight in')}</label><input id="wCode" type="text" autocapitalize="characters" autocomplete="off" placeholder="XXXX-XXXX-XXXX-…">
+    <button class="btn" id="wRecover" style="width:100%;margin-top:8px">${__h('Unlock with recovery code')}</button>` : ''}
+    <button class="btn" id="wOut" style="width:100%;margin-top:8px">${outLabel()}</button></div>`;
   function bindWaiting() {
     const check = async () => { try { if (await Sync.checkApproval()) { toast(__("You're in!")); tab = 'day'; render(); } else if (!Sync.pendingRequest()) render(); } catch (e) {} };
     $('#wCheck').onclick = check;
     $('#wCancel').onclick = async () => { try { await Sync.cancelRequest(Sync.pendingRequest().id); } catch (e) { toast(err(e)); } render(); };
     $('#wOut').onclick = () => signOut(false);
+    if ($('#wRecover')) $('#wRecover').onclick = async () => {
+      const code = $('#wCode').value; if (E2EE.normCode(code).length < 32) return toast(__('Enter the whole recovery code'));
+      toast(__('Unlocking…'));
+      try { await FolderSync.recoverJoin(code); toast(__("You're in!")); tab = 'day'; render(); } catch (e) { toast(err(e)); }
+    };
     clearInterval(waitTimer); waitTimer = setInterval(() => { if (!$('#wCheck')) return clearInterval(waitTimer); check(); }, 8000);
   }
 
@@ -488,7 +591,7 @@ const Acct = (() => {
     <label class="f">${__h('Or use your recovery code')}</label><input id="aCode" type="text" autocapitalize="characters" autocomplete="off" placeholder="XXXX-XXXX-XXXX-…">
     <button class="btn p" id="aRecover" style="width:100%;margin-top:8px">${__h('Unlock with recovery code')}</button>
     ${alertP(O.err)}
-    <button class="btn" id="aOut" style="width:100%;margin-top:8px">${__h('Sign out')}</button></div>`;
+    <button class="btn" id="aOut" style="width:100%;margin-top:8px">${outLabel()}</button></div>`;
   function bindAccessScreen() {
     const check = async () => { await Sync.run(true); if (!Sync.st.needsAccess) render(); };
     $('#aCheck').onclick = check; $('#aOut').onclick = () => signOut(false);
@@ -503,6 +606,7 @@ const Acct = (() => {
   async function wipeLocal() {
     await Sync.dropKept();   // (the other family logs kept on the phone too)
     await Store.purge();     // (and the decrypted pictures, the backup copy and quarantined copies)
+    if (typeof Folder !== 'undefined') await Folder.forget();   // (a family folder: this phone leaves it; the folder itself stays in the cloud)
     forgetTree();
     db = { baby: { name: '', birth: '', kids: Kids.clean([]) }, events: [], deleted: [], meta: {} };
     save(true); tab = 'day'; invite = null; F.loaded = false; F.verified = false; F.enrollRequested = F.enrollForCreate = false; M.enroll = null;
@@ -511,6 +615,12 @@ const Acct = (() => {
   /** The server ended this session (signed out everywhere, or the refresh token was revoked): clear this phone. */
   async function sessionLost() { await wipeLocal(); L.step = 'email'; L.err = N_('You were signed out. Please sign in again.'); render(); }
   async function signOut(everywhere) {
+    if (folderMode()) {   // the family folder stays in the cloud; this phone forgets it (and the cloud account)
+      if (Sync.linked()) { try { await Sync.run(true); } catch (e) { /* offline */ } }
+      if (Sync.linked() && Sync.st.state !== 'ok' && !confirm(__('Some changes have not synced yet and would be lost. Disconnect anyway?'))) return;
+      if (!confirm(__('Disconnect this phone? The log is cleared from it. It stays in the family folder in your cloud, and comes back when you connect again.'))) return;
+      await wipeLocal(); W.step = 'choose'; render(); return;
+    }
     if (Sync.linked() && !everywhere) await Sync.run(true);
     const kept = Object.values(await Sync.unsentKept()).reduce((a, n) => a + n, 0);   // (and in the other families kept on the phone)
     if (Sync.linked() && (Sync.st.state !== 'ok' || kept) && !confirm(__('Some changes have not synced yet and would be lost. Sign out anyway?'))) return;
@@ -960,8 +1070,8 @@ const Acct = (() => {
   }
   function familyHtml() {
     if (invFormFor !== db.meta.babyId) { invForm = null; invFormFor = db.meta.babyId; }   // (another family: its own form)
-    if (!Auth.configured || !db.meta.babyId) return `<div class="card"><b>${__h('Family sharing is off')}</b><p class="note">${!Auth.configured ? __h("Account service isn't configured (see {file}), so this device keeps its own private log.", { file: 'SETUP.md' }) : Auth.signedIn ? __h('Create a baby log to share it.') : __h(SHARE_WHY)}</p>
-      ${Auth.configured && !Auth.signedIn ? `<button class="btn p" id="famShare" style="width:100%">${__h('Share with family')}</button>` : ''}</div>`;
+    if (!(Auth.configured || folderOk()) || !db.meta.babyId) return `<div class="card"><b>${__h('Family sharing is off')}</b><p class="note">${!(Auth.configured || folderOk()) ? __h("Account service isn't configured (see {file}), so this device keeps its own private log.", { file: 'SETUP.md' }) : Auth.signedIn ? __h('Create a baby log to share it.') : __h(shareWhy())}</p>
+      ${(Auth.configured || folderOk()) && !Auth.signedIn ? `<button class="btn p" id="famShare" style="width:100%">${__h('Share with family')}</button>` : ''}</div>`;
     const s = Sync.st, parent = Sync.isParent();
     if (Date.now() - (F.treeAt || 0) > 30000) refreshTree();
     if (membersLoadedFor !== db.meta.babyId) { membersLoadedFor = db.meta.babyId; Promise.all([Sync.loadPeople(), Sync.loadRetired(), RELATIVES.includes(db.meta.role) ? Sync.loadTree().catch(() => null) : null, parent ? Sync.loadAdmin() : null, Sync.loadDevices(), Sync.myDevices().then(r => { F.myPhones = r; }), Sync.securityCode().then(c => { F.secCode = c; })]).then(() => { if (tab === 'family') render(); }).catch(() => {}); }
@@ -985,7 +1095,7 @@ const Acct = (() => {
       <div class="row"><button class="btn p" data-approvephone="${esc(d.grantee)}">${__h('Approve phone')}</button></div></div>`).join('')}` : '';
     const thisId = E2EE.device && E2EE.device.id;
     const encCard = `<h2>${__h('Encryption')}</h2><div class="card">
-      <p class="note" style="margin-top:0">🔒 ${__h("Everything in this log is end-to-end encrypted. The server only stores scrambled data and can't read the baby's name, entries or notes.")}</p>
+      <p class="note" style="margin-top:0">🔒 ${folderMode() ? __h("Everything in this log is end-to-end encrypted. Your cloud only stores scrambled files and can't read the baby's name, entries or notes.") : __h("Everything in this log is end-to-end encrypted. The server only stores scrambled data and can't read the baby's name, entries or notes.")}</p>
       ${db.meta.unverified ? `<div class="card alert"><b>${__h('Check this security code')}</b><p class="note">${__h("You joined without scanning a QR code. Make sure this code matches the one on a parent's phone. If it doesn't, tell them straight away.")}</p><div class="code mono">${esc(F.secCode)}</div><button class="btn" id="unvOk">${__h('It matches')}</button></div>` : ''}
       ${parent && db.meta.recoveryAck === false ? `<div class="card alert"><b>${__h('No recovery code confirmed')}</b><p class="note">${__h('If you lose your only phone you could lose access for good. Create a recovery code and keep it somewhere safe.')}</p></div>` : ''}
       <div class="stat"><span>${__h('Log security code')}<br><small>${__h('Everyone sharing the log sees the same code')}</small><div class="code mono" style="text-align:start">${esc(F.secCode)}</div></span></div>
@@ -996,20 +1106,29 @@ const Acct = (() => {
     <div class="card"><b>${db.baby.name ? __h("{name}'s shared log", { name: db.baby.name }) : __h("Baby's shared log")}</b>
       <div class="stat"><span>${esc(syncLine())}${s.err && s.state === 'error' ? `<br><small>${esc(__(s.err))}</small>` : ''}</span><button class="btn" id="syncNow" style="padding:6px 12px">${__h('Sync now')}</button></div>
       ${s.denied ? `<div class="note" style="margin-top:6px">⚠️ ${__hn('{n} change was not allowed with your access and was undone.', '{n} changes were not allowed with your access and were undone.', s.denied)}</div>` : ''}
-      <div class="note" style="margin-top:6px">${__h('Signed in as {email} · {role}', { email: Auth.email, role: roleName(db.meta.role) })}</div></div>
+      <div class="note" style="margin-top:6px">${folderMode() ? __h('{service} · {email} · {role}', { service: Folder.label(Folder.provider), email: Auth.email, role: roleName(db.meta.role) }) : __h('Signed in as {email} · {role}', { email: Auth.email, role: roleName(db.meta.role) })}</div></div>
     ${reqs}${phonesCard}
     ${people}
     <details class="gd secshare" data-grp="secshare" ${invite || db.meta.unverified || (parent && db.meta.recoveryAck === false) || openGroups.has('secshare') ? 'open' : ''}><summary><span class="gi">🔐</span><span class="gt"><b>${__h('Security and sharing')}</b><small>${esc(parent ? __('Invites, the activity log, encryption and your phones') : __('Encryption and your phones'))}</small></span><span class="chev" aria-hidden="true">›</span></summary><div class="gdin">
-    ${parent ? `<h2>${__h('Invite someone')}</h2><div class="card" id="invCard">
+    ${parent ? (folderMode() ? shareHtml(s) : `<h2>${__h('Invite someone')}</h2><div class="card" id="invCard">
       <p class="note" style="margin-top:0">${__h('Invites work once and last 2 hours. After they scan it, you approve them.')}</p>
       ${accessFormHtml('inv', invForm ? invForm.role : 'caregiver', invForm && invForm.perms)}
       <button class="btn p" id="mkInvite" style="width:100%;margin-top:12px">${__h('Create invite QR code')}</button>
       ${invite ? inviteHtml() : ''}
       ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Open invites')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(roleName(i.role))}<br><small>${esc(left(i.expires_at))}</small></span>
         <span class="btns"><button class="btn" data-showinv="${esc(i.code)}" style="padding:6px 10px">${__h('Show')}</button><button class="btn d" data-rescind="${esc(i.code)}" style="padding:6px 10px">${__h('Rescind')}</button></span></div>`).join('')}` : ''}</div>
-    <h2>${__h('Activity log')}</h2><div class="card"><div class="stat"><span>${__h('Who added, changed or deleted what, and who joined or left.')}<br><small>${__h('Only parents can see this.')}</small></span><button class="btn" id="actBtn" style="padding:6px 12px">${__h('View')}</button></div></div>` : ''}
-    ${encCard}</div></details>
+    <h2>${__h('Activity log')}</h2><div class="card"><div class="stat"><span>${__h('Who added, changed or deleted what, and who joined or left.')}<br><small>${__h('Only parents can see this.')}</small></span><button class="btn" id="actBtn" style="padding:6px 12px">${__h('View')}</button></div></div>`) : ''}$1    ${encCard}</div></details>
     <div class="card"><button class="btn d" id="leave" style="width:100%">${__h('Leave this log')}</button></div>`;
+  }
+  /** Sharing the family folder with someone (folder mode): their cloud email and what they may do, and who has not joined yet. */
+  function shareHtml(s) {
+    const service = Folder.label(Folder.provider);
+    return `<h2>${__h('Share with someone')}</h2><div class="card" id="invCard">
+      <p class="note" style="margin-top:0">${__h('The family folder is shared with their own {service}. When they open Little Log and connect {service} with that email, they ask to join and you approve them here.', { service })}</p>
+      <label class="f">${__h('Their {service} email', { service })}</label><input id="shEmail" type="email" inputmode="email" autocomplete="off" placeholder="${__h('you@example.com')}">
+      ${accessFormHtml('inv', invForm ? invForm.role : 'caregiver', invForm && invForm.perms)}
+      <button class="btn p" id="shGo" style="width:100%;margin-top:12px">${__h('Share the folder')}</button>
+      ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Shared, not joined yet')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(i.email)}<br><small>${esc(roleName(i.role))}</small></span><span class="btns"><button class="btn d" data-rescind="${esc(i.email)}" style="padding:6px 10px">${__h('Stop')}</button></span></div>`).join('')}` : ''}</div>`;
   }
   function inviteHtml() {
     let svg = ''; try { svg = qrSvg(invite.url); } catch (e) { svg = `<p class="note">${__h('Could not draw the QR code – use the code instead.')}</p>`; }
@@ -1032,7 +1151,7 @@ const Acct = (() => {
       if (!confirm(__('Remove this phone? Its keys are deleted and the log changes to new keys, so it can read nothing new.'))) return;
       try { await Sync.removePhone(b.dataset.rmphone); F.myPhones = await Sync.myDevices(); render(); toast(__('Phone removed')); } catch (e) { toast(err(e)); }
     });
-    el('famAdd').onclick = addFamily;
+    if (el('famAdd')) el('famAdd').onclick = addFamily;
     const pic = document.querySelector('.ftreesvg'), wrap = pic && pic.closest('.ftreewrap');   // a tap on the tree: someone on it, or a bud to add someone
     if (pic) {
       pic.onclick = e => { const n = e.target.closest('[data-tk]'), act = n && T.acts[n.dataset.tk]; if (act) act(); };
@@ -1052,14 +1171,19 @@ const Acct = (() => {
     };
     if (!Sync.isParent()) return;
     const read = bindAccess(el('invCard'), 'inv', a => { invForm = a; });
-    el('mkInvite').onclick = async () => {
+    if (el('shGo')) el('shGo').onclick = async () => {
+      const a = read(), email = $('#shEmail').value.trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(email)) return toast(__('Enter a valid email address'));
+      try { await Sync.shareWith([email], a.role, a.perms, db.baby.name ? __("{name}'s log in Little Log", { name: db.baby.name }) : ''); toast(__('Shared with {email}', { email })); render(); } catch (e) { toast(err(e)); }
+    };
+    if (el('mkInvite')) el('mkInvite').onclick = async () => {
       const a = read();
       try { const { code, secret } = await Sync.createInvite(a.role, a.perms); invite = { code, role: a.role, secret, url: Sync.inviteUrl(code, secret) }; render(); } catch (e) { toast(err(e)); }
     };
     if (el('invShare')) el('invShare').onclick = () => Native.shareText(__('Little Log invite'), db.baby.name ? __("Join {name}'s log in the Little Log app. Invite code: {code} (valid for 2 hours)", { name: db.baby.name, code: invite.code }) : __("Join our baby's log in the Little Log app. Invite code: {code} (valid for 2 hours)", { code: invite.code })).catch(() => {});
     document.querySelectorAll('[data-showinv]').forEach(b => b.onclick = async () => { const i = Sync.st.invites.find(x => x.code === b.dataset.showinv); const secret = await E2EE.inviteSecret(i.code); invite = { code: i.code, role: i.role, secret, url: Sync.inviteUrl(i.code, secret) }; render(); });
     document.querySelectorAll('[data-rescind]').forEach(b => b.onclick = async () => {
-      if (!confirm(__('Rescind this invite? The code stops working immediately.'))) return;
+      if (!confirm(folderMode() ? __('Stop sharing the folder with them?') : __('Rescind this invite? The code stops working immediately.'))) return;
       try { await Sync.rescind(b.dataset.rescind); if (invite && invite.code === b.dataset.rescind) invite = null; render(); } catch (e) { toast(err(e)); }
     });
     const checked = (name, v) => { const c = document.querySelector(`input[name=${name}][value="${v}"]`); return !!(c && c.checked); };
@@ -1073,7 +1197,7 @@ const Acct = (() => {
       try { F.recoveryCode = await Sync.newRecoveryCode(); db.meta.recoveryAck = false; save(true); render(); } catch (e) { toast(err(e)); }
     };
     document.querySelectorAll('[data-person]').forEach(b => b.onclick = () => editPerson(b.dataset.person));
-    el('actBtn').onclick = showActivity;
+    if (el('actBtn')) el('actBtn').onclick = showActivity;
   }
   /** A person's card: their contact details (they fill these in themselves), with call buttons. */
   /** A person's contact details (relationship, phones with a Call button, work, notes), as they wrote them. */
@@ -1137,7 +1261,7 @@ const Acct = (() => {
       <label class="f">${__h('Name (shown to the family)')}</label><input id="pName" type="text" maxlength="60" value="${esc(p.display_name || '')}">
       <div id="pForm">${accessFormHtml('p', p.role || 'caregiver', p.perms)}</div>
       <div class="row" style="margin-top:16px"><button class="btn" id="pCancel">${__h('Cancel')}</button><button class="btn p" id="pSave">${__h('Save')}</button></div>
-      <div class="row"><button class="btn" id="pMfa">${__h('Reset two-step verification')}</button></div>
+      ${folderMode() ? '' : `<div class="row"><button class="btn" id="pMfa">${__h('Reset two-step verification')}</button></div>`}
       <div class="row"><button class="btn d" id="pRemove">${__h('Remove from this log')}</button></div>`);
     const read = bindAccess($('#pForm'), 'p');
     $('#pCancel').onclick = close;
@@ -1145,7 +1269,7 @@ const Acct = (() => {
       const a = read(), name = $('#pName').value.trim(); if (!name) return toast(__('Enter a name'));
       try { if (name !== p.display_name) await Sync.renameMember(userId, name); await Sync.setMember(userId, a.role, a.perms); close(); toast(__('Saved')); render(); } catch (e) { toast(err(e)); }
     };
-    $('#pMfa').onclick = async () => { if (!confirm(__('Reset two-step verification for {name}? They will set it up again next time they sign in.', { name: p.display_name }))) return; try { await Sync.resetMfa(userId); toast(__('Reset')); } catch (e) { toast(err(e)); } };
+    if ($('#pMfa')) $('#pMfa').onclick = async () => { if (!confirm(__('Reset two-step verification for {name}? They will set it up again next time they sign in.', { name: p.display_name }))) return; try { await Sync.resetMfa(userId); toast(__('Reset')); } catch (e) { toast(err(e)); } };
     $('#pRemove').onclick = async () => { if (!confirm(__('Remove {name} from this log? They lose access immediately.', { name: p.display_name }))) return; try { await Sync.removeMember(userId); close(); render(); } catch (e) { toast(err(e)); } };
   }
   // What each line of the activity log says. Names come from the server; the rest is in the app's language.
@@ -1188,23 +1312,34 @@ const Acct = (() => {
   }
 
   // ---- More tab: security, account, cloud backup ------------------------------------------------
+  /** The app-lock rows of the Security card (the server's account and the family folder share them). */
+  const lockRowsHtml = () => `
+      <div class="stat"><span>${__h('App lock')}<br><small>${__h('When Little Log opens, and after time away')}</small></span><span class="chips">${[['off', __('Off')], ['bio', __('Face ID / fingerprint')], ['pin', __('PIN')]].map(([v, l]) => `<label class="chip"><input type="radio" name="lockMode" value="${v}" ${(Lock.mode || 'off') === v ? 'checked' : ''}><span>${esc(l)}</span></label>`).join('')}</span></div>
+      ${Lock.mode === 'pin' ? `<div class="stat"><span>${__h('PIN')}<br><small>${__h('4 to 8 digits, known only to you')}</small></span><span class="btns"><button class="btn" id="pinChange" style="padding:6px 10px">${__h('Change PIN')}</button></span></div>
+      ${Lock.bioAvailable ? `<div class="stat"><span>${__h('Also unlock with Face ID / fingerprint')}</span><span class="chips"><label class="chip"><input type="checkbox" id="bioToo" ${Lock.bioToo ? 'checked' : ''}><span>${Lock.bioToo ? __h('On') : __h('Off')}</span></label></span></div>` : ''}` : ''}
+      ${Lock.enabled ? `<div class="stat"><span>${__h('Lock after')}<br><small>${__h('when you leave the app')}</small></span><select id="lockMin" style="padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">${[[0, __('Immediately')], [1, __n('{n} minute', '{n} minutes', 1)], [5, __n('{n} minute', '{n} minutes', 5)], [15, __n('{n} minute', '{n} minutes', 15)]].map(([v, l]) => `<option value="${v}" ${Lock.minutes === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>` : ''}`;
+  const nameRowHtml = me => `
+      ${Sync.linked() ? `<label class="f" style="display:block;margin:8px 0 4px;color:var(--mute);font-size:13px">${__h('Your name (shown to the family)')}</label><input id="myName" type="text" maxlength="60" value="${esc(me ? me.display_name : '')}">` : ''}`;
   function accountHtml() {
+    if (folderMode()) {
+      const me = Sync.st.people.find(p => p.is_you), service = Folder.label(Folder.provider);
+      return `<div class="card"><b>🔐 ${__h('Security & your cloud')}</b>
+      <div class="stat"><span>${__h('Your cloud')}<br><small>${esc(service)} · ${esc(Folder.me.email)}</small></span></div>${nameRowHtml(me)}${lockRowsHtml()}
+      <p class="note">${__h('The log lives in the family folder in your cloud. Disconnecting clears it from this phone only: connect again to get it back.')}</p>
+      <div class="row"><button class="btn" id="signOut">${__h('Disconnect this phone')}</button></div></div>`;
+    }
     if (!Auth.configured || !Auth.signedIn) return '';
     const parent = db.meta.role === 'parent', me = Sync.st.people.find(p => p.is_you);
     return `<div class="card"><b>🔐 ${__h('Security & account')}</b>
       <div class="stat"><span>${__h('Signed in as')}<br><small>${esc(Auth.email)}</small></span></div>
-      ${Sync.linked() ? `<label class="f" style="display:block;margin:8px 0 4px;color:var(--mute);font-size:13px">${__h('Your name (shown to the family)')}</label><input id="myName" type="text" maxlength="60" value="${esc(me ? me.display_name : '')}">` : ''}
+${nameRowHtml(me)}
       <div class="stat"><span>${__h('Two-step verification')}<br><small>${F.verified ? (parent ? __h('On (required for parents)') : __h('On')) : __h('Off')}</small></span>
         ${F.verified ? (parent ? '' : `<button class="btn" id="mfaOff" style="padding:6px 12px">${__h('Turn off')}</button>`) : `<button class="btn p" id="mfaOn" style="padding:6px 12px">${__h('Turn on')}</button>`}</div>
-      <div class="stat"><span>${__h('App lock')}<br><small>${__h('When Little Log opens, and after time away')}</small></span><span class="chips">${[['off', __('Off')], ['bio', __('Face ID / fingerprint')], ['pin', __('PIN')]].map(([v, l]) => `<label class="chip"><input type="radio" name="lockMode" value="${v}" ${(Lock.mode || 'off') === v ? 'checked' : ''}><span>${esc(l)}</span></label>`).join('')}</span></div>
-      ${Lock.mode === 'pin' ? `<div class="stat"><span>${__h('PIN')}<br><small>${__h('4 to 8 digits, known only to you')}</small></span><span class="btns"><button class="btn" id="pinChange" style="padding:6px 10px">${__h('Change PIN')}</button></span></div>
-      ${Lock.bioAvailable ? `<div class="stat"><span>${__h('Also unlock with Face ID / fingerprint')}</span><span class="chips"><label class="chip"><input type="checkbox" id="bioToo" ${Lock.bioToo ? 'checked' : ''}><span>${Lock.bioToo ? __h('On') : __h('Off')}</span></label></span></div>` : ''}` : ''}
-      ${Lock.enabled ? `<div class="stat"><span>${__h('Lock after')}<br><small>${__h('when you leave the app')}</small></span><select id="lockMin" style="padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">${[[0, __('Immediately')], [1, __n('{n} minute', '{n} minutes', 1)], [5, __n('{n} minute', '{n} minutes', 5)], [15, __n('{n} minute', '{n} minutes', 15)]].map(([v, l]) => `<option value="${v}" ${Lock.minutes === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>` : ''}
-      <div class="row"><button class="btn" id="signOut">${__h('Sign out')}</button><button class="btn" id="signOutAll">${__h('Sign out everywhere')}</button></div>
+${lockRowsHtml()}      <div class="row"><button class="btn" id="signOut">${__h('Sign out')}</button><button class="btn" id="signOutAll">${__h('Sign out everywhere')}</button></div>
       <div class="row"><button class="btn d" id="delAcct">${__h('Delete account')}</button></div></div>`;
   }
   /** The line under "Security & account" on the More page. */
-  function accountSub() { return `${F.verified ? __('Two-step verification on') : __('Two-step verification off')} · ${Lock.mode !== 'off' ? __('App lock on') : __('App lock off')}`; }
+  function accountSub() { return `${folderMode() ? __('Your own cloud') : F.verified ? __('Two-step verification on') : __('Two-step verification off')} · ${Lock.mode !== 'off' ? __('App lock on') : __('App lock off')}`; }
   /** The line under Cloud backup on the More page: the drives connected, or the last file saved, or Not set up. */
   function cloudSummary() {
     const av = Cloud.available(), on = ['google', 'dropbox', 'onedrive'].filter(p => av[p] && Cloud.connected(p)).map(Cloud.label);
@@ -1300,5 +1435,5 @@ const Acct = (() => {
   /** Called by app.js after each render/sync to keep the Family tab badge current. */
   function updateBadge() { const b = $('#famBadge'); if (!b) return; const n = Sync.isParent() ? Sync.st.requests.length : 0; b.hidden = !n || tab === 'family'; b.textContent = n; }
 
-  return { init, gate, heroHtml, familyHtml, serverNote, bindFamily, famLabel, familySwitcher, accountHtml, accountSub, cloudHtml, cloudSummary, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, promptRequests, parseJoin, sessionLost };
+  return { init, gate, heroHtml, familyHtml, serverNote, cloudReturn, bindFamily, famLabel, familySwitcher, accountHtml, accountSub, cloudHtml, cloudSummary, bindMoreAccount, applyBackup, goCloudCard, syncLine, refreshAuth, processPending, receiveJoin, updateBadge, promptRequests, parseJoin, sessionLost };
 })();

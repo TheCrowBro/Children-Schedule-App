@@ -111,6 +111,24 @@ const E2EE = (() => {
     await persist(baby);
   }
 
+  // ---- the key directory: where phones, grants, the keyring and the recovery key are kept -------------------------
+  // The server's functions, or (folder.js) files in the family folder: the same questions and answers either way.
+  const serverDir = {
+    registerDevice: (name, pub) => Auth.rpc('register_device', { p_name: name, p_pub: pub }),
+    myDevices: () => Auth.rpc('my_devices'),
+    getKeyring: baby => Auth.rpc('get_keyring', { p_baby: baby }),
+    myGrant: (baby, device) => Auth.rpc('my_grant', { p_baby: baby, p_device: device }),
+    grantDevice: (baby, device, g) => Auth.rpc('grant_device', { p_baby: baby, p_device: device, p_wrap_main: g.wrap_main, p_wrap_health: g.wrap_health, p_auth: g.auth || null, p_tag: g.tag }),
+    createBaby: a => Auth.rpc('create_baby', { p_profile: a.profile, p_display_name: a.display_name, p_device: a.device, p_grant: a.grant, p_recovery_pub: a.recovery_pub, p_recovery_priv_wrapped: a.recovery_priv_wrapped, p_recovery_grant: a.recovery_grant, p_id: a.baby, p_health_check: a.health_check }),
+    listDevices: baby => Auth.rpc('list_devices', { p_baby: baby }),
+    listRecovery: baby => Auth.rpc('list_recovery', { p_baby: baby }),
+    getRecovery: baby => Auth.rpc('get_recovery', { p_baby: baby }),
+    rotateKeys: (baby, a) => Auth.rpc('rotate_keys', { p_baby: baby, p_epoch: a.epoch, p_grants: a.grants, p_keyring_main: a.keyring_main, p_keyring_health: a.keyring_health, p_profile: a.profile, p_health_check: a.health_check }),
+    setRecovery: (baby, a) => Auth.rpc('set_recovery', { p_baby: baby, p_pub: a.pub, p_priv_wrapped: a.priv_wrapped, p_wrap_main: a.wrap_main, p_wrap_health: a.wrap_health, p_tag: a.tag }),
+  };
+  let dir = serverDir;
+  const setDir = d => { dir = d || serverDir; };
+
   // ---- this phone ---------------------------------------------------------------------------
   let dev = null;   // { user, id, priv, pub }
   const dkey = uid => 'e2ee.device.' + uid;
@@ -122,8 +140,8 @@ const E2EE = (() => {
       if (!dev) { const kp = await newKeyPair(); dev = { user: uid, id: null, priv: kp.priv, pub: kp.pub }; }
     }
     let known = false;
-    if (dev.id) { try { known = (await Auth.rpc('my_devices')).some(d => d.id === dev.id); } catch (e) { return dev; } }   // offline: keep going
-    if (!known) { dev.id = await Auth.rpc('register_device', { p_name: (Native.platform || 'phone') + ' phone', p_pub: dev.pub }); }
+    if (dev.id) { try { known = (await dir.myDevices()).some(d => d.id === dev.id); } catch (e) { return dev; } }   // offline: keep going
+    if (!known) { dev.id = await dir.registerDevice((Native.platform || 'phone') + ' phone', dev.pub); }
     await Native.Secure.set(dkey(uid), JSON.stringify(dev));
     return dev;
   }
@@ -261,6 +279,14 @@ const E2EE = (() => {
     try { return Guide.cleanDetails(JSON.parse(dec.decode(await open(k, blob, detailsAad(baby, user, epoch))))); } catch (e) { return null; }
   }
 
+  // Any document of the family folder (who is in the family …), sealed with the log's key and bound to this log and its kind.
+  const docAad = (baby, kind, epoch) => `ll1|${kind}|${baby}|${epoch}`;
+  async function sealDoc(baby, kind, o) { const c = current(baby); return { blob: await seal(c.main, enc.encode(JSON.stringify(o)), docAad(baby, kind, c.epoch)), epoch: c.epoch }; }
+  async function openDoc(baby, kind, blob, epoch) {
+    const k = raw(baby, epoch, 'main'); if (!k || !blob) return null;
+    try { return JSON.parse(dec.decode(await open(k, blob, docAad(baby, kind, epoch)))); } catch (e) { return null; }
+  }
+
   // The children's family tree (their relatives' names), sealed with the log's key and bound to this log.
   const treeAad = (baby, epoch) => `ll1|tree|${baby}|${epoch}`;
   async function sealTree(baby, t) { const c = current(baby); return { blob: await seal(c.main, enc.encode(JSON.stringify(FamilyTree.clean(t))), treeAad(baby, c.epoch)), epoch: c.epoch }; }
@@ -286,10 +312,10 @@ const E2EE = (() => {
       without a QR proof (the person should compare the log's security code with a parent). */
   async function refresh(baby, meta, { health: wantHealth } = {}) {
     await load(baby); await ensureDevice();
-    const kr = (await Auth.rpc('get_keyring', { p_baby: baby }))[0]; if (!kr) return 'needs-access';
+    const kr = (await dir.getKeyring(baby))[0]; if (!kr) return 'needs-access';
     const heldMain = raw(baby, kr.epoch, 'main'), heldHealth = raw(baby, kr.epoch, 'health');
     if (!heldMain || (wantHealth && !heldHealth)) {
-      const g = (await Auth.rpc('my_grant', { p_baby: baby, p_device: dev.id }))[0];
+      const g = (await dir.myGrant(baby, dev.id))[0];
       if (!g || g.epoch !== kr.epoch) return heldMain ? 'ready' : 'needs-access';
       const ctx = grantCtx(baby, g.epoch, 'd:' + dev.id);
       let main = heldMain, health = heldHealth;
@@ -331,13 +357,13 @@ const E2EE = (() => {
 
   async function unlockWithRecovery(baby, code, meta) {
     await load(baby); await ensureDevice();
-    const r = (await Auth.rpc('get_recovery', { p_baby: baby }))[0]; if (!r) throw new Error(N_('This log has no recovery code on file.'));
+    const r = (await dir.getRecovery(baby))[0]; if (!r) throw new Error(N_('This log has no recovery code on file.'));
     let priv;
     try { priv = JSON.parse(dec.decode(await open(await recoveryKey(code), r.recovery_priv_wrapped, 'll1|recovery-priv'))); }
     catch (e) { throw new Error(N_('That recovery code is not right.')); }
     const ctx = grantCtx(baby, r.epoch, 'recovery');
     const main = await unwrapWith(priv, r.wrap_main, ctx + '|m'), health = r.wrap_health ? await unwrapWith(priv, r.wrap_health, ctx + '|h') : null;
-    const kr = (await Auth.rpc('get_keyring', { p_baby: baby }))[0];
+    const kr = (await dir.getKeyring(baby))[0];
     if (health && (!kr || kr.health_check !== await healthCheck(baby, r.epoch, main, health))) throw new Error(N_('The health key did not check out.'));
     await setKeys(baby, r.epoch, main, health);
     if (meta) meta.unverified = false;
@@ -346,7 +372,7 @@ const E2EE = (() => {
   }
   async function selfGrant(baby) {
     const cur = current(baby), g = await makeGrant(baby, cur.epoch, cur, 'd:' + dev.id, dev.pub, { health: !!cur.health });
-    await Auth.rpc('grant_device', { p_baby: baby, p_device: dev.id, p_wrap_main: g.wrap_main, p_wrap_health: g.wrap_health, p_auth: null, p_tag: g.tag });
+    await dir.grantDevice(baby, dev.id, { wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: null, tag: g.tag });
   }
 
   // ---- parent operations ---------------------------------------------------------------------------
@@ -355,8 +381,8 @@ const E2EE = (() => {
     const baby = uuid(), keys = { main: rand(32), health: rand(32) }, rec = await newRecovery();
     const mine = await makeGrant(baby, 1, keys, 'd:' + dev.id, dev.pub, { health: true });
     const recG = await makeGrant(baby, 1, keys, 'recovery', rec.pub, { health: true });
-    const id = await Auth.rpc('create_baby', { p_profile: await sealProfile(baby, 1, keys.main, profile), p_display_name: displayName || '', p_device: dev.id,
-      p_grant: mine, p_recovery_pub: rec.pub, p_recovery_priv_wrapped: rec.privWrapped, p_recovery_grant: recG, p_id: baby, p_health_check: await healthCheck(baby, 1, keys.main, keys.health) });
+    const id = await dir.createBaby({ baby, profile: await sealProfile(baby, 1, keys.main, profile), display_name: displayName || '', device: dev.id,
+      grant: mine, recovery_pub: rec.pub, recovery_priv_wrapped: rec.privWrapped, recovery_grant: recG, health_check: await healthCheck(baby, 1, keys.main, keys.health) });
     store[id] = { epoch: 1, keys: {} }; await setKeys(id, 1, keys.main, keys.health);
     return { babyId: id, code: rec.code };
   }
@@ -371,12 +397,12 @@ const E2EE = (() => {
   async function approveDevice(baby, d) {   // d: a row from list_devices (without keys yet); the approver compared security codes
     const cur = current(baby); if (!cur) throw new Error(N_('This phone does not have the keys yet.'));
     const g = await makeGrant(baby, cur.epoch, cur, d.grantee, d.pubkey, { health: d.view_health, chain: chainOf(baby) });   // chain: lets a phone that still holds older keys check it
-    await Auth.rpc('grant_device', { p_baby: baby, p_device: d.grantee.slice(2), p_wrap_main: g.wrap_main, p_wrap_health: g.wrap_health, p_auth: g.auth, p_tag: g.tag });
+    await dir.grantDevice(baby, d.grantee.slice(2), { wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: g.auth, tag: g.tag });
   }
   /** Health key copies for a person's phones (when they are given health access). Only phones whose grant verifies get one. */
   async function healthGrants(baby, userId) {
     const cur = current(baby), out = [];
-    for (const d of await Auth.rpc('list_devices', { p_baby: baby })) {
+    for (const d of await dir.listDevices(baby)) {
       if (d.user_id !== userId || !d.has_grant || !await tagOk(baby, cur, d)) continue;
       out.push({ device: d.grantee.slice(2), wrap_health: await wrapTo(d.pubkey, cur.health, grantCtx(baby, cur.epoch, d.grantee) + '|h') });
     }
@@ -386,28 +412,28 @@ const E2EE = (() => {
   async function rotate(baby, profile) {
     const cur = current(baby), epoch = cur.epoch + 1, keys = { main: rand(32), health: rand(32) };
     const grants = [], skipped = [], chain = chainOf(baby);
-    for (const d of await Auth.rpc('list_devices', { p_baby: baby })) {
+    for (const d of await dir.listDevices(baby)) {
       if (!d.has_grant) continue;
       if (!await tagOk(baby, cur, d)) { skipped.push(d.grantee); continue; }
       const g = await makeGrant(baby, epoch, keys, d.grantee, d.pubkey, { health: d.view_health, chain });
       grants.push({ grantee: d.grantee, wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: g.auth, tag: g.tag });
     }
-    const rec = (await Auth.rpc('list_recovery', { p_baby: baby }))[0];
+    const rec = (await dir.listRecovery(baby))[0];
     if (!rec || !rec.recovery_pub || !await tagOk(baby, cur, { grantee: 'recovery', pubkey: rec.recovery_pub, tag: rec.tag })) throw new Error(N_('The recovery key could not be verified, so the keys were not changed. Create a new recovery code first.'));
     const rg = await makeGrant(baby, epoch, keys, 'recovery', rec.recovery_pub, { health: true });
     grants.push({ grantee: 'recovery', wrap_main: rg.wrap_main, wrap_health: rg.wrap_health, tag: rg.tag });
     const s = store[baby], hist = { main: {}, health: {} };
     for (const [ep, e] of Object.entries(s.keys)) { if (e.main) hist.main[ep] = e.main; if (e.health) hist.health[ep] = e.health; }
-    await Auth.rpc('rotate_keys', { p_baby: baby, p_epoch: epoch, p_grants: grants,
-      p_keyring_main: await seal(keys.main, enc.encode(JSON.stringify(hist.main)), keyringAad('main', baby, epoch)),
-      p_keyring_health: await seal(keys.health, enc.encode(JSON.stringify(hist.health)), keyringAad('health', baby, epoch)),
-      p_profile: await sealProfile(baby, epoch, keys.main, profile), p_health_check: await healthCheck(baby, epoch, keys.main, keys.health) });
+    await dir.rotateKeys(baby, { epoch, grants,
+      keyring_main: await seal(keys.main, enc.encode(JSON.stringify(hist.main)), keyringAad('main', baby, epoch)),
+      keyring_health: await seal(keys.health, enc.encode(JSON.stringify(hist.health)), keyringAad('health', baby, epoch)),
+      profile: await sealProfile(baby, epoch, keys.main, profile), health_check: await healthCheck(baby, epoch, keys.main, keys.health) });
     await setKeys(baby, epoch, keys.main, keys.health);
     return { skipped };
   }
   async function replaceRecovery(baby) {
     const cur = current(baby), rec = await newRecovery(), g = await makeGrant(baby, cur.epoch, cur, 'recovery', rec.pub, { health: true });
-    await Auth.rpc('set_recovery', { p_baby: baby, p_pub: rec.pub, p_priv_wrapped: rec.privWrapped, p_wrap_main: g.wrap_main, p_wrap_health: g.wrap_health, p_tag: g.tag });
+    await dir.setRecovery(baby, { pub: rec.pub, priv_wrapped: rec.privWrapped, wrap_main: g.wrap_main, wrap_health: g.wrap_health, tag: g.tag });
     return rec.code;
   }
 
@@ -417,7 +443,7 @@ const E2EE = (() => {
 
   return {
     load, ensureDevice, refresh, createLog, makeGrant, unlockWithRecovery, grantForRequest, approveDevice, healthGrants, rotate, replaceRecovery,
-    encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile, sealDetails, openDetails, sealTree, openTree,
+    encryptEntry, decryptRow, decryptWith, encryptProfile, decryptProfile, sealDetails, openDetails, sealTree, openTree, sealDoc, openDoc, setDir,
     /** The kinds of entry this version of the app knows (an older one skips the newer kinds). */
     KINDS: TYPES.join(' ') + ' +media', SENSITIVE, isSensitive, sealMedia, openMedia,
     uuid, newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,

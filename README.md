@@ -2,7 +2,9 @@
 
 A **phone app** (Android and iOS; Windows and Mac later) that grows with a child: a newborn's feeds, pee/poo, sleep, night wakings,
 vomit, play, health observations and medication; then meals, potty training and the big moments of growing up, with a calendar and
-easy-to-read stats, until the child turns 18. Built with plain web code wrapped by Capacitor.
+easy-to-read stats, until the child turns 18. Built with plain web code wrapped by Capacitor. The family's log can live in **a folder
+in the family's own cloud storage** (Dropbox first), shared out from the app with no server anywhere, or on a server the family runs;
+either way it is end-to-end encrypted on the phones.
 To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
 
 ## Features
@@ -234,6 +236,13 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   they can do. Joining needs a QR invite (2 hours, one use, rescindable) **and a parent's approval**: a request to join pops up on the
   parent's phone as it arrives, with the security check and **Approve** / **Deny** there and then, or **Later** (it stays on the Family tab,
   with the badge). Parents get a private **activity log** of who did what.
+- **The family's own cloud** (the store build; [FOLDER.md](FOLDER.md)): the log lives in a folder named *Little Log* in a parent's own
+  Dropbox, with no server anywhere. The parent connects Dropbox on the first screen, starts the log and shares the folder with each
+  relative's Dropbox email from the Family tab; relatives connect their own Dropbox, ask to join and are approved on a parent's phone,
+  with the same security-code check, roles and check boxes. Everything in the folder is end-to-end encrypted as it is on a server; the
+  family can look at, back up or delete the folder from Dropbox itself. Removing someone, leaving, a lost phone, a parent's new phone
+  and the recovery code all work as they do with a server; the activity log and the QR invite are server-only. Google Drive, OneDrive
+  and iCloud Drive are next
 - **Family tree** (Family tab): the family as the tree's **roots**: a detailed tree above the ground (its crown, boughs and birds, the
   sun or the moon, the hill with its flowers) and below it the children as the newest root tips just under the trunk, the parents
   below them, the grandparents deeper and the great-grandparents deepest, aunts and uncles as side roots with their children, and each
@@ -375,7 +384,9 @@ npm test                        # database rules + end-to-end tests
 Every push and pull request runs the lint and all the suites in GitHub Actions ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)).
 - **[INSTALL.md](INSTALL.md)**: installing on Android phones and iPhones, building from source, running the tests, and the saved
   versions with how to restore one
-- **[SETUP.md](SETUP.md)**: Supabase, sign-in hardening, roles and permissions, cloud providers, privacy notes
+- **[SETUP.md](SETUP.md)**: the family's own cloud (the one Dropbox app to register), Supabase, sign-in hardening, roles and permissions,
+  cloud providers, privacy notes
+- **[FOLDER.md](FOLDER.md)**: the family folder: what each file holds, how a sync goes, who may do what, leaving and recovery, the clouds
 - **[TESTING.md](TESTING.md)**: what the automated tests prove, what they can't, and the physical-device release checklist
 - **[MOBILE.md](MOBILE.md)**: building and releasing the Android and iOS apps, store checklist
 - **[lang/README.md](lang/README.md)**: translating, checking the catalogues and adding a language

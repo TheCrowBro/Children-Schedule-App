@@ -7,6 +7,7 @@
 const Cloud = (() => {
   const CFG = window.LL_CONFIG || {};
   const K = 'cloud.v2', PKCE_K = 'pkce.v1';
+  let lastConnected = null;   // (the service whose sign-in came back last)
   const FILE = 'little-log-backup.json';
   const KDF_ITER = 600000, KDF_ITER_V1 = 250000, MIN_PASS = 12;
   let c = { tokens: {}, pass: '', auto: false, last: {} };
@@ -55,11 +56,11 @@ const Cloud = (() => {
     c.tokens[p] = { access: j.access_token, refresh: j.refresh_token || (c.tokens[p] && c.tokens[p].refresh), exp: Date.now() + (j.expires_in || 3600) * 1000 };
     await persist();
   }
-  async function connect(p) {
+  async function connect(p, scope) {
     const verifier = rnd(64), state = 'll-' + p + '-' + rnd(12), redir = redirect(p);
     await Native.Secure.set(PKCE_K, JSON.stringify({ verifier, state, redirect: redir }));
     const u = new URLSearchParams({ client_id: PKCE[p].id(), response_type: 'code', redirect_uri: redir, state, code_challenge: await challenge(verifier), code_challenge_method: 'S256', ...PKCE[p].extra });
-    if (PKCE[p].scope) u.set('scope', PKCE[p].scope);
+    if (scope || PKCE[p].scope) u.set('scope', scope || PKCE[p].scope);
     await Native.openUrl(PKCE[p].auth + '?' + u);
   }
   /** Call with the URL the OS opened the app with. Returns a message to show, or null if it is not a cloud sign-in return. */
@@ -72,7 +73,7 @@ const Cloud = (() => {
     Native.closeBrowser();
     if (!saved || saved.state !== state) return N_('Cloud sign-in was cancelled or expired. Please try again.');
     if (q.get('error')) return N_('Cloud sign-in was cancelled.');
-    try { await tokenCall(m[1], { grant_type: 'authorization_code', code: q.get('code'), redirect_uri: saved.redirect, code_verifier: saved.verifier }); return __('Connected to {service}', { service: label(m[1]) }); }
+    try { await tokenCall(m[1], { grant_type: 'authorization_code', code: q.get('code'), redirect_uri: saved.redirect, code_verifier: saved.verifier }); lastConnected = m[1]; return __('Connected to {service}', { service: label(m[1]) }); }
     catch (e) { return e.message; }
   }
   async function token(p) {
@@ -118,7 +119,7 @@ const Cloud = (() => {
   const payload = () => JSON.stringify({ app: 'littlelog', v: 1, baby: db.baby, events: db.events });
 
   return {
-    MIN_PASS, available, connected, label, NAMES, handleOAuthUrl, encrypt, decrypt, generatePass, connect,
+    MIN_PASS, available, connected, label, NAMES, handleOAuthUrl, encrypt, decrypt, generatePass, connect, token, get lastConnected() { return lastConnected; },
     async init() { try { const v = await Native.Secure.get(K); if (v) c = { tokens: {}, pass: '', auto: false, last: {}, ...JSON.parse(v) }; } catch (e) {} },
     get pass() { return c.pass; },
     /** Returns an error message if the passphrase is too weak, else null; saves it when valid. */

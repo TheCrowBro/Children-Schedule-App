@@ -16,7 +16,9 @@ npm test            # database + end-to-end tests
 1. **Pick the final app id** and change it everywhere *before* publishing (it can't change afterwards):
    `capacitor.config.json` (`appId`), `config.js` (`appScheme`), then `android/app/build.gradle`
    (`applicationId`, `namespace`) and the Xcode target's *Bundle Identifier*. Currently `app.littlelog.newborn`.
-2. Do the Supabase and provider setup in [SETUP.md](SETUP.md), fill in `config.js`, then `npm run sync`.
+2. Do the setup in [SETUP.md](SETUP.md), fill in `config.js`, then `npm run sync`. The **store build** is *The family's own cloud*
+   only: `dropboxKey` set and `supabaseUrl` empty, so each family's log lives in their own Dropbox and no server of yours is involved.
+   A build for a family that runs its own server sets `supabaseUrl` and `supabaseKey` instead (or as well).
 3. Register the **phone redirect URIs** with each cloud provider:
 
    | Provider | Redirect / client type |

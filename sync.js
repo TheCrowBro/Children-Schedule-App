@@ -4,7 +4,7 @@
    phone before upload and decrypted after download (see e2ee.js); the server only sees ciphertext. All writes go through the
    server's push_events(), which enforces each person's role and permissions. Conflicts: newest `updated` timestamp wins.
    Relies on the globals `db` and `save()` from app.js (read lazily, at call time). */
-const Sync = (() => {
+const ServerSync = (() => {
   const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyPeople: {}, retired: [], server: null };   // server: { have, behind }, what the project said about its schema.sql (checkServer)
   const PAGE = 500, OVERLAP_MS = 5000;
   let busy = false, busyAt = 0, again = false, timer = null, started = false, peopleAt = 0, failures = 0, retryAt = 0;
@@ -466,7 +466,15 @@ const Sync = (() => {
     run(true);
   }
 
-  return { st, SCHEMA, checkServer, enabled, linked, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
+  return { st, SCHEMA, checkServer, enabled, linked, decode, encodeRows, retryStash, isParent, can, nameOf, merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, newRecoveryCode, securityCode, schedule, start, loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity,
     createInvite, rescind, decide, setMember, renameMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
     pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyPeople, retireMember, loadRetired, forgetRetired, loadTree, editTree, get switching() { return switching; }, onChange: null, onSessionLost: null };
 })();
+
+/* What the app talks to: the family folder's sync (folder.js) when this phone is in a family folder, else the server's. Callbacks
+   set on it (onChange, onSessionLost) reach both. */
+const Sync = new Proxy({}, {
+  get: (_, k) => ((typeof FolderSync !== 'undefined' && Folder.on) ? FolderSync : ServerSync)[k],
+  set: (_, k, v) => { ServerSync[k] = v; if (typeof FolderSync !== 'undefined') FolderSync[k] = v; return true; },
+  has: (_, k) => k in ServerSync,
+});

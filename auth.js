@@ -52,11 +52,12 @@ const Auth = (() => {
   return {
     configured,
     async init() { try { const v = await Native.Secure.get(K); s = v ? JSON.parse(v) : null; } catch (e) { s = null; } },
-    get signedIn() { return !!s; },
+    /** Signed in to the family server, or in a family folder (folder.js). */
+    get signedIn() { return !!s || (typeof Folder !== 'undefined' && Folder.on); },
     /** The session's access token (refreshed when it is about to run out), for calls outside this module. */
     accessToken: token,
-    get email() { return s && s.email; },
-    get id() { return s && s.id; },
+    get email() { return s ? s.email : (typeof Folder !== 'undefined' && Folder.attached ? Folder.me.email : null); },
+    get id() { return s ? s.id : (typeof Folder !== 'undefined' && Folder.attached ? Folder.me.id : null); },
     /** 'aal2' once two-step verification has been completed in this session. */
     get aal() { return s ? (claims().aal || 'aal1') : null; },
 

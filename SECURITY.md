@@ -33,6 +33,11 @@ maintainers by email through the Edge Functions; the address is a server secret 
   quoted value before leaving the phone (and again on the server).
 * **Code.** The web layer has a strict Content-Security-Policy (`script-src 'self'`, no inline or evaluated scripts; the lint forbids
   `eval`), every string shown is escaped through one helper, and the only key that has ever been committed is the public anon key.
+* **The family folder** (the store build; [FOLDER.md](FOLDER.md)). With no server, the same sealed documents live as files in a folder
+  in the family's own cloud. The cloud's sharing is the floor: anyone the folder is shared with can read every sealed file, and only
+  the keys decide what opens; roles and permissions are applied by the apps rather than enforced by a server. First keys still need a
+  parent's spoken security-code check, a key change still needs a key holder's signature, and the health key still goes only to the
+  phones allowed health notes. There is no activity log yet. The cloud sees file names, sizes and who wrote what, nothing else.
 
 ## The review
 A static review of the whole code base in October 2026 by the people building it, plus an independent second reading of the schema,

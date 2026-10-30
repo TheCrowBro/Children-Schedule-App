@@ -4,8 +4,31 @@ Little Log is a **phone app only** (iOS and Android; desktop apps later). Withou
 on-device tracker ("Use on this device only"). To turn on sign-in, family sharing and cloud backup, do the steps below
 once, then fill in `config.js` (all values are public client IDs, not secrets) and rebuild (`npm run sync`).
 
+A family's log can instead live in **their own cloud storage**, with no server at all: that is the store build, and its only setup is
+the Dropbox app in the next section.
+
 > ⚠️ The app's network access is locked down by a Content-Security-Policy that `npm run build:web` generates **from
 > `config.js`**. Fill in `config.js` *before* building, or the app can't reach your Supabase project.
+
+## The family's own cloud (the store build: no server)
+Little Log can keep a family's log in **a folder in the family's own cloud storage** instead of on a server: a parent connects their
+Dropbox, the app makes a folder named *Little Log* there and keeps the log in it (encrypted on the phones, as always), and the parent
+shares the folder with the family from the Family tab; each relative connects their own Dropbox, asks to join and is approved on a
+parent's phone. How it works, file by file, is in [FOLDER.md](FOLDER.md). Families set nothing up. Whoever **builds** the app registers
+one Dropbox app, once:
+
+1. Go to <https://www.dropbox.com/developers/apps> → **Create app**: *Scoped access*, **Full Dropbox** (a shared folder lives wherever
+   each member's Dropbox mounts it, so *App folder* access is not enough), any name (people see it when they sign in).
+2. **Permissions**: tick `account_info.read`, `files.metadata.read`, `files.content.read`, `files.content.write`, `sharing.read` and
+   `sharing.write`, then *Submit*.
+3. **Settings** → *OAuth 2* → *Redirect URIs*: add `app.littlelog.newborn://oauth`.
+4. Copy the **App key** into `config.js` as `dropboxKey` (a public client id, not a secret), then `npm run sync`.
+
+The same key serves the encrypted cloud backup (§3), so one Dropbox app does both. The **store build** is `dropboxKey` set and
+`supabaseUrl` **empty**: the first screen then offers the family's own cloud, and no server of anyone's is involved. With both set, the
+first screen offers the family server and keeps the family's own cloud one tap away (*Use the family's own cloud instead*). A Dropbox
+app starts in *Development* status, which lets up to 50 people sign in; apply for *Production* in its console before publishing (a
+short form about what the app does with each permission).
 
 ## 1. Supabase project (free tier is fine)
 1. Create a project at <https://supabase.com>.
@@ -70,7 +93,7 @@ encrypted file in any cloud app on the phone through the share sheet. Redirect U
 
 | Provider | Create | `config.js` key |
 |---|---|---|
-| Dropbox | App folder app; permissions `files.content.write/read` | `dropboxKey` |
+| Dropbox | App folder app with `files.content.write/read`, or the Full Dropbox app of *The family's own cloud* above (one key serves both) | `dropboxKey` |
 | Google Drive | OAuth client of type **iOS** (bundle id = app id), Drive API enabled, scope `drive.appdata` | `googleClientId` |
 | OneDrive | Azure app registration, *Mobile and desktop* platform, Graph `Files.ReadWrite.AppFolder` | `msClientId` |
 | iCloud Drive | nothing to configure: "Save" opens the share sheet → *Save to Files* | – |
@@ -79,7 +102,7 @@ The app itself has these steps too: More → Cloud backup → *How to set up Goo
 on a computer, by whoever builds the app. The app id is `app.littlelog.newborn` unless you changed it (MOBILE.md), and its redirect
 address is `app.littlelog.newborn://oauth`.
 
-**Dropbox** → `dropboxKey`
+**Dropbox** → `dropboxKey` (with the Full Dropbox app of *The family's own cloud* already registered, skip these: its key does both)
 1. Go to <https://www.dropbox.com/developers/apps> and choose **Create app**: *Scoped access*, *App folder*, any name (people see it when they sign in).
 2. **Permissions**: tick `files.content.write` and `files.content.read`, then *Submit*.
 3. **Settings** → *OAuth 2* → *Redirect URIs*: add `app.littlelog.newborn://oauth`.

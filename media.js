@@ -82,10 +82,12 @@ const Media = (() => {
   // ---- the family's storage ----
   const linkedUp = () => typeof E2EE !== 'undefined' && Sync.linked() && !!db.meta.babyId;
   const objPath = (baby, name, read) => `/storage/v1/object/${read ? 'authenticated/' : ''}media/${baby}/${name}`;
+  /** Where the files go: the family folder (folder.js) when this phone is in one, else the server's bucket. */
+  const T = () => (typeof Folder !== 'undefined' && Folder.on ? Folder.media : { up: (b, name, bytes) => Auth.upload(objPath(b, name), bytes), down: (b, name) => Auth.download(objPath(b, name, true)), del: (b, name) => Auth.remove(objPath(b, name)) });
   async function upload(baby, id) {
     for (const name of [id + '.t', id]) {   // (the thumbnail first: it is what the family sees first)
       const blob = await Store.blobGet(name); if (!blob) continue;
-      await Auth.upload(objPath(baby, name), await E2EE.sealMedia(baby, name, new Uint8Array(await blob.arrayBuffer())));
+      await T().up(baby, name, await E2EE.sealMedia(baby, name, new Uint8Array(await blob.arrayBuffer())));
     }
   }
   /** Sends what is waiting and deletes what was taken off; each sync calls it. A network error stops it: the rest waits for the next. */
@@ -97,14 +99,14 @@ const Media = (() => {
       db.meta.mediaUp = (db.meta.mediaUp || []).filter(x => x !== id);
     }
     for (const id of [...(db.meta.mediaDel || [])]) {
-      for (const name of [id, id + '.t']) { try { await Auth.remove(objPath(baby, name)); } catch (e) { if (e.status !== 403) throw e; } }
+      for (const name of [id, id + '.t']) { try { await T().del(baby, name); } catch (e) { if (e.status !== 403) throw e; } }
       db.meta.mediaDel = (db.meta.mediaDel || []).filter(x => x !== id);
     }
   }
   /** The decrypted file from the family's storage, kept on this phone; null when it isn't there (yet). */
   async function fetched(name, mime) {
     if (!linkedUp()) return null;
-    const bytes = await Auth.download(objPath(db.meta.babyId, name, true)); if (!bytes) return null;
+    const bytes = await T().down(db.meta.babyId, name); if (!bytes) return null;
     const blob = new Blob([await E2EE.openMedia(db.meta.babyId, name, bytes)], { type: mime });
     await Store.blobPut(name, blob); return blob;
   }

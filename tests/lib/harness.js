@@ -10,9 +10,11 @@ const root = path.join(__dirname, '..', '..');
 const SB = 'https://fake.supabase.co';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function setup({ port = 8126 } = {}) {
+/** opts.config: the app's config.js values instead of the family-server ones (e.g. a store build with no server); opts.noDb: no
+    Postgres and no Supabase shim (a suite that never talks to a family server). */
+async function setup({ port = 8126, config = null, noDb = false } = {}) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'll-rb-')), www = path.join(tmp, 'www'), APP = `http://localhost:${port}/`;
-  fs.writeFileSync(path.join(tmp, 'config.js'), `window.LL_CONFIG={supabaseUrl:'${SB}',supabaseKey:'anon',dropboxKey:'dbx',appScheme:'app.littlelog.newborn'}`);
+  fs.writeFileSync(path.join(tmp, 'config.js'), config ? `window.LL_CONFIG=${JSON.stringify(config)}` : `window.LL_CONFIG={supabaseUrl:'${SB}',supabaseKey:'anon',dropboxKey:'dbx',appScheme:'app.littlelog.newborn'}`);
   execSync('node scripts/build-web.js', { cwd: root, env: { ...process.env, LL_CONFIG: path.join(tmp, 'config.js'), LL_OUT: www, LL_PSEUDO: '1' }, stdio: 'pipe' });
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png' };
   const server = http.createServer((req, res) => {
@@ -21,12 +23,14 @@ async function setup({ port = 8126 } = {}) {
     res.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream' }); res.end(fs.readFileSync(f));
   });
   await new Promise(r => server.listen(port, r));
-  const adminUrl = startCluster(), { url, su } = await freshDb(adminUrl), shim = createShim(url, {});
+  let su = null, shim = null;
+  if (!noDb) { const adminUrl = startCluster(), db = await freshDb(adminUrl); su = db.su; shim = createShim(db.url, {}); }
   const exe = process.env.LL_CHROMIUM || (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : '');   // (the dev sandbox's browser; elsewhere Playwright's own)
   const browser = await chromium.launch({ ...(exe ? { executablePath: exe } : {}), args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const pages = [];
   const H = { tmp, APP, su, shim, browser, pages, sleep, totp };
   H.q = async (sql, params) => (await su.query(sql, params)).rows;
+  H.shim = shim;
   /** A sync, done: waits for one under way, runs one, and tries again when the run coincided with another (then it returns at once and reruns later). */
   H.syncNow = p => p.evaluate(async () => {
     const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -45,7 +49,8 @@ async function setup({ port = 8126 } = {}) {
     if (!opts.tour) await ctx.addInitScript(() => { try { if (!localStorage.getItem('ll.tours')) localStorage.setItem('ll.tours', '{"day":1,"welcome":1}'); } catch (e) { /* no storage */ } });   // (the first-time tour has its own test)
     if (!opts.welcome) await ctx.addInitScript(() => { try { localStorage.setItem('ll.welcome', '1'); } catch (e) { /* no storage */ } });
     await ctx.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { try { ['mlang', 'macct', 'mkids', 'mregion', 'munits', 'mlook', 'mcloud', 'mdata', 'mapp', 'mnotify', 'secnewborn', 'sectoddler', 'secschool', 'secteens', 'secpuberty', 'secfood', 'secmeds', 'secplay', 'secchecks', 'secmonths'].forEach(g => openGroups.add(g)); } catch (e) { /* not the app */ } }));   // (the More page's twirl-downs start closed; the tests click inside them)   // (the first screen has its own test: start.test.js)
-    await shim.install(ctx);
+    if (shim) await shim.install(ctx);
+    if (opts.routes) await opts.routes(ctx);   // (a suite's own fake services, e.g. Dropbox)
     const p = await ctx.newPage(); p.errs = []; p.csp = [];
     p.on('pageerror', e => p.errs.push(e.message));
     p.on('console', m => { if (m.type() === 'error' && /Content Security Policy/.test(m.text())) p.csp.push(m.text()); });
@@ -80,7 +85,7 @@ async function setup({ port = 8126 } = {}) {
   };
   H.entries = p => p.evaluate(() => db.events.map(e => ({ id: e.id, type: e.type, ts: e.ts, data: e.data, note: e.note, end: e.end == null ? null : e.end, child: e.child || null })).sort((a, b) => (a.id < b.id ? -1 : 1)));
   H.close = async () => {
-    try { await browser.close(); } catch (e) {} try { await su.end(); await shim.close(); } catch (e) {}
+    try { await browser.close(); } catch (e) {} try { if (su) await su.end(); if (shim) await shim.close(); } catch (e) {}
     server.close(); if (startCluster.stop) startCluster.stop(); fs.rmSync(tmp, { recursive: true, force: true });
   };
   return H;

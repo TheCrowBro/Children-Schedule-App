@@ -3299,7 +3299,7 @@ Sync.onChange = () => {
 // Phone app: links opened by the OS (invite links, cloud sign-in returns) and the Android back button.
 Native.onUrl(async url => {
   const m = await Cloud.handleOAuthUrl(url);
-  if (m) { tab = 'more'; render(); return toast(__(m)); }
+  if (m) { if (await Acct.cloudReturn(Cloud.lastConnected)) return; tab = 'more'; render(); return toast(__(m)); }
   Acct.receiveJoin(url);
 });
 Native.onBack(() => {
@@ -3328,7 +3328,7 @@ Sync.onSessionLost = () => Acct.sessionLost();
   Store.st.onChange = () => { render(); if (!Store.st.ok) toast(__('Cannot save on this phone – free up space')); };
   if (Store.st.quarantined || Store.st.recovered) setTimeout(() => toast(Store.st.recovered ? __('Your saved log was damaged and has been restored from a recent backup') : __('A damaged copy of the log was set aside; it will be re-downloaded from your family log')), 600);
   if (Native.is) {
-    await Promise.all([Auth.init(), Cloud.init(), Acct.init()]);   // secrets come from the Keychain / Keystore
+    await Promise.all([Auth.init(), Cloud.init()]); await Folder.init(); await Acct.init();   // secrets come from the Keychain / Keystore
     await Lock.init();
     await Notify.init();
     // a tap on the "still asleep?" notification, or on its Woke up / Still asleep buttons
