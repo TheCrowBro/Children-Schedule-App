@@ -397,6 +397,7 @@ Every push and pull request runs the lint and all the suites in GitHub Actions (
   versions with how to restore one
 - **[SETUP.md](SETUP.md)**: the family's own cloud (the Dropbox app and the Google client to register), Supabase, sign-in hardening, roles and permissions,
   cloud providers, privacy notes
+- **[ICLOUD.md](ICLOUD.md)**: the family's guide to Little Log on iPhone with iCloud Drive: the Files app, Collaborate, join codes, a new phone, what to do when something does not work (also in the app, step by step)
 - **[FOLDER.md](FOLDER.md)**: the family folder: what each file holds, how a sync goes, who may do what, leaving and recovery, the clouds
 - **[TESTING.md](TESTING.md)**: what the automated tests prove, what they can't, and the physical-device release checklist
 - **[MOBILE.md](MOBILE.md)**: building and releasing the Android and iOS apps, store checklist

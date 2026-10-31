@@ -182,7 +182,8 @@ recovery code, which is also the way to restore the log from a backup copy.
   person's id is a random id kept in the iCloud Keychain, so it is the same on all of their devices (a new phone of theirs is "a
   member's new phone"). No iCloud entitlement is needed: the folder is reached through the picker, not an app container. Everyone in
   such a family needs an iPhone or iPad (an Android phone cannot reach iCloud Drive). The plugin is written but, as of 1.29.0, not yet
-  built or tried on a device ([MOBILE.md](MOBILE.md)); the JavaScript side runs against a fake of it in the tests.
+  built or tried on a device ([MOBILE.md](MOBILE.md)); the JavaScript side runs against a fake of it in the tests. The family's own
+  guide to all this is [ICLOUD.md](ICLOUD.md), and the same steps are in the app (*Little Log on iPhone with iCloud Drive: step by step*).
 
 The protocol does not depend on any of them: a backend is `list(cursor)`, `get`, `put` (add / overwrite / update-if-unchanged),
 `delete`, `share`, `unshare`, `leave`, `candidates`, `mount` (and, for a folder picked in the Files app, `pick`). OneDrive is next,

@@ -192,6 +192,33 @@ const Acct = (() => {
     N_('Health notes and medication reach only the phones allowed to see them; everything else reaches everyone in the family.'),
     N_('A lost phone is removed under My phones, and someone who leaves is removed on the Family tab: the keys change for everyone else by themselves. Write the recovery code down: it gets a parent back in when every phone is gone.')];
   const howFamilyHtml = () => `<details class="more" data-grp="howfam" ${openGroups.has('howfam') ? 'open' : ''}><summary>${__h('How sharing works')}<span class="chev" aria-hidden="true">›</span></summary><div class="howbody"><ol class="steps">${HOW_FAMILY.map(s => `<li>${__h(s)}</li>`).join('')}</ol></div></details>`;
+  /** iCloud Drive is unlike the clouds (no sign-in, the Files app's picker and sharing, a join code instead of an email), so iPhone
+      users get their own step-by-step tutorial: on the cloud picker, the start-or-join screen, the waiting screen and the Share card. */
+  const HOW_ICLOUD = {
+    before: N_('Everyone needs an iPhone or iPad with iCloud Drive turned on: Settings → your name → iCloud → iCloud Drive. Little Log uses the iCloud account your phone is signed in to; there is nothing to sign in to in the app. An Android phone cannot join an iCloud Drive family.'),
+    parent: [N_('Open Little Log, tap Share with family, then Connect iCloud Drive.'),
+      N_("Type your name and the baby's details and tap Create log. The Files app opens so you can choose where the Little Log folder goes: iCloud Drive itself is fine. Tap Open. A folder named Little Log (the baby's name) is made there."),
+      N_('Write down the recovery code the app shows and keep it somewhere safe, not only on this phone.'),
+      N_('To invite someone: Family tab → Share with someone → their name and what they may do → Share in Files and make a join code. In the share sheet choose Collaborate (not Send Copy), set Only invited people and Can make changes, add their Apple ID email and send. Their join code appears under Shared, not joined yet: tell it to them, by voice or in a message of your own.'),
+      N_('When their request pops up on your phone it shows Verified if they typed the code: tap Approve. Without a code, ask them to read out the security code their phone shows, tick It matches, then Approve.'),
+      N_('To take someone off: Family tab → their name → Remove from this log. Then in the Files app press and hold the Little Log folder, tap Manage Shared Folder and remove them there too.')],
+    relative: [N_('Accept the invitation: the message or notification says a folder was shared with you; open it, and the folder appears in the Files app under iCloud Drive → Shared.'),
+      N_('Install Little Log, tap Share with family, then Connect iCloud Drive.'),
+      N_('Type your name and the join code the parent gave you, then tap Choose the shared folder…. In the picker go to iCloud Drive → Shared (or Browse → iCloud Drive), tap the Little Log folder and tap Open.'),
+      N_('Wait for a parent to approve you: the screen updates by itself, or tap Check now. If you had no join code, read out the security code on your screen to the parent.'),
+      N_('You are in. Entries travel through iCloud, so give a phone that was offline a moment to catch up.')],
+    newPhone: N_('On a new phone of your own: Connect iCloud Drive, tap Choose the shared folder… and pick the Little Log folder, which is already in your iCloud Drive. A parent types the recovery code to get straight in; anyone else approves the new phone from their other phone, under Phones waiting for access.'),
+    tips: [N_('Never rename, move or delete anything inside the Little Log folder: the phones find the files by name. The folder itself may be moved anywhere in iCloud Drive and renamed, as long as its name still starts with Little Log.'),
+      N_('The folder counts towards the iCloud storage of whoever owns it: pictures and videos add up. Everything in it is encrypted; the Files app shows only scrambled files.'),
+      N_('If the Little Log folder does not appear in the picker: check that iCloud Drive is on and that you accepted the share. If the app says the folder is not shared with you any more, ask a parent to add you again in the Files app (Manage Shared Folder).')],
+  };
+  const howICloudHtml = () => {
+    if (!(Folder.available().includes('icloud') || Folder.provider === 'icloud')) return '';
+    const part = (title, list) => `<p style="margin:10px 0 4px"><b>${__h(title)}</b></p><ol class="steps">${list.map(s => `<li>${__h(s)}</li>`).join('')}</ol>`;
+    return `<details class="more" data-grp="howicloud" ${openGroups.has('howicloud') ? 'open' : ''}><summary>${__h('Little Log on iPhone with iCloud Drive: step by step')}<span class="chev" aria-hidden="true">›</span></summary>
+      <div class="howbody"><p class="note">${__h(HOW_ICLOUD.before)}</p>${part(N_('The parent who starts the log'), HOW_ICLOUD.parent)}${part(N_('A relative who joins'), HOW_ICLOUD.relative)}
+      <p style="margin:10px 0 4px"><b>${__h('A new phone of your own')}</b></p><p class="note">${__h(HOW_ICLOUD.newPhone)}</p>${part(N_('Good to know'), HOW_ICLOUD.tips)}</div></details>`;
+  };
   /** When the cloud's sign-in lapsed (Google renews it weekly while an app is in testing): sign in again and the sync goes on, nothing cleared. */
   const reconnectHtml = () => (folderMode() && Sync.st.reconnect ? `<div class="note" style="margin-top:6px">⚠️ ${__h('{service} needs you to sign in again.', { service: Folder.label(Folder.provider) })}</div><button class="btn p" id="fReconnect" style="width:100%;margin-top:8px">${__h('Reconnect {service}', { service: Folder.label(Folder.provider) })}</button>` : '');
   const bindReconnect = () => { const b = $('#fReconnect'); if (b) b.onclick = async () => { try { await Folder.connect(Folder.provider); toast(__('Finish signing in in the browser window')); } catch (e) { toast(err(e)); } }; };
@@ -243,7 +270,7 @@ const Acct = (() => {
     <p class="note">${__h('Little Log keeps the log in a folder in your own cloud storage, encrypted on your phones before anything is written there. Nobody else runs a server: you share the folder with the family, and that is who gets in.')}</p>
     ${Folder.available().map(p => `<button class="btn p" data-fconnect="${p}" style="width:100%;margin-top:8px">${__h('Connect {service}', { service: Folder.label(p) })}</button>`).join('')}
     ${Folder.available().includes('icloud') ? `<p class="note">${__h('iCloud Drive: the folder is shared with the family from the Files app, and everyone in the family needs an iPhone or iPad.')}</p>` : `<p class="note">${__h('OneDrive and iCloud Drive are next.')}</p>`}
-    <p class="note">🔐 ${__h('Your cloud account is the key to the family folder: turn on 2-step verification in that account, and ask the family to do the same.')}</p>${howFamilyHtml()}
+    <p class="note">🔐 ${__h('Your cloud account is the key to the family folder: turn on 2-step verification in that account, and ask the family to do the same.')}</p>${howFamilyHtml()}${howICloudHtml()}
     ${Auth.configured ? `<button class="btn" id="fcServer" style="width:100%;margin-top:8px">${__h('Use a family server instead')}</button>` : ''}
     <button class="btn" id="fcLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>
     <div class="row"><button class="btn" id="fcBack">${__h('Back')}</button></div>${alertP(C.err)}</div>`;
@@ -284,7 +311,7 @@ const Acct = (() => {
         : `${C.cands === null ? `<div class="empty">${__h('Looking…')}</div>` : C.cands.length ? C.cands.map(x => `<div class="stat"><span>${esc(x.name)}</span><button class="btn p" data-fjoin="${esc(x.id)}" style="padding:6px 12px" ${C.busy ? 'disabled' : ''}>${__h('Join')}</button></div>`).join('') : `<p class="note">${__h('Nothing has been shared with {email} yet.', { email: me.email })}</p>`}
       <div class="row"><button class="btn" id="fjCheck">${__h('Check again')}</button></div>`}</div>
     ${alertP(C.err)}
-    <div class="card">${howFamilyHtml()}<button class="btn" id="fOut" style="width:100%;margin-top:8px">${__h('Disconnect {service}', { service })}</button></div>`;
+    <div class="card">${howFamilyHtml()}${howICloudHtml()}<button class="btn" id="fOut" style="width:100%;margin-top:8px">${__h('Disconnect {service}', { service })}</button></div>`;
   };
   function bindFolderOnboard() {
     if (C.cands === null && !C.busy) Folder.candidates().then(x => { C.cands = x; }, e => { C.cands = []; C.err = err(e); }).then(() => { if ($('#fjCheck')) render(); });
@@ -585,7 +612,7 @@ const Acct = (() => {
     <button class="btn d" id="wCancel" style="width:100%;margin-top:8px">${__h('Cancel request')}</button>
     ${folderMode() ? `<label class="f">${__h('A parent with the recovery code? Enter it to get straight in')}</label><input id="wCode" type="text" autocapitalize="characters" autocomplete="off" placeholder="XXXX-XXXX-XXXX-…">
     <button class="btn" id="wRecover" style="width:100%;margin-top:8px">${__h('Unlock with recovery code')}</button>` : ''}
-    ${reconnectHtml()}<button class="btn" id="wOut" style="width:100%;margin-top:8px">${outLabel()}</button></div>`;
+    ${reconnectHtml()}${howICloudHtml()}<button class="btn" id="wOut" style="width:100%;margin-top:8px">${outLabel()}</button></div>`;
   function bindWaiting() {
     const check = async () => { try { if (await Sync.checkApproval()) { toast(__("You're in!")); tab = 'day'; render(); } else if (!Sync.pendingRequest()) render(); } catch (e) { if (e && e.auth && !Sync.st.reconnect) { Sync.st.reconnect = true; render(); } } };
     bindReconnect();
@@ -1216,7 +1243,7 @@ const Acct = (() => {
   /** Sharing the family folder with someone (folder mode): their cloud email and what they may do, and who has not joined yet. */
   function shareHtml(s) {
     const service = Folder.label(Folder.provider), icloud = Folder.provider === 'icloud';
-    return `<h2>${__h('Share with someone')}</h2>${howFamilyHtml()}<div class="card" id="invCard">
+    return `<h2>${__h('Share with someone')}</h2>${howFamilyHtml()}${howICloudHtml()}<div class="card" id="invCard">
       <p class="note" style="margin-top:0">${icloud ? __h('The folder is shared in the Files app: iCloud Drive → press and hold the Little Log folder → Share → Collaborate, and add their Apple ID email. Their join code is made here; tell it to them. When they open Little Log, they choose the folder and type the code, and you approve them here.') : __h('The family folder is shared with their own {service}. When they open Little Log and connect {service} with that email, they ask to join and you approve them here.', { service })}</p>
       <label class="f">${icloud ? __h('Their name') : __h('Their {service} email', { service })}</label><input id="shEmail" type="${icloud ? 'text' : 'email'}" ${icloud ? 'maxlength="60"' : 'inputmode="email"'} autocomplete="off" placeholder="${icloud ? __h('e.g. Grandma') : __h('you@example.com')}">
       ${accessFormHtml('inv', invForm ? invForm.role : 'caregiver', invForm && invForm.perms)}

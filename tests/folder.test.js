@@ -88,7 +88,7 @@ async function suite(cloud) {
     for (const e of ['dad@x.com', 'mum@x.com', 'nan@x.com']) assert(fake.access(e), e + ' has access');
     if (fake.pending('dad@x.com') !== null) assert(fake.pending('dad@x.com') && fake.pending('nan@x.com'), 'invited, not yet in');
     await mum.waitForFunction(() => /nan@x\.com/.test(document.querySelector('#view').textContent));
-    assert(/Shared, not joined yet/.test(await mum.textContent('#view')));
+    assert(/Shared, not joined yet/.test(await mum.textContent('#invCard')), 'the pending invitations are listed on the card');
   });
 
   await step(`Dad installs the app, connects ${name}, finds the family folder, asks to join and waits with a security code; the request pops up on Mum's phone, she ticks the code and approves; Dad is in as a parent with Leo's entries, and what he adds reaches Mum`, async () => {
@@ -405,7 +405,10 @@ async function suiteFiles() {
     mum = await phone('mum@x.com');
     await mum.waitForSelector('#wShare'); await mum.click('#wShare'); await mum.waitForSelector('[data-fconnect=icloud]');
     assert(/Files app/.test(await mum.textContent('#view')), 'says the folder is shared from the Files app');
+    assert(/iPhone with iCloud Drive: step by step/.test(await mum.textContent('#view')), 'the tutorial for iPhone users is on the cloud picker');
+    await mum.click('details[data-grp=howicloud] > summary'); assert(/Collaborate/.test(await mum.textContent('details[data-grp=howicloud]')) && /Manage Shared Folder/.test(await mum.textContent('details[data-grp=howicloud]')), 'it says what to do in the Files app');
     await connect(mum);
+    assert(/step by step/.test(await mum.textContent('#view')), 'and on the start-or-join screen');
     assert.equal(await mum.evaluate(() => window.__calls.filter(c => c[0] === 'Browser.open').length), 0, 'no browser opened');
     assert(/iCloud Drive connected/.test(await mum.textContent('#view')), 'connected, no email to show');
     await mum.fill('#oMine', 'Mum'); await mum.fill('#oName', 'Leo'); await mum.click('input[name=oSex][value=boy]');
@@ -431,8 +434,9 @@ async function suiteFiles() {
   await step("sharing by name: Mum shares with Dad (a parent) from the Family tab; the Files app's sharing opens (she adds him there), and she gets his join code; the invitation shows his name and the code", async () => {
     dadCode = await shareByName(mum, 'Dad', 'parent');
     assert(fake.calls.includes('share-sheet'), "the Files app's sharing opened");
+    assert(/step by step/.test(await mum.textContent('#view')), 'the tutorial is on the Share card too');
     fake.shareWith('dad@x.com');   // (what Mum does in the share sheet: Collaborate, add his Apple ID)
-    await mum.waitForFunction(() => /Dad/.test(document.querySelector('#view').textContent) && /Shared, not joined yet/.test(document.querySelector('#view').textContent));
+    await mum.waitForFunction(() => /Dad/.test(document.querySelector('#view').textContent) && /Shared, not joined yet/.test(document.querySelector('#invCard').textContent));
     assert((await mum.textContent('#view')).includes(dadCode), 'the code is shown for later');
   });
 
@@ -445,7 +449,7 @@ async function suiteFiles() {
     assert(r.qrVerified && r.display_name === 'Dad' && r.role === 'parent' && !r.attested && !r.forged, 'verified by the code, no email: ' + JSON.stringify(r));
     await closeSheets(mum); await mum.evaluate(() => Acct.promptRequests()); await closeSheets(mum);
     await goTab(mum, 'family'); await mum.waitForSelector('#view [data-approve]'); await mum.click('#view [data-approve]'); await mum.waitForFunction(() => /Approved/.test(document.querySelector('#toast').textContent));
-    assert(!/Shared, not joined yet/.test(await mum.textContent('#view')), 'the invitation is used up');
+    assert(!/Shared, not joined yet/.test(await mum.textContent('#invCard')), 'the invitation is used up');   // (the tutorial above the card names that heading)
     await dad.click('#wCheck'); await dad.waitForSelector('#tabs', { timeout: 20000 }); await syncNow(dad);
     assert.equal(await dad.evaluate(() => db.meta.role), 'parent'); assert.equal(await dad.evaluate(() => db.meta.unverified), undefined, 'the keys came with the proof');
     assert.deepEqual((await entries(dad)).map(e => e.id), ['m-feed-1']);
