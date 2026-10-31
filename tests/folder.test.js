@@ -145,8 +145,10 @@ async function suite(cloud) {
       await Sync.editTree(t => FamilyTree.add(t, 'gp', t.parents[0].id, { id: FamilyTree.newId(), name: 'Stranger', call: 'Nobody' }));
     });
     assert.equal(signerOf('members.json'), await devOf(nan), "Nan's copy is in the folder");
-    await syncNow(mum);
-    assert((/family list/.test(await mum.evaluate(() => Sync.st.warn)) && /family tree/.test(await mum.evaluate(() => Sync.st.warn))) || await mum.evaluate(() => Sync.st.repaired >= 2), 'Mum\'s phone says what it would not believe, or already put it back: ' + await mum.evaluate(() => Sync.st.warn + ' / ' + Sync.st.repaired));   // (a sync of its own may have come first)
+    await syncNow(nan);   // (her tree write, which editTree sends on its own, has landed before Mum's phone looks)
+    const judged = () => mum.evaluate(() => (/family list/.test(Sync.st.warn) && /family tree/.test(Sync.st.warn)) || Sync.st.repaired >= 2);
+    for (let i = 0; i < 6 && !(await judged()); i++) await syncNow(mum);   // (a slow machine may need the sync after the one that saw the list)
+    assert(await judged(), 'Mum\'s phone says what it would not believe, or already put it back: ' + await mum.evaluate(() => Sync.st.warn + ' / ' + Sync.st.repaired));   // (a sync of its own may have come first)
     assert.deepEqual(await mum.evaluate(() => Sync.st.people.map(p => [p.display_name, p.role]).sort()), [['Dad', 'parent'], ['Mum', 'parent'], ['Nan', 'caregiver']], 'Nan is still a caregiver on Mum\'s phone');
     assert.equal(await mum.evaluate(() => Sync.st.tree.parents.flatMap(x => x.gp.map(g => g.name)).join()), 'Rose', 'the stranger never reached the tree');
     assert(await mum.evaluate(() => Sync.st.repaired >= 2), 'put back: ' + await mum.evaluate(() => Sync.st.repaired));
@@ -363,8 +365,10 @@ async function suite(cloud) {
     assert.equal(JSON.parse(fake.text('littlelog.json')).root.d, await devOf(mum), "Mum's phone is the root now"); assert.equal(signerOf('members.json'), await devOf(mum), 'the family list signed');
     assert.equal(await mum.evaluate(() => Sync.trust().root.d), await devOf(mum));
     await syncNow(p); assert.equal(await p.evaluate(() => Sync.trust() && Sync.trust().root.d), await devOf(mum), 'the other phone took the root');
-    await add(p, { id: 'p-feed-legacy', type: 'feed', ts: Date.now() - 60e3, data: { kind: 'bottle', ml: 55 } }); await syncNow(p); await syncNow(mum);
-    assert((await entries(mum)).some(e => e.id === 'p-feed-legacy'), 'its entries count'); assert.equal(await mum.evaluate(() => Sync.st.warn), '');
+    await add(p, { id: 'p-feed-legacy', type: 'feed', ts: Date.now() - 60e3, data: { kind: 'bottle', ml: 55 } }); await syncNow(p);
+    const has = async () => (await entries(mum)).some(e => e.id === 'p-feed-legacy');
+    for (let i = 0; i < 6 && !(await has()); i++) await syncNow(mum);   // (the sync that takes the other phone's new signing key, then the one that reads with it)
+    assert(await has(), 'its entries count'); assert.equal(await mum.evaluate(() => Sync.st.warn), '');
     for (const q of H.pages) { assert.deepEqual(q.errs, [], 'page errors'); assert.deepEqual(q.csp, [], 'CSP violations'); }
   });
 
