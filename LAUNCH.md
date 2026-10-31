@@ -24,6 +24,11 @@ mostly accounts, keys and approvals that only the publisher can hold. Costs are 
 2. **A domain and a support mailbox.** Both stores show a support email to everyone, the Google consent screen shows one to every
    person who signs in, and the European trader rules can add a postal address. Use a dedicated address on a domain you own, never a
    personal mailbox. The same domain carries the privacy policy and the home page Google's verification looks at.
+   *Done: crowmade.app, registered at Cloudflare. The pages are in `site/` (`scripts/build-site.js`): the home page, the app's page
+   and the privacy policy at https://crowmade.app/littlelog/privacy/, which `config.js` already carries. Still to do there: the
+   mailbox support@crowmade.app (a Google Workspace user on the domain is the cleanest: it is a real Google account, so it also
+   serves as the consent screen's support email), and connecting the repository to Cloudflare Pages with `site` as the output
+   directory so the pages go live.*
 3. **Google Drive's scope.** The app asks for the full Drive scope so a relative's phone can find the folder shared with them.
    That is a *restricted* scope: before the consent screen can leave Testing, Google verifies the app and requires a CASA Tier 2
    security assessment by an authorised lab, renewed every year. Until then only the test users listed in the Cloud console can

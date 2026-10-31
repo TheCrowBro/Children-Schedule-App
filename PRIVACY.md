@@ -1,10 +1,11 @@
 # Little Log privacy policy
 
-*Draft for the store build (the app as published in the app stores, 1.29.2 onwards). Fill in the two placeholders at the end,
-have it read by a lawyer where you publish, put it at a web address and give that address to the stores and to `privacyUrl` in
-`config.js`. Keep it in step with the app: everything below is what the code does today.*
+*The policy for the store build (the app as published in the app stores, 1.29.2 onwards). It is published at
+https://crowmade.app/littlelog/privacy/ (`site/`, written by `scripts/build-site.js`), the address `privacyUrl` in `config.js`
+carries and the stores are given. Have it read by a lawyer where you publish, and keep it in step with the app: everything
+below is what the code does today.*
 
-**Effective date:** [date]
+**Effective date:** 31 October 2026
 
 Little Log is an app for parents and the people who help them, to keep a log of a child's days: feeds, sleep, nappies, health
 notes, growth, pictures, big moments, and the family around the child. This policy says what the app records, where it goes, who can
@@ -108,4 +109,4 @@ authority are the places to turn, and you can write to us at the address below.
 If a future version of the app sends anything anywhere new, this policy will say so before that version is published, and the app's
 release notes will say it too.
 
-**Contact:** [support address]
+**Contact:** support@crowmade.app

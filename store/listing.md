@@ -47,7 +47,8 @@ pediatrician, and in an emergency call your local emergency number.
 **Category:** Google Play *Parenting*; App Store primary *Lifestyle*, secondary *Health & Fitness* (not *Medical*: the app records
 what a family enters and gives general information; it does not diagnose or treat).
 
-**Contact:** the support address on your domain; the privacy policy at `privacyUrl`; a home page on the same domain.
+**Contact:** support@crowmade.app; the privacy policy at https://crowmade.app/littlelog/privacy/; the home page https://crowmade.app
+and the app's page https://crowmade.app/littlelog/ (all in `site/`, written by `scripts/build-site.js`).
 
 ## Google Play: Data safety (suggested answers)
 

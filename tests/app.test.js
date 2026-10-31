@@ -123,11 +123,12 @@ const shot = async (p, name) => { if (process.env.LL_SHOTS) await p.screenshot({
         await P.evaluate(x => { tab = x; render(); }, t);
         assert.equal(await P.evaluate(() => getComputedStyle(document.querySelector('#view')).columnCount), '2', t + ' in two columns');
         if (t === 'guide') assert(/The Guide is general information, not medical advice about your child/.test(await P.textContent('#view')), 'the Guide opens by saying it is not medical advice');
-        if (t === 'more') {   // the Privacy policy link appears once config.js says where the policy is published
+        if (t === 'more') {   // the Privacy policy link appears once config.js says where the policy is published (whatever this build's config.js says)
+          const was = await P.evaluate(() => { window.LL_CONFIG = window.LL_CONFIG || {}; const w = window.LL_CONFIG.privacyUrl; window.LL_CONFIG.privacyUrl = ''; render(); return w; });
           assert.equal(await P.$('#privacyLink'), null, 'no link without an address');
-          await P.evaluate(() => { window.LL_CONFIG = Object.assign(window.LL_CONFIG || {}, { privacyUrl: 'https://example.test/privacy' }); render(); });
+          await P.evaluate(() => { window.LL_CONFIG.privacyUrl = 'https://example.test/privacy'; render(); });
           assert.equal(await P.$eval('#privacyLink', a => a.getAttribute('href')), 'https://example.test/privacy', 'the Privacy policy link');
-          await P.evaluate(() => { delete window.LL_CONFIG.privacyUrl; render(); });
+          await P.evaluate(w => { window.LL_CONFIG.privacyUrl = w; render(); }, was);
         }
         await shot(P, 'tablet-' + t);
       }

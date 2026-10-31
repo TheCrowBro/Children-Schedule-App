@@ -404,6 +404,8 @@ Every push and pull request runs the lint and all the suites in GitHub Actions (
 - **[LAUNCH.md](LAUNCH.md)**: getting into the stores, in order: the accounts, keys, approvals, waits and costs, and what is already done
 - **[PRIVACY.md](PRIVACY.md)**: the privacy policy for the store build, to publish at the address `privacyUrl` in `config.js` points to
 - **[store/](store/)**: the listing text, the Data safety / App Privacy answers and the screenshots for the stores
+- **[site/](site/)**: the publisher's web pages at crowmade.app (the home page, the app's page, the privacy policy), written by
+  `node scripts/build-site.js` from PRIVACY.md and the store assets, for Cloudflare Pages or any static host
 - **[lang/README.md](lang/README.md)**: translating, checking the catalogues and adding a language
 - **[SECURITY.md](SECURITY.md)**: the security model, the October 2026 review with its findings, and the deployment checklist
 

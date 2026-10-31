@@ -1,6 +1,6 @@
 {
   "name": "little-log",
-  "version": "1.29.2",
+  "version": "1.29.3",
   "private": true,
   "description": "A child tracker that grows from newborn to 18 – web app, packaged for iOS and Android with Capacitor",
   "scripts": {
