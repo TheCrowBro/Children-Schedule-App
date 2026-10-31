@@ -22,6 +22,14 @@ const ungated = p => p.waitForFunction(() => !document.body.classList.contains('
       assert.deepEqual(await P.evaluate(() => [!!$('#wShare'), !!$('#wRestore'), !!$('#lEmail'), document.body.classList.contains('gated')]), [true, true, false, true]);
       // the badge at the top is the app icon's: rays in the day clock's kinds of line (plain, dashed, dotted, a squiggle, a zigzag, one ending in its dot)
       assert.deepEqual(await P.evaluate(() => { const h = $('.hero svg').innerHTML; return ['height="76"', 'height="32"', 'r="10"', 'q11 9', 'l9 12', 'r="13"'].map(k => h.includes(k)); }), Array(6).fill(true), 'the welcome badge carries every kind of ray');
+      // the two step-by-step guides a newcomer can choose on the first screen: the parent who starts the log, the relative who joins it
+      assert.deepEqual(await P.$$eval('[data-howsteps]', b => b.map(x => x.dataset.howsteps)), ['parent', 'relative'], 'both guides to choose from');
+      await P.click('[data-howsteps=parent]'); await P.waitForFunction(() => !$('#sheet').hidden);
+      assert(/Start a log for your family/.test(await P.textContent('#sheet')) && /recovery code/.test(await P.textContent('#sheet')) && await P.$$eval('#sheet ol.steps li', l => l.length) === 7, "the parent's steps");
+      await P.click('#sheet [data-close]'); await P.waitForFunction(() => $('#sheet').hidden);
+      await P.click('[data-howsteps=relative]'); await P.waitForFunction(() => !$('#sheet').hidden);
+      assert(/Join your family's log/.test(await P.textContent('#sheet')) && /join code/.test(await P.textContent('#sheet')) && await P.$$eval('#sheet ol.steps li', l => l.length) === 5, "the relative's steps");
+      await P.click('#sheet [data-close]'); await P.waitForFunction(() => $('#sheet').hidden);
       await P.click('#wShare'); await P.waitForSelector('#lEmail');
       await P.reload(); await P.waitForSelector('#lEmail'); assert.equal(await P.$('#wLocal'), null, 'the choice is remembered: straight to sign-in');
       await P.click('#lLocal'); await P.waitForSelector('#bsGo');

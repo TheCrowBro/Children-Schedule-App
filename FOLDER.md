@@ -70,7 +70,11 @@ phone (the request carries a proof made with the code, over both of the phone's 
 digits read across the room; and the keys that come back carry a proof made with the same code, so the joining phone knows they
 came from the parent who gave it. Without a code, the security code read out is the check, as before. The parent's phone also takes
 **who wrote the request from the cloud's own record** (Drive's last modifying user, Dropbox's `modified_by`), not from the file: a
-request that claims to be someone else is marked (*written by the account …*) and cannot be approved.
+request that claims to be someone else is marked (*written by the account …*) and cannot be approved. It is the **address** the
+cloud gives that decides. An account id alone does not condemn a request: a cloud can name the writer by an id other than the one it
+told that phone itself (Google Drive has done so, which once marked a real parent's request as forged), so an id that does not
+match, with no address or the same address, only means the cloud could not vouch: the request shows as not attested, and the join
+code or the security code decides, as before 1.28.
 
 **A folder from before signing** (made by an app before 1.28) has no root. The first parent's phone to run the new version becomes
 the root, signs what is there (the family list, the tree, every grant, recovery.json) and writes the root into `littlelog.json`;
@@ -183,7 +187,9 @@ recovery code, which is also the way to restore the log from a backup copy.
   member's new phone"). No iCloud entitlement is needed: the folder is reached through the picker, not an app container. Everyone in
   such a family needs an iPhone or iPad (an Android phone cannot reach iCloud Drive). The plugin is written but, as of 1.29.0, not yet
   built or tried on a device ([MOBILE.md](MOBILE.md)); the JavaScript side runs against a fake of it in the tests. The family's own
-  guide to all this is [ICLOUD.md](ICLOUD.md), and the same steps are in the app (*Little Log on iPhone with iCloud Drive: step by step*).
+  guide to all this is [ICLOUD.md](ICLOUD.md), and the same steps are in the app (*Little Log on iPhone with iCloud Drive: step by step*),
+  as are the first screen's two guides, *Start a log for your family* and *Join your family's log*, which show the iCloud Drive steps
+  on an iPhone and the Google Drive or Dropbox steps elsewhere.
 
 The protocol does not depend on any of them: a backend is `list(cursor)`, `get`, `put` (add / overwrite / update-if-unchanged),
 `delete`, `share`, `unshare`, `leave`, `candidates`, `mount` (and, for a folder picked in the Files app, `pick`). OneDrive is next,

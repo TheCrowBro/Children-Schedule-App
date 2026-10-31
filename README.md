@@ -300,7 +300,7 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   **Learning to swim**: when lessons can begin (around 1, and formal lessons by 4), what to look for in a class, and water safety;
   from a child's first birthday a note on the Day page says it is a good time to begin, until closed
 - **The first screen**: the first screens (welcome, sign-in, join) look like the rest of the app: the app's badge and a line on top, the
-  choices as painted tiles in the day clock's colours. A new phone asks how you'd like to use Little Log. **Just this phone** keeps everything on the phone, with no
+  choices as painted tiles in the day clock's colours. A new phone asks how you'd like to use Little Log; under the choices, *New here? Step by step* offers two guides to pick from, *Start a log for your family* and *Join your family's log*, with the steps for the phone's cloud (iCloud Drive on an iPhone, Google Drive or Dropbox elsewhere), also on the cloud picker and the start-or-join screen. **Just this phone** keeps everything on the phone, with no
   account; **Share with family** signs in with an email to start a log the family shares, or to join one; **Moving from another phone?**
   restores the backup file made on the old phone, with its passphrase. The choice is remembered. A log kept on the phone only can share
   later from the Family tab (**Share with family**), and its entries wait to be taken into the new log

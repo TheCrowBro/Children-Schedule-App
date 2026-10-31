@@ -2873,5 +2873,22 @@
  "1ip8mia": "Um telefone novo seu",
  "1397uds": "Bom saber",
  "1mwz5yz": "O Guia é informação geral, não aconselhamento médico sobre o seu filho: para isso, pergunte ao pediatra.",
- "fhaxvj": "Política de privacidade"
+ "fhaxvj": "Política de privacidade",
+ "8jsd62": "Toque em Compartilhar com a família e depois em Conectar Google Drive ou Conectar Dropbox. O telefone abre a página de login dessa nuvem: entre com a conta que vai guardar a pasta da família e permita o acesso ao Little Log.",
+ "1sntg3z": "Digite o seu nome e os dados do bebê e toque em Criar registro. Nessa nuvem aparece uma pasta chamada Little Log (nome do bebê), só com arquivos criptografados.",
+ "1j4dupd": "Anote o código de recuperação que o app mostra e guarde-o em lugar seguro, não só neste telefone: é o único caminho de volta se todos os telefones forem perdidos.",
+ "1qkbnop": "Para convidar alguém: aba Família → Compartilhar com alguém → o e-mail da conta Google ou Dropbox da pessoa e o que ela pode fazer → Compartilhar. A pasta é compartilhada com esse endereço, e o app mostra um código de entrada para a pessoa.",
+ "x3emqr": "Diga o código de entrada de viva voz ou numa mensagem sua. Ele vale uma vez e prova ao seu telefone que o pedido é mesmo da pessoa.",
+ "14c9fyf": "Quando o pedido aparecer no seu telefone, mostrará Verificado se a pessoa digitou o código: toque em Aprovar. Sem código, peça que leia em voz alta o código de segurança do telefone dela, marque Confere e depois Aprovar. Aprovar entrega ao telefone dela as chaves do registro.",
+ "1qcglgl": "Para tirar alguém: aba Família → o nome → Remover deste registro. A pasta deixa de ser compartilhada com a pessoa e as chaves mudam, então nada de novo chega àquele telefone.",
+ "eywn06": "Aceite o compartilhamento: o Google Drive ou o Dropbox envia um e-mail ou uma notificação de que uma pasta chamada Little Log foi compartilhada com você.",
+ "111wd80": "Instale o Little Log, toque em Compartilhar com a família, depois em Conectar Google Drive ou Conectar Dropbox, e entre com a conta com a qual a pasta foi compartilhada.",
+ "urwlvc": "O app encontra a pasta Little Log nessa conta. Digite o seu nome e o código de entrada que a mãe ou o pai lhe deu, depois toque em Entrar ao lado da pasta.",
+ "1doitk8": "Você entrou. Os registros viajam pela pasta, então dê um momento a um telefone que esteve sem conexão para se atualizar.",
+ "1nf1wxk": "Criar um registro para a sua família",
+ "p83wys": "Entrar no registro da sua família",
+ "yn97rb": "Com o Google Drive ou o Dropbox, de um telefone Android ou de um iPhone. A família inteira usa a mesma nuvem.",
+ "hr67g4": "Tudo na pasta é criptografado nos seus telefones antes de ser gravado lá: nem a nuvem nem quem faz o Little Log consegue ler.",
+ "74mw5x": "Novo por aqui? Passo a passo",
+ "1kz0aia": "Dois guias curtos: um para a mãe ou o pai que começa o registro, outro para um parente que entra."
 }

@@ -39,7 +39,7 @@ async function suite(cloud) {
   const openShare = async p => { if (!(await p.evaluate(() => (document.querySelector('details.secshare') || {}).open))) await p.click('details.secshare > summary'); };
   /** A request to join that popped up on a parent's phone and was decided elsewhere: put away, as Later would. */
   const closeSheets = p => p.evaluate(() => { if (!$('#sheet').hidden) { $('#sheet').hidden = $('#sheetBack').hidden = true; $('#sheet').innerHTML = ''; } });
-  const sealed = (text, words) => words.every(w => !text.includes(w));
+  const sealed = (text, words) => words.every(w => !new RegExp(`(^|[^A-Za-z0-9+/=])${w}($|[^A-Za-z0-9+/=])`).test(text));   // (a word in clear sits beside quotes or spaces; inside base64 any letters can occur by chance)
   const add = (p, e) => p.evaluate(e => { const k = kids()[0].id; db.events.push({ note: '', updated: stamp(), by: Auth.id, child: k, ...e }); save(); }, e);
   let mum, dad, nan, recoveryCode, uncle;
   const epochNow = () => JSON.parse(fake.text('keyring.json')).epoch;
@@ -235,6 +235,36 @@ async function suite(cloud) {
     await syncNow(dad); await closeSheets(dad);
   });
 
+  if (fake.writerQuirk) await step(`the cloud's word is judged by the address it gives: ${name} names Gran's phone by an id other than the one it told her phone (as it has done), yet her address matches, so her request is not forged, counts as attested and is approved; with no address given, an odd id means only "not attested", and the forgery in her cousin's name is not approvable without the security code`, async () => {
+    try {
+    await goTab(mum, 'family'); await openShare(mum); await mum.waitForSelector('#shGo');
+    await mum.fill('#shEmail', 'gran@x.com'); await mum.click('input[name=invrole][value=family]'); await mum.click('#shGo');
+    await mum.waitForFunction(() => /join code: [A-Z2-9]{4}-[A-Z2-9]{4}/.test(document.querySelector('#toast').textContent));
+    const code = /join code: ([A-Z2-9]{4}-[A-Z2-9]{4})/.exec(await mum.textContent('#toast'))[1]; await mum.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    fake.writerQuirk({ id: 'odd' });
+    const gran = await phone('gran@x.com'); await toCloud(gran);
+    await gran.waitForSelector('[data-fjoin]'); await gran.fill('#oMine', 'Gran'); await gran.fill('#oJoinCode', code); await gran.click('[data-fjoin]'); await gran.waitForSelector('#wCheck');
+    await syncNow(mum); await mum.waitForFunction(() => Sync.st.requests.length === 1);
+    let r = await mum.evaluate(() => { const x = Sync.st.requests[0]; return { email: x.email, forged: x.forged, attested: x.attested, verified: x.qrVerified }; });
+    assert.deepEqual(r, { email: 'gran@x.com', forged: false, attested: true, verified: true }, 'the address decides: ' + JSON.stringify(r));
+    await closeSheets(mum); await mum.evaluate(() => Acct.promptRequests()); await closeSheets(mum);
+    await goTab(mum, 'family'); await mum.waitForSelector('#view [data-approve]'); assert(!/Deny it, and tell the family/.test(await mum.textContent('#view')), 'not called a forgery');
+    await mum.click('#view [data-approve]'); await mum.waitForFunction(() => /Approved/.test(document.querySelector('#toast').textContent));
+    await gran.click('#wCheck'); await gran.waitForSelector('#tabs', { timeout: 20000 }); await syncNow(gran); assert.equal(await gran.evaluate(() => db.meta.role), 'family');
+    // no address at all, and an odd id: the cloud could not vouch, so a request is neither forged nor attested, and only the security code can let it in
+    fake.writerQuirk({ id: 'odd', email: false });
+    const couId = await nan.evaluate(([prov, acct]) => Folder.memberId(prov, acct), [cloud, fake.account('cousin@x.com')]);
+    await nan.evaluate(async couId => { const id = E2EE.uuid(), d = E2EE.device; await Folder.write(`join/${id}.json`, { v: 2, device: id, user: couId, pub: d.pub, sig: d.spub, name: 'Cousin', email: 'cousin@x.com', platform: 'web', created: Date.now(), proof: null }, 'overwrite'); }, couId);
+    await syncNow(mum); await mum.waitForFunction(() => Sync.st.requests.length === 1);
+    r = await mum.evaluate(() => { const x = Sync.st.requests[0]; return { email: x.email, forged: x.forged, attested: x.attested, verified: x.qrVerified }; });
+    assert.deepEqual(r, { email: 'cousin@x.com', forged: false, attested: false, verified: false }, 'not vouched for, not condemned: ' + JSON.stringify(r));
+    await closeSheets(mum); await goTab(mum, 'family'); await mum.waitForFunction(() => /cousin@x\.com/.test(document.querySelector('#view').textContent));
+    assert(/read out the security code/.test(await mum.textContent('#view')) && !/Deny it, and tell the family/.test(await mum.textContent('#view')), 'the security code decides');
+    await mum.evaluate(() => Sync.decide(Sync.st.requests[0], false)); await closeSheets(mum);
+    } finally { fake.writerQuirk(null); }
+    await syncNow(dad); await closeSheets(dad);
+  });
+
   await step("only the folder's owner can share it on, when they say so: Mum turns Only my phone can share on; Dad's phone (a parent) can no longer share the folder; Mum turns it off again", async () => {
     await goTab(mum, 'family'); await openShare(mum); await mum.waitForSelector('#ownerShare', { timeout: 15000 });
     await mum.click('#ownerShare'); await mum.waitForFunction(() => /Only this phone can share/.test(document.querySelector('#toast').textContent));
@@ -389,7 +419,7 @@ async function suiteFiles() {
   const goTab = async (p, t) => { await p.click(`[data-tab=${t}]`); await sleep(80); };
   const openShare = async p => { if (!(await p.evaluate(() => (document.querySelector('details.secshare') || {}).open))) await p.click('details.secshare > summary'); };
   const closeSheets = p => p.evaluate(() => { if (!$('#sheet').hidden) { $('#sheet').hidden = $('#sheetBack').hidden = true; $('#sheet').innerHTML = ''; } });
-  const sealed = (text, words) => words.every(w => !text.includes(w));
+  const sealed = (text, words) => words.every(w => !new RegExp(`(^|[^A-Za-z0-9+/=])${w}($|[^A-Za-z0-9+/=])`).test(text));   // (a word in clear sits beside quotes or spaces; inside base64 any letters can occur by chance)
   const add = (p, e) => p.evaluate(e => { const k = kids()[0].id; db.events.push({ note: '', updated: stamp(), by: Auth.id, child: k, ...e }); save(); }, e);
   const shareByName = async (p, who, role, perms) => {
     await goTab(p, 'family'); await openShare(p); await p.waitForSelector('#shGo');
@@ -411,6 +441,9 @@ async function suiteFiles() {
     assert(/Files app/.test(await mum.textContent('#view')), 'says the folder is shared from the Files app');
     assert(/iPhone with iCloud Drive: step by step/.test(await mum.textContent('#view')), 'the tutorial for iPhone users is on the cloud picker');
     await mum.click('details[data-grp=howicloud] > summary'); assert(/Collaborate/.test(await mum.textContent('details[data-grp=howicloud]')) && /Manage Shared Folder/.test(await mum.textContent('details[data-grp=howicloud]')), 'it says what to do in the Files app');
+    await mum.click('[data-howsteps=relative]'); await mum.waitForFunction(() => !$('#sheet').hidden);   // (the step-by-step guide for a relative, with the Files app's steps on an iPhone)
+    assert(/Join your family's log/.test(await mum.textContent('#sheet')) && /Install Little Log/.test(await mum.textContent('#sheet')) && /iCloud Drive/.test(await mum.textContent('#sheet')), 'the iCloud steps');
+    await mum.click('#sheet [data-close]'); await mum.waitForFunction(() => $('#sheet').hidden);
     await connect(mum);
     assert(/step by step/.test(await mum.textContent('#view')), 'and on the start-or-join screen');
     assert.equal(await mum.evaluate(() => window.__calls.filter(c => c[0] === 'Browser.open').length), 0, 'no browser opened');

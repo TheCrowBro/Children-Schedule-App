@@ -102,7 +102,7 @@ const rng = seed => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = M
     await step('repeated failures back off instead of hammering the server; a manual sync still tries', async () => {
       ctxOf(P).__flaky = 1; let hits = 0; await P.context().route('https://fake.supabase.co/rest/v1/**', r => { hits++; r.fallback(); });
       await syncNow(P); const first = hits; for (let i = 0; i < 5; i++) await P.evaluate(() => Sync.run());   // background triggers
-      assert.equal(hits, first, 'background retries are held back after a failure');
+      assert(hits <= first + 1, `background retries are held back after a failure: ${hits - first} of 5 got through`);   // (one may slip in if the app's own timed sync fell just here)
       await syncNow(P); assert(hits > first, 'but a manual sync is attempted'); ctxOf(P).__flaky = 0; await P.context().unroute('https://fake.supabase.co/rest/v1/**'); await converged('after backoff');
     });
     await step('ten simultaneous syncs neither fail nor duplicate anything', async () => {

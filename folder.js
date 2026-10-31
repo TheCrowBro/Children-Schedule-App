@@ -863,11 +863,15 @@ const FolderSync = (() => {
       // Who wrote the request is the cloud's word, not the file's: its account must be the person the file claims, and its email is the one shown.
       const wk = `${low(p)}|${revOf(p)}`; let w = wcache.get(wk);
       if (w === undefined) { try { w = (B().writer ? await B().writer(p) : null) || null; } catch (e) { w = null; } if (wcache.size > 200) wcache.clear(); wcache.set(wk, w); }
-      const writerId = w ? await Folder.memberId(Folder.provider, w.account) : null, claimed = String(j.email || '').toLowerCase();
-      const email = (w && w.email) || claimed, forged = !!writerId && writerId !== j.user;
+      // The cloud's word on who wrote the request. The address it gives decides: a request claiming another address is forged. An
+      // account id alone does not condemn: a cloud can name the writer by an id other than the one it told the phone itself (Google
+      // Drive has), so an id that does not match, with no address or the same address, means only that the cloud could not vouch:
+      // the request counts as not attested, and the join code or the security code decides, as before 1.28.
+      const writerId = w ? await Folder.memberId(Folder.provider, w.account) : null, claimed = String(j.email || '').toLowerCase(), wEmail = (w && w.email) || '';
+      const email = wEmail || claimed, forged = !!wEmail && !!claimed && wEmail !== claimed, attested = !!w && (wEmail ? wEmail === claimed : !!writerId && writerId === j.user);
       const byKey = j.invite && mem.invites[j.invite] ? j.invite : null, inv = (byKey && mem.invites[byKey]) || mem.invites[email] || null;   // (filed under the join code, or under the email)
       const r = { id: j.device, device_id: j.device, device_pub: j.pub, device_spub: j.sig || null, user: j.user, email, claimed, display_name: j.name || (inv && inv.name) || '', role: inv ? inv.role : 'caregiver', perms: inv ? inv.perms : null,
-        proof: j.proof || null, invite_code: byKey || email, attested: !!w, forged, qrVerified: false, fingerprint: await E2EE.fingerprint(j.pub, j.sig || null), baby_id: db.meta.babyId, platform: j.platform };
+        proof: j.proof || null, invite_code: byKey || email, attested, forged, qrVerified: false, fingerprint: await E2EE.fingerprint(j.pub, j.sig || null), baby_id: db.meta.babyId, platform: j.platform };
       r.qrVerified = !forged && await E2EE.verifyRequest(r);   // (they typed the join code this phone gave them)
       reqs.push(r);
     }

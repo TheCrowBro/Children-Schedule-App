@@ -2929,5 +2929,22 @@
  "1ip8mia": "Twój nowy telefon",
  "1397uds": "Warto wiedzieć",
  "1mwz5yz": "Poradnik to informacje ogólne, nie porada lekarska dotycząca Twojego dziecka: o to zapytaj pediatrę.",
- "fhaxvj": "Polityka prywatności"
+ "fhaxvj": "Polityka prywatności",
+ "8jsd62": "Stuknij Udostępnij rodzinie, a potem Połącz Dysk Google lub Połącz Dropbox. Telefon otworzy stronę logowania tej chmury: zaloguj się na konto, na którym ma być folder rodziny, i zezwól Little Log na dostęp.",
+ "1sntg3z": "Wpisz swoje imię i dane dziecka i stuknij Utwórz dziennik. W tej chmurze pojawi się folder o nazwie Little Log (imię dziecka), zawierający wyłącznie zaszyfrowane pliki.",
+ "1j4dupd": "Zapisz kod odzyskiwania, który pokazuje aplikacja, i przechowuj go w bezpiecznym miejscu, nie tylko na tym telefonie: to jedyna droga powrotu, gdyby wszystkie telefony przepadły.",
+ "1qkbnop": "Aby kogoś zaprosić: zakładka Rodzina → Udostępnij komuś → adres e-mail jego konta Google lub Dropbox i to, co może robić → Udostępnij. Folder zostaje udostępniony pod tym adresem, a aplikacja pokazuje kod dołączenia dla tej osoby.",
+ "x3emqr": "Przekaż kod dołączenia ustnie lub we własnej wiadomości. Działa jeden raz i dowodzi twojemu telefonowi, że prośba naprawdę pochodzi od tej osoby.",
+ "14c9fyf": "Gdy prośba pojawi się na twoim telefonie, zobaczysz Zweryfikowano, jeśli kod został wpisany: stuknij Zatwierdź. Bez kodu poproś o odczytanie kodu bezpieczeństwa z telefonu tej osoby, zaznacz Zgadza się, a potem Zatwierdź. Zatwierdzenie przekazuje jej telefonowi klucze dziennika.",
+ "1qcglgl": "Aby kogoś usunąć: zakładka Rodzina → imię → Usuń z tego dziennika. Folder przestaje być udostępniony tej osobie, a klucze się zmieniają, więc nic nowego nie dociera na tamten telefon.",
+ "eywn06": "Przyjmij udostępnienie: Dysk Google lub Dropbox wysyła e-mail lub powiadomienie, że udostępniono ci folder o nazwie Little Log.",
+ "111wd80": "Zainstaluj Little Log, stuknij Udostępnij rodzinie, potem Połącz Dysk Google lub Połącz Dropbox i zaloguj się na konto, któremu udostępniono folder.",
+ "urwlvc": "Aplikacja znajduje folder Little Log na tym koncie. Wpisz swoje imię i kod dołączenia od rodzica, a potem stuknij Dołącz obok folderu.",
+ "1doitk8": "Jesteś w środku. Wpisy wędrują przez folder, więc daj telefonowi, który był offline, chwilę na nadrobienie.",
+ "1nf1wxk": "Załóż dziennik dla swojej rodziny",
+ "p83wys": "Dołącz do dziennika swojej rodziny",
+ "yn97rb": "Na Dysku Google lub w Dropboksie, z telefonu z Androidem lub z iPhone'a. Cała rodzina korzysta z tej samej chmury.",
+ "hr67g4": "Wszystko w folderze jest szyfrowane na waszych telefonach, zanim zostanie tam zapisane: ani chmura, ani twórcy Little Log nie mogą tego odczytać.",
+ "74mw5x": "Pierwszy raz? Krok po kroku",
+ "1kz0aia": "Dwa krótkie przewodniki: jeden dla rodzica, który zaczyna dziennik, drugi dla krewnego, który dołącza."
 }

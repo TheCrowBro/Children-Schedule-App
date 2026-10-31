@@ -71,7 +71,9 @@ const monthsAgo = (m, d = 2) => { const t = new Date(); t.setMonth(t.getMonth() 
     let N;
     await step('another phone in the family log gets the meal, foods and all', async () => {
       N = await H.addMember(P, 'nan@x.com', 'caregiver', { view_health: true }, { name: 'Nan' });
-      const got = await N.evaluate(() => db.events.filter(x => x.data && x.data.kind === 'solids').map(x => describe(x)));
+      // (sol0, the trial meal of the pop-up step, was taken out of the log by hand, which a sync in between may have sent: not the app's doing, so it is left out here)
+      const meals = () => N.evaluate(() => db.events.filter(x => !x.deleted && x.id !== 'sol0' && x.data && x.data.kind === 'solids').map(x => describe(x)));
+      let got = await meals(); for (let i = 0; i < 6 && got.length !== 1; i++) { await syncNow(N); got = await meals(); }   // (a sync or two until the log has settled on the new phone)
       assert.deepEqual(got, [['Solids', 'Peanut, Banana, Kiwi purée · A few spoons']]);
     });
 

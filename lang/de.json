@@ -2817,5 +2817,22 @@
  "1ip8mia": "Ein neues eigenes Telefon",
  "1397uds": "Gut zu wissen",
  "1mwz5yz": "Der Ratgeber ist allgemeine Information, kein medizinischer Rat zu Ihrem Kind: dafür fragen Sie Ihre Kinderärztin oder Ihren Kinderarzt.",
- "fhaxvj": "Datenschutzerklärung"
+ "fhaxvj": "Datenschutzerklärung",
+ "8jsd62": "Tippen Sie auf „Mit der Familie teilen“, dann auf „Google Drive verbinden“ oder „Dropbox verbinden“. Ihr Telefon öffnet die Anmeldeseite dieser Cloud: Melden Sie sich mit dem Konto an, das den Familienordner enthalten soll, und erlauben Sie Little Log den Zugriff.",
+ "1sntg3z": "Geben Sie Ihren Namen und die Angaben zum Baby ein und tippen Sie auf „Protokoll erstellen“. In dieser Cloud erscheint ein Ordner namens „Little Log (Name des Babys)“, der nur verschlüsselte Dateien enthält.",
+ "1j4dupd": "Schreiben Sie den Wiederherstellungscode auf, den die App zeigt, und bewahren Sie ihn sicher auf, nicht nur auf diesem Telefon: Er ist der einzige Weg zurück, wenn alle Telefone verloren gehen.",
+ "1qkbnop": "Um jemanden einzuladen: Reiter Familie → „Mit jemandem teilen“ → die E-Mail-Adresse des Google- oder Dropbox-Kontos der Person und was sie darf → „Teilen“. Der Ordner wird mit dieser Adresse geteilt, und die App zeigt einen Beitrittscode für die Person.",
+ "x3emqr": "Nennen Sie der Person den Beitrittscode mündlich oder in einer eigenen Nachricht. Er gilt einmal und beweist Ihrem Telefon, dass die Anfrage wirklich von ihr stammt.",
+ "14c9fyf": "Wenn die Anfrage auf Ihrem Telefon erscheint, steht dort „Bestätigt“, falls der Code eingegeben wurde: Tippen Sie auf „Genehmigen“. Ohne Code bitten Sie die Person, den Sicherheitscode auf ihrem Telefon vorzulesen, haken Sie „Stimmt überein“ an und tippen Sie dann auf „Genehmigen“. Mit der Genehmigung erhält ihr Telefon die Schlüssel des Protokolls.",
+ "1qcglgl": "Um jemanden zu entfernen: Reiter Familie → der Name → „Aus diesem Protokoll entfernen“. Der Ordner wird nicht mehr mit der Person geteilt, und die Schlüssel ändern sich, sodass nichts Neues mehr auf diesem Telefon ankommt.",
+ "eywn06": "Nehmen Sie die Freigabe an: Google Drive oder Dropbox schickt eine E-Mail oder eine Mitteilung, dass ein Ordner namens Little Log mit Ihnen geteilt wurde.",
+ "111wd80": "Installieren Sie Little Log, tippen Sie auf „Mit der Familie teilen“, dann auf „Google Drive verbinden“ oder „Dropbox verbinden“, und melden Sie sich mit dem Konto an, mit dem der Ordner geteilt wurde.",
+ "urwlvc": "Die App findet den Little-Log-Ordner in diesem Konto. Geben Sie Ihren Namen und den Beitrittscode ein, den der Elternteil Ihnen gegeben hat, und tippen Sie dann neben dem Ordner auf „Beitreten“.",
+ "1doitk8": "Sie sind drin. Einträge laufen über den Ordner; geben Sie einem Telefon, das offline war, einen Moment zum Aufholen.",
+ "1nf1wxk": "Ein Protokoll für Ihre Familie anlegen",
+ "p83wys": "Dem Protokoll Ihrer Familie beitreten",
+ "yn97rb": "Mit Google Drive oder Dropbox, von einem Android-Telefon oder einem iPhone aus. Die ganze Familie nutzt dieselbe Cloud.",
+ "hr67g4": "Alles im Ordner wird auf Ihren Telefonen verschlüsselt, bevor es dort gespeichert wird: Weder die Cloud noch die Macher von Little Log können es lesen.",
+ "74mw5x": "Neu hier? Schritt für Schritt",
+ "1kz0aia": "Zwei kurze Anleitungen: eine für den Elternteil, der das Protokoll beginnt, eine für einen Angehörigen, der beitritt."
 }

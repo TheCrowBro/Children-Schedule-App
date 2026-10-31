@@ -219,19 +219,51 @@ const Acct = (() => {
       <div class="howbody"><p class="note">${__h(HOW_ICLOUD.before)}</p>${part(N_('The parent who starts the log'), HOW_ICLOUD.parent)}${part(N_('A relative who joins'), HOW_ICLOUD.relative)}
       <p style="margin:10px 0 4px"><b>${__h('A new phone of your own')}</b></p><p class="note">${__h(HOW_ICLOUD.newPhone)}</p>${part(N_('Good to know'), HOW_ICLOUD.tips)}</div></details>`;
   };
+  /** The two step-by-step guides a newcomer can choose on the first screen (and on the cloud picker and the start-or-join screen):
+      starting the family's log, and joining one. The steps follow the phone: iCloud Drive on an iPhone or iPad (HOW_ICLOUD), Google
+      Drive or Dropbox elsewhere. */
+  const HOW_CLOUD = {
+    parent: [N_("Tap Share with family, then Connect Google Drive or Connect Dropbox. Your phone opens that cloud's sign-in page: sign in to the account that will hold the family folder and allow Little Log."),
+      N_("Type your name and the baby's details and tap Create log. A folder named Little Log (the baby's name) appears in that cloud, holding only encrypted files."),
+      N_('Write down the recovery code the app shows and keep it somewhere safe, not only on this phone: it is the only way back in if every phone is lost.'),
+      N_('To invite someone: Family tab → Share with someone → the email address of their Google or Dropbox account and what they may do → Share. The folder is shared with that address, and the app shows a join code for them.'),
+      N_('Tell them the join code by voice or in a message of your own. It works once, and it proves to your phone that the request is really theirs.'),
+      N_("When their request pops up on your phone it shows Verified if they typed the code: tap Approve. Without a code, ask them to read out the security code their phone shows, tick It matches, then Approve. Approving gives their phone the log's keys."),
+      N_('To take someone off: Family tab → their name → Remove from this log. The folder stops being shared with them and the keys change, so nothing new reaches that phone.')],
+    relative: [N_('Accept the share: Google Drive or Dropbox sends an email or a notification that a folder named Little Log was shared with you.'),
+      N_('Install Little Log, tap Share with family, then Connect Google Drive or Connect Dropbox, and sign in to the account the folder was shared with.'),
+      N_('The app finds the Little Log folder in that account. Type your name and the join code the parent gave you, then tap Join next to the folder.'),
+      N_('Wait for a parent to approve you: the screen updates by itself, or tap Check now. If you had no join code, read out the security code on your screen to the parent.'),
+      N_('You are in. Entries travel through the folder, so give a phone that was offline a moment to catch up.')],
+  };
+  function openHowSteps(who) {
+    const ic = Folder.available().includes('icloud') || Folder.provider === 'icloud', H = ic ? HOW_ICLOUD : HOW_CLOUD, parent = who === 'parent';
+    const close = showSheet(`<h3>${parent ? __h('Start a log for your family') : __h("Join your family's log")}</h3>
+      <p class="note">${ic ? __h(HOW_ICLOUD.before) : __h('On Google Drive or Dropbox, from an Android phone or an iPhone. The whole family uses the same cloud.')}</p>
+      <ol class="steps">${(parent ? H.parent : H.relative).map(s => `<li>${__h(s)}</li>`).join('')}</ol>
+      <p class="note">${__h('Everything in the folder is encrypted on your phones before it is written there: the cloud and the makers of Little Log cannot read it.')}</p>
+      <div class="row"><button class="btn" data-close>${__h('Close')}</button></div>`);
+    $('#sheet').querySelectorAll('[data-close]').forEach(b => { b.onclick = close; });
+  }
+  const howStepsCard = inner => {
+    const b = `<button class="btn" data-howsteps="parent" style="width:100%;margin-top:8px">${__h('Start a log for your family')}</button><button class="btn" data-howsteps="relative" style="width:100%;margin-top:8px">${__h("Join your family's log")}</button>`;
+    return inner ? `<p class="note" style="margin-top:0"><b>${__h('New here? Step by step')}</b></p>${b}` : `<div class="card"><b>${__h('New here? Step by step')}</b><p class="note">${__h('Two short guides: one for the parent who starts the log, one for a relative who joins it.')}</p>${b}</div>`;
+  };
+  const bindHowSteps = () => document.querySelectorAll('[data-howsteps]').forEach(b => { b.onclick = () => openHowSteps(b.dataset.howsteps); });
   /** When the cloud's sign-in lapsed (Google renews it weekly while an app is in testing): sign in again and the sync goes on, nothing cleared. */
   const reconnectHtml = () => (folderMode() && Sync.st.reconnect ? `<div class="note" style="margin-top:6px">⚠️ ${__h('{service} needs you to sign in again.', { service: Folder.label(Folder.provider) })}</div><button class="btn p" id="fReconnect" style="width:100%;margin-top:8px">${__h('Reconnect {service}', { service: Folder.label(Folder.provider) })}</button>` : '');
   const bindReconnect = () => { const b = $('#fReconnect'); if (b) b.onclick = async () => { try { await Folder.connect(Folder.provider); toast(__('Finish signing in in the browser window')); } catch (e) { toast(err(e)); } }; };
   const welcomeHtml = () => (W.step === 'restore' ? restoreHtml() : `<div class="card welcome"><b>${__h('How would you like to use Little Log?')}</b>
     ${tile('wLocal', '🔒', 'sleep', N_('Just this phone'), N_('Everything stays on this phone. You can share it with the family later, from the Family tab.'))}
     ${tile('wShare', '👨‍👩‍👧', 'feed', N_('Share with family'), shareWhy())}
-    ${tile('wRestore', '☁️', 'diaper', N_('Moving from another phone?'), N_('Restore the backup you made there.'))}</div>`);
+    ${tile('wRestore', '☁️', 'diaper', N_('Moving from another phone?'), N_('Restore the backup you made there.'))}</div>${howStepsCard()}`);
   const restoreHtml = () => `<div class="card"><b>☁️ ${__h('Restore a backup')}</b>
     <p class="note">${__h('Type the passphrase you chose when you made the backup, then choose the backup file (from iCloud Drive, Google Drive, Dropbox, OneDrive or wherever you saved it).')}</p>
     <label class="f">${__h('Backup passphrase ({n}+ characters)', { n: Cloud.MIN_PASS })}</label><input id="rsPass" type="password" autocomplete="off">
     <button class="btn p" id="rsFile" style="width:100%;margin-top:12px">${__h('Choose the backup file')}</button><input type="file" id="rsFileIn" accept="application/json,.json" hidden>
     <div class="row"><button class="btn" id="rsBack">${__h('Back')}</button></div>${alertP(W.err)}</div>`;
   function bindWelcome() {
+    bindHowSteps();
     const on = (id, f) => { const e = $(id); if (e) e.onclick = () => { W.back = false; f(); }; };
     on('#wLocal', () => { markWelcome(); db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); });
     on('#wShare', () => { markWelcome(); W.step = cloudFirst() ? 'cloud' : 'choose'; render(); });
@@ -270,11 +302,12 @@ const Acct = (() => {
     <p class="note">${__h('Little Log keeps the log in a folder in your own cloud storage, encrypted on your phones before anything is written there. Nobody else runs a server: you share the folder with the family, and that is who gets in.')}</p>
     ${Folder.available().map(p => `<button class="btn p" data-fconnect="${p}" style="width:100%;margin-top:8px">${__h('Connect {service}', { service: Folder.label(p) })}</button>`).join('')}
     ${Folder.available().includes('icloud') ? `<p class="note">${__h('iCloud Drive: the folder is shared with the family from the Files app, and everyone in the family needs an iPhone or iPad.')}</p>` : `<p class="note">${__h('OneDrive and iCloud Drive are next.')}</p>`}
-    <p class="note">🔐 ${__h('Your cloud account is the key to the family folder: turn on 2-step verification in that account, and ask the family to do the same.')}</p>${howFamilyHtml()}${howICloudHtml()}
+    <p class="note">🔐 ${__h('Your cloud account is the key to the family folder: turn on 2-step verification in that account, and ask the family to do the same.')}</p>${howFamilyHtml()}${howICloudHtml()}${howStepsCard()}
     ${Auth.configured ? `<button class="btn" id="fcServer" style="width:100%;margin-top:8px">${__h('Use a family server instead')}</button>` : ''}
     <button class="btn" id="fcLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>
     <div class="row"><button class="btn" id="fcBack">${__h('Back')}</button></div>${alertP(C.err)}</div>`;
   function bindCloudPick() {
+    bindHowSteps();
     document.querySelectorAll('[data-fconnect]').forEach(b => b.onclick = async () => { C.err = ''; try { if (await Folder.connect(b.dataset.fconnect)) { C.cands = null; W.step = 'choose'; render(); } else toast(__('Finish signing in in the browser window')); } catch (e) { C.err = err(e); render(); } });
     $('#fcBack').onclick = () => { W.step = 'choose'; W.back = true; C.err = ''; render(); };
     $('#fcLocal').onclick = () => { markWelcome(); db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); };
@@ -311,9 +344,10 @@ const Acct = (() => {
         : `${C.cands === null ? `<div class="empty">${__h('Looking…')}</div>` : C.cands.length ? C.cands.map(x => `<div class="stat"><span>${esc(x.name)}</span><button class="btn p" data-fjoin="${esc(x.id)}" style="padding:6px 12px" ${C.busy ? 'disabled' : ''}>${__h('Join')}</button></div>`).join('') : `<p class="note">${__h('Nothing has been shared with {email} yet.', { email: me.email })}</p>`}
       <div class="row"><button class="btn" id="fjCheck">${__h('Check again')}</button></div>`}</div>
     ${alertP(C.err)}
-    <div class="card">${howFamilyHtml()}${howICloudHtml()}<button class="btn" id="fOut" style="width:100%;margin-top:8px">${__h('Disconnect {service}', { service })}</button></div>`;
+    <div class="card">${howStepsCard(true)}${howFamilyHtml()}${howICloudHtml()}<button class="btn" id="fOut" style="width:100%;margin-top:8px">${__h('Disconnect {service}', { service })}</button></div>`;
   };
   function bindFolderOnboard() {
+    bindHowSteps();
     if (C.cands === null && !C.busy) Folder.candidates().then(x => { C.cands = x; }, e => { C.cands = []; C.err = err(e); }).then(() => { if ($('#fjCheck')) render(); });
     const mine = () => { C.mine = $('#oMine').value.trim(); return C.mine; };
     $('#oCreate').onclick = async () => {

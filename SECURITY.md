@@ -53,8 +53,11 @@ Reviewed in October 2026; the list of that review, and what 1.28 did about each 
    put back; each phone remembers the phones the chain reached, so an overwritten grant takes nothing away, and a parent's phone
    restores what it would not believe. The forger is named in the warning, so the parents can remove them.
 2. **A join request said who it was from.** Done: the parent's phone takes the writer of the request from the cloud's own record and
-   marks a request that claims another account (no Approve); a one-time join code, made when the folder is shared and typed on the
-   joining phone, proves the request to the parent's phone (*Verified*) and the keys to the joining phone.
+   marks a request that claims another account (no Approve): it is the address the cloud gives that condemns, since 1.30.0; an
+   account id alone that does not match, with no address or the same one, leaves the request merely unattested (Google Drive named a
+   real parent's phone by an odd id, and the join code or the security code is the right judge then); a one-time join code, made when
+   the folder is shared and typed on the joining phone, proves the request to the parent's phone (*Verified*) and the keys to the
+   joining phone.
 3. **An entry's author was a claim.** Done: an entries file counts only when signed by the phone whose folder it is in, and its rows
    only in that person's name unless they may edit (delete) others' entries.
 4. **Edit access can damage the folder.** Done in part: a parent's phone keeps the last good `littlelog.json`, `keyring.json`,

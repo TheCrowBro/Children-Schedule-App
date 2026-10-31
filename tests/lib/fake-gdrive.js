@@ -20,8 +20,12 @@ function createFakeGoogleDrive() {
   };
   const canWrite = (f, email) => ['owner', 'writer'].includes(role(f, email));
   const who = e => ({ emailAddress: e, permissionId: user(e).permissionId });
+  // How a file's last writer is reported (lastModifyingUser): as is, or with the quirks the real Drive has shown: `id: 'odd'` names the
+  // writer by an id other than the one about.get gave that user; `email: false` leaves the address out.
+  let quirk = null;
+  const whoWrote = e => { const u = who(e); if (!quirk) return u; if (quirk.id === 'odd') u.permissionId = 'odd' + u.permissionId; if (quirk.email === false) delete u.emailAddress; return u; };
   const meta = (f, email) => ({ id: f.id, name: f.name, mimeType: f.mime, size: String(f.bytes.length), headRevisionId: f.head || undefined, md5Checksum: f.head ? 'md5-' + f.head : undefined, parents: f.parents.slice(), trashed: f.trashed, capabilities: { canDelete: f.owner === email, canTrash: f.owner === email },
-    lastModifyingUser: who(f.by || f.owner), owners: [who(f.owner)], ownedByMe: f.owner === email, writersCanShare: f.writersCanShare !== false });
+    lastModifyingUser: whoWrote(f.by || f.owner), owners: [who(f.owner)], ownedByMe: f.owner === email, writersCanShare: f.writersCanShare !== false });
   const subtree = f => { const out = [f]; for (const x of Object.values(files)) if (x.parents[0] === f.id) out.push(...subtree(x)); return out; };
   const unq = s => s.replace(/\\(.)/g, '$1');
   function query(email, q) {
@@ -166,6 +170,7 @@ function createFakeGoogleDrive() {
     by: p => { const f = find(p); return f ? f.by || f.owner : null; },
     /** An account's id, as Drive names it (what the app derives a person's id from). */
     account: email => user(email.toLowerCase()).permissionId,
+    writerQuirk: q => { quirk = q || null; },   // (how lastModifyingUser is reported from now on: { id: 'odd' }, { email: false }, both, or null)
     /** A file emptied by someone with edit access (as another member's "delete" leaves it): gone, as far as the app is concerned. */
     damage: p => { const f = find(p); if (!f) throw new Error('no ' + p); f.bytes = Buffer.alloc(0); f.head = 'r' + (++revs); f.revisions.push({ id: f.head, bytes: f.bytes, time: new Date(clock += 7).toISOString() }); log.push({ seq: ++seq, fileId: f.id, seen: new Set([f.owner]) }); },
     /** The folder as an app from before signing left it: no signatures, no root, no signing keys, no ext on the grants. */
