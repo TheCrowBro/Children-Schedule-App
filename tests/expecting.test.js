@@ -78,6 +78,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert(new RegExp(`2 of ${n} packed`).test(await P.textContent(`${bag} summary`)));
       assert.deepEqual(await P.$$eval(`${bag} [data-bag]:checked`, c => c.map(x => x.dataset.bag)), ['Birth plan', 'A blanket']);
       await P.click(`${bag} [data-bag="Birth plan"]`); assert(new RegExp(`1 of ${n} packed`).test(await P.textContent(`${bag} summary`)));
+      await P.evaluate(() => save(true));   // (written now rather than on the debounce, which a slow machine may not reach before the reload)
       await P.reload(); await P.waitForSelector('.expect');
       assert.deepEqual(await P.$$eval(`${bag} [data-bag]:checked`, c => c.map(x => x.dataset.bag)), ['A blanket'], 'kept on the phone');
       await H.syncNow(D); await D.evaluate(() => render());
