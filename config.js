@@ -11,4 +11,5 @@ window.LL_CONFIG = {
   firstScreen: 'cloud', // with a family server configured too: 'cloud' puts the family's own cloud before the email sign-in on the first screen, '' the sign-in first (the other stays one tap away)
   appScheme: 'app.littlelog.newborn', // must match the app id; the OS uses it to return to the app after cloud sign-in and for invite links
   appStoreId: '',       // the app's number in the App Store (apps.apple.com/app/id…), once it is published: More → Update app opens it on iPhones
+  privacyUrl: '',       // where the privacy policy (PRIVACY.md) is published: More → App updates shows a Privacy policy link once this is set (the stores want the same address)
 };

@@ -15,7 +15,7 @@ function startCluster() {
   const asPg = process.getuid && process.getuid() === 0;
   const run = c => execSync(asPg ? `su postgres -c "${c}"` : c, { stdio: 'pipe' });
   if (asPg) execSync(`chown postgres ${dir}`);
-  run(`${B}/initdb -D ${dir}/data -A trust`);
+  run(`${B}/initdb -D ${dir}/data -A trust -U postgres`);   // (-U: the superuser is "postgres" whoever runs this, as on GitHub's runner)
   run(`${B}/pg_ctl -D ${dir}/data -o '-p ${PORT} -k ${dir} -c listen_addresses=127.0.0.1' -l ${dir}/log start -w`);
   startCluster.stop = () => { try { run(`${B}/pg_ctl -D ${dir}/data stop -m immediate`); } catch (e) {} fs.rmSync(dir, { recursive: true, force: true }); };
   return `postgres://postgres@127.0.0.1:${PORT}/postgres`;

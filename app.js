@@ -2084,6 +2084,7 @@ function guideView() {
   const head = `${doctorHtml()}
   ${Sync.can('health') && kidById(viewKid()) ? recordButton(kidById(viewKid())) : ''}
   <p class="note emer"><b>${__h('Emergency?')}</b> ${older ? __h('Call {sos} for blue lips or face, trouble breathing, a child who is hard to wake, or a seizure.', { sos }) : __h('Call {sos} for blue lips or face, trouble breathing, a baby who is hard to wake, or a seizure.', { sos })}</p>
+  <p class="note">${__h('The Guide is general information, not medical advice about your child: for that, ask your pediatrician.')}</p>
   ${calmLinesHtml()}
   ${cur.length ? `<h2>${__h('Right now')}</h2>${cur.map(nowCard).join('')}` : ''}`;
   const foot = `<p class="note">${__h("General information from AAP, CDC, FDA and NHS parent guidance, not medical advice. Every baby develops at their own pace; if your baby was born early, count from the due date. If you're ever worried, call your pediatrician, you don't need to wait for a checkup.")}</p>
@@ -2789,7 +2790,7 @@ function moreView() {
     <div class="row"><button class="btn" id="impJson">${__h('Restore from JSON')}</button></div>
     <input type="file" id="impFile" accept="application/json" hidden></div>`)}
   ${fold('app', '🌟', N_('App updates'), appVersion ? __('Version {version}', { version: appVersion }) : __('Through the app store'), `<div class="card" id="appCard"><b>${__h('App updates')}</b><p class="note"><span id="appVer"></span>${__h('New versions of Little Log come through the app store.')}</p>
-    <div class="row"><button class="btn" id="appUpdate">${__h('Update app')}</button></div>${crashHtml()}</div>${Acct.serverNote()}`)}
+    <div class="row"><button class="btn" id="appUpdate">${__h('Update app')}</button></div>${crashHtml()}${(window.LL_CONFIG || {}).privacyUrl ? `<p class="note" style="margin-top:10px"><a id="privacyLink" href="${esc((window.LL_CONFIG || {}).privacyUrl)}" target="_blank" rel="noopener">${__h('Privacy policy')}</a></p>` : ''}</div>${Acct.serverNote()}`)}
   ${Sync.isParent() ? `<div class="card"><button class="btn d" id="wipe" style="width:100%">${__h('Delete all entries')}</button></div>` : ''}`;
 }
 /** More → Notifications: the sleep check ("Is Leo still asleep?" after a while, then again a few times) and the quiet hours it keeps
@@ -2904,6 +2905,7 @@ $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) { if (b
 
 function bindMore() {
   $('#appUpdate').onclick = updateApp;
+  const privacy = $('#privacyLink'); if (privacy) privacy.onclick = e => { e.preventDefault(); Native.openExternal(privacy.href); };   // (in the phone app: the phone's browser, not the WebView)
   document.querySelectorAll('[name=crashOn]').forEach(r => r.onchange = () => { if (r.checked) { Crash.setOn(r.value === '1'); render(); } });
   const cs = $('#crashSend'); if (cs) cs.onclick = async () => {
     cs.disabled = true; const r = await Crash.flush();

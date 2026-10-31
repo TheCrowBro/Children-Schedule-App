@@ -14,3 +14,6 @@ ios/App/build/
 *.jks
 .DS_Store
 .claude/worktrees/
+
+# the Android upload key and its passwords (MOBILE.md "Android release")
+android/keystore.properties

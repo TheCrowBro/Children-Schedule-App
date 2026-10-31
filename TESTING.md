@@ -1,7 +1,7 @@
 # Testing
 
 ## What is automated (`npm test`)
-The same suites run in GitHub Actions on every push and pull request ([`.github/workflows/tests.yml`](.github/workflows/tests.yml): the lint, then the suites spread over four jobs).
+The same suites run in GitHub Actions on every push and pull request ([`.github/workflows/tests.yml`](.github/workflows/tests.yml): the lint, then the suites spread over four jobs). The throwaway Postgres the suites start names its superuser `postgres` whoever runs the tests (`tests/lib/pg.js`), so the same code runs as root in a sandbox and as the unprivileged runner on GitHub.
 
 | Suite | What it proves | How |
 |---|---|---|

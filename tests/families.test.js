@@ -137,7 +137,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.equal(pos.iris[1], pos.rose[1], "on the grandmother's row"); assert(Math.abs(pos.iris[0] - pos.jo[0]) > Math.abs(pos.rose[0] - pos.jo[0]), 'further out than the grandmother');
       assert.equal(pos.bert[1], pos.rose[1], 'her partner beside her'); assert.equal(pos.max[1], pos.jo[1], "a parent's cousin on the parents' row");
       assert.deepEqual(await J.evaluate(() => FamilyTree.walk(Sync.st.tree).filter(w => /^g(sib|partner|cousin)$/.test(w.kind)).map(w => w.kind + ':' + w.p.name)), ['gsib:Iris Miller', 'gpartner:Bert', 'gcousin:Max']);
-      assert(!/Iris|Bert|Max/.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
+      assert(!/"(Iris|Bert|Max)"/.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');   // (a name in quotes, as the plain JSON would carry it: a sealed blob is base64, which can hold any three letters by chance)
       await tap(iris); await J.waitForSelector('#tcEdit'); await J.click('#tcEdit'); await J.waitForSelector('#rlRemove'); await J.click('#rlRemove'); await J.waitForFunction(() => document.querySelector('#sheet').hidden);
       const after = (await pic()).map(n => n.label); assert(!after.some(l => /^(Iris|Bert|Max)\b/.test(l)), 'gone with her: ' + JSON.stringify(after));
       assert((await pic()).some(n => n.key === '+gsib:' + rose), 'the bud is back');
@@ -178,7 +178,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert.equal(await J.$$eval('.ftreesvg .heart.step', h => h.length), 2, 'two small open hearts');
       await tap(pat); assert(/Step-parent · Jo's side/.test(await J.textContent('#sheet')) && /Jo's later partner · the children's step-parent/.test(await J.textContent('#sheet')), await J.textContent('#sheet')); await J.click('#sheet [data-close]');
       await tap(await keyOf('Kim')); assert(/Pat's child · the children's step-brother or step-sister/.test(await J.textContent('#sheet'))); await J.click('#sheet [data-close]');
-      assert(!/Sue|Mark|Lena|Pat|Kim/.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
+      assert(!/"(Sue|Mark|Lena|Pat|Kim)"/.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
       // removing Sue takes Mark (her own child) but not Lena (Rose's); then everyone else added here goes, for the steps that follow
       await tap(sue); await J.waitForSelector('#tcEdit'); await J.click('#tcEdit'); await J.waitForSelector('#rlRemove'); await J.click('#rlRemove'); await J.waitForFunction(() => document.querySelector('#sheet').hidden);
       const after = await J.evaluate(() => FamilyTree.walk(Sync.st.tree).map(w => w.kind + ':' + w.p.name + (w.p.via ? '/via' : '')));
@@ -226,7 +226,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       k = await kinds(); assert(k.includes('gcousin:Ivy<Nell') && k.includes('gp:Pat<Jo') && !k.some(s => s.startsWith('pstep:')), JSON.stringify(k));
       x = await at(); assert.equal(x.Pat[1], x['Rose Miller'][1], "on the grandparents' row"); assert.equal(await J.$$eval('.ftreesvg .heart.step', h => h.length), 0, 'no small open heart left');
       await tap(await keyOf('Pat')); assert(/Grandparent · Jo's side/.test(await J.textContent('#sheet')), await J.textContent('#sheet')); await J.click('#sheet [data-close]');
-      assert(!/Nell|Ivy|Pat|Dan/.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
+      assert(!/"(Nell|Ivy|Pat|Dan)"/.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
       // the tree as it was, for the steps that follow
       await J.evaluate(() => Sync.editTree(t => { for (const n of ['Pat', 'Nell']) { const w = FamilyTree.walk(t).find(x => x.p.name === n); if (w) FamilyTree.remove(t, w.p.id); } }));
       await J.evaluate(() => render());
@@ -293,7 +293,7 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       await J.click('#sheet input[name=ftKind][value=banyan]'); await J.click('#ftKindSave');
       await J.waitForFunction(() => /Banyan · South Asia/.test(document.querySelector('.ftreeimg .fkind').textContent));
       assert.equal(await J.evaluate(() => Sync.st.tree.species), 'banyan');
-      assert(!/banyan/i.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
+      assert(!/"banyan"/i.test((await H.q('select blob from trees where baby_id=$1', [ids.jo]))[0].blob), 'sealed like the rest');
       // the watercolour is rendered once into a picture (its filters are slow to rasterize, and were run again for every tile a scroll uncovered), kept, and a redraw starts from it
       await J.waitForFunction(() => { const p = document.querySelector('.ftreewrap .ftpaint'); return p && p.tagName === 'IMG' && /^blob:/.test(p.src) && p.complete && p.naturalWidth > 0; }, null, { timeout: 30000 });
       assert(await J.evaluate(() => getComputedStyle(document.querySelector('.ftreesvg')).position === 'absolute' && !document.querySelector('.ftreewrap svg.ftpaint')), 'a watercolour as a picture, with everyone over it');

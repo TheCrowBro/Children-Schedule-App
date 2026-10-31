@@ -121,5 +121,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- Export compliance (MOBILE.md, "iOS release"): the app's cryptography is the operating system's own standard algorithms
+	     (WebKit's Web Crypto and the Keychain), used to protect the user's own data, and HTTPS; nothing proprietary. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

@@ -7,8 +7,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        excludeStorageFromBackup()
         return true
+    }
+
+    /** The WebView keeps the log decrypted in Library/WebKit so the app can show it. That folder is kept out of iCloud and computer
+        backups, where it would otherwise sit in clear (SECURITY.md, finding 7); the keys are in the Keychain, device-only, and
+        never in a backup. The flag is set at launch (the folder is made first if WebKit has not made it yet) and again when the
+        app goes to the background, in case WebKit replaced the folder meanwhile. */
+    private func excludeStorageFromBackup() {
+        let fm = FileManager.default
+        guard let library = fm.urls(for: .libraryDirectory, in: .userDomainMask).first else { return }
+        var url = library.appendingPathComponent("WebKit", isDirectory: true)
+        if !fm.fileExists(atPath: url.path) {
+            try? fm.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? url.setResourceValues(values)
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -17,8 +33,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+        excludeStorageFromBackup()
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {

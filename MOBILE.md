@@ -45,12 +45,26 @@ npm test            # database + end-to-end tests
   create a log, scan an invite, approve a second phone, remove a phone, and restore with the recovery code.
 
 ## Android release
-```bash
-npm run aab   # → android/app/build/outputs/bundle/release/app-release.aab
-```
-Create an upload keystore once (`keytool -genkey -v -keystore upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload`),
-keep it **out of git** (already ignored) and back it up, configure signing in `android/app/build.gradle` or use Play App Signing.
-Upload the `.aab` in the Play Console (one-off $25 developer fee).
+1. Make the **upload key** once, somewhere outside the repository, and back it up (a lost upload key can be reset in the Play Console,
+   but only with Google's help; the Play Console itself holds the key that signs what phones install):
+   ```bash
+   keytool -genkeypair -v -keystore ~/keys/littlelog-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+2. Tell the build where it is: copy `android/keystore.properties.example` to `android/keystore.properties` (git-ignored) and fill in
+   the path, the passwords and the alias; or set `LL_KEYSTORE`, `LL_KEYSTORE_PASSWORD`, `LL_KEY_ALIAS` and `LL_KEY_PASSWORD` in the
+   environment (what a build machine would do). `android/app/build.gradle` signs the release build with it when either is present,
+   and makes an unsigned bundle otherwise, which the Play Console refuses.
+3. Build the bundle:
+   ```bash
+   npm run aab   # → android/app/build/outputs/bundle/release/app-release.aab
+   jarsigner -verify android/app/build/outputs/bundle/release/app-release.aab   # "jar verified"
+   ```
+4. Upload the `.aab` in the Play Console (one-off $25 developer fee), with Play App Signing on (the default for new apps): Google keeps
+   the app signing key and your upload key only has to match what you registered. [LAUNCH.md](LAUNCH.md) has the order of everything
+   around this (the account, the closed test, the listing).
+
+`versionCode` goes up by one with every upload (`scripts/`-free: it is set by hand in `build.gradle` beside `versionName`); the Play
+Console refuses a bundle whose code it has seen.
 
 ## iOS release (needs a Mac)
 `npm run ios`, set your Team and Bundle Identifier in Xcode (*Signing & Capabilities*), then *Product → Archive → Distribute App → App Store Connect*.
@@ -58,18 +72,32 @@ Needs an Apple Developer account ($99/year). The iOS project is generated and co
 but has **not** been compiled in this repo's dev sandbox; expect to open it once on a Mac, let Xcode resolve the Swift packages and
 sort out signing.
 
+Two things in the project that App Store Connect asks about:
+* **Export compliance.** `Info.plist` sets `ITSAppUsesNonExemptEncryption` to `false`: the app's cryptography is the operating
+  system's own standard algorithms (WebKit's Web Crypto for the end-to-end encryption, the Keychain for the keys) and HTTPS, nothing
+  proprietary, which Apple's questionnaire treats as exempt from export documentation (no ERN or CCATS). The US rules can still ask
+  the developer for a yearly *self-classification report* to the BIS for mass-market encryption; read Apple's *Complying with
+  Encryption Export Regulations* page when you first submit and, if your reading differs, set the key to `true` and answer the
+  questionnaire in App Store Connect instead.
+* **Backups.** `AppDelegate` keeps `Library/WebKit` (where the WebView holds the decrypted log) out of iCloud and computer backups
+  (SECURITY.md, finding 7). Not yet verified on a device.
+
 ## Store requirements already handled
 * In-app **account deletion** (Apple 5.1.1(v), Google Play). A sole parent's deletion removes the log (the app warns first).
 * Camera permission text (QR scanner) and Face ID text; Android `CAMERA` (optional hardware) and `USE_BIOMETRIC`.
 * Cloud backups encrypted on the phone.
 
 ## Still needed from you for the stores
-* A **privacy policy** URL covering: email address, children's health-related entries (end-to-end encrypted; the provider cannot read them), who can see them (roles),
-  the activity log, Supabase as processor, and how to delete everything. Say plainly that a lost recovery code means unrecoverable data.
-* Store listing, screenshots, content rating, *App Privacy* (Apple) / *Data safety* (Google): email + health/fitness-type data entered by
-  the user; no tracking, no ads.
-* Apple reviews web-wrapper apps strictly (guideline 4.2). Camera scanning, biometrics, Keychain, native sharing and offline use help;
-  local reminder notifications would strengthen the case.
+The whole order, with the accounts, waits and costs, is in [LAUNCH.md](LAUNCH.md). In short:
+* A **privacy policy** at a web address: [PRIVACY.md](PRIVACY.md) is the draft for the store build (no server of ours; the family's
+  own cloud folder; what the cloud sees; deletion; the recovery code). Publish it, put the address in `config.js` as `privacyUrl`
+  (More → App updates then shows a *Privacy policy* link) and give the same address to both stores.
+* The **listing**: [store/listing.md](store/listing.md) has the title, descriptions, category, keywords and the suggested
+  *Data safety* (Google) / *App Privacy* (Apple) and content-rating answers; `store/android` and `store/ios` hold the screenshots and
+  the feature graphic (`node scripts/store-shots.js <demo.html>` remakes them from the demo).
+* A **support email address** that is not your personal one: both stores and the Google consent screen show it to users.
+* Apple reviews web-wrapper apps strictly (guideline 4.2). Camera scanning, biometrics, Keychain, native sharing, offline use and the
+  local sleep-check notifications are the case that this is an app, not a website.
 
 ## Known limits / next steps
 * **CSP and Capacitor-Android:** Capacitor injects its bridge as an inline `<script>` right after `<head>`. The policy is a `<meta>` tag

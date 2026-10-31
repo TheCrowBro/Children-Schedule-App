@@ -401,6 +401,9 @@ Every push and pull request runs the lint and all the suites in GitHub Actions (
 - **[FOLDER.md](FOLDER.md)**: the family folder: what each file holds, how a sync goes, who may do what, leaving and recovery, the clouds
 - **[TESTING.md](TESTING.md)**: what the automated tests prove, what they can't, and the physical-device release checklist
 - **[MOBILE.md](MOBILE.md)**: building and releasing the Android and iOS apps, store checklist
+- **[LAUNCH.md](LAUNCH.md)**: getting into the stores, in order: the accounts, keys, approvals, waits and costs, and what is already done
+- **[PRIVACY.md](PRIVACY.md)**: the privacy policy for the store build, to publish at the address `privacyUrl` in `config.js` points to
+- **[store/](store/)**: the listing text, the Data safety / App Privacy answers and the screenshots for the stores
 - **[lang/README.md](lang/README.md)**: translating, checking the catalogues and adding a language
 - **[SECURITY.md](SECURITY.md)**: the security model, the October 2026 review with its findings, and the deployment checklist
 

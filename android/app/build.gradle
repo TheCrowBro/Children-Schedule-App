@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+// Release signing (MOBILE.md, "Android release"): the upload key never enters the repository. It is read from
+// android/keystore.properties (git-ignored; android/keystore.properties.example shows the four lines) or, failing that, from the
+// environment: LL_KEYSTORE, LL_KEYSTORE_PASSWORD, LL_KEY_ALIAS, LL_KEY_PASSWORD. Without either, `bundleRelease` makes an unsigned
+// bundle, which the Play Console refuses; `npm run apk` (the debug build) is signed with the debug key as before.
+def keystoreProps = new Properties()
+def keystorePropsFile = rootProject.file('keystore.properties')
+if (keystorePropsFile.exists()) keystorePropsFile.withInputStream { keystoreProps.load(it) }
+def uploadKey = [
+    storeFile: keystoreProps['storeFile'] ?: System.getenv('LL_KEYSTORE'),
+    storePassword: keystoreProps['storePassword'] ?: System.getenv('LL_KEYSTORE_PASSWORD'),
+    keyAlias: keystoreProps['keyAlias'] ?: System.getenv('LL_KEY_ALIAS'),
+    keyPassword: keystoreProps['keyPassword'] ?: System.getenv('LL_KEY_PASSWORD'),
+]
+def hasUploadKey = uploadKey.storeFile && uploadKey.storePassword && uploadKey.keyAlias && uploadKey.keyPassword
+
 android {
     namespace = "app.littlelog.newborn"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +22,8 @@ android {
         applicationId "app.littlelog.newborn"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 48
-        versionName "1.29.1"
+        versionCode 49
+        versionName "1.29.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +31,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasUploadKey) {
+            release {
+                storeFile rootProject.file(uploadKey.storeFile)
+                storePassword uploadKey.storePassword
+                keyAlias uploadKey.keyAlias
+                keyPassword uploadKey.keyPassword
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasUploadKey) signingConfig signingConfigs.release
         }
     }
 }
