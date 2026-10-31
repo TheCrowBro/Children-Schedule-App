@@ -11,5 +11,6 @@ import { registerPlugin } from '@capacitor/core';
 
 const Insets = registerPlugin('Insets');
 const Calendar = registerPlugin('Calendar');   // the app's own Android plugin (InsetsPlugin.java): the system bars over the page
+const Folder = registerPlugin('Folder');       // the app's own iOS plugin (FolderPlugin.swift): a folder in the Files app (iCloud Drive) for the family folder
 
-window.LLPlugins = window.LLPlugins || { SecureStorage, KeychainAccess, BiometricAuth, App, Browser, Filesystem, Share, LocalNotifications, Insets, Calendar };
+window.LLPlugins = window.LLPlugins || { SecureStorage, KeychainAccess, BiometricAuth, App, Browser, Filesystem, Share, LocalNotifications, Insets, Calendar, Folder };

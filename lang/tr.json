@@ -2781,5 +2781,18 @@
  "zmfqxo": "Bu klasörü bulutunuzda istediğiniz yere taşıyabilir ve adını değiştirebilirsiniz; yeter ki adı hâlâ \"Little Log\" ile başlasın: bir akrabanın telefonu katılırken onu böyle bulur.",
  "1vkr76e": "Lütfen bu klasörün içindeki hiçbir şeyin adını değiştirmeyin, taşımayın ya da silmeyin: ne dosyaları ne de devices, events, join, keys ve media adlı klasörleri. Telefonlar onları adlarıyla bulur. Adı değiştirilen bir klasör kayıtları herkesin telefonundan kaybettirir; silinen dosyalar günlüğü tamamen yok edebilir.",
  "znfob5": "Bu klasörü bulutunuzdan paylaşmayın: Little Log'daki Aile sekmesinden paylaşın; orası kişiye katılım kodunu da verir.",
- "17g4d1m": "Yanlışlıkla bir şey değiştirildiyse geri koyun (bulutunuzun çöp kutusu veya sürüm geçmişi yardımcı olabilir): bir ebeveynin telefonu sonraki eşitlemede elinden geleni onarır."
+ "17g4d1m": "Yanlışlıkla bir şey değiştirildiyse geri koyun (bulutunuzun çöp kutusu veya sürüm geçmişi yardımcı olabilir): bir ebeveynin telefonu sonraki eşitlemede elinden geleni onarır.",
+ "1mt7w69": "iCloud Drive: klasör aileyle Dosyalar uygulamasından paylaşılır ve ailedeki herkesin bir iPhone ya da iPad'i olmalıdır.",
+ "foj4hv": "{service} bağlandı",
+ "rb3hf7": "Little Log klasörünün iCloud Drive'da nerede oluşturulacağını siz seçersiniz.",
+ "1ksylvc": "Bir ebeveyn aile klasörünü sizinle Dosyalar uygulamasından paylaşır (Paylaş → Ortak Çalış) ve size bir katılım kodu söyler. Paylaşımı Dosyalar'da kabul edin, sonra klasörü burada seçin.",
+ "19e33gm": "Paylaşılan klasörü seç…",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Kişiyi Dosyalar uygulamasında klasörden de çıkarın: basılı tutun, Paylaşılan Klasörü Yönet.",
+ "1mtbk83": "Klasör Dosyalar uygulamasında paylaşılır: iCloud Drive → Little Log klasörüne basılı tutun → Paylaş → Ortak Çalış ve kişinin Apple Kimliği e-postasını ekleyin. Katılım kodu burada oluşturulur; ona söyleyin. Little Log'u açınca klasörü seçer, kodu yazar ve siz onu burada onaylarsınız.",
+ "1ppwpnr": "örn. Babaanne",
+ "1tzscmn": "Dosyalar'da paylaş ve katılım kodu oluştur",
+ "cjhk5s": "Kişinin adını girin",
+ "lfwb2v": "Klasöre ulaşılamadı.",
+ "1mi3el8": "Klasör için bir yer seçilmedi."
 }

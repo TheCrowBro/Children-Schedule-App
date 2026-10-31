@@ -1,6 +1,8 @@
 // The family folder: the family's log in their own cloud storage, with no server of ours. Three phones (three cloud accounts) share
 // one folder through a fake of the cloud's API (tests/lib/fake-dropbox.js, tests/lib/fake-gdrive.js); the app is built without a
 // family server, as the store build is. The whole life of a family folder is walked once per cloud: Dropbox, then Google Drive,
+// then iCloud Drive through the Files app (a fake of the app's own folder plugin: no sign-in, a folder picked or made where the
+// user chooses, shared from the Files app, people invited by name with a join code),
 // including what a member's phone with a modified app could try (rewriting the family list, the tree or the keys, writing entries
 // in another's name, a request that claims to be someone else, deleting the key files) and how the other phones hold up.
 //   node tests/folder.test.js            (FOLDER_CLOUD=dropbox or =google runs one)
@@ -8,6 +10,7 @@ const assert = require('assert');
 const { setup } = require('./lib/harness');
 const { createFakeDropbox } = require('./lib/fake-dropbox');
 const { createFakeGoogleDrive } = require('./lib/fake-gdrive');
+const { createFakeFiles } = require('./lib/fake-icloud');
 let ok = 0, failed = 0;
 const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', name); } catch (e) { failed++; console.log('✗', name, '\n   ', (e.stack || e.message || e).toString().split('\n').slice(0, 4).join('\n    ')); } };
 
@@ -143,7 +146,7 @@ async function suite(cloud) {
     });
     assert.equal(signerOf('members.json'), await devOf(nan), "Nan's copy is in the folder");
     await syncNow(mum);
-    assert(/family list/.test(await mum.evaluate(() => Sync.st.warn)) && /family tree/.test(await mum.evaluate(() => Sync.st.warn)), 'Mum\'s phone says what it would not believe: ' + await mum.evaluate(() => Sync.st.warn));
+    assert((/family list/.test(await mum.evaluate(() => Sync.st.warn)) && /family tree/.test(await mum.evaluate(() => Sync.st.warn))) || await mum.evaluate(() => Sync.st.repaired >= 2), 'Mum\'s phone says what it would not believe, or already put it back: ' + await mum.evaluate(() => Sync.st.warn + ' / ' + Sync.st.repaired));   // (a sync of its own may have come first)
     assert.deepEqual(await mum.evaluate(() => Sync.st.people.map(p => [p.display_name, p.role]).sort()), [['Dad', 'parent'], ['Mum', 'parent'], ['Nan', 'caregiver']], 'Nan is still a caregiver on Mum\'s phone');
     assert.equal(await mum.evaluate(() => Sync.st.tree.parents.flatMap(x => x.gp.map(g => g.name)).join()), 'Rose', 'the stranger never reached the tree');
     assert(await mum.evaluate(() => Sync.st.repaired >= 2), 'put back: ' + await mum.evaluate(() => Sync.st.repaired));
@@ -368,8 +371,142 @@ async function suite(cloud) {
   await H.close();
 }
 
+/** iCloud Drive: the Files app's folder, through the app's own plugin (faked). Differs from the clouds in what the family does by hand:
+    sharing and unsharing happen in the Files app (the fake's shareWith / unshareWith stand for that), a relative picks the shared folder
+    in the Files app's picker (willPick), nobody's email is known (people are invited by name, found again by their join code), and the
+    cloud says nothing about who wrote a request. */
+async function suiteFiles() {
+  const H = await setup({ port: 8163, noDb: true, config: { appScheme: 'app.littlelog.newborn' } });   // (no cloud keys: iCloud Drive needs none; the folder plugin is the fake)
+  const fake = createFakeFiles(), sleep = H.sleep, syncNow = H.syncNow, entries = H.entries, name = fake.label;
+  console.log(`\n-- ${name} (the Files app) --`);
+  const phone = (email, opts = {}) => H.device({ welcome: true, ...opts, routes: ctx => fake.install(ctx, email) });
+  const connect = async p => { await p.click('[data-fconnect=icloud]'); await p.waitForSelector('#oCreate'); };
+  const toCloud = async p => { await p.waitForSelector('#wShare'); await p.click('#wShare'); await p.waitForSelector('[data-fconnect=icloud]'); await connect(p); };
+  const goTab = async (p, t) => { await p.click(`[data-tab=${t}]`); await sleep(80); };
+  const openShare = async p => { if (!(await p.evaluate(() => (document.querySelector('details.secshare') || {}).open))) await p.click('details.secshare > summary'); };
+  const closeSheets = p => p.evaluate(() => { if (!$('#sheet').hidden) { $('#sheet').hidden = $('#sheetBack').hidden = true; $('#sheet').innerHTML = ''; } });
+  const sealed = (text, words) => words.every(w => !text.includes(w));
+  const add = (p, e) => p.evaluate(e => { const k = kids()[0].id; db.events.push({ note: '', updated: stamp(), by: Auth.id, child: k, ...e }); save(); }, e);
+  const shareByName = async (p, who, role, perms) => {
+    await goTab(p, 'family'); await openShare(p); await p.waitForSelector('#shGo');
+    await p.fill('#shEmail', who); await p.click(`input[name=invrole][value=${role}]`);
+    for (const [k, v] of Object.entries(perms || {})) { const c = await p.$(`input[name=invperm][value=${k}]`); if (c && (await c.isChecked()) !== v) await c.click(); }
+    await p.click('#shGo'); await p.waitForFunction(() => /join code: [A-Z2-9]{4}-[A-Z2-9]{4}/.test(document.querySelector('#toast').textContent));
+    const code = /join code: ([A-Z2-9]{4}-[A-Z2-9]{4})/.exec(await p.textContent('#toast'))[1]; await p.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    return code;
+  };
+  const joinWith = async (p, who, code, email) => {   // the Files app: the folder is picked there
+    await p.fill('#oMine', who); if (code) await p.fill('#oJoinCode', code);
+    fake.willPick(email); await p.click('#fjPick'); await p.waitForSelector('#wCheck');
+  };
+  let mum, dad, nan, recoveryCode;
+
+  await step(`${name} on the first screen connects at once (no browser, no sign-in); a parent starts the log: the folder is made where she chooses, with the keys, the recovery key, the children, the family list and the README in it, all but the README scrambled`, async () => {
+    mum = await phone('mum@x.com');
+    await mum.waitForSelector('#wShare'); await mum.click('#wShare'); await mum.waitForSelector('[data-fconnect=icloud]');
+    assert(/Files app/.test(await mum.textContent('#view')), 'says the folder is shared from the Files app');
+    await connect(mum);
+    assert.equal(await mum.evaluate(() => window.__calls.filter(c => c[0] === 'Browser.open').length), 0, 'no browser opened');
+    assert(/iCloud Drive connected/.test(await mum.textContent('#view')), 'connected, no email to show');
+    await mum.fill('#oMine', 'Mum'); await mum.fill('#oName', 'Leo'); await mum.click('input[name=oSex][value=boy]');
+    await mum.click('#oCreate'); await mum.waitForSelector('#rcDone', { timeout: 20000 });
+    recoveryCode = (await mum.textContent('#view .code')).trim(); assert(/^[A-Z2-9]{4}(-[A-Z2-9]{4}){7}$/.test(recoveryCode), 'a recovery code: ' + recoveryCode);
+    await mum.click('input[name=rcAck]'); await mum.click('#rcDone'); await mum.waitForSelector('#tabs');
+    const fo = fake.only(); assert.equal(fo.owner, 'mum@x.com'); assert(/^Little Log/.test(fo.name), fo.name);
+    const paths = fake.paths();
+    for (const p of ['littlelog.json', 'keyring.json', 'recovery.json', 'profile.json', 'members.json', 'README.txt']) assert(paths.includes(p), p + ' in ' + paths.join(' '));
+    for (const p of ['profile.json', 'members.json', 'recovery.json', 'keyring.json']) assert(sealed(fake.text(p), ['Leo', 'Mum', 'mum@x.com']), p + ' holds no plain names');
+    await syncNow(mum); assert.equal(await mum.evaluate(() => Sync.st.state), 'ok'); assert.equal(await mum.evaluate(() => db.meta.role), 'parent');
+  });
+
+  await step('an entry becomes a sealed events file; a sync with nothing new is one listing of the folder', async () => {
+    await add(mum, { id: 'm-feed-1', type: 'feed', ts: Date.now() - 3600e3, data: { kind: 'bottle', ml: 120 }, note: 'first bottle' });
+    await syncNow(mum);
+    const ev = fake.paths().filter(p => /^events\//.test(p)); assert.equal(ev.length, 1, JSON.stringify(fake.paths()));
+    assert(sealed(fake.text(ev[0]), ['first bottle', '"kind"', '120']), 'sealed');
+    const n = fake.calls.length; await syncNow(mum); assert.deepEqual(fake.calls.slice(n), fake.idle, 'nothing new: ' + fake.calls.slice(n).join(','));
+  });
+
+  let dadCode;
+  await step("sharing by name: Mum shares with Dad (a parent) from the Family tab; the Files app's sharing opens (she adds him there), and she gets his join code; the invitation shows his name and the code", async () => {
+    dadCode = await shareByName(mum, 'Dad', 'parent');
+    assert(fake.calls.includes('share-sheet'), "the Files app's sharing opened");
+    fake.shareWith('dad@x.com');   // (what Mum does in the share sheet: Collaborate, add his Apple ID)
+    await mum.waitForFunction(() => /Dad/.test(document.querySelector('#view').textContent) && /Shared, not joined yet/.test(document.querySelector('#view').textContent));
+    assert((await mum.textContent('#view')).includes(dadCode), 'the code is shown for later');
+  });
+
+  await step('Dad installs the app, connects iCloud Drive, types the join code and picks the shared folder in the Files app; his request shows Verified on Mum\'s phone, she approves without a code to compare, and he is in as a parent; entries flow both ways', async () => {
+    dad = await phone('dad@x.com'); await toCloud(dad);
+    assert(/Choose the shared folder/.test(await dad.textContent('#view')), 'the join card says to choose the folder');
+    await joinWith(dad, 'Dad', dadCode, 'dad@x.com');
+    await syncNow(mum); await mum.waitForFunction(() => Sync.st.requests.length === 1);
+    const r = await mum.evaluate(() => ({ ...Sync.st.requests[0], fingerprint: undefined }));
+    assert(r.qrVerified && r.display_name === 'Dad' && r.role === 'parent' && !r.attested && !r.forged, 'verified by the code, no email: ' + JSON.stringify(r));
+    await closeSheets(mum); await mum.evaluate(() => Acct.promptRequests()); await closeSheets(mum);
+    await goTab(mum, 'family'); await mum.waitForSelector('#view [data-approve]'); await mum.click('#view [data-approve]'); await mum.waitForFunction(() => /Approved/.test(document.querySelector('#toast').textContent));
+    assert(!/Shared, not joined yet/.test(await mum.textContent('#view')), 'the invitation is used up');
+    await dad.click('#wCheck'); await dad.waitForSelector('#tabs', { timeout: 20000 }); await syncNow(dad);
+    assert.equal(await dad.evaluate(() => db.meta.role), 'parent'); assert.equal(await dad.evaluate(() => db.meta.unverified), undefined, 'the keys came with the proof');
+    assert.deepEqual((await entries(dad)).map(e => e.id), ['m-feed-1']);
+    await add(dad, { id: 'd-sleep-1', type: 'sleep', ts: Date.now() - 7200e3, end: Date.now() - 5400e3, data: {}, note: 'nap' });
+    await syncNow(dad); await syncNow(mum);
+    assert.deepEqual((await entries(mum)).map(e => e.id).sort(), ['d-sleep-1', 'm-feed-1']);
+    assert.equal(await mum.evaluate(() => Sync.nameOf(db.events.find(e => e.id === 'd-sleep-1').by)), 'Dad');
+  });
+
+  await step('Nan joins as a caregiver without health access, with her own join code (on iCloud Drive the code is what ties a request to its invitation: no email is known); a health note never reaches her phone', async () => {
+    await add(mum, { id: 'm-health-1', type: 'health', ts: Date.now() - 1800e3, data: { symptoms: ['fever'], temp: 38.2 }, note: 'warm' }); await syncNow(mum);
+    const nanCode = await shareByName(mum, 'Nan', 'caregiver', { view_health: false }); fake.shareWith('nan@x.com');
+    nan = await phone('nan@x.com'); await toCloud(nan); await joinWith(nan, 'Nan', nanCode, 'nan@x.com');
+    await syncNow(mum); await mum.waitForFunction(() => Sync.st.requests.length === 1);
+    const req = await mum.evaluate(() => Sync.st.requests[0]); assert.equal(req.role, 'caregiver'); assert.equal(req.perms.view_health, false); assert(req.qrVerified, 'verified by her code');
+    await mum.evaluate(r => Sync.decide(r, true), req); await closeSheets(mum);
+    await nan.click('#wCheck'); await nan.waitForSelector('#tabs', { timeout: 20000 }); await syncNow(nan);
+    await syncNow(dad); await closeSheets(dad);
+    assert.equal(await nan.evaluate(() => db.meta.role), 'caregiver'); assert.equal(await nan.evaluate(() => E2EE.hasHealthKey(db.meta.babyId)), false);
+    assert.deepEqual((await entries(nan)).map(e => e.id).sort(), ['d-sleep-1', 'm-feed-1'], 'the health note stays out');
+  });
+
+  await step("the signatures hold over plain files too: Nan's phone rewrites the family list making herself a parent; Mum's phone ignores it and puts the list back", async () => {
+    await nan.evaluate(async () => {
+      const b = db.meta.babyId, m = JSON.parse(JSON.stringify(Sync.members())); m.members[Auth.id].role = 'parent'; m.members[Auth.id].perms = null;
+      const { blob, epoch } = await E2EE.sealDoc(b, 'members', m);
+      await Folder.write('members.json', await Folder.signed(b, 'members', 'members.json', { v: 2, epoch, blob, updated: Date.now(), by: Auth.id, seq: 50 }), 'overwrite');
+    });
+    await syncNow(mum);
+    assert(/family list/.test(await mum.evaluate(() => Sync.st.warn)) || await mum.evaluate(() => Sync.st.repaired >= 1), 'said, or already put back: ' + await mum.evaluate(() => Sync.st.warn + ' / ' + Sync.st.repaired));   // (a sync of its own may have come first)
+    assert.equal(await mum.evaluate(() => Sync.st.people.find(p => p.display_name === 'Nan').role), 'caregiver');
+    assert.equal((JSON.parse(fake.text('members.json')).s || {}).d, await mum.evaluate(() => E2EE.device.id), "Mum's phone put it back");
+    await syncNow(nan); assert.equal(await nan.evaluate(() => db.meta.role), 'caregiver');
+  });
+
+  await step("a deleted keyring.json comes back from Mum's phone; removing Nan changes the keys, and once Mum takes her off the folder in the Files app her phone loses the log at its next sync", async () => {
+    fake.damage('keyring.json'); await syncNow(mum); assert(fake.paths().includes('keyring.json'), 'back');
+    const ep = JSON.parse(fake.text('keyring.json')).epoch, nanId = await nan.evaluate(() => Auth.id);
+    await goTab(mum, 'family'); await mum.waitForSelector(`[data-person="${nanId}"]`); await mum.click(`[data-person="${nanId}"]`); await mum.waitForSelector('#pRemove'); await mum.click('#pRemove');
+    await mum.waitForFunction(() => document.querySelector('#sheet').hidden && !Sync.st.people.some(p => p.display_name === 'Nan'), { timeout: 30000 });
+    assert.equal(JSON.parse(fake.text('keyring.json')).epoch, ep + 1, 'new keys');
+    fake.unshareWith('nan@x.com');   // (what Mum does in the Files app: Manage shared folder → remove)
+    await nan.evaluate(() => Sync.run(true)); await nan.waitForFunction(() => !db.meta.babyId, { timeout: 15000 });
+    assert.equal(await nan.evaluate(() => db.events.length), 0, 'nothing of the log stays');
+    await add(mum, { id: 'm-feed-2', type: 'feed', ts: Date.now() - 100e3, data: { kind: 'bottle', ml: 100 } }); await syncNow(mum); await syncNow(dad);
+    assert((await entries(dad)).some(e => e.id === 'm-feed-2'), 'Dad reads on with the new keys');
+  });
+
+  await step("Mum's new phone picks the folder in the Files app and gets straight in with the recovery code; no page errors or CSP violations anywhere", async () => {
+    const mum2 = await phone('mum@x.com'); await toCloud(mum2); await joinWith(mum2, 'Mum', null, 'mum@x.com');
+    await mum2.waitForSelector('#wRecover'); await mum2.fill('#wCode', recoveryCode); await mum2.click('#wRecover'); await mum2.waitForSelector('#tabs', { timeout: 20000 });
+    await syncNow(mum2); assert.equal(await mum2.evaluate(() => db.meta.role), 'parent'); assert((await entries(mum2)).some(e => e.id === 'm-feed-2'), 'everything is there');
+    assert.equal(await mum2.evaluate(() => Sync.trust().root.d), await mum.evaluate(() => E2EE.device.id), 'the chain from the root');
+    for (const q of H.pages) { assert.deepEqual(q.errs, [], 'page errors'); assert.deepEqual(q.csp, [], 'CSP violations'); }
+  });
+
+  await H.close();
+}
+
 (async () => {
-  const which = process.env.FOLDER_CLOUD ? [process.env.FOLDER_CLOUD] : Object.keys(CLOUDS);
-  for (const cloud of which) await suite(cloud);
+  const which = process.env.FOLDER_CLOUD ? [process.env.FOLDER_CLOUD] : [...Object.keys(CLOUDS), 'icloud'];
+  for (const cloud of which) await (cloud === 'icloud' ? suiteFiles() : suite(cloud));
   console.log(failed ? `\n${failed} FAILED, ${ok} passed` : `\n${ok} passed`); process.exit(failed ? 1 : 0);
 })().catch(e => { console.error('FATAL', e); process.exit(1); });

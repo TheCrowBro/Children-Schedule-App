@@ -912,6 +912,18 @@
     "You may move this folder anywhere in your drive, and rename it, as long as its name still starts with \"Little Log\": that is how a relative's phone finds it when they join.": "README.txt, line 3. Keep \"Little Log\" in Latin letters, untranslated: the app looks for folders whose name starts with exactly that.",
     "Please do not rename, move or delete anything inside this folder: the files, and the folders named devices, events, join, keys and media. The phones find them by name. A renamed folder makes entries vanish from everyone's phones, and deleted files can lose the log for good.": "README.txt, line 4. The five folder names (devices, events, join, keys, media) are real folder names: keep them in English, lowercase.",
     "Do not share this folder from your drive: share it from the Family tab in Little Log, which also gives the person their join code.": "README.txt, line 5. 'Family tab' is the app's tab named Family.",
-    "If something was changed by mistake, put it back (your drive's trash or version history can help): a parent's phone repairs what it can at its next sync.": "README.txt, line 6."
+    "If something was changed by mistake, put it back (your drive's trash or version history can help): a parent's phone repairs what it can at its next sync.": "README.txt, line 6.",
+    "iCloud Drive: the folder is shared with the family from the Files app, and everyone in the family needs an iPhone or iPad.": "Cloud picker, under the Connect iCloud Drive button (iPhone / iPad builds only). 'Files app' is Apple's Files app (keep its local Apple name).",
+    "{service} connected": "Start-or-join screen heading when the cloud has no email to show (iCloud Drive). {service}: iCloud Drive.",
+    "You choose where in iCloud Drive the Little Log folder is made.": "Under New baby log, iCloud Drive only: the Files app's picker asks where the folder goes.",
+    "A parent shares the family folder with you from the Files app (Share \u2192 Collaborate) and tells you a join code. Accept the share in Files, then choose the folder here.": "Join a family card, iCloud Drive: 'Share \u2192 Collaborate' are Apple's Files app menu items (use Apple's local names).",
+    "Choose the shared folder\u2026": "Button that opens the Files app's folder picker (iCloud Drive). Keep short.",
+    "{service} \u00b7 {role}": "Family tab line when no email is known (iCloud Drive): e.g. 'iCloud Drive \u00b7 Parent'.",
+    "The folder is shared in the Files app: iCloud Drive \u2192 press and hold the Little Log folder \u2192 Share \u2192 Collaborate, and add their Apple ID email. Their join code is made here; tell it to them. When they open Little Log, they choose the folder and type the code, and you approve them here.": "Share card, iCloud Drive: how a parent shares the folder in Apple's Files app ('Share', 'Collaborate', 'Manage shared folder' are Apple's menu items: use their local names).",
+    "e.g. Grandma": "Placeholder for the person's name on the share card (iCloud Drive).",
+    "Share in Files and make a join code": "Share card button, iCloud Drive: opens the Files app's share sheet and makes the person's join code.",
+    "The folder could not be reached.": "Error from the Files-app folder plugin when it gives no reason.",
+    "No place was chosen for the folder.": "Error when the Files app's picker was cancelled while making the Little Log folder.",
+    "Also take them off the folder in the Files app: press and hold it, Manage shared folder.": "Toast after removing, retiring or stopping someone on iCloud Drive: the app cannot change the Files app's sharing itself. 'Manage shared folder' is Apple's menu item."
   }
 }

@@ -2893,5 +2893,18 @@
  "zmfqxo": "Możesz przenieść ten folder w dowolne miejsce w swojej chmurze i zmienić jego nazwę, o ile nadal zaczyna się od „Little Log”: tak znajduje go telefon krewnego, który dołącza.",
  "1vkr76e": "Proszę niczego w tym folderze nie zmieniać, nie przenosić ani nie usuwać: ani plików, ani folderów o nazwach devices, events, join, keys i media. Telefony znajdują je po nazwie. Folder o zmienionej nazwie sprawia, że wpisy znikają ze wszystkich telefonów, a usunięte pliki mogą bezpowrotnie zgubić dziennik.",
  "znfob5": "Nie udostępniaj tego folderu z chmury: udostępniaj go z zakładki Rodzina w Little Log, która daje też tej osobie jej kod dołączenia.",
- "17g4d1m": "Jeśli coś zmieniono przez pomyłkę, przywróć to (pomoże kosz lub historia wersji w chmurze): telefon rodzica naprawi, co może, przy następnej synchronizacji."
+ "17g4d1m": "Jeśli coś zmieniono przez pomyłkę, przywróć to (pomoże kosz lub historia wersji w chmurze): telefon rodzica naprawi, co może, przy następnej synchronizacji.",
+ "1mt7w69": "iCloud Drive: folder udostępnia się rodzinie z aplikacji Pliki, a każdy w rodzinie potrzebuje iPhone'a lub iPada.",
+ "foj4hv": "Połączono z {service}",
+ "rb3hf7": "Wybierasz, gdzie w iCloud Drive powstanie folder Little Log.",
+ "1ksylvc": "Rodzic udostępnia Ci folder rodziny z aplikacji Pliki (Udostępnij → Współpracuj) i podaje kod dołączenia. Przyjmij udostępnienie w Plikach, a potem wybierz tu folder.",
+ "19e33gm": "Wybierz udostępniony folder…",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Usuń tę osobę także z folderu w aplikacji Pliki: przytrzymaj folder, Zarządzaj udostępnionym folderem.",
+ "1mtbk83": "Folder udostępnia się w aplikacji Pliki: iCloud Drive → przytrzymaj folder Little Log → Udostępnij → Współpracuj i dodaj e-mail konta Apple tej osoby. Jej kod dołączenia powstaje tutaj; przekaż go. Gdy otworzy Little Log, wybierze folder, wpisze kod, a Ty zatwierdzisz ją tutaj.",
+ "1ppwpnr": "np. Babcia",
+ "1tzscmn": "Udostępnij w Plikach i utwórz kod dołączenia",
+ "cjhk5s": "Wpisz imię tej osoby",
+ "lfwb2v": "Nie udało się dotrzeć do folderu.",
+ "1mi3el8": "Nie wybrano miejsca dla folderu."
 }

@@ -2837,5 +2837,18 @@
  "zmfqxo": "Puedes mover esta carpeta a cualquier lugar de tu nube y cambiarle el nombre, siempre que su nombre siga empezando por «Little Log»: así la encuentra el teléfono de un familiar cuando se une.",
  "1vkr76e": "Por favor, no cambies el nombre, muevas ni borres nada dentro de esta carpeta: ni los archivos ni las carpetas llamadas devices, events, join, keys y media. Los teléfonos las encuentran por su nombre. Una carpeta renombrada hace desaparecer entradas de todos los teléfonos, y los archivos borrados pueden perder el registro para siempre.",
  "znfob5": "No compartas esta carpeta desde tu nube: compártela desde la pestaña Familia de Little Log, que además da a la persona su código de unión.",
- "17g4d1m": "Si algo se cambió por error, vuelve a ponerlo (la papelera o el historial de versiones de tu nube pueden ayudar): el teléfono de una madre o un padre repara lo que puede en su siguiente sincronización."
+ "17g4d1m": "Si algo se cambió por error, vuelve a ponerlo (la papelera o el historial de versiones de tu nube pueden ayudar): el teléfono de una madre o un padre repara lo que puede en su siguiente sincronización.",
+ "1mt7w69": "iCloud Drive: la carpeta se comparte con la familia desde la app Archivos, y todos en la familia necesitan un iPhone o un iPad.",
+ "foj4hv": "{service} conectado",
+ "rb3hf7": "Tú eliges en qué lugar de iCloud Drive se crea la carpeta Little Log.",
+ "1ksylvc": "Una madre o un padre comparte contigo la carpeta familiar desde la app Archivos (Compartir → Colaborar) y te dice un código de unión. Acepta la invitación en Archivos y luego elige la carpeta aquí.",
+ "19e33gm": "Elegir la carpeta compartida…",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Quítale también el acceso a la carpeta en la app Archivos: mantenla pulsada y elige Gestionar carpeta compartida.",
+ "1mtbk83": "La carpeta se comparte en la app Archivos: iCloud Drive → mantén pulsada la carpeta Little Log → Compartir → Colaborar, y añade el correo de su ID de Apple. Su código de unión se crea aquí; díselo. Cuando abra Little Log, elegirá la carpeta, escribirá el código y tú le aprobarás aquí.",
+ "1ppwpnr": "p. ej. Abuela",
+ "1tzscmn": "Compartir en Archivos y crear un código de unión",
+ "cjhk5s": "Escribe su nombre",
+ "lfwb2v": "No se pudo acceder a la carpeta.",
+ "1mi3el8": "No se eligió ningún lugar para la carpeta."
 }

@@ -63,6 +63,10 @@ const Native = (() => {
     },
     /** Dark icons on light bars (light: true) or light icons on dark bars, to match the app's theme. */
     setBarsLight(light) { const I = P().Insets; if (is && I && I.setBars) I.setBars({ light: !!light }).catch(() => {}); },
+    /** A folder in the phone's Files app (iCloud Drive), through the app's own plugin (ios/App/App/FolderPlugin.swift): null without it.
+        account() the person (an id kept in the iCloud Keychain, the same on all their devices), pick() a folder the user chooses, create()
+        a folder made where the user chooses, list / read / write / remove inside it, share() the Files app's own sharing, forget(). */
+    get Folder() { return (is && P().Folder) || null; },
     /** iOS Keychain / Android Keystore-backed storage for secrets (sign-in tokens, backup passphrase, cloud tokens). */
     Secure: {
       async get(k) { await prep(); try { const v = await P().SecureStorage.get(k); return v == null ? null : String(v); } catch (e) { return null; } },

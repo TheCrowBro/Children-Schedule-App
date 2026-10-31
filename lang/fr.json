@@ -2837,5 +2837,18 @@
  "zmfqxo": "Vous pouvez déplacer ce dossier n'importe où dans votre cloud et le renommer, tant que son nom commence toujours par « Little Log » : c'est ainsi que le téléphone d'un proche le trouve quand il rejoint la famille.",
  "1vkr76e": "Merci de ne rien renommer, déplacer ni supprimer à l'intérieur de ce dossier : ni les fichiers, ni les dossiers nommés devices, events, join, keys et media. Les téléphones les trouvent par leur nom. Un dossier renommé fait disparaître des entrées sur tous les téléphones, et des fichiers supprimés peuvent faire perdre le journal pour de bon.",
  "znfob5": "Ne partagez pas ce dossier depuis votre cloud : partagez-le depuis l'onglet Famille de Little Log, qui donne aussi à la personne son code d'adhésion.",
- "17g4d1m": "Si quelque chose a été modifié par erreur, remettez-le en place (la corbeille ou l'historique des versions de votre cloud peuvent aider) : le téléphone d'un parent répare ce qu'il peut à sa prochaine synchronisation."
+ "17g4d1m": "Si quelque chose a été modifié par erreur, remettez-le en place (la corbeille ou l'historique des versions de votre cloud peuvent aider) : le téléphone d'un parent répare ce qu'il peut à sa prochaine synchronisation.",
+ "1mt7w69": "iCloud Drive : le dossier est partagé avec la famille depuis l'app Fichiers, et tout le monde dans la famille doit avoir un iPhone ou un iPad.",
+ "foj4hv": "{service} connecté",
+ "rb3hf7": "Vous choisissez où, dans iCloud Drive, le dossier Little Log est créé.",
+ "1ksylvc": "Un parent partage le dossier familial avec vous depuis l'app Fichiers (Partager → Collaborer) et vous communique un code d'adhésion. Acceptez le partage dans Fichiers, puis choisissez le dossier ici.",
+ "19e33gm": "Choisir le dossier partagé…",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Retirez aussi la personne du dossier dans l'app Fichiers : maintenez le doigt dessus, Gérer le dossier partagé.",
+ "1mtbk83": "Le dossier se partage dans l'app Fichiers : iCloud Drive → maintenez le doigt sur le dossier Little Log → Partager → Collaborer, et ajoutez l'e-mail de son identifiant Apple. Son code d'adhésion est créé ici : communiquez-le-lui. Quand la personne ouvre Little Log, elle choisit le dossier, saisit le code, et vous l'approuvez ici.",
+ "1ppwpnr": "p. ex. Mamie",
+ "1tzscmn": "Partager dans Fichiers et créer un code d'adhésion",
+ "cjhk5s": "Saisissez son nom",
+ "lfwb2v": "Le dossier est inaccessible.",
+ "1mi3el8": "Aucun emplacement n'a été choisi pour le dossier."
 }

@@ -2725,5 +2725,18 @@
  "zmfqxo": "Bạn có thể dời thư mục này đến bất cứ đâu trong đám mây của mình và đổi tên nó, miễn là tên vẫn bắt đầu bằng \"Little Log\": điện thoại của người thân tìm thấy nó theo cách đó khi tham gia.",
  "1vkr76e": "Xin đừng đổi tên, di chuyển hay xóa bất cứ thứ gì bên trong thư mục này: cả các tệp lẫn các thư mục tên devices, events, join, keys và media. Các điện thoại tìm chúng theo tên. Một thư mục bị đổi tên làm các mục biến mất khỏi điện thoại của mọi người, và tệp bị xóa có thể làm mất nhật ký vĩnh viễn.",
  "znfob5": "Đừng chia sẻ thư mục này từ đám mây của bạn: hãy chia sẻ từ thẻ Gia đình trong Little Log, nơi cũng cấp cho người đó mã tham gia.",
- "17g4d1m": "Nếu có gì bị thay đổi nhầm, hãy đặt lại như cũ (thùng rác hoặc lịch sử phiên bản của đám mây có thể giúp): điện thoại của một phụ huynh sẽ sửa những gì có thể ở lần đồng bộ kế tiếp."
+ "17g4d1m": "Nếu có gì bị thay đổi nhầm, hãy đặt lại như cũ (thùng rác hoặc lịch sử phiên bản của đám mây có thể giúp): điện thoại của một phụ huynh sẽ sửa những gì có thể ở lần đồng bộ kế tiếp.",
+ "1mt7w69": "iCloud Drive: thư mục được chia sẻ với gia đình từ ứng dụng Tệp, và mọi người trong gia đình cần có iPhone hoặc iPad.",
+ "foj4hv": "Đã kết nối {service}",
+ "rb3hf7": "Bạn chọn nơi tạo thư mục Little Log trong iCloud Drive.",
+ "1ksylvc": "Phụ huynh chia sẻ thư mục gia đình với bạn từ ứng dụng Tệp (Chia sẻ → Cộng tác) và cho bạn mã tham gia. Hãy chấp nhận chia sẻ trong Tệp, rồi chọn thư mục ở đây.",
+ "19e33gm": "Chọn thư mục được chia sẻ…",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Hãy xóa họ khỏi thư mục trong ứng dụng Tệp nữa: nhấn giữ thư mục, Quản lý thư mục được chia sẻ.",
+ "1mtbk83": "Thư mục được chia sẻ trong ứng dụng Tệp: iCloud Drive → nhấn giữ thư mục Little Log → Chia sẻ → Cộng tác, rồi thêm email Apple ID của người đó. Mã tham gia của họ được tạo ở đây; hãy nói cho họ. Khi mở Little Log, họ chọn thư mục, nhập mã, và bạn phê duyệt họ ở đây.",
+ "1ppwpnr": "ví dụ: Bà",
+ "1tzscmn": "Chia sẻ trong Tệp và tạo mã tham gia",
+ "cjhk5s": "Nhập tên của họ",
+ "lfwb2v": "Không truy cập được thư mục.",
+ "1mi3el8": "Chưa chọn nơi đặt thư mục."
 }

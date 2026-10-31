@@ -2781,5 +2781,18 @@
  "zmfqxo": "Sie dürfen diesen Ordner an eine beliebige Stelle Ihrer Cloud verschieben und ihn umbenennen, solange sein Name weiterhin mit „Little Log“ beginnt: Daran findet ihn das Telefon eines Angehörigen beim Beitreten.",
  "1vkr76e": "Bitte benennen Sie nichts in diesem Ordner um, verschieben oder löschen Sie nichts darin: weder die Dateien noch die Ordner namens devices, events, join, keys und media. Die Telefone finden sie über ihren Namen. Ein umbenannter Ordner lässt Einträge auf allen Telefonen verschwinden, und gelöschte Dateien können das Protokoll für immer verlieren.",
  "znfob5": "Teilen Sie diesen Ordner nicht über Ihre Cloud: Teilen Sie ihn über den Reiter Familie in Little Log, der der Person auch ihren Beitrittscode gibt.",
- "17g4d1m": "Wurde etwas versehentlich geändert, stellen Sie es wieder her (Papierkorb oder Versionsverlauf Ihrer Cloud helfen dabei): Das Telefon eines Elternteils repariert bei der nächsten Synchronisierung, was es kann."
+ "17g4d1m": "Wurde etwas versehentlich geändert, stellen Sie es wieder her (Papierkorb oder Versionsverlauf Ihrer Cloud helfen dabei): Das Telefon eines Elternteils repariert bei der nächsten Synchronisierung, was es kann.",
+ "1mt7w69": "iCloud Drive: Der Ordner wird über die App „Dateien“ mit der Familie geteilt, und alle in der Familie brauchen ein iPhone oder iPad.",
+ "foj4hv": "{service} verbunden",
+ "rb3hf7": "Sie wählen, wo in iCloud Drive der Little-Log-Ordner angelegt wird.",
+ "1ksylvc": "Ein Elternteil teilt den Familienordner über die App „Dateien“ mit Ihnen (Teilen → Zusammenarbeiten) und nennt Ihnen einen Beitrittscode. Nehmen Sie die Freigabe in „Dateien“ an und wählen Sie den Ordner dann hier aus.",
+ "19e33gm": "Geteilten Ordner auswählen …",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Entfernen Sie die Person auch aus dem Ordner in der App „Dateien“: gedrückt halten, „Geteilten Ordner verwalten“.",
+ "1mtbk83": "Der Ordner wird in der App „Dateien“ geteilt: iCloud Drive → den Little-Log-Ordner gedrückt halten → Teilen → Zusammenarbeiten, und die Apple-ID-E-Mail der Person hinzufügen. Ihr Beitrittscode wird hier erzeugt; nennen Sie ihn ihr. Wenn sie Little Log öffnet, wählt sie den Ordner aus, gibt den Code ein, und Sie genehmigen sie hier.",
+ "1ppwpnr": "z. B. Oma",
+ "1tzscmn": "In „Dateien“ teilen und Beitrittscode erzeugen",
+ "cjhk5s": "Geben Sie den Namen der Person ein",
+ "lfwb2v": "Der Ordner war nicht erreichbar.",
+ "1mi3el8": "Es wurde kein Ort für den Ordner gewählt."
 }

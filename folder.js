@@ -22,14 +22,17 @@
    parent's approval is what hands a phone the keys. Every phone signs what it writes (members.json, tree.json, keys/, events/),
    and a phone believes a file only when the chain of approvals from the folder's creator (littlelog.json's root) reaches the phone
    that signed it, with the role the file needs (FolderSync's trust section). FOLDER.md tells the whole story.
+   iCloud Drive has no web API: on an iPhone or iPad the folder is one the user picks in the Files app (the app's FolderPlugin, in
+   Swift), shared with the family from the Files app itself (Collaborate), and the same files live in it.
    Relies on db / save() from app.js (read at call time), on E2EE and on ServerSync's merge helpers. */
 const Folder = (() => {
   const K = 'folder.v1';
   const enc = new TextEncoder(), dec = new TextDecoder();
   let c = null;   // { provider, root ('ns:<shared folder id>'), id, name, me: { id, email, name } }
   const persist = () => (c ? Native.Secure.set(K, JSON.stringify(c)) : Native.Secure.remove(K));
-  const NAMES = { dropbox: 'Dropbox', google: 'Google Drive' };
-  const available = () => Object.keys(NAMES).filter(p => Cloud.available()[p]);
+  const NAMES = { dropbox: 'Dropbox', google: 'Google Drive', icloud: 'iCloud Drive' };
+  const FB = () => (typeof Native !== 'undefined' && Native.Folder) || null;   // (the Files-app folder bridge: an iOS build with the plugin)
+  const available = () => Object.keys(NAMES).filter(p => (p === 'icloud' ? !!FB() : Cloud.available()[p]));
   const TOP = ['littlelog.json', 'keyring.json', 'recovery.json', 'profile.json', 'members.json', 'tree.json', 'devices', 'keys', 'join', 'events', 'media'];
   const J = o => enc.encode(JSON.stringify(o));
   const accts = new Map();   // Dropbox account id → email, as asked once
@@ -307,7 +310,45 @@ const Folder = (() => {
     async policy() { const j = await gjson('GET', GAPI + `files/${c.root}?fields=ownedByMe,writersCanShare`); return { owner: !!j.ownedByMe, ownerOnly: j.writersCanShare === false }; },
     setPolicy: ownerOnly => gjson('PATCH', GAPI + `files/${c.root}?fields=id`, { json: { writersCanShare: !ownerOnly } }),
   };
-  const BY = { dropbox: DBX, google: GD };
+  // ---- iCloud Drive: a folder in the Files app, through the app's own plugin; shared from the Files app; no account to sign in to ----
+  // The plugin keeps a bookmark to the folder the user picked (or made) and enumerates, reads and writes it with file coordination,
+  // so iCloud downloads what is asked for. There is no delta: every listing is the whole folder (local, so cheap), and what was in
+  // the index before and is not listed now is reported gone. No one's email is known, so invitations are filed under the join code
+  // (E2EE.inviteKey) and people are added to the folder in the Files app.
+  const b64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+  const unb64 = s => Uint8Array.from(atob(s), ch => ch.charCodeAt(0));
+  const ffail = e => {
+    const m = String((e && e.message) || e || ''), err = new Error(m || N_('The folder could not be reached.'));
+    err.conflict = /conflict/i.test(m); err.missing = /missing|not found|no such/i.test(m); err.denied = !err.missing && /denied|permission|no access|not shared/i.test(m);
+    err.status = err.conflict ? 409 : err.missing ? 404 : err.denied ? 403 : 0; err.tag = ''; return err;
+  };
+  const FD = {
+    root: id => id,
+    async account() { const a = await FB().account(); return { account: String(a.id), email: '', name: a.name || '' }; },
+    async list() {
+      let r; try { r = await FB().list({ id: c.id }); } catch (e) { throw ffail(e); }
+      const seen = new Set(), entries = [];
+      for (const e of (r && r.entries) || []) { const p = String(e.path || '').replace(/^\/+/, ''); if (!p) continue; seen.add(p.toLowerCase()); entries.push({ path: p, rev: e.folder ? null : String(e.rev || ''), deleted: false, folder: !!e.folder }); }
+      const x = db.meta.fidx; if (x) for (const k of Object.keys(x.files)) if (!seen.has(k)) entries.push({ path: k, rev: null, deleted: true, folder: false });   // (listed whole each time: what is gone is said so)
+      return { entries, cursor: 'all' };
+    },
+    async get(p) { try { const r = await FB().read({ id: c.id, path: p }); return r && r.data ? unb64(r.data) : null; } catch (e) { const x = ffail(e); if (x.missing) return null; throw x; } },
+    async put(p, bytes, mode = 'overwrite') {
+      try { const r = await FB().write({ id: c.id, path: p, data: b64(bytes), mode: typeof mode === 'string' ? mode : 'update', rev: typeof mode === 'string' ? null : mode.update }); return { rev: String((r && r.rev) || '') }; }
+      catch (e) { throw ffail(e); }
+    },
+    async del(p) { try { await FB().remove({ id: c.id, path: p }); } catch (e) { const x = ffail(e); if (!x.missing) throw x; } },
+    /** The user chooses where in iCloud Drive; the folder is made there. */
+    async create(name) { let r; try { r = await FB().create({ name }); } catch (e) { throw ffail(e); } if (!r || !r.id) throw new Error(N_('No place was chosen for the folder.')); return { id: String(r.id), name: r.name || name }; },
+    async share() { await FB().share({ id: c.id }); },   // (the Files app's own sharing: Collaborate, add people)
+    async unshare() {},   // (done in the Files app)
+    async leave() { try { await FB().forget({ id: c.id }); } catch (e) { /* gone already */ } },
+    async candidates() { return []; },   // (a shared folder is chosen with the Files app's picker: pick)
+    mount: async () => {},
+    /** The user picks a folder in the Files app (a family folder shared with them): { id, name }, or null when they did not. */
+    async pick() { let r; try { r = await FB().pick(); } catch (e) { throw ffail(e); } return r && r.id ? { id: String(r.id), name: r.name || '', mounted: true } : null; },
+  };
+  const BY = { dropbox: DBX, google: GD, icloud: FD };
   const backend = () => BY[(c && c.provider) || 'dropbox'];
   const B = () => backend();
 
@@ -433,8 +474,11 @@ const Folder = (() => {
     get me() { return c ? c.me : null; },
     get provider() { return c ? c.provider : null; },
     get name() { return c ? c.name : ''; },
-    /** Starts the cloud sign-in (it comes back through the app's URL: Cloud.handleOAuthUrl, then attach). */
-    connect: p => Cloud.connect(p, SCOPES[p]),
+    /** Starts the cloud sign-in (it comes back through the app's URL: Cloud.handleOAuthUrl, then attach). iCloud Drive has no sign-in:
+        the phone is attached at once, and true says so. */
+    async connect(p) { if (p === 'icloud') { await Folder.attach('icloud'); return true; } await Cloud.connect(p, SCOPES[p]); return false; },
+    /** A folder the user picks in the Files app (iCloud Drive), to join: { id, name } or null. */
+    pick: () => (B().pick ? B().pick() : Promise.resolve(null)),
     /** The cloud account just signed in becomes this phone's identity for the family folder. */
     async attach(p) {
       const a = await BY[p].account();
@@ -649,7 +693,7 @@ const FolderSync = (() => {
       rows.push({ user_id: id, display_name: m.name, email: m.email, role: m.role, perms: m.perms, is_you: you, details_epoch: m.details ? m.details.epoch : 0, info: m.details ? await E2EE.openDetails(b, id, m.details.blob, m.details.epoch) : null });
     }
     st.people = rows;
-    st.invites = Object.entries(mem.invites).filter(([e]) => !Object.values(mem.members).some(m => m.email === e)).map(([email, i]) => ({ email, code: email, role: i.role, perms: i.perms, at: i.at }));
+    st.invites = Object.entries(mem.invites).filter(([e]) => !Object.values(mem.members).some(m => m.email === e)).map(([email, i]) => ({ email, code: email, role: i.role, perms: i.perms, at: i.at, name: i.name || '' }));
     st.retired = [];
     for (const r of mem.retired) st.retired.push({ ...r, info: r.details ? await E2EE.openDetails(b, r.user_id, r.details.blob, r.details.epoch).catch(() => null) : null });
   }
@@ -821,9 +865,9 @@ const FolderSync = (() => {
       if (w === undefined) { try { w = (B().writer ? await B().writer(p) : null) || null; } catch (e) { w = null; } if (wcache.size > 200) wcache.clear(); wcache.set(wk, w); }
       const writerId = w ? await Folder.memberId(Folder.provider, w.account) : null, claimed = String(j.email || '').toLowerCase();
       const email = (w && w.email) || claimed, forged = !!writerId && writerId !== j.user;
-      const inv = mem.invites[email] || null;
-      const r = { id: j.device, device_id: j.device, device_pub: j.pub, device_spub: j.sig || null, user: j.user, email, claimed, display_name: j.name || '', role: inv ? inv.role : 'caregiver', perms: inv ? inv.perms : null,
-        proof: j.proof || null, invite_code: email, attested: !!w, forged, qrVerified: false, fingerprint: await E2EE.fingerprint(j.pub, j.sig || null), baby_id: db.meta.babyId, platform: j.platform };
+      const byKey = j.invite && mem.invites[j.invite] ? j.invite : null, inv = (byKey && mem.invites[byKey]) || mem.invites[email] || null;   // (filed under the join code, or under the email)
+      const r = { id: j.device, device_id: j.device, device_pub: j.pub, device_spub: j.sig || null, user: j.user, email, claimed, display_name: j.name || (inv && inv.name) || '', role: inv ? inv.role : 'caregiver', perms: inv ? inv.perms : null,
+        proof: j.proof || null, invite_code: byKey || email, attested: !!w, forged, qrVerified: false, fingerprint: await E2EE.fingerprint(j.pub, j.sig || null), baby_id: db.meta.babyId, platform: j.platform };
       r.qrVerified = !forged && await E2EE.verifyRequest(r);   // (they typed the join code this phone gave them)
       reqs.push(r);
     }
@@ -860,7 +904,8 @@ const FolderSync = (() => {
       if (req.forged) throw new Error(N_('This request was written by another account than the one it claims. Deny it.'));
       const g = await E2EE.grantForRequest(b, req, { ...opts, ext: Folder.extOf(req.user, req.role, req.device_spub, req.device_pub) });
       await Folder.dir.grantDevice(b, req.device_id, g);
-      await saveMembers(m => { if (!m.members[req.user]) m.members[req.user] = { name: req.display_name || req.email, email: req.email, role: req.role, perms: req.perms || null, since: Date.now() }; });
+      await saveMembers(m => { if (!m.members[req.user]) m.members[req.user] = { name: req.display_name || req.email, email: req.email, role: req.role, perms: req.perms || null, since: Date.now() }; if (req.invite_code && m.invites[req.invite_code]) delete m.invites[req.invite_code]; });
+      if (db.meta.fcodes && req.invite_code) delete db.meta.fcodes[req.invite_code];
     }
     await B().del(`join/${req.device_id}.json`);
     await refreshIndex(); await loadAdmin(); await loadDevices().catch(() => {});
@@ -868,14 +913,15 @@ const FolderSync = (() => {
   /** Share the family folder with someone (their cloud email), with the role they will get once they ask to join and are approved. */
   /** Share the family folder with someone (their cloud email), with the role they will get once they ask to join and are approved.
       Each gets a join code, kept on this phone: typed on their phone, it proves their request to this phone and this phone's keys to theirs. */
-  async function shareWith(emails, role, perms, message) {
-    emails = emails.map(e => String(e).trim().toLowerCase()).filter(e => /^\S+@\S+\.\S+$/.test(e));
-    if (!emails.length) throw new Error(N_('Enter a valid email address'));
-    await B().share(emails, message);
-    const codes = db.meta.fcodes || (db.meta.fcodes = {});
-    for (const e of emails) { const code = E2EE.newJoinCode(); await E2EE.rememberInvite(e, E2EE.joinCodeSecret(code)); codes[e] = code; }
-    await saveMembers(m => { for (const e of emails) m.invites[e] = { role, perms: perms || null, by: Auth.id, at: Date.now(), code: true }; });
-    return emails.map(e => codes[e]);
+  async function shareWith(whom, role, perms, message) {
+    const byName = Folder.provider === 'icloud';   // (no emails: the folder is shared in the Files app; the invitation is filed under the join code)
+    const people = byName ? whom.map(n => String(n).trim().slice(0, 60)).filter(Boolean) : whom.map(e => String(e).trim().toLowerCase()).filter(e => /^\S+@\S+\.\S+$/.test(e));
+    if (!people.length) throw new Error(byName ? N_('Enter their name') : N_('Enter a valid email address'));
+    await B().share(people, message);
+    const codes = db.meta.fcodes || (db.meta.fcodes = {}), keys = [];
+    for (const p of people) { const code = E2EE.newJoinCode(), secret = E2EE.joinCodeSecret(code), key = byName ? await E2EE.inviteKey(secret) : p; await E2EE.rememberInvite(key, secret); codes[key] = code; keys.push(key); }
+    await saveMembers(m => { people.forEach((p, i) => { m.invites[keys[i]] = { role, perms: perms || null, by: Auth.id, at: Date.now(), code: true, ...(byName ? { name: p } : {}) }; }); });
+    return keys.map(k => codes[k]);
   }
   const joinCodeFor = email => (db.meta.fcodes || {})[email] || '';
   async function rescind(email) { await B().unshare(email); if (db.meta.fcodes) delete db.meta.fcodes[email]; await saveMembers(m => { delete m.invites[email]; }); }
@@ -983,7 +1029,7 @@ const FolderSync = (() => {
     const dev = await E2EE.ensureDevice();
     const proof = secret ? await E2EE.joinProof(secret, dev.id, dev.pub, dev.spub) : null;   // (the join code the parent gave: proves this request is theirs)
     await E2EE.setJoinSecret(secret);   // (and, when the keys come, that they came from that parent's phone)
-    if (!revOf(`keys/${dev.id}.json`)) await Folder.write(`join/${dev.id}.json`, { v: 2, device: dev.id, user: Auth.id, pub: dev.pub, sig: dev.spub || null, name: String(displayName || Folder.me.name || '').trim().slice(0, 60), email: Folder.me.email, platform: Native.platform, created: Date.now(), proof }, 'overwrite');
+    if (!revOf(`keys/${dev.id}.json`)) await Folder.write(`join/${dev.id}.json`, { v: 2, device: dev.id, user: Auth.id, pub: dev.pub, sig: dev.spub || null, name: String(displayName || Folder.me.name || '').trim().slice(0, 60), email: Folder.me.email, platform: Native.platform, created: Date.now(), proof, invite: secret ? await E2EE.inviteKey(secret) : null }, 'overwrite');
     db.meta.fjoin = { family, device: dev.id }; st.myRequests = [{ id: dev.id, status: 'pending' }]; save(true);
   }
   /** Before a phone is let in with the recovery code: the root it will check the chain against, from the folder's own marker. */

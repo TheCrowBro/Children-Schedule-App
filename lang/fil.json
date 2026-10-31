@@ -2781,5 +2781,18 @@
  "zmfqxo": "Maaari mong ilipat ang folder na ito kahit saan sa cloud mo at palitan ang pangalan nito, basta nagsisimula pa rin ang pangalan sa \"Little Log\": ganyan ito nahahanap ng telepono ng isang kamag-anak kapag sumasali.",
  "1vkr76e": "Pakiusap, huwag palitan ang pangalan, ilipat, o burahin ang anumang nasa loob ng folder na ito: ang mga file, at ang mga folder na nagngangalang devices, events, join, keys, at media. Hinahanap ng mga telepono ang mga ito ayon sa pangalan. Ang folder na napalitan ng pangalan ay nagpapawala ng mga entry sa telepono ng lahat, at ang mga binurang file ay maaaring magpawala ng log nang tuluyan.",
  "znfob5": "Huwag ibahagi ang folder na ito mula sa cloud mo: ibahagi ito mula sa tab na Pamilya sa Little Log, na nagbibigay din sa tao ng kanyang join code.",
- "17g4d1m": "Kung may nabago nang hindi sinasadya, ibalik ito (makakatulong ang basurahan o version history ng cloud mo): inaayos ng telepono ng isang magulang ang kaya nito sa susunod na sync."
+ "17g4d1m": "Kung may nabago nang hindi sinasadya, ibalik ito (makakatulong ang basurahan o version history ng cloud mo): inaayos ng telepono ng isang magulang ang kaya nito sa susunod na sync.",
+ "1mt7w69": "iCloud Drive: ibinabahagi ang folder sa pamilya mula sa Files app, at kailangan ng lahat sa pamilya ng iPhone o iPad.",
+ "foj4hv": "Nakakonekta ang {service}",
+ "rb3hf7": "Ikaw ang pipili kung saan sa iCloud Drive gagawin ang folder na Little Log.",
+ "1ksylvc": "Ibinabahagi sa iyo ng magulang ang folder ng pamilya mula sa Files app (Share → Collaborate) at sinasabi ang join code. Tanggapin ang pagbabahagi sa Files, saka piliin ang folder dito.",
+ "19e33gm": "Piliin ang ibinahaging folder…",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Alisin din siya sa folder sa Files app: pindutin nang matagal, Manage Shared Folder.",
+ "1mtbk83": "Ibinabahagi ang folder sa Files app: iCloud Drive → pindutin nang matagal ang folder na Little Log → Share → Collaborate, at idagdag ang email ng Apple ID niya. Dito ginagawa ang join code niya; sabihin ito sa kanya. Kapag binuksan niya ang Little Log, pipiliin niya ang folder, ita-type ang code, at aaprubahan mo siya dito.",
+ "1ppwpnr": "hal. Lola",
+ "1tzscmn": "Ibahagi sa Files at gumawa ng join code",
+ "cjhk5s": "Ilagay ang pangalan niya",
+ "lfwb2v": "Hindi maabot ang folder.",
+ "1mi3el8": "Walang napiling lugar para sa folder."
 }

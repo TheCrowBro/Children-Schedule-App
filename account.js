@@ -242,13 +242,13 @@ const Acct = (() => {
   const cloudPickHtml = () => `<div class="card welcome"><b>☁️ ${__h("The family's own cloud")}</b>
     <p class="note">${__h('Little Log keeps the log in a folder in your own cloud storage, encrypted on your phones before anything is written there. Nobody else runs a server: you share the folder with the family, and that is who gets in.')}</p>
     ${Folder.available().map(p => `<button class="btn p" data-fconnect="${p}" style="width:100%;margin-top:8px">${__h('Connect {service}', { service: Folder.label(p) })}</button>`).join('')}
-    <p class="note">${__h('OneDrive and iCloud Drive are next.')}</p>
+    ${Folder.available().includes('icloud') ? `<p class="note">${__h('iCloud Drive: the folder is shared with the family from the Files app, and everyone in the family needs an iPhone or iPad.')}</p>` : `<p class="note">${__h('OneDrive and iCloud Drive are next.')}</p>`}
     <p class="note">🔐 ${__h('Your cloud account is the key to the family folder: turn on 2-step verification in that account, and ask the family to do the same.')}</p>${howFamilyHtml()}
     ${Auth.configured ? `<button class="btn" id="fcServer" style="width:100%;margin-top:8px">${__h('Use a family server instead')}</button>` : ''}
     <button class="btn" id="fcLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>
     <div class="row"><button class="btn" id="fcBack">${__h('Back')}</button></div>${alertP(C.err)}</div>`;
   function bindCloudPick() {
-    document.querySelectorAll('[data-fconnect]').forEach(b => b.onclick = async () => { C.err = ''; try { await Folder.connect(b.dataset.fconnect); toast(__('Finish signing in in the browser window')); } catch (e) { C.err = err(e); render(); } });
+    document.querySelectorAll('[data-fconnect]').forEach(b => b.onclick = async () => { C.err = ''; try { if (await Folder.connect(b.dataset.fconnect)) { C.cands = null; W.step = 'choose'; render(); } else toast(__('Finish signing in in the browser window')); } catch (e) { C.err = err(e); render(); } });
     $('#fcBack').onclick = () => { W.step = 'choose'; W.back = true; C.err = ''; render(); };
     $('#fcLocal').onclick = () => { markWelcome(); db.meta.localOnly = true; db.meta.backupStep = true; save(true); render(); };
     if ($('#fcServer')) $('#fcServer').onclick = () => { W.step = 'server'; render(); };
@@ -264,12 +264,13 @@ const Acct = (() => {
     render(); return true;
   }
   const folderOnboardHtml = () => {
-    const me = Folder.me, n = db.events.length, service = Folder.label(Folder.provider);
-    return `<div class="card"><b>☁️ ${__h('{service} connected: {email}', { service, email: me.email })}</b>
+    const me = Folder.me, n = db.events.length, service = Folder.label(Folder.provider), icloud = Folder.provider === 'icloud';
+    return `<div class="card"><b>☁️ ${me.email ? __h('{service} connected: {email}', { service, email: me.email }) : __h('{service} connected', { service })}</b>
       <p class="note">${__h("Start your family's log here, or join one that was shared with this email.")}</p>
       <label class="f">${__h('Your name (shown to the family)')}</label><input id="oMine" type="text" maxlength="60" value="${esc(C.mine || me.name || '')}" placeholder="${__h('e.g. Mum')}"></div>
     <div class="card"><b>👶 ${__h('New baby log')}</b>
       <p class="note">${__h('A folder named Little Log is made in your {service} and the log is kept in it, encrypted on your phones: the folder only ever holds scrambled files. You become a parent (admin).', { service })}</p>
+      ${icloud ? `<p class="note">${__h('You choose where in iCloud Drive the Little Log folder is made.')}</p>` : ''}
       <label class="f">${__h("Baby's name")}</label><input id="oName" type="text" value="${esc(C.name || db.baby.name)}" placeholder="${__h('Name')}">
       <label class="f">${__h('Birth date')}</label><input id="oBirth" type="date" value="${esc(C.birth || db.baby.birth)}">
       <label class="f">${__h('Boy or girl')} <small>${__h('(sets their colour – you can change it later)')}</small></label><div class="chips">${chip('oSex', 'boy', __h('Boy'), C.sex === 'boy', '', true)}${chip('oSex', 'girl', __h('Girl'), C.sex === 'girl', '', true)}</div>
@@ -277,10 +278,11 @@ const Acct = (() => {
       ${n ? `<p class="note">${__hn('Your {n} existing entry on this device will be added to the new log.', 'Your {n} existing entries on this device will be added to the new log.', n)}</p>` : ''}
       <button class="btn p" id="oCreate" style="width:100%;margin-top:12px" ${C.busy ? 'disabled' : ''}>${C.busy ? __h('Setting up…') : __h('Create log')}</button></div>
     <div class="card"><b>🔗 ${__h('Join a family')}</b>
-      <p class="note">${__h('A parent shares the family folder with your {service} email, from the Family tab of their Little Log. It then shows here: you ask to join, and they approve you.', { service })}</p>
+      <p class="note">${icloud ? __h('A parent shares the family folder with you from the Files app (Share → Collaborate) and tells you a join code. Accept the share in Files, then choose the folder here.') : __h('A parent shares the family folder with your {service} email, from the Family tab of their Little Log. It then shows here: you ask to join, and they approve you.', { service })}</p>
       <label class="f">${__h('Join code from the parent (if you were given one)')}</label><input id="oJoinCode" type="text" autocapitalize="characters" autocomplete="off" maxlength="9" placeholder="XXXX-XXXX" value="${esc(C.code || '')}">
-      ${C.cands === null ? `<div class="empty">${__h('Looking…')}</div>` : C.cands.length ? C.cands.map(x => `<div class="stat"><span>${esc(x.name)}</span><button class="btn p" data-fjoin="${esc(x.id)}" style="padding:6px 12px" ${C.busy ? 'disabled' : ''}>${__h('Join')}</button></div>`).join('') : `<p class="note">${__h('Nothing has been shared with {email} yet.', { email: me.email })}</p>`}
-      <div class="row"><button class="btn" id="fjCheck">${__h('Check again')}</button></div></div>
+      ${icloud ? `<button class="btn p" id="fjPick" style="width:100%;margin-top:8px" ${C.busy ? 'disabled' : ''}>${__h('Choose the shared folder…')}</button>`
+        : `${C.cands === null ? `<div class="empty">${__h('Looking…')}</div>` : C.cands.length ? C.cands.map(x => `<div class="stat"><span>${esc(x.name)}</span><button class="btn p" data-fjoin="${esc(x.id)}" style="padding:6px 12px" ${C.busy ? 'disabled' : ''}>${__h('Join')}</button></div>`).join('') : `<p class="note">${__h('Nothing has been shared with {email} yet.', { email: me.email })}</p>`}
+      <div class="row"><button class="btn" id="fjCheck">${__h('Check again')}</button></div>`}</div>
     ${alertP(C.err)}
     <div class="card">${howFamilyHtml()}<button class="btn" id="fOut" style="width:100%;margin-top:8px">${__h('Disconnect {service}', { service })}</button></div>`;
   };
@@ -301,7 +303,16 @@ const Acct = (() => {
       catch (e) { C.err = err(e); }
       C.busy = false; render();
     });
-    $('#fjCheck').onclick = () => { C.cands = null; C.err = ''; render(); };
+    if ($('#fjCheck')) $('#fjCheck').onclick = () => { C.cands = null; C.err = ''; render(); };
+    if ($('#fjPick')) $('#fjPick').onclick = async () => {   // (iCloud Drive: the shared folder is chosen in the Files app's picker)
+      mine(); C.code = $('#oJoinCode') ? $('#oJoinCode').value.trim() : ''; C.err = '';
+      let x = null; try { x = await Folder.pick(); } catch (e) { C.err = err(e); return render(); }
+      if (!x) return;
+      C.busy = true; render();
+      try { await FolderSync.requestJoin(x, C.mine, C.code || null); const d = E2EE.device; if (d) F.fp = await E2EE.fingerprint(d.pub, d.spub); F.loaded = true; F.verified = true; Lock.reset(); toast(C.code ? __('Request sent with your join code – a parent needs to approve it') : __('Request sent – a parent needs to approve it')); }
+      catch (e) { C.err = err(e); }
+      C.busy = false; render();
+    };
     $('#fOut').onclick = async () => {
       const p = Folder.provider; if (!confirm(__('Disconnect {service} from this phone?', { service: Folder.label(p) }))) return;
       await Folder.forget(); Cloud.disconnect(p); C.cands = null; W.step = 'choose'; W.back = true; render();
@@ -663,8 +674,7 @@ const Acct = (() => {
       const missing = await cacheMedia((n, m) => moveSay(__('Fetching pictures and videos… {n} of {m}', { n, m })));
       const names = {}; for (const p of Sync.st.people) if (p.display_name && !p.is_you) names[p.user_id] = p.display_name;
       db.meta.moveTo = { provider, me: Auth.id, baby: db.meta.babyId, names, missing, at: Date.now() }; save(true);
-      moveSay(__('Finish signing in in the browser window'));
-      await Folder.connect(provider);
+      if (await Folder.connect(provider)) await finishMove(provider); else moveSay(__('Finish signing in in the browser window'));
     } catch (e) { moveDone(); delete db.meta.moveTo; save(true); toast(err(e)); }
   }
   /** The cloud's sign-in came back: this phone leaves the server, and the folder is made from what it holds. */
@@ -1187,7 +1197,7 @@ const Acct = (() => {
       <div class="stat"><span>${esc(syncLine())}${s.err && s.state === 'error' ? `<br><small>${esc(__(s.err))}</small>` : ''}</span><button class="btn" id="syncNow" style="padding:6px 12px">${__h('Sync now')}</button></div>${reconnectHtml()}
       ${s.denied ? `<div class="note" style="margin-top:6px">⚠️ ${__hn('{n} change was not allowed with your access and was undone.', '{n} changes were not allowed with your access and were undone.', s.denied)}</div>` : ''}
       ${s.warn ? `<div class="note" style="margin-top:6px">⚠️ ${esc(__(s.warn))}</div>` : ''}${s.repaired ? `<div class="note" style="margin-top:6px">🛠 ${__hn('{n} file in the folder was put back by this phone.', '{n} files in the folder were put back by this phone.', s.repaired)}</div>` : ''}
-      <div class="note" style="margin-top:6px">${folderMode() ? __h('{service} · {email} · {role}', { service: Folder.label(Folder.provider), email: Auth.email, role: roleName(db.meta.role) }) : __h('Signed in as {email} · {role}', { email: Auth.email, role: roleName(db.meta.role) })}</div></div>
+      <div class="note" style="margin-top:6px">${folderMode() ? (Auth.email ? __h('{service} · {email} · {role}', { service: Folder.label(Folder.provider), email: Auth.email, role: roleName(db.meta.role) }) : __h('{service} · {role}', { service: Folder.label(Folder.provider), role: roleName(db.meta.role) })) : __h('Signed in as {email} · {role}', { email: Auth.email, role: roleName(db.meta.role) })}</div></div>
     ${reqs}${phonesCard}
     ${people}
     <details class="gd secshare" data-grp="secshare" ${invite || db.meta.unverified || (parent && db.meta.recoveryAck === false) || openGroups.has('secshare') ? 'open' : ''}><summary><span class="gi">🔐</span><span class="gt"><b>${__h('Security and sharing')}</b><small>${esc(parent ? __('Invites, the activity log, encryption and your phones') : __('Encryption and your phones'))}</small></span><span class="chev" aria-hidden="true">›</span></summary><div class="gdin">
@@ -1201,18 +1211,20 @@ const Acct = (() => {
     <h2>${__h('Activity log')}</h2><div class="card"><div class="stat"><span>${__h('Who added, changed or deleted what, and who joined or left.')}<br><small>${__h('Only parents can see this.')}</small></span><button class="btn" id="actBtn" style="padding:6px 12px">${__h('View')}</button></div></div>`) : ''}$1    ${encCard}</div></details>
     <div class="card"><button class="btn d" id="leave" style="width:100%">${__h('Leave this log')}</button></div>`;
   }
+  /** iCloud Drive: the app cannot take someone off the folder; the Files app does that, so the parent is told after a removal. */
+  const filesReminder = () => { if (folderMode() && Folder.provider === 'icloud') setTimeout(() => toast(__('Also take them off the folder in the Files app: press and hold it, Manage shared folder.')), 1500); };
   /** Sharing the family folder with someone (folder mode): their cloud email and what they may do, and who has not joined yet. */
   function shareHtml(s) {
-    const service = Folder.label(Folder.provider);
+    const service = Folder.label(Folder.provider), icloud = Folder.provider === 'icloud';
     return `<h2>${__h('Share with someone')}</h2>${howFamilyHtml()}<div class="card" id="invCard">
-      <p class="note" style="margin-top:0">${__h('The family folder is shared with their own {service}. When they open Little Log and connect {service} with that email, they ask to join and you approve them here.', { service })}</p>
-      <label class="f">${__h('Their {service} email', { service })}</label><input id="shEmail" type="email" inputmode="email" autocomplete="off" placeholder="${__h('you@example.com')}">
+      <p class="note" style="margin-top:0">${icloud ? __h('The folder is shared in the Files app: iCloud Drive → press and hold the Little Log folder → Share → Collaborate, and add their Apple ID email. Their join code is made here; tell it to them. When they open Little Log, they choose the folder and type the code, and you approve them here.') : __h('The family folder is shared with their own {service}. When they open Little Log and connect {service} with that email, they ask to join and you approve them here.', { service })}</p>
+      <label class="f">${icloud ? __h('Their name') : __h('Their {service} email', { service })}</label><input id="shEmail" type="${icloud ? 'text' : 'email'}" ${icloud ? 'maxlength="60"' : 'inputmode="email"'} autocomplete="off" placeholder="${icloud ? __h('e.g. Grandma') : __h('you@example.com')}">
       ${accessFormHtml('inv', invForm ? invForm.role : 'caregiver', invForm && invForm.perms)}
-      <button class="btn p" id="shGo" style="width:100%;margin-top:12px">${__h('Share the folder')}</button>
+      <button class="btn p" id="shGo" style="width:100%;margin-top:12px">${icloud ? __h('Share in Files and make a join code') : __h('Share the folder')}</button>
       <p class="note">${__h('You get a join code for them: tell it to them (not by the same channel as the folder, if you can). Typed on their phone, it proves their request is theirs, and their phone that the keys came from you.')}</p>
-      <p class="note">🔐 ${__h('Everyone you share with should have 2-step verification on their {service} account: it is their key to the folder.', { service })}</p>
+      <p class="note">🔐 ${__h('Everyone you share with should have 2-step verification on their {service} account: it is their key to the folder.', { service: icloud ? 'Apple ID' : service })}</p>
       ${s.policy && s.policy.owner ? `<div class="stat" style="margin-top:8px"><span>${__h('Only my phone can share this folder')}<br><small>${__h('Other parents still approve requests; only this account can share the folder on in {service}.', { service })}</small></span><label class="chip"><input type="checkbox" id="ownerShare" ${s.policy.ownerOnly ? 'checked' : ''}> ${__h('On')}</label></div>` : s.policy && s.policy.ownerOnly ? `<p class="note">${__h("Only the folder's owner can share it (their setting): ask them to share it from their phone.")}</p>` : ''}
-      ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Shared, not joined yet')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(i.email)}<br><small>${esc(roleName(i.role))}${Sync.joinCodeFor(i.email) ? ` · ${__h('join code')} <b class="mono sel">${esc(Sync.joinCodeFor(i.email))}</b>` : ''}</small></span><span class="btns"><button class="btn d" data-rescind="${esc(i.email)}" style="padding:6px 10px">${__h('Stop')}</button></span></div>`).join('')}` : ''}</div>`;
+      ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Shared, not joined yet')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(i.name || i.email)}<br><small>${esc(roleName(i.role))}${Sync.joinCodeFor(i.email) ? ` · ${__h('join code')} <b class="mono sel">${esc(Sync.joinCodeFor(i.email))}</b>` : ''}</small></span><span class="btns"><button class="btn d" data-rescind="${esc(i.email)}" style="padding:6px 10px">${__h('Stop')}</button></span></div>`).join('')}` : ''}</div>`;
   }
   function inviteHtml() {
     let svg = ''; try { svg = qrSvg(invite.url); } catch (e) { svg = `<p class="note">${__h('Could not draw the QR code – use the code instead.')}</p>`; }
@@ -1257,8 +1269,8 @@ const Acct = (() => {
     if (!Sync.isParent()) return;
     const read = bindAccess(el('invCard'), 'inv', a => { invForm = a; });
     if (el('shGo')) el('shGo').onclick = async () => {
-      const a = read(), email = $('#shEmail').value.trim().toLowerCase();
-      if (!/^\S+@\S+\.\S+$/.test(email)) return toast(__('Enter a valid email address'));
+      const a = read(), icloud = Folder.provider === 'icloud', email = icloud ? $('#shEmail').value.trim() : $('#shEmail').value.trim().toLowerCase();
+      if (icloud ? !email : !/^\S+@\S+\.\S+$/.test(email)) return toast(icloud ? __('Enter their name') : __('Enter a valid email address'));
       try { const codes = await Sync.shareWith([email], a.role, a.perms, db.baby.name ? __("{name}'s log in Little Log", { name: db.baby.name }) : ''); toast(codes && codes[0] ? __('Shared with {email}. Their join code: {code}', { email, code: codes[0] }) : __('Shared with {email}', { email })); render(); } catch (e) { toast(err(e)); }
     };
     if (el('ownerShare')) el('ownerShare').onchange = async () => { const v = el('ownerShare').checked; try { await Sync.setOwnerOnly(v); toast(v ? __('Only this phone can share the folder now') : __('Every parent can share the folder again')); } catch (e) { toast(err(e)); } render(); };
@@ -1270,7 +1282,7 @@ const Acct = (() => {
     document.querySelectorAll('[data-showinv]').forEach(b => b.onclick = async () => { const i = Sync.st.invites.find(x => x.code === b.dataset.showinv); const secret = await E2EE.inviteSecret(i.code); invite = { code: i.code, role: i.role, secret, url: Sync.inviteUrl(i.code, secret) }; render(); });
     document.querySelectorAll('[data-rescind]').forEach(b => b.onclick = async () => {
       if (!confirm(folderMode() ? __('Stop sharing the folder with them?') : __('Rescind this invite? The code stops working immediately.'))) return;
-      try { await Sync.rescind(b.dataset.rescind); if (invite && invite.code === b.dataset.rescind) invite = null; render(); } catch (e) { toast(err(e)); }
+      try { await Sync.rescind(b.dataset.rescind); if (invite && invite.code === b.dataset.rescind) invite = null; filesReminder(); render(); } catch (e) { toast(err(e)); }
     });
     const checked = (name, v) => { const c = document.querySelector(`input[name=${name}][value="${v}"]`); return !!(c && c.checked); };
     document.querySelectorAll('[data-approvephone]').forEach(b => b.onclick = async () => {
@@ -1303,7 +1315,7 @@ const Acct = (() => {
     $('#sheet [data-close]').onclick = close;
     $('#rtGo').onclick = async () => {
       const why = (document.querySelector('#sheet [name=rtWhy]:checked') || {}).value || '';
-      try { await Sync.retireMember(userId, why); close(); toast(__('{name} is retired', { name })); render(); } catch (e) { toast(err(e)); }
+      try { await Sync.retireMember(userId, why); close(); toast(__('{name} is retired', { name })); filesReminder(); render(); } catch (e) { toast(err(e)); }
     };
   }
   /** A retired helper: who they were and their details, kept for the family. A parent can delete the note. */
@@ -1356,7 +1368,7 @@ const Acct = (() => {
       try { if (name !== p.display_name) await Sync.renameMember(userId, name); await Sync.setMember(userId, a.role, a.perms); close(); toast(__('Saved')); render(); } catch (e) { toast(err(e)); }
     };
     if ($('#pMfa')) $('#pMfa').onclick = async () => { if (!confirm(__('Reset two-step verification for {name}? They will set it up again next time they sign in.', { name: p.display_name }))) return; try { await Sync.resetMfa(userId); toast(__('Reset')); } catch (e) { toast(err(e)); } };
-    $('#pRemove').onclick = async () => { if (!confirm(__('Remove {name} from this log? They lose access immediately.', { name: p.display_name }))) return; try { await Sync.removeMember(userId); close(); render(); } catch (e) { toast(err(e)); } };
+    $('#pRemove').onclick = async () => { if (!confirm(__('Remove {name} from this log? They lose access immediately.', { name: p.display_name }))) return; try { await Sync.removeMember(userId); filesReminder(); close(); render(); } catch (e) { toast(err(e)); } };
   }
   // What each line of the activity log says. Names come from the server; the rest is in the app's language.
   const ACT = {

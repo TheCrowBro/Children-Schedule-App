@@ -2837,5 +2837,18 @@
  "zmfqxo": "Você pode mover esta pasta para qualquer lugar da sua nuvem e renomeá-la, desde que o nome continue começando com “Little Log”: é assim que o telefone de um parente a encontra ao entrar.",
  "1vkr76e": "Por favor, não renomeie, mova nem apague nada dentro desta pasta: nem os arquivos, nem as pastas chamadas devices, events, join, keys e media. Os telefones as encontram pelo nome. Uma pasta renomeada faz registros sumirem dos telefones de todos, e arquivos apagados podem perder o registro de vez.",
  "znfob5": "Não compartilhe esta pasta pela sua nuvem: compartilhe pela aba Família do Little Log, que também dá à pessoa o seu código de entrada.",
- "17g4d1m": "Se algo foi alterado por engano, coloque de volta (a lixeira ou o histórico de versões da sua nuvem podem ajudar): o telefone de uma mãe ou de um pai conserta o que puder na próxima sincronização."
+ "17g4d1m": "Se algo foi alterado por engano, coloque de volta (a lixeira ou o histórico de versões da sua nuvem podem ajudar): o telefone de uma mãe ou de um pai conserta o que puder na próxima sincronização.",
+ "1mt7w69": "iCloud Drive: a pasta é compartilhada com a família pelo app Arquivos, e todos na família precisam de um iPhone ou iPad.",
+ "foj4hv": "{service} conectado",
+ "rb3hf7": "Você escolhe em que lugar do iCloud Drive a pasta Little Log é criada.",
+ "1ksylvc": "Uma mãe ou um pai compartilha a pasta da família com você pelo app Arquivos (Compartilhar → Colaborar) e diz um código de entrada. Aceite o compartilhamento no Arquivos e depois escolha a pasta aqui.",
+ "19e33gm": "Escolher a pasta compartilhada…",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Tire a pessoa também da pasta no app Arquivos: toque e segure, Gerenciar pasta compartilhada.",
+ "1mtbk83": "A pasta é compartilhada no app Arquivos: iCloud Drive → toque e segure a pasta Little Log → Compartilhar → Colaborar, e adicione o e-mail do ID Apple da pessoa. O código de entrada dela é criado aqui; diga a ela. Quando abrir o Little Log, ela escolhe a pasta, digita o código e você a aprova aqui.",
+ "1ppwpnr": "ex.: Vovó",
+ "1tzscmn": "Compartilhar no Arquivos e criar um código de entrada",
+ "cjhk5s": "Digite o nome da pessoa",
+ "lfwb2v": "Não foi possível acessar a pasta.",
+ "1mi3el8": "Nenhum lugar foi escolhido para a pasta."
 }

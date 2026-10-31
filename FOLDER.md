@@ -170,16 +170,34 @@ recovery code, which is also the way to restore the log from a backup copy.
   only a file's owner may delete it, so another phone empties it instead and an empty file counts as gone; and sharing is immediate
   (no invitation to accept). Drive's ids for the folder's paths are kept with the log on the phone (`db.meta.gdid`).
 
-The protocol does not depend on either: a backend is `list(cursor)`, `get`, `put` (add / overwrite / update-if-unchanged),
-`delete`, `share`, `unshare`, `leave`, `candidates`, `mount`. OneDrive and iCloud Drive (through the Files app on iPhones) are
-next, and the files are the same.
+- **iCloud Drive** has no web API, so on an iPhone or iPad the family folder is a folder in the **Files app**, reached through the app's
+  own plugin (`ios/App/App/FolderPlugin.swift`): the parent chooses where in iCloud Drive the *Little Log* folder is made, and the app
+  keeps a bookmark to it; a relative picks the shared folder in the Files app's picker. The same files live in it, listed, read and
+  written with file coordination (so iCloud downloads what is asked for); there is no delta, every listing is the whole folder (local,
+  so cheap), and what was listed before and is not now counts as gone. What the clouds do through their APIs, the family does in the
+  Files app here: **sharing** is the share sheet's *Collaborate* (the app opens it; the parent adds people by Apple ID), and so is taking
+  someone off the folder (the app says so after a removal). Nobody's email is known, so the parent invites people **by name** and
+  the invitation is filed under the **join code** (`E2EE.inviteKey`), which the request carries; the cloud says nothing about who wrote
+  a request (the join code, or the security code read out, is the check), and there is no *Only my phone can share* setting. The
+  person's id is a random id kept in the iCloud Keychain, so it is the same on all of their devices (a new phone of theirs is "a
+  member's new phone"). No iCloud entitlement is needed: the folder is reached through the picker, not an app container. Everyone in
+  such a family needs an iPhone or iPad (an Android phone cannot reach iCloud Drive). The plugin is written but, as of 1.29.0, not yet
+  built or tried on a device ([MOBILE.md](MOBILE.md)); the JavaScript side runs against a fake of it in the tests.
+
+The protocol does not depend on any of them: a backend is `list(cursor)`, `get`, `put` (add / overwrite / update-if-unchanged),
+`delete`, `share`, `unshare`, `leave`, `candidates`, `mount` (and, for a folder picked in the Files app, `pick`). OneDrive is next,
+and the files are the same.
 
 ## What the tests prove
 
 [tests/folder.test.js](tests/folder.test.js) runs the real app, built without a family server as the store build is, on three
 phones against a fake of each cloud ([tests/lib/fake-dropbox.js](tests/lib/fake-dropbox.js): shared folders, revisions, delta
 cursors, invitations; [tests/lib/fake-gdrive.js](tests/lib/fake-gdrive.js): files by id, revisions, the changes feed, permissions,
-shared-with-me, owner-only deletion). It walks the whole life of a family folder, once per cloud: starting the log, sharing out, joining and approving, a caregiver who
+shared-with-me, owner-only deletion). A third run walks iCloud Drive through a fake of the app's folder plugin ([tests/lib/fake-icloud.js](tests/lib/fake-icloud.js): a
+folder made where the user chooses, the Files app's picker and sharing, people by name): connecting without a sign-in, starting the
+log, sharing by name with a join code (*Verified*, no email anywhere), a caregiver by security code, a hostile family list put back, a
+deleted keyring restored, a removal (new keys; her phone loses the log once she is taken off the folder in Files), a parent's new
+phone with the recovery code. It walks the whole life of a family folder, once per cloud: starting the log, sharing out, joining and approving, a caregiver who
 never receives health notes, what a member's phone with a modified app could try and how the others hold up (the family list
 rewritten to make herself a parent and a stranger put on the tree, ignored and put back; an entries file under another phone's
 name and an entry claiming another author, dropped; the key files deleted, put back; keys of her own set for everyone, superseded

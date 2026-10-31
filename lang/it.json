@@ -2837,5 +2837,18 @@
  "zmfqxo": "Puoi spostare questa cartella ovunque nel tuo cloud e rinominarla, purché il suo nome inizi ancora con «Little Log»: è così che il telefono di un parente la trova quando si unisce.",
  "1vkr76e": "Per favore non rinominare, spostare o eliminare nulla dentro questa cartella: né i file, né le cartelle chiamate devices, events, join, keys e media. I telefoni le trovano dal nome. Una cartella rinominata fa sparire le voci dai telefoni di tutti, e i file eliminati possono far perdere il diario per sempre.",
  "znfob5": "Non condividere questa cartella dal tuo cloud: condividila dalla scheda Famiglia di Little Log, che dà anche alla persona il suo codice di adesione.",
- "17g4d1m": "Se qualcosa è stato cambiato per sbaglio, rimettilo a posto (il cestino o la cronologia delle versioni del tuo cloud possono aiutare): il telefono di un genitore ripara ciò che può alla sincronizzazione successiva."
+ "17g4d1m": "Se qualcosa è stato cambiato per sbaglio, rimettilo a posto (il cestino o la cronologia delle versioni del tuo cloud possono aiutare): il telefono di un genitore ripara ciò che può alla sincronizzazione successiva.",
+ "1mt7w69": "iCloud Drive: la cartella si condivide con la famiglia dall'app File, e tutti in famiglia hanno bisogno di un iPhone o di un iPad.",
+ "foj4hv": "{service} collegato",
+ "rb3hf7": "Scegli tu dove, in iCloud Drive, viene creata la cartella Little Log.",
+ "1ksylvc": "Un genitore condivide con te la cartella di famiglia dall'app File (Condividi → Collabora) e ti dice un codice di adesione. Accetta la condivisione in File, poi scegli qui la cartella.",
+ "19e33gm": "Scegli la cartella condivisa…",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Rimuovilo anche dalla cartella nell'app File: tienila premuta, Gestisci cartella condivisa.",
+ "1mtbk83": "La cartella si condivide nell'app File: iCloud Drive → tieni premuta la cartella Little Log → Condividi → Collabora, e aggiungi l'email del suo ID Apple. Il suo codice di adesione viene creato qui: diglielo. Quando apre Little Log, sceglie la cartella, digita il codice e tu lo approvi qui.",
+ "1ppwpnr": "es. Nonna",
+ "1tzscmn": "Condividi in File e crea un codice di adesione",
+ "cjhk5s": "Inserisci il suo nome",
+ "lfwb2v": "Impossibile raggiungere la cartella.",
+ "1mi3el8": "Non è stato scelto alcun posto per la cartella."
 }

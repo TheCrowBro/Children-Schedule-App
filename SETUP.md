@@ -10,6 +10,11 @@ is kept in the code for later: the app only uses one when `config.js` names it, 
 > `config.js`**. Fill in `config.js` *before* building, or the app can't reach the services you set up.
 
 ## The family's own cloud (the store build: no server)
+
+**iCloud Drive** needs nothing registered: it goes through the Files app on iPhones and iPads, with the app's own plugin
+(`ios/App/App/FolderPlugin.swift`, registered in `MyViewController.swift`), which the iOS build carries. It is written but not yet
+built or tried on a device: open the project in Xcode, build, and walk [TESTING.md](TESTING.md)'s iCloud list on two iPhones. A
+family on iCloud Drive needs everyone on an iPhone or iPad.
 Little Log can keep a family's log in **a folder in the family's own cloud storage** instead of on a server: a parent connects their
 Dropbox or Google Drive, the app makes a folder named *Little Log* there and keeps the log in it (encrypted on the phones, as always),
 and the parent shares the folder with the family from the Family tab; each relative connects their own account with the same cloud,

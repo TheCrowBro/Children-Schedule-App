@@ -77,6 +77,15 @@ sort out signing.
   Keep `index.html`'s opening tag a plain `<head>`, and re-check after upgrading Capacitor. iOS injects its bridge natively, outside CSP.
 * **Not yet verified on real devices:** the camera permission prompt, Face ID / fingerprint, the Keychain/Keystore plugins, Google/OneDrive
   sign-in, Turnstile inside the WebView. These are tested against fakes of the native layer; try them first on a physical Android phone and iPhone.
+* **The Files-app folder plugin** (`ios/App/App/FolderPlugin.swift`, for iCloud Drive as the family folder, [FOLDER.md](FOLDER.md)) was
+  written without Xcode at hand and has not been built or run: build it, then try on two iPhones: *Connect iCloud Drive* → the picker
+  (where the Little Log folder goes) → *Create log*; on the Family tab *Share in Files and make a join code* (the share sheet should
+  offer *Collaborate* for an iCloud Drive folder); on the other phone *Choose the shared folder…* (the shared folder appears under
+  iCloud Drive → Shared in the picker), the join code, approval; entries both ways; a picture; the app in the background for a while
+  (iCloud syncs the files itself; the app lists the folder every 30 s while open). Things to watch: whether iCloud placeholders
+  (files not yet downloaded) list under their own names and download on a coordinated read, as the plugin assumes; whether the
+  share sheet's *Collaborate* appears for a folder the app holds a bookmark to; the person id in the iCloud Keychain surviving a
+  reinstall and reaching the person's other devices.
 * Invite links only open the installed app (custom scheme); people scan the QR code *inside* the app, or type the code. Universal Links /
   App Links would need a domain you control.
 * The local copy of the log is not encrypted with a Keystore key (it relies on the OS sandbox and the app lock).

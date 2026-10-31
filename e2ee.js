@@ -206,6 +206,8 @@ const E2EE = (() => {
       phone that the request is theirs, and to the joining phone that the keys came from that parent. */
   const newJoinCode = () => Array.from(rand(8), x => RECOVERY_ALPHABET[x & 31]).join('').replace(/(.{4})(.{4})/, '$1-$2');
   const joinCodeSecret = code => { const c = normCode(code); return c.length === 8 ? c : null; };   // (8 letters of the base64url alphabet: the secret as the proofs want it)
+  /** What an invitation is filed under when it has no email (iCloud Drive shares by name): made from the join code, so the request that carries the code finds it. */
+  const inviteKey = async secret => b64(await sha256(enc.encode('ll1|invite|' + secret))).slice(0, 12);
 
   // ---- recovery code -----------------------------------------------------------------------------
   const genCode = () => Array.from(rand(32), x => RECOVERY_ALPHABET[x & 31]).join('').match(/.{4}/g).join('-');
@@ -475,7 +477,7 @@ const E2EE = (() => {
     /** The kinds of entry this version of the app knows (an older one skips the newer kinds). */
     KINDS: TYPES.join(' ') + ' +media', SENSITIVE, isSensitive, sealMedia, openMedia,
     uuid, newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,
-    fingerprint, fpRaw, securityCode, forget, wipeUser, sign, verify, newJoinCode, joinCodeSecret,
+    fingerprint, fpRaw, securityCode, forget, wipeUser, sign, verify, newJoinCode, joinCodeSecret, inviteKey,
     get device() { return dev; },
     get recoverySigner() { return recSigner; },
     hasKeys: baby => !!(store[baby] && raw(baby, store[baby].epoch, 'main')),

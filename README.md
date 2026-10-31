@@ -250,7 +250,10 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   made when the folder is shared and typed on the joining phone, shows the parent *Verified* without a security code read out, and
   the parent's phone takes who wrote a request from the cloud's own record. The folder's owner can keep sharing to their own phone
   (*Only my phone can share this folder*). The folder holds a README.txt for the family, in their language: it may be moved or renamed
-  (its name starting with *Little Log*), but nothing inside it should be renamed, moved or deleted. OneDrive and iCloud Drive are next
+  (its name starting with *Little Log*), but nothing inside it should be renamed, moved or deleted. **iCloud Drive** is prepared for
+  iPhones and iPads: the folder lives in the Files app through the app's own plugin, is shared from the Files app, people are invited
+  by name with a join code, and everyone in the family needs an Apple device; the plugin still has to be built and tried in Xcode.
+  OneDrive is next
 - **Family tree** (Family tab): the family as the tree's **roots**: a detailed tree above the ground (its crown, boughs and birds, the
   sun or the moon, the hill with its flowers) and below it the children as the newest root tips just under the trunk, the parents
   below them, the grandparents deeper and the great-grandparents deepest, aunts and uncles as side roots with their children, and each

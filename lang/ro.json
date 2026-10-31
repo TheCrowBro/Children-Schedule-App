@@ -2837,5 +2837,18 @@
  "zmfqxo": "Puteți muta acest folder oriunde în cloudul vostru și îl puteți redenumi, atâta timp cât numele lui începe în continuare cu „Little Log”: așa îl găsește telefonul unei rude când se alătură.",
  "1vkr76e": "Vă rugăm să nu redenumiți, mutați sau ștergeți nimic din interiorul acestui folder: nici fișierele, nici folderele numite devices, events, join, keys și media. Telefoanele le găsesc după nume. Un folder redenumit face ca înregistrările să dispară de pe toate telefoanele, iar fișierele șterse pot pierde jurnalul pentru totdeauna.",
  "znfob5": "Nu partajați acest folder din cloud: partajați-l din fila Familie din Little Log, care îi dă persoanei și codul de alăturare.",
- "17g4d1m": "Dacă ceva a fost schimbat din greșeală, puneți la loc (coșul sau istoricul versiunilor din cloud pot ajuta): telefonul unui părinte repară ce poate la următoarea sincronizare."
+ "17g4d1m": "Dacă ceva a fost schimbat din greșeală, puneți la loc (coșul sau istoricul versiunilor din cloud pot ajuta): telefonul unui părinte repară ce poate la următoarea sincronizare.",
+ "1mt7w69": "iCloud Drive: folderul se partajează cu familia din aplicația Fișiere, iar toți din familie au nevoie de un iPhone sau iPad.",
+ "foj4hv": "{service} conectat",
+ "rb3hf7": "Tu alegi unde în iCloud Drive se creează folderul Little Log.",
+ "1ksylvc": "Un părinte partajează folderul familiei cu tine din aplicația Fișiere (Partajează → Colaborează) și îți spune un cod de alăturare. Acceptă partajarea în Fișiere, apoi alege folderul aici.",
+ "19e33gm": "Alege folderul partajat…",
+ "66hon3": "{service} · {role}",
+ "1vn84fz": "Scoate persoana și din folder, în aplicația Fișiere: ține apăsat, Gestionează folderul partajat.",
+ "1mtbk83": "Folderul se partajează în aplicația Fișiere: iCloud Drive → ține apăsat folderul Little Log → Partajează → Colaborează și adaugă e-mailul ID-ului Apple al persoanei. Codul ei de alăturare se creează aici; spune-i-l. Când deschide Little Log, alege folderul, tastează codul, iar tu o aprobi aici.",
+ "1ppwpnr": "de ex. Bunica",
+ "1tzscmn": "Partajează în Fișiere și creează un cod de alăturare",
+ "cjhk5s": "Introdu numele persoanei",
+ "lfwb2v": "Folderul nu a putut fi accesat.",
+ "1mi3el8": "Nu a fost ales niciun loc pentru folder."
 }
