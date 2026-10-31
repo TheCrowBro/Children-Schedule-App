@@ -387,7 +387,7 @@ const unmarked = (page, data) => page.evaluate(data => {
       (function walk(d) { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); fs.statSync(p).isDirectory() ? walk(p) : files.push(p); } })(www);
       for (const f of files) assert(!fs.readFileSync(f, 'utf8').includes(to), 'the address is not in ' + path.relative(www, f));
       // and no real address anywhere in what is published: only placeholders and the tests' made-up ones
-      const OK = /@(example\.(com|test)|little-log\.example|your-domain|x\.com|resend\.dev)\b/;
+      const OK = /@(example\.(com|test)|little-log\.example|your-domain|x\.com|resend\.dev|crowmade\.app)\b/;   // (crowmade.app: the publisher's public support address, meant to be seen)
       const langs = fs.readdirSync(path.join(__dirname, '..', 'lang')).map(f => 'lang/' + f);
       for (const f of ['app.js', 'account.js', 'i18n.js', 'README.md', 'TESTING.md', 'supabase/functions/language-report/handler.mjs', 'supabase/functions/language-report/index.ts', 'supabase/functions/_shared/report.mjs', 'supabase/functions/crash-report/handler.mjs', 'supabase/functions/crash-report/index.ts', 'crash.js', 'supabase/schema.sql', 'SETUP.md', 'INSTALL.md', 'MOBILE.md', 'SECURITY.md', ...langs]) {
         const t = fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), emails = (t.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g) || []).filter(e => !OK.test(e));
