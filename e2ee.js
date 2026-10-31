@@ -4,7 +4,10 @@
    Keys    Each log has a MAIN key (everything) and a HEALTH key (health notes and medication, shared only with people allowed
            to see them). Keys have an "epoch"; they are replaced (rotated) when someone leaves or loses a phone.
    Phones  Every phone has its own ECDH P-256 key pair; the private half lives in the Keychain / Keystore. A log's keys are
-           stored on the server only as copies wrapped (ECIES: ephemeral ECDH + HKDF + AES-GCM) to each approved phone.
+           stored on the server only as copies wrapped (ECIES: ephemeral ECDH + HKDF + AES-GCM) to each approved phone. Each
+           phone also has an ECDSA P-256 signing pair, with which it signs what it writes to a family folder (folder.js): the
+           family list, the tree, its grants to other phones, its entry files. Who may sign what is decided by a chain of
+           approvals that starts at the folder's creator.
    Trust   Giving keys to a phone is only safe if the phone's public key is the real one (the server could substitute its own).
            A QR invite carries a secret the server never sees: the joiner proves possession (HMAC) and the parent authenticates the
            grant back with it. Without a QR (typed code, new phone) people compare a security code instead.
@@ -80,8 +83,14 @@ const E2EE = (() => {
     return open(await hkdf(bits, await sha256(canon(epk)), 'littlelog/wrap/v1|' + ctx), w.c, ctx);
   }
   async function newKeyPair() { const kp = await S.generateKey(ECDH, true, ['deriveBits']); const priv = await S.exportKey('jwk', kp.privateKey); return { priv, pub: pubOf(priv) }; }
-  const fingerprint = async pub => digits(await sha256(canon(pub)));
+  /** A phone's code to read out: its ECDH key, and (family folder) its signing key too, so the parent's approval binds both. */
+  const fingerprint = async (pub, spub) => digits(await sha256(spub ? cat(canon(pub), canon(spub)) : canon(pub)));
   const fpRaw = async pub => b64(await sha256(canon(pub)));
+  // ---- signatures (the family folder): ECDSA P-256 over a message that names the log, the kind of file and its path ----
+  const ECDSA = { name: 'ECDSA', namedCurve: 'P-256' }, SIGN = { name: 'ECDSA', hash: 'SHA-256' };
+  async function newSignPair() { const kp = await S.generateKey(ECDSA, true, ['sign', 'verify']); const priv = await S.exportKey('jwk', kp.privateKey); return { priv, pub: pubOf(priv) }; }
+  async function sign(privJwk, msg) { const k = await S.importKey('jwk', privJwk, ECDSA, false, ['sign']); return b64(new Uint8Array(await S.sign(SIGN, k, enc.encode(msg)))); }
+  async function verify(pub, msg, sig) { try { const k = await S.importKey('jwk', pubOf(pub), ECDSA, false, ['verify']); return await S.verify(SIGN, k, unb64(sig), enc.encode(msg)); } catch (e) { return false; } }
 
   // ---- contexts (what each ciphertext / MAC is bound to) -----------------------------------------
   const entryAad = (baby, id, epoch, sens) => `ll1|entry|${baby}|${id}|${epoch}|${sens ? 'h' : 'm'}`;
@@ -130,7 +139,7 @@ const E2EE = (() => {
   const setDir = d => { dir = d || serverDir; };
 
   // ---- this phone ---------------------------------------------------------------------------
-  let dev = null;   // { user, id, priv, pub }
+  let dev = null;   // { user, id, priv, pub, spriv, spub }
   const dkey = uid => 'e2ee.device.' + uid;
   async function ensureDevice() {
     const uid = Auth.id;
@@ -139,29 +148,35 @@ const E2EE = (() => {
       try { const v = await Native.Secure.get(dkey(uid)); if (v) dev = JSON.parse(v); } catch (e) {}
       if (!dev) { const kp = await newKeyPair(); dev = { user: uid, id: null, priv: kp.priv, pub: kp.pub }; }
     }
-    let known = false;
-    if (dev.id) { try { known = (await dir.myDevices()).some(d => d.id === dev.id); } catch (e) { return dev; } }   // offline: keep going
-    if (!known) { dev.id = await dir.registerDevice((Native.platform || 'phone') + ' phone', dev.pub); }
+    let fresh = false;
+    if (!dev.spriv) { const sp = await newSignPair(); dev.spriv = sp.priv; dev.spub = sp.pub; fresh = true; }   // (a phone from before signing: it gets its signing key now)
+    let known = false, mine = null;
+    if (dev.id) { try { mine = (await dir.myDevices()).find(d => d.id === dev.id) || null; known = !!mine; } catch (e) { return dev; } }   // offline: keep going
+    if (!known) { dev.id = await dir.registerDevice((Native.platform || 'phone') + ' phone', dev.pub, dev.spub); }
+    else if (dir.addSigningKey && (fresh || !mine.spub)) await dir.addSigningKey(dev.id, dev.spub).catch(() => {});   // (its record in the folder learns the signing key)
     await Native.Secure.set(dkey(uid), JSON.stringify(dev));
     return dev;
   }
 
   // ---- grants ----------------------------------------------------------------------------------------
   /** Wrap a key set to one phone (or the recovery key). Includes a main-key MAC, and a QR-secret MAC when `secret` is known. */
-  async function makeGrant(baby, epoch, keys, grantee, pub, { health, secret, chain } = {}) {
+  async function makeGrant(baby, epoch, keys, grantee, pub, { health, secret, chain, ext } = {}) {
     const ctx = grantCtx(baby, epoch, grantee);
     const wrap_main = await wrapTo(pub, keys.main, ctx + '|m');
     const wrap_health = health ? await wrapTo(pub, keys.health, ctx + '|h') : null;
     const tag = await hmac(keys.main, await tagMsg(baby, epoch, grantee, pub));
     // `auth` proves the grant is genuine, because anyone (the server included) can wrap keys to a public key:
-    //  - first keys for a QR joiner: a MAC under the invite secret that the server never sees
+    //  - first keys for a QR joiner (or, in a family folder, one who typed the join code): a MAC under the invite secret that
+    //    the server never sees
     //  - a key change for a phone that already has keys: a MAC under each of the previous epochs' main keys (`chain`), which
     //    the phone checks against the newest one it holds, so keys the server made up are rejected
-    const body = `${ctx}|${wrap_main}|${wrap_health || ''}`; let auth = null;
+    // `ext` (family folder) says whose phone this is, its role, its signing key and the folder's root, under the same proof.
+    const body = grantBody(ctx, wrap_main, wrap_health, ext); let auth = null;
     if (secret) auth = await hmac(await hkdf(unb64u(secret), new Uint8Array(0), 'll1/grant-auth'), body);
     else if (chain && chain.length) { const m = {}; for (const c of chain) m[c.epoch] = await hmac(c.key, body); auth = JSON.stringify(m); }
-    return { wrap_main, wrap_health, auth, tag };
+    return { wrap_main, wrap_health, auth, tag, ext: ext || null };
   }
+  const grantBody = (ctx, wrap_main, wrap_health, ext) => `${ctx}|${wrap_main}|${wrap_health || ''}${ext ? '|' + ext : ''}`;
   /** Main keys of the most recent epochs we hold (newest first), to authenticate a grant for a phone that may still hold older keys. */
   function chainOf(baby) {
     const s = store[baby]; if (!s) return [];
@@ -181,20 +196,25 @@ const E2EE = (() => {
   }
   async function inviteSecret(code) { try { const m = JSON.parse(await Native.Secure.get('e2ee.invites') || '{}'); return m[code] ? m[code].s : null; } catch (e) { return null; } }
   const proofKey = async secret => hkdf(unb64u(secret), new Uint8Array(0), 'll1/join-proof');
-  const joinProof = async (secret, deviceId, pub) => hmac(await proofKey(secret), `${deviceId}|${await fpRaw(pub)}`);
-  async function verifyRequest(req) {   // did the requester prove they hold the QR secret for *this* public key?
+  const joinProof = async (secret, deviceId, pub, spub) => hmac(await proofKey(secret), `${deviceId}|${await fpRaw(pub)}${spub ? '|' + await fpRaw(spub) : ''}`);
+  async function verifyRequest(req) {   // did the requester prove they hold the QR secret (or the typed join code) for *this* phone's keys?
     if (!req.proof || !req.invite_code) return false;
     const s = await inviteSecret(req.invite_code); if (!s) return false;
-    try { return req.proof === await joinProof(s, req.device_id, req.device_pub); } catch (e) { return false; }
+    try { return req.proof === await joinProof(s, req.device_id, req.device_pub, req.device_spub); } catch (e) { return false; }
   }
+  /** A join code a parent gives someone they shared the family folder with: typed on the joining phone, it proves to the parent's
+      phone that the request is theirs, and to the joining phone that the keys came from that parent. */
+  const newJoinCode = () => Array.from(rand(8), x => RECOVERY_ALPHABET[x & 31]).join('').replace(/(.{4})(.{4})/, '$1-$2');
+  const joinCodeSecret = code => { const c = normCode(code); return c.length === 8 ? c : null; };   // (8 letters of the base64url alphabet: the secret as the proofs want it)
 
   // ---- recovery code -----------------------------------------------------------------------------
   const genCode = () => Array.from(rand(32), x => RECOVERY_ALPHABET[x & 31]).join('').match(/.{4}/g).join('-');
   const normCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const recoveryKey = code => hkdf(enc.encode(normCode(code)), enc.encode('ll1/recovery'), 'littlelog/recovery-priv/v1');
   async function newRecovery() {
-    const code = genCode(), kp = await newKeyPair();
-    return { code, pub: kp.pub, privWrapped: await seal(await recoveryKey(code), enc.encode(JSON.stringify(kp.priv)), 'll1|recovery-priv') };
+    const code = genCode(), kp = await newKeyPair(), sp = await newSignPair(), rk = await recoveryKey(code);
+    return { code, pub: kp.pub, privWrapped: await seal(rk, enc.encode(JSON.stringify(kp.priv)), 'll1|recovery-priv'),
+      spub: sp.pub, sprivWrapped: await seal(rk, enc.encode(JSON.stringify(sp.priv)), 'll1|recovery-spriv') };   // (the signing pair: a phone let in with the code signs its own grant with it)
   }
 
   // ---- entries & profile ---------------------------------------------------------------------------
@@ -325,13 +345,14 @@ const E2EE = (() => {
       } catch (e) { throw new Error(N_('The keys sent to this phone could not be opened. Ask a parent to approve this phone again.')); }
       const first = !(store[baby] && Object.values(store[baby].keys).some(e => e.main));
       if (!heldMain) {
-        const body = `${ctx}|${g.wrap_main}|${g.wrap_health || ''}`;
+        const body = grantBody(ctx, g.wrap_main, g.wrap_health, g.ext);
         if (first) {
           const sec = await joinSecretGet();
-          if (sec) {   // joined with a QR code: the keys must carry the proof only the inviting parent could make (a missing proof is as bad as a wrong one)
+          if (sec) {   // joined with a QR code or a join code: the keys must carry the proof only the inviting parent could make (a missing proof is as bad as a wrong one)
             const want = await hmac(await hkdf(unb64u(sec), new Uint8Array(0), 'll1/grant-auth'), body);
             if (!g.auth || want !== g.auth) throw new Error(N_('These encryption keys did not come from the parent who invited you. Do not continue – tell them.'));
           } else if (meta) meta.unverified = true;   // typed code / approved phone: compare the log security code
+          if (meta && g.ext && !meta.ftrust) { try { const x = JSON.parse(g.ext); if (x && x.root && x.root.d && x.root.k) meta.ftrust = { root: x.root, mseq: 0, tseq: 0 }; } catch (e) { /* no root in it */ } }   // (family folder: the chain of approvals this phone will check starts here)
         } else if (g.epoch > store[baby].epoch) {
           // A key change must be signed with keys this phone already trusts; otherwise the server could substitute keys of its own.
           let ok = false;
@@ -365,39 +386,44 @@ const E2EE = (() => {
     const main = await unwrapWith(priv, r.wrap_main, ctx + '|m'), health = r.wrap_health ? await unwrapWith(priv, r.wrap_health, ctx + '|h') : null;
     const kr = (await dir.getKeyring(baby))[0];
     if (health && (!kr || kr.health_check !== await healthCheck(baby, r.epoch, main, health))) throw new Error(N_('The health key did not check out.'));
+    recSigner = null;
+    if (r.recovery_spriv_wrapped && r.recovery_spub) { try { recSigner = { priv: JSON.parse(dec.decode(await open(await recoveryKey(code), r.recovery_spriv_wrapped, 'll1|recovery-spriv'))), pub: r.recovery_spub }; } catch (e) { recSigner = null; } }
     await setKeys(baby, r.epoch, main, health);
     if (meta) meta.unverified = false;
     await selfGrant(baby);   // so the next key change includes this phone
+    recSigner = null;
     await refresh(baby, meta);
   }
+  let recSigner = null;   // the recovery signing key, while a phone let in with the code signs its own grant
   async function selfGrant(baby) {
-    const cur = current(baby), g = await makeGrant(baby, cur.epoch, cur, 'd:' + dev.id, dev.pub, { health: !!cur.health });
-    await dir.grantDevice(baby, dev.id, { wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: null, tag: g.tag });
+    const cur = current(baby), ext = dir.selfExt ? await dir.selfExt(dev, 'recovery') : null;
+    const g = await makeGrant(baby, cur.epoch, cur, 'd:' + dev.id, dev.pub, { health: !!cur.health, ext });
+    await dir.grantDevice(baby, dev.id, { wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: null, tag: g.tag, ext: g.ext }, recSigner ? 'recovery' : null);
   }
 
   // ---- parent operations ---------------------------------------------------------------------------
   async function createLog(profile, displayName) {
     await ensureDevice();
     const baby = uuid(), keys = { main: rand(32), health: rand(32) }, rec = await newRecovery();
-    const mine = await makeGrant(baby, 1, keys, 'd:' + dev.id, dev.pub, { health: true });
+    const mine = await makeGrant(baby, 1, keys, 'd:' + dev.id, dev.pub, { health: true, ext: dir.selfExt ? await dir.selfExt(dev, 'root') : null });
     const recG = await makeGrant(baby, 1, keys, 'recovery', rec.pub, { health: true });
     const id = await dir.createBaby({ baby, profile: await sealProfile(baby, 1, keys.main, profile), display_name: displayName || '', device: dev.id,
-      grant: mine, recovery_pub: rec.pub, recovery_priv_wrapped: rec.privWrapped, recovery_grant: recG, health_check: await healthCheck(baby, 1, keys.main, keys.health) });
+      grant: mine, recovery_pub: rec.pub, recovery_priv_wrapped: rec.privWrapped, recovery_spub: rec.spub, recovery_spriv_wrapped: rec.sprivWrapped, recovery_grant: recG, health_check: await healthCheck(baby, 1, keys.main, keys.health) });
     store[id] = { epoch: 1, keys: {} }; await setKeys(id, 1, keys.main, keys.health);
     return { babyId: id, code: rec.code };
   }
   /** Keys for a join request. The parent must have verified the requester (QR proof, or compared security codes). */
-  async function grantForRequest(baby, req, { manualOk } = {}) {
+  async function grantForRequest(baby, req, { manualOk, ext } = {}) {
     const cur = current(baby); if (!cur) throw new Error(N_('This phone does not have the keys yet.'));
     const s = await inviteSecret(req.invite_code), qrOk = await verifyRequest(req);
     if (!qrOk && !manualOk) throw new Error(N_('Compare the security code with their phone first.'));
     const health = req.role === 'parent' || !!(req.perms && req.perms.view_health);
-    return makeGrant(baby, cur.epoch, cur, 'd:' + req.device_id, req.device_pub, { health, secret: qrOk ? s : null });
+    return makeGrant(baby, cur.epoch, cur, 'd:' + req.device_id, req.device_pub, { health, secret: qrOk ? s : null, ext });
   }
-  async function approveDevice(baby, d) {   // d: a row from list_devices (without keys yet); the approver compared security codes
+  async function approveDevice(baby, d, { ext } = {}) {   // d: a row from list_devices (without keys yet); the approver compared security codes
     const cur = current(baby); if (!cur) throw new Error(N_('This phone does not have the keys yet.'));
-    const g = await makeGrant(baby, cur.epoch, cur, d.grantee, d.pubkey, { health: d.view_health, chain: chainOf(baby) });   // chain: lets a phone that still holds older keys check it
-    await dir.grantDevice(baby, d.grantee.slice(2), { wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: g.auth, tag: g.tag });
+    const g = await makeGrant(baby, cur.epoch, cur, d.grantee, d.pubkey, { health: d.view_health, chain: chainOf(baby), ext });   // chain: lets a phone that still holds older keys check it
+    await dir.grantDevice(baby, d.grantee.slice(2), { wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: g.auth, tag: g.tag, ext: g.ext });
   }
   /** Health key copies for a person's phones (when they are given health access). Only phones whose grant verifies get one. */
   async function healthGrants(baby, userId) {
@@ -409,17 +435,17 @@ const E2EE = (() => {
     return out;
   }
   /** Replace the keys (new epoch) and wrap them to every phone that holds a verified grant, plus the recovery key. */
-  async function rotate(baby, profile) {
-    const cur = current(baby), epoch = cur.epoch + 1, keys = { main: rand(32), health: rand(32) };
+  async function rotate(baby, profile, { from } = {}) {   // from: the folder's epoch when it moved past this phone's without a parent's signature (a forged change: this one goes past it)
+    const cur = current(baby), epoch = Math.max(cur.epoch, from || 0) + 1, keys = { main: rand(32), health: rand(32) };
     const grants = [], skipped = [], chain = chainOf(baby);
     for (const d of await dir.listDevices(baby)) {
-      if (!d.has_grant) continue;
-      if (!await tagOk(baby, cur, d)) { skipped.push(d.grantee); continue; }
-      const g = await makeGrant(baby, epoch, keys, d.grantee, d.pubkey, { health: d.view_health, chain });
-      grants.push({ grantee: d.grantee, wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: g.auth, tag: g.tag });
+      if (!d.has_grant || d.verified === false) continue;   // (family folder: a phone whose grant no parent's phone signed gets no keys until one approves it)
+      if (d.verified !== true && !await tagOk(baby, cur, d)) { skipped.push(d.grantee); continue; }   // (verified: a parent's phone signed its grant, which no server or member could)
+      const g = await makeGrant(baby, epoch, keys, d.grantee, d.pubkey, { health: d.view_health, chain, ext: d.ext || null });
+      grants.push({ grantee: d.grantee, wrap_main: g.wrap_main, wrap_health: g.wrap_health, auth: g.auth, tag: g.tag, ext: g.ext });
     }
     const rec = (await dir.listRecovery(baby))[0];
-    if (!rec || !rec.recovery_pub || !await tagOk(baby, cur, { grantee: 'recovery', pubkey: rec.recovery_pub, tag: rec.tag })) throw new Error(N_('The recovery key could not be verified, so the keys were not changed. Create a new recovery code first.'));
+    if (!rec || !rec.recovery_pub || (rec.verified !== true && !await tagOk(baby, cur, { grantee: 'recovery', pubkey: rec.recovery_pub, tag: rec.tag }))) throw new Error(N_('The recovery key could not be verified, so the keys were not changed. Create a new recovery code first.'));
     const rg = await makeGrant(baby, epoch, keys, 'recovery', rec.recovery_pub, { health: true });
     grants.push({ grantee: 'recovery', wrap_main: rg.wrap_main, wrap_health: rg.wrap_health, tag: rg.tag });
     const s = store[baby], hist = { main: {}, health: {} };
@@ -433,11 +459,13 @@ const E2EE = (() => {
   }
   async function replaceRecovery(baby) {
     const cur = current(baby), rec = await newRecovery(), g = await makeGrant(baby, cur.epoch, cur, 'recovery', rec.pub, { health: true });
-    await dir.setRecovery(baby, { pub: rec.pub, priv_wrapped: rec.privWrapped, wrap_main: g.wrap_main, wrap_health: g.wrap_health, tag: g.tag });
+    await dir.setRecovery(baby, { pub: rec.pub, priv_wrapped: rec.privWrapped, spub: rec.spub, spriv_wrapped: rec.sprivWrapped, wrap_main: g.wrap_main, wrap_health: g.wrap_health, tag: g.tag });
     return rec.code;
   }
 
-  const securityCode = async baby => { const c = current(baby); return c ? digits(unb64(await hmac(c.main, 'll1|code|' + baby))) : ''; };
+  /** The log's security code, the same on every phone that holds the keys; in a family folder it also covers the folder's root key
+      (`root`), so a phone that was handed keys with a made-up root shows a different code from the parents' phones. */
+  const securityCode = async (baby, root) => { const c = current(baby); return c ? digits(unb64(await hmac(c.main, 'll1|code|' + baby + (root ? '|' + root : '')))) : ''; };
   async function forget(baby) { delete store[baby]; await Native.Secure.remove(skey(baby)); }
   async function wipeUser(uid) { dev = null; joinSecret = null; await Native.Secure.remove(dkey(uid)); await Native.Secure.remove('e2ee.join'); await Native.Secure.remove('e2ee.invites'); }
 
@@ -447,8 +475,9 @@ const E2EE = (() => {
     /** The kinds of entry this version of the app knows (an older one skips the newer kinds). */
     KINDS: TYPES.join(' ') + ' +media', SENSITIVE, isSensitive, sealMedia, openMedia,
     uuid, newSecret, rememberInvite, inviteSecret, joinProof, verifyRequest, setJoinSecret, joinSecretGet, tagOk, selfGrant,
-    fingerprint, securityCode, forget, wipeUser,
+    fingerprint, fpRaw, securityCode, forget, wipeUser, sign, verify, newJoinCode, joinCodeSecret,
     get device() { return dev; },
+    get recoverySigner() { return recSigner; },
     hasKeys: baby => !!(store[baby] && raw(baby, store[baby].epoch, 'main')),
     hasHealthKey: baby => !!(store[baby] && raw(baby, store[baby].epoch, 'health')),
     epoch: baby => (store[baby] ? store[baby].epoch : 0),

@@ -18,7 +18,9 @@
    Each phone merges what the others wrote (the newest edit wins, as in server mode), writes its own, and asks the cloud only for
    what changed since last time (a delta cursor), so a sync with nothing new is one small call. Roles and permissions live in
    members.json and are enforced by the apps; the cloud's own sharing (who may edit the folder) is the floor beneath them, and a
-   parent's approval is what hands a phone the keys. FOLDER.md tells the whole story.
+   parent's approval is what hands a phone the keys. Every phone signs what it writes (members.json, tree.json, keys/, events/),
+   and a phone believes a file only when the chain of approvals from the folder's creator (littlelog.json's root) reaches the phone
+   that signed it, with the role the file needs (FolderSync's trust section). FOLDER.md tells the whole story.
    Relies on db / save() from app.js (read at call time), on E2EE and on ServerSync's merge helpers. */
 const Folder = (() => {
   const K = 'folder.v1';
@@ -29,6 +31,7 @@ const Folder = (() => {
   const available = () => Object.keys(NAMES).filter(p => Cloud.available()[p]);
   const TOP = ['littlelog.json', 'keyring.json', 'recovery.json', 'profile.json', 'members.json', 'tree.json', 'devices', 'keys', 'join', 'events', 'media'];
   const J = o => enc.encode(JSON.stringify(o));
+  const accts = new Map();   // Dropbox account id → email, as asked once
   const safeName = n => String(n || '').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || 'family';
   /** The same person on every phone: an id made from the cloud account, never the email itself. */
   async function memberId(provider, account) {
@@ -98,6 +101,17 @@ const Folder = (() => {
       return out;
     },
     async mount(id) { try { await rpc('sharing/mount_folder', { shared_folder_id: id }); } catch (e) { if (!/already_mounted/.test(e.tag) && e.status !== 409) throw e; } },
+    /** Who last wrote a file, by Dropbox's own record: the account (as the app names people, see memberId) and its email. */
+    async writer(p) {
+      const j = await rpc('files/get_metadata', { path: full(p) });
+      const acct = j && j.sharing_info && j.sharing_info.modified_by; if (!acct) return null;
+      let email = accts.get(acct);
+      if (email === undefined) { try { const u = await rpc('users/get_account', { account_id: acct }); email = String(u.email || '').toLowerCase(); } catch (e) { email = ''; } accts.set(acct, email); }
+      return { account: acct, email };
+    },
+    /** Who may share the folder on: everyone with edit access, or its owner only (the owner's setting); and whether this account owns it. */
+    async policy() { const j = await rpc('sharing/get_folder_metadata', { shared_folder_id: c.id }); const t = o => (o && o['.tag']) || ''; return { owner: t(j.access_type) === 'owner', ownerOnly: t(j.policy && j.policy.acl_update_policy) === 'owner' }; },
+    setPolicy: ownerOnly => rpc('sharing/update_folder_policy', { shared_folder_id: c.id, acl_update_policy: ownerOnly ? 'owner' : 'editors' }),
   };
 
   // ---- Google Drive: the family folder a folder in a parent's Drive, shared with the family, addressed by its id (the same for everyone) ----
@@ -268,6 +282,17 @@ const Folder = (() => {
       return out;
     },
     mount: async () => {},
+    /** Who last wrote a file, by Drive's own record (the account as the app names people, and its email). */
+    async writer(p) {
+      const m = GD.ids(), k = p.toLowerCase(); let id = m.files[k];
+      if (!id) { const f = await GD.meta(p); if (!f) return null; id = f.id; }
+      const j = await gjson('GET', GAPI + `files/${id}?fields=lastModifyingUser(emailAddress,permissionId),owners(emailAddress,permissionId)`);
+      const u = (j && j.lastModifyingUser && j.lastModifyingUser.permissionId) ? j.lastModifyingUser : (j && j.owners && j.owners[0]) || null;
+      return u && u.permissionId ? { account: u.permissionId, email: String(u.emailAddress || '').toLowerCase() } : null;
+    },
+    /** Who may share the folder on: everyone with edit access, or its owner only (writersCanShare); and whether this account owns it. */
+    async policy() { const j = await gjson('GET', GAPI + `files/${c.root}?fields=ownedByMe,writersCanShare`); return { owner: !!j.ownedByMe, ownerOnly: j.writersCanShare === false }; },
+    setPolicy: ownerOnly => gjson('PATCH', GAPI + `files/${c.root}?fields=id`, { json: { writersCanShare: !ownerOnly } }),
   };
   const BY = { dropbox: DBX, google: GD };
   const backend = () => BY[(c && c.provider) || 'dropbox'];
@@ -291,47 +316,87 @@ const Folder = (() => {
   const paths = prefix => (typeof FolderSync !== 'undefined' ? FolderSync.paths(prefix) : []);
   async function readAll(prefix) { const out = []; for (const p of paths(prefix)) { const j = await read(p); if (j) out.push(j); } return out; }
 
+  // ---- signatures: a shared file says which phone wrote it, provably (e2ee.js's signing keys; who is believed: FolderSync's trust) ----
+  const sigMsg = (baby, kind, p, body) => `ll1|sig|${baby}|${kind}|${p.toLowerCase()}|${JSON.stringify(body)}`;
+  const bodyOf = j => { const b = {}; for (const [k, v] of Object.entries(j)) if (k !== 's') b[k] = v; return b; };
+  /** `o` with this phone's signature in `s` (`by` 'recovery': the recovery key's, for a phone let in with the recovery code).
+      Unsigned when this phone has no signing key yet (an older app). */
+  async function signed(baby, kind, p, o, by) {
+    const body = bodyOf(o), dev = E2EE.device || await E2EE.ensureDevice().catch(() => null), rs = E2EE.recoverySigner;
+    if (by === 'recovery' && rs) return { ...body, s: { d: 'recovery', u: null, v: await E2EE.sign(rs.priv, sigMsg(baby, kind, p, body)) } };
+    if (dev && dev.spriv && dev.id) return { ...body, s: { d: dev.id, u: dev.user, v: await E2EE.sign(dev.spriv, sigMsg(baby, kind, p, body)) } };
+    return body;
+  }
+  const checkSig = (baby, kind, p, j, pub) => (j && j.s && j.s.v && pub ? E2EE.verify(pub, sigMsg(baby, kind, p, bodyOf(j)), j.s.v) : Promise.resolve(false));
+  /** The folder's root (its creator's phone, or the first parent's phone to sign an older folder), as this phone was given it. */
+  const rootNow = () => (db.meta.ftrust && db.meta.ftrust.root) || null;
+  /** What a grant says about the phone it is for, under the grant's proof: whose it is, its role, its signing key, and the root. */
+  const extOf = (user, role, spub, pub) => JSON.stringify({ user, role, sig: spub && spub.x ? { x: spub.x, y: spub.y } : null, pub: pub && pub.x ? { x: pub.x, y: pub.y } : null, root: rootNow() });
+  /** The recovery.json this phone believes: the folder's when a parent's phone signed it (or the folder has no root yet), else the last good copy a parent's phone kept. */
+  async function recoveryRecord() {
+    const r = await read('recovery.json'), FS = typeof FolderSync !== 'undefined' ? FolderSync : null;
+    if (!FS || !FS.trust()) return r;
+    if (r && FS.recoveryOk()) return { ...r, verified: true };
+    const g = db.meta.fgood && db.meta.fgood['recovery.json'];
+    return g ? { ...g, verified: true } : r;
+  }
+
   // ---- the key directory for e2ee.js: what the server's functions did, as files in the folder ----
   const dir = {
-    async registerDevice(name, pub) { const id = E2EE.uuid(); await write(`devices/${id}.json`, { v: 1, id, user: c.me.id, pub, name, created: Date.now() }, 'add'); return id; },
-    async myDevices() { if (typeof FolderSync !== 'undefined') await FolderSync.refreshIndex(); return (await readAll('devices/')).filter(d => d.user === c.me.id).map(d => ({ id: d.id, name: d.name, created_at: d.created, pubkey: d.pub })); },
+    async registerDevice(name, pub, spub) { const id = E2EE.uuid(); await write(`devices/${id}.json`, { v: 2, id, user: c.me.id, pub, sig: spub || null, name, created: Date.now() }, 'add'); return id; },
+    /** An older phone's record learns its signing key (its own record only). */
+    async addSigningKey(id, spub) { const d = await read(`devices/${id}.json`); if (!d || d.user !== c.me.id || d.id !== id) return; await write(`devices/${id}.json`, { ...d, v: 2, sig: spub }, 'overwrite'); },
+    async myDevices() { if (typeof FolderSync !== 'undefined') await FolderSync.refreshIndex(); return (await readAll('devices/')).filter(d => d.user === c.me.id).map(d => ({ id: d.id, name: d.name, created_at: d.created, pubkey: d.pub, spub: d.sig || null })); },
     async getKeyring() { const k = await read('keyring.json'); return k ? [k] : []; },
     async myGrant(baby, device) { const g = await read(`keys/${device}.json`); return g ? [g] : []; },
-    grantDevice: (baby, device, g) => write(`keys/${device}.json`, { epoch: E2EE.epoch(baby), wrap_main: g.wrap_main, wrap_health: g.wrap_health || null, auth: g.auth || null, tag: g.tag }),
+    /** A phone's keys (its approval), signed by this phone (`by` 'recovery': by the recovery key, for a phone let in with the code). */
+    grantDevice: async (baby, device, g, by) => write(`keys/${device}.json`, await signed(baby, 'grant', `keys/${device}.json`, { v: 2, epoch: E2EE.epoch(baby), wrap_main: g.wrap_main, wrap_health: g.wrap_health || null, auth: g.auth || null, tag: g.tag, ext: g.ext || null }, by)),
+    /** What this phone's own grant says about it: the folder's root when it creates the log ('root'), else the root it was given. */
+    async selfExt(dev, mode) { return JSON.stringify({ user: c.me.id, role: 'parent', sig: dev.spub || null, pub: dev.pub, root: mode === 'root' ? { d: dev.id, u: c.me.id, k: dev.spub } : rootNow() }); },
     async createBaby(a) {
-      await write('littlelog.json', { v: 1, family: a.baby, created: Date.now() }, 'add');
+      const dev = E2EE.device, root = { d: dev.id, u: c.me.id, k: dev.spub };
+      db.meta.ftrust = { root, mseq: 0, tseq: 0 };   // (this phone is the folder's root: what it signs, and what it approves, is believed)
+      await write('littlelog.json', await signed(a.baby, 'root', 'littlelog.json', { v: 2, family: a.baby, created: Date.now(), root }), 'add');
       await write('keyring.json', { epoch: 1, keyring_main: null, keyring_health: null, health_check: a.health_check, rotate_needed: false });
-      await write('recovery.json', { epoch: 1, recovery_pub: a.recovery_pub, recovery_priv_wrapped: a.recovery_priv_wrapped, wrap_main: a.recovery_grant.wrap_main, wrap_health: a.recovery_grant.wrap_health, tag: a.recovery_grant.tag });
-      await write(`keys/${a.device}.json`, { epoch: 1, wrap_main: a.grant.wrap_main, wrap_health: a.grant.wrap_health, auth: null, tag: a.grant.tag });
+      await write('recovery.json', await signed(a.baby, 'recovery', 'recovery.json', { v: 2, epoch: 1, recovery_pub: a.recovery_pub, recovery_priv_wrapped: a.recovery_priv_wrapped, recovery_spub: a.recovery_spub || null, recovery_spriv_wrapped: a.recovery_spriv_wrapped || null, wrap_main: a.recovery_grant.wrap_main, wrap_health: a.recovery_grant.wrap_health, tag: a.recovery_grant.tag }));
+      await write(`keys/${a.device}.json`, await signed(a.baby, 'grant', `keys/${a.device}.json`, { v: 2, epoch: 1, wrap_main: a.grant.wrap_main, wrap_health: a.grant.wrap_health, auth: null, tag: a.grant.tag, ext: a.grant.ext || null }));
       await write('profile.json', { epoch: 1, blob: a.profile, updated: Date.now() });
       return a.baby;
     },
     async listDevices() {
       const [ds, mem] = [await readAll('devices/'), typeof FolderSync !== 'undefined' ? FolderSync.members() : null];
-      const out = [];
+      const tr = typeof FolderSync !== 'undefined' ? FolderSync.trusted() : null, out = [];
       for (const d of ds) {
-        const g = await read(`keys/${d.id}.json`), m = mem && mem.members[d.user];
-        out.push({ grantee: 'd:' + d.id, pubkey: d.pub, user_id: d.user, has_grant: !!g, epoch: g ? g.epoch : null, tag: g ? g.tag : null, view_health: !!m && (m.role === 'parent' || !!(m.perms && m.perms.view_health)), device_name: d.name, person: m ? m.name : '' });
+        if (!d || typeof d.id !== 'string' || !d.pub) continue;
+        const g = await read(`keys/${d.id}.json`), m = mem && mem.members[d.user], role = m ? m.role : 'caregiver';
+        const t = tr && tr[d.id], pub = (t && t.p) || d.pub;   // (the key the approving parent saw, when the chain reaches it)
+        out.push({ grantee: 'd:' + d.id, pubkey: pub, spub: d.sig || null, user_id: d.user, has_grant: !!g, epoch: g ? g.epoch : null, tag: g ? g.tag : null, view_health: !!m && (m.role === 'parent' || !!(m.perms && m.perms.view_health)), device_name: d.name, person: m ? m.name : '',
+          verified: tr ? !!t : undefined, ext: extOf(d.user, role, d.sig, pub) });   // verified: the chain of approvals reaches it (undefined in a folder from before signing)
+      }
+      for (const [id, t] of Object.entries(tr || {})) {   // (a phone this phone remembers whose record someone deleted: still one of the family's)
+        if (id === 'recovery' || !t.p || out.some(o => o.grantee === 'd:' + id)) continue;
+        const g = await read(`keys/${id}.json`), m = mem && mem.members[t.u], role = m ? m.role : (t.parent ? 'parent' : 'caregiver');
+        out.push({ grantee: 'd:' + id, pubkey: t.p, spub: t.k, user_id: t.u, has_grant: !!g, epoch: g ? g.epoch : null, tag: g ? g.tag : null, view_health: !!m && (m.role === 'parent' || !!(m.perms && m.perms.view_health)), device_name: '', person: m ? m.name : '', verified: true, ext: extOf(t.u, role, t.k, t.p) });
       }
       return out;
     },
-    async listRecovery() { const r = await read('recovery.json'); return r ? [{ recovery_pub: r.recovery_pub, tag: r.tag, epoch: r.epoch }] : []; },
-    async getRecovery() { const r = await read('recovery.json'); return r ? [r] : []; },
+    async listRecovery() { const r = await recoveryRecord(); return r ? [{ recovery_pub: r.recovery_pub, tag: r.tag, epoch: r.epoch, verified: !!r.verified }] : []; },
+    async getRecovery() { const r = await recoveryRecord(); if (r) delete r.verified; return r ? [r] : []; },
     async rotateKeys(baby, a) {
       for (const g of a.grants) {
-        if (g.grantee === 'recovery') { const r = (await read('recovery.json')) || {}; await write('recovery.json', { ...r, epoch: a.epoch, wrap_main: g.wrap_main, wrap_health: g.wrap_health, tag: g.tag }); }
-        else await write(`keys/${g.grantee.slice(2)}.json`, { epoch: a.epoch, wrap_main: g.wrap_main, wrap_health: g.wrap_health || null, auth: g.auth || null, tag: g.tag });
+        if (g.grantee === 'recovery') { const r = (await recoveryRecord()) || {}; delete r.verified; await write('recovery.json', await signed(baby, 'recovery', 'recovery.json', { ...r, v: 2, epoch: a.epoch, wrap_main: g.wrap_main, wrap_health: g.wrap_health, tag: g.tag })); }
+        else { const p = `keys/${g.grantee.slice(2)}.json`; await write(p, await signed(baby, 'grant', p, { v: 2, epoch: a.epoch, wrap_main: g.wrap_main, wrap_health: g.wrap_health || null, auth: g.auth || null, tag: g.tag, ext: g.ext || null })); }
       }
       await write('profile.json', { epoch: a.epoch, blob: a.profile, updated: Date.now() });
       await write('keyring.json', { epoch: a.epoch, keyring_main: a.keyring_main, keyring_health: a.keyring_health, health_check: a.health_check, rotate_needed: false });
     },
-    setRecovery: (baby, a) => write('recovery.json', { epoch: E2EE.epoch(baby), recovery_pub: a.pub, recovery_priv_wrapped: a.priv_wrapped, wrap_main: a.wrap_main, wrap_health: a.wrap_health, tag: a.tag }),
+    setRecovery: async (baby, a) => write('recovery.json', await signed(baby, 'recovery', 'recovery.json', { v: 2, epoch: E2EE.epoch(baby), recovery_pub: a.pub, recovery_priv_wrapped: a.priv_wrapped, recovery_spub: a.spub || null, recovery_spriv_wrapped: a.spriv_wrapped || null, wrap_main: a.wrap_main, wrap_health: a.wrap_health, tag: a.tag })),
   };
   /** Pictures and videos, as files in the folder (media.js). */
   const media = { up: (b, name, bytes) => B().put('media/' + name, bytes, 'overwrite'), down: (b, name) => B().get('media/' + name), del: (b, name) => B().del('media/' + name) };
 
   return {
-    NAMES, SCOPES, available, label: p => NAMES[p] || p, dir, media, read, write, readAll, backend, safeName,
+    NAMES, SCOPES, available, label: p => NAMES[p] || p, dir, media, read, write, readAll, backend, safeName, memberId, signed, checkSig, extOf, rootNow,
     async init() { try { const v = await Native.Secure.get(K); c = v ? JSON.parse(v) : null; } catch (e) { c = null; } if (c) E2EE.setDir(dir); },
     /** In a family folder (or waiting to be let into one). */
     get on() { return !!(c && c.root); },
@@ -369,7 +434,8 @@ const Folder = (() => {
 /* The sync for a family folder: what ServerSync is for a family server, over files (see the top of this file). The app talks to
    `Sync`, which is whichever of the two this phone uses. */
 const FolderSync = (() => {
-  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, reconnect: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyPeople: {}, retired: [], server: null, tree: undefined };
+  const st = { state: 'idle', at: 0, err: '', denied: 0, needMfa: false, reconnect: false, needsAccess: false, rotateNeeded: false, bad: 0, memberships: [], people: [], requests: [], invites: [], myRequests: [], devices: [], familyRequests: {}, familyPeople: {}, retired: [], server: null, tree: undefined,
+    warns: {}, warn: '', repaired: 0, forgedEpoch: 0, policy: null, policyAt: 0 };   // warns: what this phone would not believe, by subject; repaired: files a parent's phone put back
   let busy = false, busyAt = 0, again = false, timer = null, started = false, failures = 0, retryAt = 0, mem = null, flight = Promise.resolve();
   const notify = changed => { if (FolderSync.onChange) FolderSync.onChange(changed); };
   const B = () => Folder.backend();
@@ -395,6 +461,116 @@ const FolderSync = (() => {
   }
   const nameOf = id => { const p = st.people.find(x => x.user_id === id); if (p) return p.is_you ? __('you') : p.display_name; const r = st.retired.find(x => x.user_id === id); return r ? r.display_name : (mem && mem.names && mem.names[id]) || ''; };   // (names: people from before a move to the folder)
 
+  // ---- who is believed: a chain of signatures from the folder's creator (the root) through every parent's approval ----
+  // Every member's phone holds the main key, so what is sealed is not thereby trustworthy: a phone could rewrite the family list
+  // or the tree, hand keys to a phone, or write entries in another's name. So a phone believes a shared file only when it is
+  // signed by a phone the chain reaches: the root (given to this phone with its first keys, under the join code's proof or the
+  // security code read out), then every phone whose grant a parent's phone signed, with the person and role the grant names.
+  // members.json and tree.json count only when a parent's phone signed them and they are not older than what this phone accepted
+  // (seq); an entries file counts only when its own phone signed it, and its rows only in that person's name unless they may edit
+  // others' entries. What this phone would not believe is said on the Family tab, and a parent's phone puts the last good copy back.
+  const trust = () => db.meta.ftrust || null;   // { root: { d: device, u: user, k: signing key }, mseq, tseq, devs }
+  const pin = root => { db.meta.ftrust = { root, mseq: 0, tseq: 0, devs: {} }; save(true); };
+  let trusted = null;   // { [device]: { u: user (null: the recovery key), k: signing key | null, p: ECDH key as approved, parent } } from the verified grants, this sync
+  let recOk = false;   // recovery.json signed by a phone the chain trusts as a parent's
+  const vcache = new Map();   // '<path>|<rev>|<signer>' → verified?
+  let runNo = 0;   // (a warning raised in one sync stays until a later sync finds the subject in order: what was put back is shown at least once)
+  const warnOn = (k, m) => { st.warns[k] = { m, at: runNo }; st.warn = Object.values(st.warns).map(w => w.m).join(' '); };
+  const warnOff = k => { const w = st.warns[k]; if (w && w.at < runNo) { delete st.warns[k]; st.warn = Object.values(st.warns).map(w => w.m).join(' '); } };
+  async function checkSig(kind, p, j, signer) {
+    if (!signer || !signer.k) return false;
+    const key = `${low(p)}|${revOf(p)}|${j.s && j.s.d}|${signer.k.x}`;
+    if (vcache.has(key)) return vcache.get(key);
+    const ok = await Folder.checkSig(db.meta.babyId, kind, p, j, signer.k);
+    if (vcache.size > 2000) vcache.clear();
+    vcache.set(key, ok); return ok;
+  }
+  /** The phones the chain reaches: from the root, through the signed grants (and the recovery key, once a parent's phone signed
+      recovery.json). This phone remembers them (ftrust.devs): a phone the chain reached keeps its standing when someone else
+      overwrites its grant, since its signing key is its own; it is forgotten when a parent's phone leaves it out of a change of
+      keys (its grant gone), or its person is no longer in the family list. */
+  async function deriveTrusted() {
+    const T = trust(); if (!T) { recOk = false; return (trusted = null); }
+    const R = T.devs || (T.devs = {}), D = { [T.root.d]: { u: T.root.u, k: T.root.k, p: null, parent: true } }, grants = [];
+    const rec = await Folder.read('recovery.json'), any = id => D[id] || R[id];
+    for (const p of paths('keys/')) { const m = /^keys\/([^/]+)\.json$/.exec(p); const j = m && await Folder.read(p); if (j && j.s && j.s.d) grants.push({ id: m[1], p, j }); }
+    for (let more = true; more;) {
+      more = false;
+      if (rec && rec.s && !D.recovery) { const sg = any(rec.s.d); if (sg && sg.parent && await checkSig('recovery', 'recovery.json', rec, sg)) { D.recovery = { u: null, k: rec.recovery_spub || null, p: null, parent: true }; more = true; } }
+      for (const g of grants) {
+        if (D[g.id]) continue;
+        const sg = any(g.j.s.d); if (!sg || !sg.parent || !await checkSig('grant', g.p, g.j, sg)) continue;
+        let x = null; try { x = JSON.parse(g.j.ext || 'null'); } catch (e) { x = null; }
+        if (!x || typeof x.user !== 'string') continue;
+        D[g.id] = { u: x.user, k: x.sig && x.sig.x ? x.sig : null, p: x.pub && x.pub.x ? x.pub : null, parent: x.role === 'parent' }; more = true;
+      }
+    }
+    // a change of keys a parent's phone made (this phone's own grant is a parent's) settles who is in: a remembered phone without a grant now is out
+    const me = E2EE.device && E2EE.device.id, og = me && grants.find(g => g.id === me);
+    let legit = false; if (og) { const sg = any(og.j.s.d); legit = !!(sg && sg.parent && await checkSig('grant', og.p, og.j, sg)); }
+    for (const [id, r] of Object.entries(R)) {
+      if (D[id]) continue;
+      if (id !== 'recovery' && mem && r.u != null && !mem.members[r.u]) { delete R[id]; continue; }
+      if (id !== 'recovery' && legit && !revOf(`keys/${id}.json`)) delete R[id];
+    }
+    Object.assign(R, D);
+    recOk = !!D.recovery; if (recOk && rec.recovery_pub && rec.recovery_priv_wrapped) good('recovery.json', rec);
+    return (trusted = { ...R });
+  }
+  const trustedDev = id => (trusted && trusted[id]) || null;
+  /** A phone that may change the family list, the tree and the keys: a parent's by its grant, and still a parent in the family list this phone accepted. */
+  const parentDev = id => { const t = trustedDev(id); if (!t || !t.parent) return false; if (t.u === null || id === trust().root.d) return true; const m = mem && mem.members[t.u]; return !m || m.role === 'parent'; };
+  const same = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+  /** Someone who is not a parent may change the family list only on their own line: name and details. */
+  function ownLineOnly(prev, next, u) {
+    if (!same(prev.invites, next.invites) || !same(prev.retired, next.retired) || !same(prev.names, next.names)) return false;
+    for (const id of new Set([...Object.keys(prev.members), ...Object.keys(next.members)])) {
+      const a = prev.members[id], b = next.members[id];
+      if (id !== u) { if (!same(a, b)) return false; continue; }
+      if (!a || !b || a.role !== b.role || !same(a.perms, b.perms) || a.email !== b.email || !same(a.since, b.since)) return false;
+    }
+    return true;
+  }
+  /** members.json / tree.json: signed by a phone the chain trusts as a parent's (the family list: or by anyone, for their own line),
+      and not older than what this phone accepted. `opened`: the document's contents, for the own-line check. */
+  async function docOk(kind, p, j, opened) {
+    if (!trust()) return true;   // (a folder from before signing, until upgrade() signs it)
+    if (!j || !j.s || !trusted) return false;
+    const t = trustedDev(j.s.d); if (!t) return false;
+    if (j.s.u != null && t.u != null && j.s.u !== t.u) return false;
+    if (!await checkSig(kind, p, j, t)) return false;
+    if ((+j.seq || 0) < (kind === 'members' ? trust().mseq : trust().tseq)) return false;   // (an older copy put back)
+    if (parentDev(j.s.d)) return true;
+    return kind === 'members' && !!mem && t.u != null && !!opened && ownLineOnly(mem, opened, t.u);
+  }
+  /** The last good copy of a file that matters, kept on a parent's phone to put back (repair()). */
+  const good = (p, j) => { if (!isParent()) return; (db.meta.fgood || (db.meta.fgood = {}))[p] = j; };
+  /** A parent's phone puts back the files the folder cannot do without when one is gone, unreadable or rolled back. */
+  async function repair() {
+    const b = db.meta.babyId, g = db.meta.fgood; if (!isParent() || !g || !E2EE.hasKeys(b)) return;
+    if (!g['littlelog.json']) { const j = revOf('littlelog.json') ? await Folder.read('littlelog.json') : null; if (j && j.family === b && (!trust() || (j.root && j.root.d === trust().root.d))) good('littlelog.json', j); }
+    for (const p of ['littlelog.json', 'keyring.json', 'recovery.json']) {
+      if (!g[p]) continue;
+      const j = revOf(p) ? await Folder.read(p) : null;
+      let bad = !j;
+      if (j && p === 'keyring.json' && (+j.epoch || 0) < (+g[p].epoch || 0)) bad = true;
+      if (j && p === 'recovery.json' && (!(j.recovery_pub && j.recovery_priv_wrapped && j.wrap_main) || (trust() && !recOk))) bad = true;   // (or not a parent's: see deriveTrusted)
+      if (j && p === 'littlelog.json' && (j.family !== b || (trust() && !(j.root && j.root.d === trust().root.d)))) bad = true;
+      if (!bad) continue;
+      await Folder.write(p, g[p], 'overwrite'); st.repaired++;
+    }
+    if (!trusted || st.forgedEpoch) return;   // (forged keys: rotateNow makes every grant again)
+    for (const [id, t] of Object.entries(trusted)) {   // a phone's grant overwritten by someone who may not: made again, from what this phone remembers of the approval
+      if (id === 'recovery' || id === trust().root.d || !t.p || (E2EE.device && id === E2EE.device.id)) continue;
+      const p = `keys/${id}.json`, j = revOf(p) ? await Folder.read(p) : null; if (!j) continue;
+      const sg = j.s && trustedDev(j.s.d);
+      if (sg && sg.parent && +j.epoch === E2EE.epoch(b) && await checkSig('grant', p, j, sg)) continue;
+      const m = mem && mem.members[t.u], role = m ? m.role : (t.parent ? 'parent' : 'caregiver');
+      await E2EE.approveDevice(b, { grantee: 'd:' + id, pubkey: t.p, view_health: role === 'parent' || !!(m && m.perms && m.perms.view_health) }, { ext: Folder.extOf(t.u, role, t.k, t.p) });
+      st.repaired++;
+    }
+  }
+
   // ---- the index: what is in the folder, by path, and what this phone has read ----
   const idx = () => db.meta.fidx || (db.meta.fidx = { cursor: null, files: {}, seen: {} });
   const low = p => String(p).toLowerCase();
@@ -416,12 +592,18 @@ const FolderSync = (() => {
 
   // ---- members.json: who is in, what they may do; sealed under the main key ----
   const members = () => mem;
+  const docOf = m => (m && m.members ? { members: m.members, retired: m.retired || [], invites: m.invites || {}, names: m.names || {} } : null);
   async function pullMembers() {
     const b = db.meta.babyId; if (!E2EE.hasKeys(b)) return false;
     if (!mem || fresh('members.json')) {
       const j = await Folder.read('members.json');
-      if (j && j.blob) { const m = await E2EE.openDoc(b, 'members', j.blob, j.epoch); if (m && m.members) { mem = { members: m.members, retired: m.retired || [], invites: m.invites || {}, names: m.names || {} }; mark('members.json'); } }
-    }
+      if (j && j.blob) {
+        const cur = docOf(await E2EE.openDoc(b, 'members', j.blob, j.epoch));
+        if (cur && await docOk('members', 'members.json', j, cur)) { mem = cur; if (trust()) trust().mseq = +j.seq || 0; good('members.json', j); warnOff('members'); }
+        else if (cur) { warnOn('members', N_("The family list in the folder was changed by a phone that may not, so it was ignored.")); if (isParent() && mem && trust()) await restoreMembers(j); }
+        mark('members.json');
+      }
+    } else warnOff('members');
     if (!mem) return false;   // (the creator writes it a moment after the keys)
     const me = mem.members[Auth.id];
     if (!me) { lostAccess(); return false; }
@@ -448,32 +630,54 @@ const FolderSync = (() => {
     for (let i = 0; i < 6; i++) {
       await refreshIndex();
       const j = await Folder.read('members.json'), rev = revOf('members.json');
-      const m = j && j.blob ? await E2EE.openDoc(b, 'members', j.blob, j.epoch) : null;
-      const cur = m && m.members ? { members: m.members, retired: m.retired || [], invites: m.invites || {}, names: m.names || {} } : { members: {}, retired: [], invites: {}, names: {} };
+      let cur = j && j.blob ? docOf(await E2EE.openDoc(b, 'members', j.blob, j.epoch)) : null;
+      if (cur && trust() && !(await docOk('members', 'members.json', j, cur))) cur = mem ? JSON.parse(JSON.stringify(mem)) : null;   // (a copy no phone may have written: start from the last one this phone accepted)
+      if (!cur) cur = { members: {}, retired: [], invites: {}, names: {} };
       if (fn(cur) === false) return cur;
-      const { blob, epoch } = await E2EE.sealDoc(b, 'members', cur);
-      try { await Folder.write('members.json', { v: 1, epoch, blob, updated: Date.now(), by: Auth.id }, rev ? { update: rev } : 'add'); }
+      const { blob, epoch } = await E2EE.sealDoc(b, 'members', cur), seq = Math.max(+(j && j.seq) || 0, trust() ? trust().mseq : 0) + 1;
+      const file = await Folder.signed(b, 'members', 'members.json', { v: 2, epoch, blob, updated: Date.now(), by: Auth.id, seq });
+      try { await Folder.write('members.json', file, rev ? { update: rev } : 'add'); }
       catch (e) { if (e.conflict) continue; throw e; }
-      mem = cur; await peopleRows(); return cur;
+      mem = cur; if (trust()) trust().mseq = seq; good('members.json', file); await peopleRows(); return cur;
     }
     throw new Error(N_('The family list changed meanwhile: try again'));
+  }
+  /** A parent's phone puts the family list it accepted back over a copy it would not believe. */
+  async function restoreMembers(bad) {
+    const b = db.meta.babyId, rev = revOf('members.json');
+    const { blob, epoch } = await E2EE.sealDoc(b, 'members', mem), seq = Math.max(+(bad && bad.seq) || 0, trust().mseq) + 1;
+    const file = await Folder.signed(b, 'members', 'members.json', { v: 2, epoch, blob, updated: Date.now(), by: Auth.id, seq });
+    try { await Folder.write('members.json', file, rev ? { update: rev } : 'add'); trust().mseq = seq; good('members.json', file); st.repaired++; warnOff('members'); } catch (e) { if (!e.conflict) throw e; }
   }
 
   // ---- keys ----
   async function pullKeys() {
     const b = db.meta.babyId; await E2EE.load(b);
-    const kr = await Folder.read('keyring.json');
+    let kr = await Folder.read('keyring.json');
+    if (!kr && isParent() && db.meta.fgood && db.meta.fgood['keyring.json'] && E2EE.hasKeys(b)) { kr = db.meta.fgood['keyring.json']; await Folder.write('keyring.json', kr, 'overwrite'); st.repaired++; }   // (gone from the folder: this phone's last good copy goes back)
     if (!kr) { st.needsAccess = true; st.state = 'needs-access'; return false; }
     st.rotateNeeded = !!kr.rotate_needed;
     const want = db.meta.role === 'parent' || !!(db.meta.perms && db.meta.perms.view_health), had = E2EE.hasHealthKey(b);
-    const own = E2EE.device ? `keys/${E2EE.device.id}.json` : null;
-    if (!E2EE.hasKeys(b) || E2EE.epoch(b) < kr.epoch || (want && !had && own && fresh(own))) { await E2EE.refresh(b, db.meta, { health: want }); if (own) mark(own); }
+    const own = E2EE.device ? `keys/${E2EE.device.id}.json` : null, moved = E2EE.hasKeys(b) && E2EE.epoch(b) < kr.epoch;
+    if (moved && trust()) {   // a change of keys must come from a parent's phone: this phone's grant for it, signed by one the chain reaches
+      await deriveTrusted();
+      const g = own ? await Folder.read(own) : null, sg = g && g.s ? trustedDev(g.s.d) : null;
+      if (!g || !sg || !parentDev(g.s.d) || !(await checkSig('grant', own, g, sg))) {
+        const who = sg && sg.u != null ? nameOf(sg.u) : '';
+        warnOn('keys', who ? __("The folder's keys were changed by {who}'s phone, which may not. This phone keeps its keys; a parent's phone sets new ones.", { who }) : N_("The folder's keys were changed by a phone that may not, so this phone keeps its keys; a parent's phone sets new ones."));
+        if (isParent()) st.forgedEpoch = +kr.epoch || 0;   // (rotateNow goes past it)
+        st.needsAccess = false; return true;   // (carries on with the keys it has)
+      }
+    }
+    if (!moved) warnOff('keys');
+    if (!E2EE.hasKeys(b) || moved || (want && !had && own && fresh(own))) { await E2EE.refresh(b, db.meta, { health: want }); if (own) mark(own); }
     if (!had && E2EE.hasHealthKey(b)) forgetSeen('events/');   // health entries were skipped until now: read everything again
     if (db.meta.kinds !== E2EE.KINDS) forgetSeen('events/');   // the app was updated and knows new kinds of entry
     if (!E2EE.hasKeys(b) || E2EE.epoch(b) < kr.epoch) { st.needsAccess = true; st.state = 'needs-access'; st.err = ''; return false; }
+    if (+kr.epoch === E2EE.epoch(b)) good('keyring.json', kr);
     st.needsAccess = false; return true;
   }
-  async function rotateNow() { const b = db.meta.babyId; if (!E2EE.hasKeys(b)) return; await E2EE.rotate(b, db.baby); st.rotateNeeded = false; }
+  async function rotateNow() { const b = db.meta.babyId; if (!E2EE.hasKeys(b)) return; await E2EE.rotate(b, db.baby, { from: st.forgedEpoch }); st.rotateNeeded = false; st.forgedEpoch = 0; }
 
   // ---- the children, the entries, the tree ----
   async function pullProfile() {
@@ -491,14 +695,35 @@ const FolderSync = (() => {
   const okRow = r => r && typeof r.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(r.id) && Number.isFinite(+r.updated) && (r.deleted === true || typeof r.blob === 'string');
   const isEvents = p => /^events\/[^/]+\/\d+\.json$/.test(p);
   const ownEvents = p => !!E2EE.device && p.startsWith(low(`events/${E2EE.device.id}/`));
+  const devOfPath = p => (/^events\/([^/]+)\//.exec(p) || [])[1] || '';
+  /** An entry (or a deletion) from a phone's file, by whose phone it is: in its own person's name, or in another's only when that person may edit (delete) others' entries. */
+  function authorOk(e, devId) {
+    if (!trust()) return true;
+    const t = trustedDev(devId); if (!t) return false;
+    const m = mem && mem.members[t.u], parent = m ? m.role === 'parent' : t.parent, perms = (m && m.perms) || {};
+    if (e.deleted) { const cur = db.events.find(x => x.id === e.id); return !cur || !cur.by || cur.by === t.u || parent || !!perms.delete_others; }
+    return !e.by || e.by === t.u || parent || !!perms.edit_others;
+  }
+  /** The rows of one phone's entries file, when the file is that phone's: signed by it, in a folder with a root. */
+  async function readRows(p) {
+    const j = await Folder.read(p); if (!j || !Array.isArray(j.rows)) return [];
+    const d = devOfPath(p);
+    if (trust()) {
+      const t = trustedDev(d); if (!t) { st.bad++; return []; }   // (a phone no parent's phone approved)
+      if (t.k && !(await checkSig('events', p, j, t))) { st.bad++; return []; }   // (not written by that phone)
+    }
+    return j.rows.filter(okRow).slice(0, 2000).map(r => ({ ...r, dev: d }));
+  }
+  async function decodeRows(rows) { const keep = []; for (const e of await ServerSync.decode(rows)) { if (authorOk(e, e.dev)) keep.push(e); else st.bad++; } return keep; }
+  async function retryStash() { const rows = Object.values(db.meta.stash || {}); if (!rows.length) return 0; const n = ServerSync.merge(await decodeRows(rows)); if (!Object.keys(db.meta.stash || {}).length) delete db.meta.stash; return n; }
   async function pullEvents() {
     let n = 0;
     for (const p of paths('events/').filter(p => isEvents(p) && !ownEvents(p) && fresh(p)).sort()) {
-      const j = await Folder.read(p);
-      if (j && Array.isArray(j.rows)) n += ServerSync.merge(await ServerSync.decode(j.rows.filter(okRow).slice(0, 2000)));
+      const rows = await readRows(p);
+      if (rows.length) n += ServerSync.merge(await decodeRows(rows));
       mark(p);
     }
-    n += await ServerSync.retryStash();
+    n += await retryStash();
     db.meta.kinds = E2EE.KINDS;
     return n;
   }
@@ -509,7 +734,7 @@ const FolderSync = (() => {
       let seq = nextSeq(me);
       for (let t = 0; ; t++) {
         const p = `events/${me}/${String(seq).padStart(6, '0')}.json`;
-        try { await Folder.write(p, { v: 1, device: me, by: Auth.id, at: Date.now(), rows: rows.slice(i, i + 500).map(r => ({ ...r, created_by: Auth.id })) }, 'add'); db.meta.fseq = seq; break; }
+        try { await Folder.write(p, await Folder.signed(b, 'events', p, { v: 2, device: me, by: Auth.id, at: Date.now(), rows: rows.slice(i, i + 500).map(r => ({ ...r, created_by: Auth.id })) }), 'add'); db.meta.fseq = seq; break; }
         catch (e) { if (e.conflict && t < 20) { seq++; continue; } throw e; }
       }
     }
@@ -519,48 +744,72 @@ const FolderSync = (() => {
   async function loadTree() {
     const b = db.meta.babyId; if (!b) return null;
     const j = await Folder.read('tree.json');
-    const t = j && j.blob ? await E2EE.openTree(b, j.blob, j.epoch) : null;
+    let t = j && j.blob ? await E2EE.openTree(b, j.blob, j.epoch) : null;
+    if (j && j.blob && !(await docOk('tree', 'tree.json', j))) {   // (changed by a phone that may not: the tree this phone had stays)
+      warnOn('tree', N_("The family tree in the folder was changed by a phone that may not, so it was ignored."));
+      t = st.tree !== undefined ? st.tree : (db.meta.tree || null);
+      if (isParent() && trust() && t) await restoreTree(j, t);
+    } else { if (j && trust()) trust().tseq = +j.seq || 0; warnOff('tree'); }
     mark('tree.json'); st.tree = t;
     if (JSON.stringify(db.meta.tree || null) !== JSON.stringify(t)) { if (t) db.meta.tree = t; else delete db.meta.tree; save(true); }
     return t;
   }
+  const treeFile = async (b, t, seq) => { const { blob, epoch } = await E2EE.sealTree(b, t); if (blob.length > TREE_MAX) throw new Error(N_('There is no room on the family tree for more people: take someone off it, or shorten the names')); return Folder.signed(b, 'tree', 'tree.json', { v: 2, epoch, blob, updated: Date.now(), seq }); };
   async function editTree(fn, start) {
     const b = db.meta.babyId;
     for (let i = 0; i < 6; i++) {
       await refreshIndex();
       const j = await Folder.read('tree.json'), rev = revOf('tree.json');
-      const t = FamilyTree.clean((j && j.blob ? await E2EE.openTree(b, j.blob, j.epoch) : null) || start);
+      let base = j && j.blob ? await E2EE.openTree(b, j.blob, j.epoch) : null;
+      if (base && trust() && !(await docOk('tree', 'tree.json', j))) base = st.tree || db.meta.tree || null;   // (a copy no phone may have written: from the last one this phone accepted)
+      const t = FamilyTree.clean(base || start);
       if (fn(t) === false) throw new Error(N_('The family tree changed meanwhile: try again'));
-      const { blob, epoch } = await E2EE.sealTree(b, t);
-      if (blob.length > TREE_MAX) throw new Error(N_('There is no room on the family tree for more people: take someone off it, or shorten the names'));
-      try { await Folder.write('tree.json', { v: 1, epoch, blob, updated: Date.now() }, rev ? { update: rev } : 'add'); }
+      const seq = Math.max(+(j && j.seq) || 0, trust() ? trust().tseq : 0) + 1;
+      try { await Folder.write('tree.json', await treeFile(b, t, seq), rev ? { update: rev } : 'add'); }
       catch (e) { if (e.conflict) continue; throw e; }
+      if (trust()) trust().tseq = seq; warnOff('tree');
       st.tree = t; db.meta.tree = t; save(true); return t;
     }
     throw new Error(N_('The family tree changed meanwhile: try again'));
   }
+  /** A parent's phone puts the tree it accepted back over a copy it would not believe. */
+  async function restoreTree(bad, t) {
+    const b = db.meta.babyId, rev = revOf('tree.json'), seq = Math.max(+(bad && bad.seq) || 0, trust().tseq) + 1;
+    try { await Folder.write('tree.json', await treeFile(b, t, seq), rev ? { update: rev } : 'add'); trust().tseq = seq; st.repaired++; warnOff('tree'); } catch (e) { if (!e.conflict) throw e; }
+  }
 
   // ---- requests to join, phones, people (parents) ----
+  const wcache = new Map();   // join request path|rev → who wrote it, by the cloud
   async function loadAdmin() {
     if (!isParent() || !mem) return;
     const reqs = [];
     for (const p of paths('join/')) {
       const j = await Folder.read(p); if (!j || !j.device || !j.pub) continue;
       if (mem.members[j.user]) continue;   // (a member's new phone: see loadDevices)
-      const inv = mem.invites[String(j.email || '').toLowerCase()] || null;
-      reqs.push({ id: j.device, device_id: j.device, device_pub: j.pub, user: j.user, email: j.email || '', display_name: j.name || '', role: inv ? inv.role : 'caregiver', perms: inv ? inv.perms : null, qrVerified: false, fingerprint: await E2EE.fingerprint(j.pub), baby_id: db.meta.babyId, platform: j.platform });
+      // Who wrote the request is the cloud's word, not the file's: its account must be the person the file claims, and its email is the one shown.
+      const wk = `${low(p)}|${revOf(p)}`; let w = wcache.get(wk);
+      if (w === undefined) { try { w = (B().writer ? await B().writer(p) : null) || null; } catch (e) { w = null; } if (wcache.size > 200) wcache.clear(); wcache.set(wk, w); }
+      const writerId = w ? await Folder.memberId(Folder.provider, w.account) : null, claimed = String(j.email || '').toLowerCase();
+      const email = (w && w.email) || claimed, forged = !!writerId && writerId !== j.user;
+      const inv = mem.invites[email] || null;
+      const r = { id: j.device, device_id: j.device, device_pub: j.pub, device_spub: j.sig || null, user: j.user, email, claimed, display_name: j.name || '', role: inv ? inv.role : 'caregiver', perms: inv ? inv.perms : null,
+        proof: j.proof || null, invite_code: email, attested: !!w, forged, qrVerified: false, fingerprint: await E2EE.fingerprint(j.pub, j.sig || null), baby_id: db.meta.babyId, platform: j.platform };
+      r.qrVerified = !forged && await E2EE.verifyRequest(r);   // (they typed the join code this phone gave them)
+      reqs.push(r);
     }
     st.requests = reqs;
   }
   async function loadDevices() {
     const rows = await Folder.dir.listDevices();
-    for (const d of rows) d.fingerprint = await E2EE.fingerprint(d.pubkey);
+    for (const d of rows) d.fingerprint = await E2EE.fingerprint(d.pubkey, d.spub);
     // (a phone without keys is waiting: a member's new phone, or someone not let in yet; only members' show as phones)
     st.devices = rows.filter(d => d.has_grant || (mem && mem.members[d.user_id]));
     return st.devices;
   }
-  const pendingPhones = () => st.devices.filter(d => !d.has_grant && !(E2EE.device && d.grantee === 'd:' + E2EE.device.id));
-  async function approvePhone(d) { await E2EE.approveDevice(db.meta.babyId, d); await B().del(`join/${d.grantee.slice(2)}.json`); await refreshIndex(); await loadDevices(); }
+  /** Phones waiting for a parent's approval: without keys, or (a folder with a root) with keys no parent's phone signed, such as a phone from before signing. */
+  const pendingPhones = () => st.devices.filter(d => (!d.has_grant || (trust() && d.verified === false)) && !(E2EE.device && d.grantee === 'd:' + E2EE.device.id));
+  const roleOf = user => { const m = mem && mem.members[user]; return m ? m.role : 'caregiver'; };
+  async function approvePhone(d) { await E2EE.approveDevice(db.meta.babyId, d, { ext: Folder.extOf(d.user_id, roleOf(d.user_id), d.spub, d.pubkey) }); await B().del(`join/${d.grantee.slice(2)}.json`); await refreshIndex(); await deriveTrusted(); await loadDevices(); }
   const myDevices = () => Folder.dir.myDevices();
   async function removePhone(id) {
     await B().del(`keys/${id}.json`); await B().del(`devices/${id}.json`); await refreshIndex();
@@ -570,15 +819,16 @@ const FolderSync = (() => {
   }
   /** Someone who cannot change the keys (not a parent) asks the parents' phones to, on their next sync. */
   async function askRotation() { const kr = (await Folder.read('keyring.json')) || {}; await Folder.write('keyring.json', { ...kr, rotate_needed: true }); }
-  async function recover(code) { await E2EE.unlockWithRecovery(db.meta.babyId, code, db.meta); st.needsAccess = false; save(true); run(true); }
+  async function recover(code) { await pinFromFolder(); await E2EE.unlockWithRecovery(db.meta.babyId, code, db.meta); st.needsAccess = false; save(true); run(true); }
   const newRecoveryCode = () => E2EE.replaceRecovery(db.meta.babyId);
-  const securityCode = () => E2EE.securityCode(db.meta.babyId);
+  const securityCode = async () => E2EE.securityCode(db.meta.babyId, trust() ? await E2EE.fpRaw(trust().root.k) : null);
   const activity = async () => [];
   /** Approve (keys for their phone, a line in the family list) or deny a request to join. */
   async function decide(req, approve, opts = {}) {
     const b = db.meta.babyId;
     if (approve) {
-      const g = await E2EE.grantForRequest(b, req, opts);
+      if (req.forged) throw new Error(N_('This request was written by another account than the one it claims. Deny it.'));
+      const g = await E2EE.grantForRequest(b, req, { ...opts, ext: Folder.extOf(req.user, req.role, req.device_spub, req.device_pub) });
       await Folder.dir.grantDevice(b, req.device_id, g);
       await saveMembers(m => { if (!m.members[req.user]) m.members[req.user] = { name: req.display_name || req.email, email: req.email, role: req.role, perms: req.perms || null, since: Date.now() }; });
     }
@@ -586,20 +836,27 @@ const FolderSync = (() => {
     await refreshIndex(); await loadAdmin(); await loadDevices().catch(() => {});
   }
   /** Share the family folder with someone (their cloud email), with the role they will get once they ask to join and are approved. */
+  /** Share the family folder with someone (their cloud email), with the role they will get once they ask to join and are approved.
+      Each gets a join code, kept on this phone: typed on their phone, it proves their request to this phone and this phone's keys to theirs. */
   async function shareWith(emails, role, perms, message) {
     emails = emails.map(e => String(e).trim().toLowerCase()).filter(e => /^\S+@\S+\.\S+$/.test(e));
     if (!emails.length) throw new Error(N_('Enter a valid email address'));
     await B().share(emails, message);
-    await saveMembers(m => { for (const e of emails) m.invites[e] = { role, perms: perms || null, by: Auth.id, at: Date.now() }; });
+    const codes = db.meta.fcodes || (db.meta.fcodes = {});
+    for (const e of emails) { const code = E2EE.newJoinCode(); await E2EE.rememberInvite(e, E2EE.joinCodeSecret(code)); codes[e] = code; }
+    await saveMembers(m => { for (const e of emails) m.invites[e] = { role, perms: perms || null, by: Auth.id, at: Date.now(), code: true }; });
+    return emails.map(e => codes[e]);
   }
-  async function rescind(email) { await B().unshare(email); await saveMembers(m => { delete m.invites[email]; }); }
+  const joinCodeFor = email => (db.meta.fcodes || {})[email] || '';
+  async function rescind(email) { await B().unshare(email); if (db.meta.fcodes) delete db.meta.fcodes[email]; await saveMembers(m => { delete m.invites[email]; }); }
   async function setMember(user, role, perms) {
     const b = db.meta.babyId, p = mem && mem.members[user]; if (!p) return;
     const had = p.role === 'parent' || !!(p.perms && p.perms.view_health), will = role === 'parent' || !!(perms && perms.view_health);
-    if (will && !had) for (const g of await E2EE.healthGrants(b, user)) { const k = await Folder.read(`keys/${g.device}.json`); if (k) await Folder.write(`keys/${g.device}.json`, { ...k, wrap_health: g.wrap_health }); }
     await saveMembers(m => { if (m.members[user]) { m.members[user].role = role; m.members[user].perms = role === 'parent' ? null : perms; } });
+    // their phones' grants say the new role (and carry the health key when it is theirs now): made again by this phone, signed
+    for (const d of await Folder.dir.listDevices()) if (d.user_id === user && d.has_grant && d.verified !== false) await E2EE.approveDevice(b, { ...d, view_health: will }, { ext: Folder.extOf(user, role, d.spub, d.pubkey) });
     if (had && !will) await rotateNow();   // (their phones keep the old health key: a new one for everyone else)
-    schedule(300);
+    await refreshIndex(); await deriveTrusted(); schedule(300);
   }
   const renameMember = (user, name) => saveMembers(m => { if (m.members[user]) m.members[user].name = String(name || '').trim().slice(0, 60); });
   const setDisplayName = name => renameMember(Auth.id, name);
@@ -652,7 +909,7 @@ const FolderSync = (() => {
   async function createBaby(name, birth, mine, sex) {
     if (!Folder.attached) throw new Error(N_('Connect your cloud first'));
     await Folder.createFamily(name);
-    db.meta.recoveryAck = false;
+    db.meta.recoveryAck = false; delete db.meta.ftrust; delete db.meta.fgood; trusted = null;
     let created;
     try { created = await E2EE.createLog({ kids: Kids.clean([{ id: 'c1', name, birth: birth || '', sex }]) }, mine); } catch (e) { delete db.meta.recoveryAck; await Folder.disconnect(); save(true); throw e; }
     const { babyId: id, code } = created;
@@ -671,7 +928,7 @@ const FolderSync = (() => {
     if (!Folder.attached) throw new Error(N_('Connect your cloud first'));
     const kids = Kids.clean(db.baby.kids && db.baby.kids.length ? db.baby.kids : [{ id: 'c1', name: db.baby.name, birth: db.baby.birth || '' }]);
     await Folder.createFamily(kids[0].name);
-    db.meta.recoveryAck = false;
+    db.meta.recoveryAck = false; delete db.meta.ftrust; delete db.meta.fgood; trusted = null;
     let created;
     try { created = await E2EE.createLog({ ...db.baby, kids }, mine); } catch (e) { delete db.meta.recoveryAck; await Folder.disconnect(); save(true); throw e; }
     const { babyId: id, code } = created, me = Auth.id;
@@ -688,13 +945,19 @@ const FolderSync = (() => {
     return code;
   }
   /** Ask to join a family folder shared with this account: this phone's key goes in, and a parent decides. */
-  async function requestJoin(cand, displayName) {
+  async function requestJoin(cand, displayName, code) {
+    const secret = code ? E2EE.joinCodeSecret(code) : null;
+    if (code && !secret) throw new Error(N_('A join code is 8 letters or numbers'));
     const family = await Folder.join(cand);
     await refreshIndex(true);
     const dev = await E2EE.ensureDevice();
-    if (!revOf(`keys/${dev.id}.json`)) await Folder.write(`join/${dev.id}.json`, { v: 1, device: dev.id, user: Auth.id, pub: dev.pub, name: String(displayName || Folder.me.name || '').trim().slice(0, 60), email: Folder.me.email, platform: Native.platform, created: Date.now() }, 'overwrite');
+    const proof = secret ? await E2EE.joinProof(secret, dev.id, dev.pub, dev.spub) : null;   // (the join code the parent gave: proves this request is theirs)
+    await E2EE.setJoinSecret(secret);   // (and, when the keys come, that they came from that parent's phone)
+    if (!revOf(`keys/${dev.id}.json`)) await Folder.write(`join/${dev.id}.json`, { v: 2, device: dev.id, user: Auth.id, pub: dev.pub, sig: dev.spub || null, name: String(displayName || Folder.me.name || '').trim().slice(0, 60), email: Folder.me.email, platform: Native.platform, created: Date.now(), proof }, 'overwrite');
     db.meta.fjoin = { family, device: dev.id }; st.myRequests = [{ id: dev.id, status: 'pending' }]; save(true);
   }
+  /** Before a phone is let in with the recovery code: the root it will check the chain against, from the folder's own marker. */
+  async function pinFromFolder() { if (trust()) return; const ll = await Folder.read('littlelog.json'); if (ll && ll.root && ll.root.d && ll.root.k) pin(ll.root); }
   /** Were we let in? Then the family is this phone's. */
   async function checkApproval() {
     const j = db.meta.fjoin; if (!j) return !!db.meta.babyId;
@@ -713,8 +976,8 @@ const FolderSync = (() => {
     const j = db.meta.fjoin; if (!j) return;
     const family = j.family;
     db.meta.babyId = family;
-    try { await E2EE.unlockWithRecovery(family, code, db.meta); }
-    catch (e) { db.meta.babyId = null; throw e; }
+    try { await pinFromFolder(); await E2EE.unlockWithRecovery(family, code, db.meta); }
+    catch (e) { db.meta.babyId = null; delete db.meta.ftrust; throw e; }
     await B().del(`join/${j.device}.json`).catch(() => {});
     letIn(family); await run(true);
   }
@@ -725,9 +988,10 @@ const FolderSync = (() => {
   function lostAccess() {
     const b = db.meta.babyId; if (b) E2EE.forget(b);
     db.events = []; db.deleted = []; Store.purge().catch(() => {});
-    for (const k of ['babyId', 'role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'tree', 'fidx', 'fseq', 'fjoin', 'gdid', 'mediaUp', 'mediaDel']) delete db.meta[k];
+    for (const k of ['babyId', 'role', 'perms', 'pulledAt', 'pushedAt', 'babyDirty', 'stash', 'unverified', 'recoveryAck', 'tree', 'fidx', 'fseq', 'fjoin', 'gdid', 'mediaUp', 'mediaDel', 'ftrust', 'fgood', 'fcodes']) delete db.meta[k];
     db.baby = { name: '', birth: '', kids: Kids.clean([]) };
     st.people = []; st.requests = []; st.devices = []; st.myRequests = []; st.memberships = []; st.invites = []; st.retired = []; st.tree = undefined; st.needsAccess = false; mem = null;
+    trusted = null; vcache.clear(); wcache.clear(); st.warns = {}; st.warn = ''; st.repaired = 0; st.forgedEpoch = 0; st.policy = null;
     Folder.disconnect().catch(() => {}); save(true); notify();
   }
 
@@ -736,20 +1000,24 @@ const FolderSync = (() => {
     if (!linked()) return;
     if (manual !== true && Date.now() < retryAt) return;
     if (busy && Date.now() - busyAt < 120000) { again = true; return; }
-    busy = true; busyAt = Date.now(); st.state = 'syncing'; notify();
+    busy = true; busyAt = Date.now(); st.state = 'syncing'; runNo++; notify();
     let changed = 0, done; flight = new Promise(r => { done = r; });
     try {
       await refreshIndex();
+      if (!E2EE.device) await E2EE.ensureDevice().catch(() => {});   // (this phone's keys, the signing one too, before it writes anything)
       if (await pullKeys()) {
+        await deriveTrusted();
         await pullMembers();
+        if (!trust() && mem) { await upgrade(); if (trust()) await pullMembers(); }   // (a folder from before signing: the first parent's phone signs it; the others take its root)
         if (db.meta.babyId) {
           if (mem && db.meta.role && (db.meta.role === 'parent' || db.meta.perms.view_health) && !E2EE.hasHealthKey(db.meta.babyId)) await pullKeys();   // (allowed to see health notes: the health key too)
-          if (st.rotateNeeded && isParent()) await rotateNow();
+          if ((st.rotateNeeded || st.forgedEpoch) && isParent()) await rotateNow();
+          if (isParent()) { await repair(); await loadPolicy(); }
           await pullProfile();
           changed = await pullEvents();
           await pushEvents();
           await Media.flush();
-          if (fresh('tree.json') || st.tree === undefined) await loadTree().catch(() => {});
+          if (fresh('tree.json') || st.tree === undefined) await loadTree().catch(() => {}); else warnOff('tree');
           if (isParent()) { await loadAdmin(); await loadDevices().catch(() => {}); }
           if (db.meta.role !== 'parent' && !(db.meta.perms || {}).view_health) db.events = db.events.filter(e => !E2EE.isSensitive(e.type));
           st.state = 'ok'; st.at = Date.now(); st.err = ''; st.reconnect = false; failures = 0; retryAt = 0;
@@ -769,6 +1037,41 @@ const FolderSync = (() => {
       if (again) { again = false; schedule(1500); }
     }
   }
+  /** A folder from before signing (no root in littlelog.json): the first parent's phone to run this version becomes its root and signs
+      what is there; every other phone takes the root from littlelog.json once it names a parent of the family list it holds. */
+  async function upgrade() {
+    if (trust() || !mem) return;
+    const b = db.meta.babyId, ll = await Folder.read('littlelog.json'), dev = E2EE.device;
+    if (ll && ll.root && ll.root.d && ll.root.k) {
+      const m = mem.members[ll.root.u];
+      if (m && m.role === 'parent') { pin(ll.root); await deriveTrusted(); warnOff('root'); } else warnOn('root', N_("The folder names a root phone that is not a parent's. A parent's phone should open Little Log first."));
+      return;
+    }
+    if (!isParent() || !dev || !dev.spub || !E2EE.hasKeys(b)) return;
+    const root = { d: dev.id, u: Auth.id, k: dev.spub };
+    pin(root);
+    const marker = await Folder.signed(b, 'root', 'littlelog.json', { v: 2, family: b, created: (ll && ll.created) || Date.now(), root });
+    await Folder.write('littlelog.json', marker, 'overwrite'); good('littlelog.json', marker);
+    const devs = await Folder.readAll('devices/');   // every phone's grant, signed: whose it is from its record, its role from the family list, its signing key when its record has one
+    for (const p of paths('keys/')) {
+      const id = (/^keys\/([^/]+)\.json$/.exec(p) || [])[1], k = id && await Folder.read(p), d = devs.find(x => x && x.id === id); if (!k || !d) continue;
+      await Folder.write(p, await Folder.signed(b, 'grant', p, { ...k, v: 2, ext: JSON.stringify({ user: d.user, role: roleOf(d.user), sig: d.sig && d.sig.x ? d.sig : null, pub: d.pub, root }) }), 'overwrite');
+    }
+    const rec = await Folder.read('recovery.json'); if (rec) { const r2 = await Folder.signed(b, 'recovery', 'recovery.json', { ...rec, v: 2 }); await Folder.write('recovery.json', r2, 'overwrite'); good('recovery.json', r2); }
+    await refreshIndex(); await deriveTrusted();
+    const { blob, epoch } = await E2EE.sealDoc(b, 'members', mem), file = await Folder.signed(b, 'members', 'members.json', { v: 2, epoch, blob, updated: Date.now(), by: Auth.id, seq: 1 });
+    await Folder.write('members.json', file, 'overwrite'); trust().mseq = 1; good('members.json', file);
+    const t = st.tree || db.meta.tree; if (t) { await Folder.write('tree.json', await treeFile(b, t, 1), 'overwrite'); trust().tseq = 1; }
+    await refreshIndex(); mark('members.json'); mark('tree.json');
+  }
+  /** Who may share the folder on (the cloud's setting), for parents' phones: asked now and then, and when it is changed. */
+  async function loadPolicy(force) {
+    if (!isParent() || !B().policy) return st.policy;
+    if (!force && st.policy && Date.now() - st.policyAt < 600000) return st.policy;
+    try { st.policy = await B().policy(); st.policyAt = Date.now(); } catch (e) { /* not known: nothing shown */ }
+    return st.policy;
+  }
+  async function setOwnerOnly(v) { await B().setPolicy(!!v); await loadPolicy(true); }
   function schedule(ms = 2000) { if (!linked()) return; clearTimeout(timer); timer = setTimeout(() => run(true), ms); }
   function start() {
     if (started) return run(true);
@@ -783,5 +1086,5 @@ const FolderSync = (() => {
   return { st, SCHEMA: ServerSync.SCHEMA, checkServer, enabled, linked, isParent, can, nameOf, merge: ServerSync.merge, run, loadDevices, pendingPhones, approvePhone, myDevices, removePhone, recover, recoverJoin, newRecoveryCode, securityCode, schedule, start,
     loadMemberships, loadMyRequests, loadPeople, loadAdmin, activity, createInvite, rescind, decide, shareWith, setMember, renameMember, resetMfa, setDisplayName, removeMember, choose, createBaby, requestJoin, checkApproval, cancelRequest,
     pendingRequest, inviteUrl, pushBaby, setMyDetails, unsent, unsentKept, dropKept, loadFamilyRequests, loadFamilyPeople, retireMember, loadRetired, forgetRetired, loadTree, editTree, adoptLog,
-    refreshIndex, revOf, noteRev, paths, members, get switching() { return false; }, get flight() { return flight; }, onChange: null, onSessionLost: null };
+    refreshIndex, revOf, noteRev, paths, members, trusted: () => trusted, trust, deriveTrusted, recoveryOk: () => recOk, loadPolicy, setOwnerOnly, joinCodeFor, get switching() { return false; }, get flight() { return flight; }, onChange: null, onSessionLost: null };
 })();

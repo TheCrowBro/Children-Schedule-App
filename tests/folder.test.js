@@ -1,6 +1,8 @@
 // The family folder: the family's log in their own cloud storage, with no server of ours. Three phones (three cloud accounts) share
 // one folder through a fake of the cloud's API (tests/lib/fake-dropbox.js, tests/lib/fake-gdrive.js); the app is built without a
-// family server, as the store build is. The whole life of a family folder is walked once per cloud: Dropbox, then Google Drive.
+// family server, as the store build is. The whole life of a family folder is walked once per cloud: Dropbox, then Google Drive,
+// including what a member's phone with a modified app could try (rewriting the family list, the tree or the keys, writing entries
+// in another's name, a request that claims to be someone else, deleting the key files) and how the other phones hold up.
 //   node tests/folder.test.js            (FOLDER_CLOUD=dropbox or =google runs one)
 const assert = require('assert');
 const { setup } = require('./lib/harness');
@@ -36,7 +38,11 @@ async function suite(cloud) {
   const closeSheets = p => p.evaluate(() => { if (!$('#sheet').hidden) { $('#sheet').hidden = $('#sheetBack').hidden = true; $('#sheet').innerHTML = ''; } });
   const sealed = (text, words) => words.every(w => !text.includes(w));
   const add = (p, e) => p.evaluate(e => { const k = kids()[0].id; db.events.push({ note: '', updated: stamp(), by: Auth.id, child: k, ...e }); save(); }, e);
-  let mum, dad, nan, recoveryCode;
+  let mum, dad, nan, recoveryCode, uncle;
+  const epochNow = () => JSON.parse(fake.text('keyring.json')).epoch;
+  const devOf = p => p.evaluate(() => E2EE.device.id);
+  const userOf = p => p.evaluate(() => Auth.id);
+  const signerOf = path => (JSON.parse(fake.text(path)).s || {}).d;
 
   await step(`the first screen offers the family's own cloud; ${name} connects through the browser and comes back; a parent starts the log: a Little Log folder is made, with the keys, the recovery key, the children and the family list in it, all scrambled`, async () => {
     mum = await phone('mum@x.com');
@@ -124,6 +130,116 @@ async function suite(cloud) {
     assert.deepEqual(await mum.evaluate(() => Sync.st.people.map(p => [p.display_name, p.role]).sort()), [['Dad', 'parent'], ['Mum', 'parent'], ['Nan', 'caregiver']]);
   });
 
+  await step("the family list and the tree are signed: Nan's phone (a caregiver, with a modified app) rewrites the family list making herself a parent, and puts a stranger on the tree; Mum's phone ignores both, says so, and puts the good copies back; Nan stays a caregiver everywhere", async () => {
+    await mum.evaluate(() => Sync.editTree(t => { const me = t.parents[0]; return FamilyTree.add(t, 'gp', me.id, { id: FamilyTree.newId(), name: 'Rose', call: 'Nana' }); },
+      FamilyTree.clean({ parents: Sync.st.people.filter(p => p.role === 'parent').slice(0, 2).map(p => ({ id: 'u' + p.user_id.replace(/-/g, '').slice(0, 12), name: p.display_name, user: p.user_id })) })));
+    await syncNow(nan); await syncNow(dad);
+    await nan.evaluate(async () => {   // (what the app never does: written with the main key every member holds, signed with her own phone's key)
+      const b = db.meta.babyId, m = JSON.parse(JSON.stringify(Sync.members())); m.members[Auth.id].role = 'parent'; m.members[Auth.id].perms = null;
+      const { blob, epoch } = await E2EE.sealDoc(b, 'members', m);
+      await Folder.write('members.json', await Folder.signed(b, 'members', 'members.json', { v: 2, epoch, blob, updated: Date.now(), by: Auth.id, seq: 50 }), 'overwrite');
+      await Sync.editTree(t => FamilyTree.add(t, 'gp', t.parents[0].id, { id: FamilyTree.newId(), name: 'Stranger', call: 'Nobody' }));
+    });
+    assert.equal(signerOf('members.json'), await devOf(nan), "Nan's copy is in the folder");
+    await syncNow(mum);
+    assert(/family list/.test(await mum.evaluate(() => Sync.st.warn)) && /family tree/.test(await mum.evaluate(() => Sync.st.warn)), 'Mum\'s phone says what it would not believe: ' + await mum.evaluate(() => Sync.st.warn));
+    assert.deepEqual(await mum.evaluate(() => Sync.st.people.map(p => [p.display_name, p.role]).sort()), [['Dad', 'parent'], ['Mum', 'parent'], ['Nan', 'caregiver']], 'Nan is still a caregiver on Mum\'s phone');
+    assert.equal(await mum.evaluate(() => Sync.st.tree.parents.flatMap(x => x.gp.map(g => g.name)).join()), 'Rose', 'the stranger never reached the tree');
+    assert(await mum.evaluate(() => Sync.st.repaired >= 2), 'put back: ' + await mum.evaluate(() => Sync.st.repaired));
+    assert.equal(signerOf('members.json'), await devOf(mum), "Mum's phone put the family list back"); assert(JSON.parse(fake.text('members.json')).seq > 50, 'newer than the forgery');
+    assert.equal(signerOf('tree.json'), await devOf(mum), 'and the tree');
+    await syncNow(mum); assert.equal(await mum.evaluate(() => Sync.st.warn), '', 'all well again');
+    await syncNow(dad); assert.equal(await dad.evaluate(() => Sync.st.people.find(p => p.display_name === 'Nan').role), 'caregiver');
+    await syncNow(nan); assert.equal(await nan.evaluate(() => db.meta.role), 'caregiver', 'her own phone would not believe it either');
+    assert.equal(await nan.evaluate(() => Sync.st.tree.parents.flatMap(x => x.gp.map(g => g.name)).join()), 'Rose');
+  });
+
+  await step("entries are signed by the phone that wrote them, in its own person's name: Nan's phone writes a file under Dad's phone's name, and an entry of her own that claims Dad made it; neither reaches Mum, while Nan's own entries do", async () => {
+    const dadId = await userOf(dad), dadDev = await devOf(dad);
+    await nan.evaluate(async ([dadId, dadDev]) => {
+      const b = db.meta.babyId, k = kids()[0].id, now = Date.now();
+      const x = await E2EE.encryptEntry(b, { id: 'forged-1', type: 'feed', ts: now - 400e3, data: { kind: 'bottle', ml: 999 }, note: 'not dad', updated: now, by: dadId, child: k });
+      const p = `events/${dadDev}/000050.json`;
+      await Folder.write(p, await Folder.signed(b, 'events', p, { v: 2, device: dadDev, by: dadId, at: now, rows: [{ id: 'forged-1', ...x, updated: now, deleted: false, created_by: dadId }] }), 'add');
+      db.events.push({ id: 'forged-2', type: 'feed', ts: now - 300e3, data: { kind: 'bottle', ml: 998 }, note: 'not dad either', updated: stamp(), by: dadId, child: k });
+      db.events.push({ id: 'n-feed-2', type: 'feed', ts: now - 200e3, data: { kind: 'bottle', ml: 80 }, note: '', updated: stamp(), by: Auth.id, child: k }); save();
+    }, [dadId, dadDev]);
+    await syncNow(nan); await syncNow(mum);
+    const ids = (await entries(mum)).map(e => e.id);
+    assert(!ids.includes('forged-1') && !ids.includes('forged-2'), 'the forgeries stayed out: ' + ids.join(','));
+    assert(ids.includes('n-feed-2'), "Nan's own entry came");
+    assert(await mum.evaluate(() => Sync.st.bad >= 2), 'counted as bad: ' + await mum.evaluate(() => Sync.st.bad));
+  });
+
+  await step("the key files are kept safe: keyring.json and littlelog.json are deleted (or emptied) in the cloud; Mum's phone puts them back at its next sync and Dad carries on", async () => {
+    const before = fake.text('keyring.json');
+    fake.damage('keyring.json'); fake.damage('littlelog.json');
+    assert(!fake.paths().includes('keyring.json'), 'gone');
+    await syncNow(mum);
+    assert(fake.paths().includes('keyring.json') && fake.paths().includes('littlelog.json'), 'back: ' + fake.paths().join(' '));
+    assert.equal(JSON.parse(fake.text('keyring.json')).epoch, JSON.parse(before).epoch, 'the same keys');
+    assert.equal(JSON.parse(fake.text('littlelog.json')).root.d, await devOf(mum), 'the root is still Mum\'s first phone');
+    await add(mum, { id: 'm-feed-after-repair', type: 'feed', ts: Date.now() - 100e3, data: { kind: 'bottle', ml: 70 } }); await syncNow(mum);
+    await syncNow(dad); assert.equal(await dad.evaluate(() => Sync.st.state), 'ok'); assert((await entries(dad)).some(e => e.id === 'm-feed-after-repair'));
+  });
+
+  await step("a change of keys must come from a parent's phone: Nan's phone sets new keys of its own (a new epoch, grants it signed); Mum's and Dad's phones keep theirs, Mum's says whose phone did it and sets new keys past it for everyone the chain had reached", async () => {
+    const ep = epochNow();
+    await nan.evaluate(() => E2EE.rotate(db.meta.babyId, db.baby));   // (what a modified app could do: every member holds the main key)
+    assert.equal(epochNow(), ep + 1, 'the forged keys are in the folder');
+    await syncNow(mum);
+    assert.equal(epochNow(), ep + 2, "Mum's phone set new keys past the forged ones"); assert.equal(signerOf(`keys/${await devOf(mum)}.json`), await devOf(mum));
+    assert.equal(await mum.evaluate(() => E2EE.epoch(db.meta.babyId)), ep + 2);
+    assert(/keys were changed by Nan's phone/.test(await mum.evaluate(() => Sync.st.warn)), 'says whose phone did it: ' + await mum.evaluate(() => Sync.st.warn));
+    await add(mum, { id: 'm-feed-newkeys', type: 'feed', ts: Date.now() - 90e3, data: { kind: 'bottle', ml: 75 } }); await syncNow(mum);
+    assert.equal(await mum.evaluate(() => Sync.st.warn), '', 'all well again');
+    await syncNow(dad); assert.equal(await dad.evaluate(() => E2EE.epoch(db.meta.babyId)), ep + 2, 'Dad followed the real change'); assert((await entries(dad)).some(e => e.id === 'm-feed-newkeys'));
+    await syncNow(nan); assert.equal(await nan.evaluate(() => E2EE.epoch(db.meta.babyId)), ep + 2, 'so did Nan\'s phone (still a member, until a parent removes her)'); assert((await entries(nan)).some(e => e.id === 'm-feed-newkeys'));
+    assert.equal(signerOf(`keys/${await devOf(nan)}.json`), await devOf(mum), 'her keys are a parent\'s again');
+  });
+
+  await step(`a join code: Mum shares the folder with Uncle and gets a code for him; he types it when he asks to join, so the request shows Verified and ${name}'s word on who wrote it, and Mum approves without reading digits; a request that claims to be Uncle but was written by Nan's account is marked and cannot be approved`, async () => {
+    await goTab(mum, 'family'); await openShare(mum); await mum.waitForSelector('#shGo');
+    await mum.fill('#shEmail', 'uncle@x.com'); await mum.click('input[name=invrole][value=family]'); await mum.click('#shGo');
+    await mum.waitForFunction(() => /join code: [A-Z2-9]{4}-[A-Z2-9]{4}/.test(document.querySelector('#toast').textContent));
+    const code = /join code: ([A-Z2-9]{4}-[A-Z2-9]{4})/.exec(await mum.textContent('#toast'))[1];
+    await mum.evaluate(() => { document.querySelector('#toast').textContent = ''; });
+    await mum.waitForFunction(c => document.querySelector('#view').textContent.includes(c), code);   // (shown by the invitation, for later)
+    const uncleId = await nan.evaluate(([prov, acct]) => Folder.memberId(prov, acct), [cloud, fake.account('uncle@x.com')]);
+    await nan.evaluate(async uncleId => {   // the forgery: a request in Uncle's name, written by Nan's account
+      const id = E2EE.uuid(), d = E2EE.device;
+      await Folder.write(`join/${id}.json`, { v: 2, device: id, user: uncleId, pub: d.pub, sig: d.spub, name: 'Uncle', email: 'uncle@x.com', platform: 'web', created: Date.now(), proof: null }, 'overwrite');
+    }, uncleId);
+    uncle = await phone('uncle@x.com'); await toCloud(uncle);
+    await uncle.waitForSelector('[data-fjoin]'); await uncle.fill('#oMine', 'Uncle'); await uncle.fill('#oJoinCode', code.toLowerCase()); await uncle.click('[data-fjoin]'); await uncle.waitForSelector('#wCheck');
+    await syncNow(mum); await mum.waitForFunction(() => Sync.st.requests.length === 2);
+    const reqs = await mum.evaluate(() => Sync.st.requests.map(r => ({ email: r.email, forged: r.forged, verified: r.qrVerified, attested: r.attested })));
+    const real = reqs.find(r => !r.forged), bad = reqs.find(r => r.forged);
+    assert(real && real.verified && real.attested && real.email === 'uncle@x.com', 'the real request is verified by the code: ' + JSON.stringify(reqs));
+    assert(bad && bad.email === 'nan@x.com', "the forgery is marked, with the account that really wrote it: " + JSON.stringify(reqs));
+    assert(/Deny it, and tell the family/.test(await mum.textContent('#sheet')) && !/data-approve/.test(await mum.evaluate(() => $('#sheet').innerHTML)), 'the forgery popped up with Deny only');
+    await closeSheets(mum); await mum.evaluate(() => Acct.promptRequests()); await closeSheets(mum);   // (both pop-ups put away: decided on the Family tab below)
+    await goTab(mum, 'family'); await mum.waitForFunction(() => document.querySelectorAll('#view [data-approve]').length === 1, null, { timeout: 15000 });
+    assert(/Verified: they typed the join code/.test(await mum.textContent('#view')) && /Deny it, and tell the family/.test(await mum.textContent('#view')), 'both cards say what they are');
+    await mum.evaluate(() => { const r = Sync.st.requests.find(x => x.forged); return Sync.decide(r, true).then(() => { throw new Error('approved a forgery'); }, () => Sync.decide(r, false)); });
+    await closeSheets(mum); await mum.click('#view [data-approve]'); await mum.waitForFunction(() => /Approved/.test(document.querySelector('#toast').textContent));   // (no code to tick: the join code vouched for the phone)
+    await uncle.click('#wCheck'); await uncle.waitForSelector('#tabs', { timeout: 20000 }); await syncNow(uncle);
+    assert.equal(await uncle.evaluate(() => db.meta.role), 'family'); assert.equal(await uncle.evaluate(() => db.meta.unverified), undefined, 'the keys came with the proof: no code to compare');
+    assert((await entries(uncle)).some(e => e.id === 'm-feed-newkeys'));
+    await syncNow(dad); await closeSheets(dad);
+  });
+
+  await step("only the folder's owner can share it on, when they say so: Mum turns Only my phone can share on; Dad's phone (a parent) can no longer share the folder; Mum turns it off again", async () => {
+    await goTab(mum, 'family'); await openShare(mum); await mum.waitForSelector('#ownerShare', { timeout: 15000 });
+    await mum.click('#ownerShare'); await mum.waitForFunction(() => /Only this phone can share/.test(document.querySelector('#toast').textContent));
+    assert(fake.ownerOnly(), 'the cloud setting changed');
+    await closeSheets(dad); await syncNow(dad);
+    const r = await dad.evaluate(() => Sync.shareWith(['aunt@x.com'], 'family', null, '').then(() => 'shared', e => 'refused: ' + e.message));
+    assert(/^refused/.test(r), r); assert(!fake.access('aunt@x.com'));
+    await goTab(mum, 'family'); await openShare(mum); await mum.waitForSelector('#ownerShare'); await mum.click('#ownerShare'); await mum.waitForFunction(() => /Every parent can share/.test(document.querySelector('#toast').textContent));
+    assert(!fake.ownerOnly());
+  });
+
   await step('pictures: a photo with a big moment goes into the folder sealed, and shows on the other phones', async () => {
     const id = await mum.evaluate(async () => {
       const c = document.createElement('canvas'); c.width = 64; c.height = 48; const x = c.getContext('2d'); x.fillStyle = '#c84'; x.fillRect(0, 0, 64, 48);
@@ -138,8 +254,6 @@ async function suite(cloud) {
   });
 
   await step('the family tree is sealed in the folder and reaches the other parent; two parents changing it at the same moment both get their change in', async () => {
-    await mum.evaluate(() => Sync.editTree(t => { const me = t.parents[0]; return FamilyTree.add(t, 'gp', me.id, { id: FamilyTree.newId(), name: 'Rose', call: 'Nana' }); },
-      FamilyTree.clean({ parents: Sync.st.people.filter(p => p.role === 'parent').slice(0, 2).map(p => ({ id: 'u' + p.user_id.replace(/-/g, '').slice(0, 12), name: p.display_name, user: p.user_id })) })));
     assert(fake.paths().includes('tree.json') && sealed(fake.text('tree.json'), ['Rose', 'Nana']), 'sealed in the folder');
     await syncNow(dad);
     assert.equal(await dad.evaluate(() => (Sync.st.tree.parents.find(p => p.gp.length) || { gp: [] }).gp.map(g => g.name).join()), 'Rose');
@@ -183,10 +297,10 @@ async function suite(cloud) {
     await goTab(mum, 'family'); await mum.waitForSelector(`[data-person="${nanId}"]`); await mum.click(`[data-person="${nanId}"]`); await mum.waitForSelector('#pRemove'); await mum.click('#pRemove');
     await mum.waitForFunction(() => document.querySelector('#sheet').hidden && !Sync.st.people.some(p => p.display_name === 'Nan'), { timeout: 30000 });   // (the sheet closes once the removal, unsharing and key change are done)
     assert(!fake.access('nan@x.com'), 'unshared');
-    assert.equal(JSON.parse(fake.text('keyring.json')).epoch, 2, 'new keys');
+    assert.equal(epochNow(), 4, 'new keys');
     await add(mum, { id: 'm-feed-2', type: 'feed', ts: Date.now() - 100e3, data: { kind: 'bottle', ml: 100 }, note: 'after' });
     await syncNow(mum); await syncNow(dad);
-    assert.equal(await dad.evaluate(() => E2EE.epoch(db.meta.babyId)), 2);
+    assert.equal(await dad.evaluate(() => E2EE.epoch(db.meta.babyId)), 4);
     const ids = (await entries(dad)).map(e => e.id); assert(ids.includes('m-feed-2') && ids.includes('m-feed-1'), 'Dad reads new and old: ' + ids);
     await nan.evaluate(() => Sync.run(true)); await nan.waitForFunction(() => !db.meta.babyId, { timeout: 15000 });
     assert.equal(await nan.evaluate(() => db.events.length), 0, 'nothing of the log stays');
@@ -198,6 +312,8 @@ async function suite(cloud) {
     await mum2.waitForSelector('[data-fjoin]'); await mum2.click('[data-fjoin]'); await mum2.waitForSelector('#wRecover');
     await mum2.fill('#wCode', recoveryCode); await mum2.click('#wRecover'); await mum2.waitForSelector('#tabs', { timeout: 20000 });
     await syncNow(mum2); assert.equal(await mum2.evaluate(() => db.meta.role), 'parent'); assert((await entries(mum2)).some(e => e.id === 'm-feed-2'), 'everything is there');
+    assert.equal(signerOf(`keys/${await devOf(mum2)}.json`), 'recovery', 'its grant is signed with the recovery key'); assert.equal(await mum2.evaluate(() => Sync.trust().root.d), await devOf(mum), 'it checks the chain from the root');
+    await add(mum2, { id: 'm2-feed-1', type: 'feed', ts: Date.now() - 80e3, data: { kind: 'bottle', ml: 65 } }); await syncNow(mum2); await syncNow(dad); assert((await entries(dad)).some(e => e.id === 'm2-feed-1'), 'what it writes counts on the other phones');
     const mum3 = await phone('mum@x.com'); await toCloud(mum3);
     await mum3.waitForSelector('[data-fjoin]'); await mum3.click('[data-fjoin]'); await mum3.waitForSelector('#wCheck');
     await syncNow(mum); await goTab(mum, 'family'); await mum.waitForSelector('[data-approvephone]', { timeout: 15000 });
@@ -210,7 +326,7 @@ async function suite(cloud) {
   await step(`a parent leaves (Leave this log): his phone's keys go, the folder leaves his ${name}, and the other parent's phone changes the keys`, async () => {
     await closeSheets(dad); await goTab(dad, 'family'); await dad.waitForSelector('#leave'); await dad.click('#leave'); await dad.waitForFunction(() => !db.meta.babyId, { timeout: 15000 });
     assert(!fake.access('dad@x.com'), 'gone from the share');
-    await syncNow(mum); assert.equal(JSON.parse(fake.text('keyring.json')).epoch, 3, 'keys changed by a parent');
+    await syncNow(mum); assert.equal(epochNow(), 5, 'keys changed by a parent');
     assert.equal(await dad.evaluate(() => db.events.length), 0);
   });
 
@@ -222,6 +338,18 @@ async function suite(cloud) {
     await connect(p); await p.waitForSelector('[data-fjoin]'); await p.click('[data-fjoin]'); await p.waitForSelector('#wRecover');
     await p.fill('#wCode', recoveryCode); await p.click('#wRecover'); await p.waitForSelector('#tabs', { timeout: 20000 }); await syncNow(p);
     assert((await entries(p)).some(e => e.id === 'm-feed-2'), 'back in');
+  });
+
+  await step("a folder from before signing (no root, nothing signed): the first parent's phone to sync becomes the root and signs what is there; Mum's other phone takes the root from the folder and what each writes reaches the other; no page errors or CSP violations anywhere", async () => {
+    const p = H.mum2;
+    fake.strip();
+    for (const q of [mum, p]) await q.evaluate(async () => { delete db.meta.ftrust; delete db.meta.fgood; save(true); await E2EE.ensureDevice(); });   // (phones that never saw a root; their records get the signing keys back)
+    await syncNow(mum);
+    assert.equal(JSON.parse(fake.text('littlelog.json')).root.d, await devOf(mum), "Mum's phone is the root now"); assert.equal(signerOf('members.json'), await devOf(mum), 'the family list signed');
+    assert.equal(await mum.evaluate(() => Sync.trust().root.d), await devOf(mum));
+    await syncNow(p); assert.equal(await p.evaluate(() => Sync.trust() && Sync.trust().root.d), await devOf(mum), 'the other phone took the root');
+    await add(p, { id: 'p-feed-legacy', type: 'feed', ts: Date.now() - 60e3, data: { kind: 'bottle', ml: 55 } }); await syncNow(p); await syncNow(mum);
+    assert((await entries(mum)).some(e => e.id === 'p-feed-legacy'), 'its entries count'); assert.equal(await mum.evaluate(() => Sync.st.warn), '');
     for (const q of H.pages) { assert.deepEqual(q.errs, [], 'page errors'); assert.deepEqual(q.csp, [], 'CSP violations'); }
   });
 

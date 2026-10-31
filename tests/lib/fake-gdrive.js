@@ -1,6 +1,7 @@
 // A stand-in for the Google Drive API (v3), as far as the family folder (folder.js) uses it: files and folders by id with parents,
 // content revisions and headRevisionId, the changes feed with page tokens, permissions by email on the family folder (inherited by
-// everything in it), "shared with me", capabilities (only the owner may delete or trash), the account. In memory, shared by every
+// everything in it), "shared with me", capabilities (only the owner may delete or trash), who last wrote a file and who owns it,
+// writersCanShare (the owner's setting: whether others with edit access may share the folder on), the account. In memory, shared by every
 // phone in a test; each phone's Playwright context gets its own routes, bound to the Google account it signed in with, so three
 // phones are three accounts sharing one folder, as in life.
 function createFakeGoogleDrive() {
@@ -13,7 +14,9 @@ function createFakeGoogleDrive() {
   const top = f => { while (f.parents[0] && files[f.parents[0]]) f = files[f.parents[0]]; return f; };
   const role = (f, email) => { if (!f) return null; if (f.owner === email) return 'owner'; const t = top(f); if (t.owner === email) return 'writer'; const p = t.perms && t.perms.get(email); return p ? p.role : null; };   // (the folder's owner may edit what others put in it, not delete it)
   const canWrite = (f, email) => ['owner', 'writer'].includes(role(f, email));
-  const meta = (f, email) => ({ id: f.id, name: f.name, mimeType: f.mime, size: String(f.bytes.length), headRevisionId: f.head || undefined, md5Checksum: f.head ? 'md5-' + f.head : undefined, parents: f.parents.slice(), trashed: f.trashed, capabilities: { canDelete: f.owner === email, canTrash: f.owner === email } });
+  const who = e => ({ emailAddress: e, permissionId: user(e).permissionId });
+  const meta = (f, email) => ({ id: f.id, name: f.name, mimeType: f.mime, size: String(f.bytes.length), headRevisionId: f.head || undefined, md5Checksum: f.head ? 'md5-' + f.head : undefined, parents: f.parents.slice(), trashed: f.trashed, capabilities: { canDelete: f.owner === email, canTrash: f.owner === email },
+    lastModifyingUser: who(f.by || f.owner), owners: [who(f.owner)], ownedByMe: f.owner === email, writersCanShare: f.writersCanShare !== false });
   const subtree = f => { const out = [f]; for (const x of Object.values(files)) if (x.parents[0] === f.id) out.push(...subtree(x)); return out; };
   const unq = s => s.replace(/\\(.)/g, '$1');
   function query(email, q) {
@@ -63,7 +66,7 @@ function createFakeGoogleDrive() {
       const pid = j.parents && j.parents[0], parent = pid ? files[pid] : null;
       if (pid && (!parent || !role(parent, email))) return fail(404, 'notFound', 'File not found: ' + pid);
       if (parent && !canWrite(parent, email)) return fail(403, 'insufficientFilePermissions');
-      const f = { id: 'f' + (++ids), name: String(j.name || 'Untitled'), mime: j.mimeType === FOLDER ? FOLDER : 'application/octet-stream', parents: pid ? [pid] : [], owner: email, trashed: false, bytes: Buffer.alloc(0), head: null, revisions: [], perms: j.mimeType === FOLDER ? new Map() : null };
+      const f = { id: 'f' + (++ids), name: String(j.name || 'Untitled'), mime: j.mimeType === FOLDER ? FOLDER : 'application/octet-stream', parents: pid ? [pid] : [], owner: email, by: email, trashed: false, bytes: Buffer.alloc(0), head: null, revisions: [], perms: j.mimeType === FOLDER ? new Map() : null };
       files[f.id] = f; log.push({ seq: ++seq, fileId: f.id, seen: new Set([email]) });
       return J(200, meta(f, email));
     }
@@ -71,7 +74,7 @@ function createFakeGoogleDrive() {
       calls.push('files.upload');
       const f = files[m[1]]; if (!f || !role(f, email)) return fail(404, 'notFound', 'File not found: ' + m[1]);
       if (!canWrite(f, email)) return fail(403, 'insufficientFilePermissions');
-      const rev = 'r' + (++revs); f.bytes = Buffer.from(body || Buffer.alloc(0)); f.head = rev; f.revisions.push({ id: rev, bytes: f.bytes, time: new Date(clock += 7).toISOString() });
+      const rev = 'r' + (++revs); f.bytes = Buffer.from(body || Buffer.alloc(0)); f.head = rev; f.by = email; f.revisions.push({ id: rev, bytes: f.bytes, time: new Date(clock += 7).toISOString() });
       log.push({ seq: ++seq, fileId: f.id, seen: new Set([email]) });
       return J(200, meta(f, email));
     }
@@ -90,6 +93,7 @@ function createFakeGoogleDrive() {
       if (method === 'POST') {
         calls.push('permissions.create');
         if (!canWrite(f, email)) return fail(403, 'insufficientFilePermissions');
+        if (f.writersCanShare === false && f.owner !== email) return fail(403, 'insufficientFilePermissions', 'The owner has not allowed others to share this file');
         let j; try { j = JSON.parse(body.toString('utf8') || '{}'); } catch (e) { return fail(400, 'parseError'); }
         const e = String(j.emailAddress || '').toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(e)) return fail(400, 'invalidSharingRequest');
         if (!f.perms) f.perms = new Map();
@@ -118,6 +122,7 @@ function createFakeGoogleDrive() {
         calls.push('files.update');
         let j; try { j = JSON.parse(body.toString('utf8') || '{}'); } catch (e) { return fail(400, 'parseError'); }
         if (j.trashed !== undefined) { if (f.owner !== email) return fail(403, 'insufficientFilePermissions'); f.trashed = !!j.trashed; log.push({ seq: ++seq, fileId: f.id, seen: new Set([email]) }); }
+        if (j.writersCanShare !== undefined) { if (f.owner !== email) return fail(403, 'insufficientFilePermissions'); f.writersCanShare = !!j.writersCanShare; }
         return J(200, meta(f, email));
       }
       if (method === 'DELETE') {
@@ -152,8 +157,16 @@ function createFakeGoogleDrive() {
     paths: () => walk(only(), '', []).map(x => x.path).sort(),
     /** A file's text. */
     text: p => { const f = find(p); return f ? f.bytes.toString('utf8') : null; },
-    /** Who wrote a file (its owner: whoever made it). */
-    by: p => { const f = find(p); return f ? f.owner : null; },
+    /** Who last wrote a file. */
+    by: p => { const f = find(p); return f ? f.by || f.owner : null; },
+    /** An account's id, as Drive names it (what the app derives a person's id from). */
+    account: email => user(email.toLowerCase()).permissionId,
+    /** A file emptied by someone with edit access (as another member's "delete" leaves it): gone, as far as the app is concerned. */
+    damage: p => { const f = find(p); if (!f) throw new Error('no ' + p); f.bytes = Buffer.alloc(0); f.head = 'r' + (++revs); f.revisions.push({ id: f.head, bytes: f.bytes, time: new Date(clock += 7).toISOString() }); log.push({ seq: ++seq, fileId: f.id, seen: new Set([f.owner]) }); },
+    /** The folder as an app from before signing left it: no signatures, no root, no signing keys, no ext on the grants. */
+    strip: () => { for (const { path: p, file: f } of walk(only(), '', [])) { if (!/\.json$/.test(p)) continue; let j; try { j = JSON.parse(f.bytes.toString('utf8')); } catch (e) { continue; } delete j.s; if (p === 'littlelog.json') delete j.root; if (/^keys\//.test(p)) delete j.ext; if (/^devices\//.test(p)) delete j.sig; if (p === 'recovery.json') { delete j.recovery_spub; delete j.recovery_spriv_wrapped; } f.bytes = Buffer.from(JSON.stringify(j)); f.by = f.owner; f.head = 'r' + (++revs); f.revisions.push({ id: f.head, bytes: f.bytes, time: new Date(clock += 7).toISOString() }); log.push({ seq: ++seq, fileId: f.id, seen: new Set([f.owner]) }); } },
+    /** Whether only the owner may share the folder on. */
+    ownerOnly: () => only().writersCanShare === false,
     /** Whether this account can open the family folder. */
     access: email => !!role(only(), email.toLowerCase()),
     /** Drive shares at once: nobody is "invited but not in". */

@@ -244,7 +244,12 @@ To install it, or go back to a saved version, see [INSTALL.md](INSTALL.md).
   leaving, a lost phone, a parent's new phone and the recovery code all work as they do with a server; the activity log and the QR
   invite are server-only. A lapsed cloud sign-in asks for a one-tap *Reconnect* and loses nothing. A family on a family server moves
   into a folder from More (*Move this log to the family's own cloud*): entries, pictures, tree and names come along under new keys,
-  and the phone leaves the server. OneDrive and iCloud Drive are next
+  and the phone leaves the server. Every phone signs what it writes, and a phone believes the family list, the tree, a change of
+  keys or an entries file only when a chain of approvals from the folder's creator reaches the phone that signed it; a parent's
+  phone puts back what it would not believe and the files the folder cannot do without, and says whose phone tried. A join code,
+  made when the folder is shared and typed on the joining phone, shows the parent *Verified* without a security code read out, and
+  the parent's phone takes who wrote a request from the cloud's own record. The folder's owner can keep sharing to their own phone
+  (*Only my phone can share this folder*). OneDrive and iCloud Drive are next
 - **Family tree** (Family tab): the family as the tree's **roots**: a detailed tree above the ground (its crown, boughs and birds, the
   sun or the moon, the hill with its flowers) and below it the children as the newest root tips just under the trunk, the parents
   below them, the grandparents deeper and the great-grandparents deepest, aunts and uncles as side roots with their children, and each

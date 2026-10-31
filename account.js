@@ -84,7 +84,7 @@ const Acct = (() => {
     try { pendingJoin = JSON.parse(await Native.Secure.get('e2ee.pendingjoin')); } catch (e) { pendingJoin = null; }
     if (folderMode()) {   // (a family folder needs no sign-in: this phone's key, then the sync)
       F.loaded = true; F.verified = true;
-      E2EE.ensureDevice().then(d => (d ? E2EE.fingerprint(d.pub) : '')).then(fp => { F.fp = fp; }).catch(() => {});
+      E2EE.ensureDevice().then(d => (d ? E2EE.fingerprint(d.pub, d.spub) : '')).then(fp => { F.fp = fp; }).catch(() => {});
       Sync.start();
     }
   }
@@ -106,7 +106,7 @@ const Acct = (() => {
     F.loading = true; render();
     try {
       F.verified = (await Auth.factors()).some(f => f.status === 'verified');
-      const d = await E2EE.ensureDevice().catch(() => E2EE.device); if (d) F.fp = await E2EE.fingerprint(d.pub);   // this phone's key, so it can be approved
+      const d = await E2EE.ensureDevice().catch(() => E2EE.device); if (d) F.fp = await E2EE.fingerprint(d.pub);   // this phone's key, so it can be approved (the server knows only this one)
       await Sync.loadMemberships(); await Sync.loadMyRequests().catch(() => {});
       const ms = Sync.st.memberships;
       if (ms.length) await Sync.choose((ms.find(m => m.id === db.meta.babyId) || ms[0]).id);
@@ -242,7 +242,8 @@ const Acct = (() => {
   const cloudPickHtml = () => `<div class="card welcome"><b>☁️ ${__h("The family's own cloud")}</b>
     <p class="note">${__h('Little Log keeps the log in a folder in your own cloud storage, encrypted on your phones before anything is written there. Nobody else runs a server: you share the folder with the family, and that is who gets in.')}</p>
     ${Folder.available().map(p => `<button class="btn p" data-fconnect="${p}" style="width:100%;margin-top:8px">${__h('Connect {service}', { service: Folder.label(p) })}</button>`).join('')}
-    <p class="note">${__h('OneDrive and iCloud Drive are next.')}</p>${howFamilyHtml()}
+    <p class="note">${__h('OneDrive and iCloud Drive are next.')}</p>
+    <p class="note">🔐 ${__h('Your cloud account is the key to the family folder: turn on 2-step verification in that account, and ask the family to do the same.')}</p>${howFamilyHtml()}
     ${Auth.configured ? `<button class="btn" id="fcServer" style="width:100%;margin-top:8px">${__h('Use a family server instead')}</button>` : ''}
     <button class="btn" id="fcLocal" style="width:100%;margin-top:8px">${__h('Just this phone')}</button>
     <div class="row"><button class="btn" id="fcBack">${__h('Back')}</button></div>${alertP(C.err)}</div>`;
@@ -277,6 +278,7 @@ const Acct = (() => {
       <button class="btn p" id="oCreate" style="width:100%;margin-top:12px" ${C.busy ? 'disabled' : ''}>${C.busy ? __h('Setting up…') : __h('Create log')}</button></div>
     <div class="card"><b>🔗 ${__h('Join a family')}</b>
       <p class="note">${__h('A parent shares the family folder with your {service} email, from the Family tab of their Little Log. It then shows here: you ask to join, and they approve you.', { service })}</p>
+      <label class="f">${__h('Join code from the parent (if you were given one)')}</label><input id="oJoinCode" type="text" autocapitalize="characters" autocomplete="off" maxlength="9" placeholder="XXXX-XXXX" value="${esc(C.code || '')}">
       ${C.cands === null ? `<div class="empty">${__h('Looking…')}</div>` : C.cands.length ? C.cands.map(x => `<div class="stat"><span>${esc(x.name)}</span><button class="btn p" data-fjoin="${esc(x.id)}" style="padding:6px 12px" ${C.busy ? 'disabled' : ''}>${__h('Join')}</button></div>`).join('') : `<p class="note">${__h('Nothing has been shared with {email} yet.', { email: me.email })}</p>`}
       <div class="row"><button class="btn" id="fjCheck">${__h('Check again')}</button></div></div>
     ${alertP(C.err)}
@@ -294,8 +296,8 @@ const Acct = (() => {
     };
     document.querySelectorAll('[data-fjoin]').forEach(b => b.onclick = async () => {
       const x = (C.cands || []).find(k => k.id === b.dataset.fjoin); if (!x) return;
-      mine(); C.busy = true; C.err = ''; render();
-      try { await FolderSync.requestJoin(x, C.mine); const d = E2EE.device; if (d) F.fp = await E2EE.fingerprint(d.pub); F.loaded = true; F.verified = true; Lock.reset(); toast(__('Request sent – a parent needs to approve it')); }
+      mine(); C.code = $('#oJoinCode') ? $('#oJoinCode').value.trim() : ''; C.busy = true; C.err = ''; render();
+      try { await FolderSync.requestJoin(x, C.mine, C.code || null); const d = E2EE.device; if (d) F.fp = await E2EE.fingerprint(d.pub, d.spub); F.loaded = true; F.verified = true; Lock.reset(); toast(C.code ? __('Request sent with your join code – a parent needs to approve it') : __('Request sent – a parent needs to approve it')); }
       catch (e) { C.err = err(e); }
       C.busy = false; render();
     });
@@ -566,7 +568,7 @@ const Acct = (() => {
   }
   const waitingHtml = () => `<div class="card" style="text-align:center"><div style="font-size:48px">⏳</div><b>${__h('Waiting for approval')}</b>
     <p class="note">${__h('Your request was sent. A parent needs to approve it in the Family tab. This screen updates by itself.')}</p>
-    <p class="note">${__h("If you didn't scan a QR code, the parent will ask you to read out this security code for your phone:")}</p>
+    <p class="note">${folderMode() ? __h("If you didn't type a join code, the parent will ask you to read out this security code for your phone:") : __h("If you didn't scan a QR code, the parent will ask you to read out this security code for your phone:")}</p>
     <div class="code" style="font:700 17px ui-monospace,Menlo,monospace;margin:8px 0">${esc(F.fp)}</div>
     <button class="btn" id="wCheck" style="width:100%">${__h('Check now')}</button>
     <button class="btn d" id="wCancel" style="width:100%;margin-top:8px">${__h('Cancel request')}</button>
@@ -775,11 +777,14 @@ const Acct = (() => {
   }
   /** A request to join a family log, to approve or deny (`family`: its name, when it is not the log shown). */
   function reqCard(r, family) {
+    const fm = folderMode(), service = fm ? Folder.label(Folder.provider) : '';
     return `<div class="card"><b>${esc(r.display_name || r.email)}</b><br><small class="note">${esc(r.email)} · ${family ? __h('asked to join {family} as **{role}**', { family, role: roleName(r.role) }) : __h('asked to join as **{role}**', { role: roleName(r.role) })}</small>
-      ${r.qrVerified ? `<div class="note" style="margin-top:6px">✅ ${__h('Verified: they scanned your QR code, so this is really their phone.')}</div>`
-        : `<div class="note" style="margin-top:6px">⚠️ ${__h('They did not use your QR code. Ask them to read out the security code their phone shows while it waits, and check it matches:')}</div><div class="code mono">${esc(r.fingerprint)}</div><div class="chips">${chip('vchk', r.id, __h('It matches'), false)}</div>`}
+      ${r.forged ? `<div class="note" style="margin-top:6px">⛔ ${__h('This request says it is from {claimed}, but {service} says it was written by the account {email}. Deny it, and tell the family.', { claimed: r.claimed || r.user, service, email: r.email })}</div>`
+        : r.qrVerified ? `<div class="note" style="margin-top:6px">✅ ${fm ? __h('Verified: they typed the join code you gave them, so this is really their phone.') : __h('Verified: they scanned your QR code, so this is really their phone.')}</div>`
+        : `<div class="note" style="margin-top:6px">⚠️ ${fm ? __h('They did not type a join code. Ask them to read out the security code their phone shows while it waits, and check it matches:') : __h('They did not use your QR code. Ask them to read out the security code their phone shows while it waits, and check it matches:')}</div><div class="code mono">${esc(r.fingerprint)}</div><div class="chips">${chip('vchk', r.id, __h('It matches'), false)}</div>`}
+      ${fm && r.attested && !r.forged ? `<div class="note">${__h('Written by the {service} account {email}.', { service, email: r.email })}</div>` : ''}
       <p class="note">${__h("Approving shares the log's encryption keys with their phone.")}</p>
-      <div class="row"><button class="btn p" data-approve="${esc(r.id)}">${__h('Approve')}</button><button class="btn d" data-deny="${esc(r.id)}">${__h('Deny')}</button></div></div>`;
+      <div class="row">${r.forged ? '' : `<button class="btn p" data-approve="${esc(r.id)}">${__h('Approve')}</button>`}<button class="btn d" data-deny="${esc(r.id)}">${__h('Deny')}</button></div></div>`;
   }
 
   // ---- the family tree: you, and each family log you are in -----------------------------------------
@@ -1165,12 +1170,13 @@ const Acct = (() => {
     const reqs = parent && s.requests.length ? `<h2>${__h('Waiting for your approval')}</h2>${s.requests.map(r => reqCard(r)).join('')}` : '';
     const phones = E2EE.hasKeys(db.meta.babyId) ? Sync.pendingPhones() : [];
     const phonesCard = phones.length ? `<h2>${__h('Phones waiting for access')}</h2>${phones.map(d => `<div class="card"><b>${esc(d.person)}</b> · ${esc(phoneName(d.device_name))}
+      ${d.has_grant ? `<div class="note">${__h('This phone has keys from before the app signed its files. Approve it again, so that what it writes counts.')}</div>` : ''}
       <div class="note">${__h('Their phone shows a security code. Check it matches:')}</div><div class="code mono">${esc(d.fingerprint)}</div><div class="chips">${chip('vchkp', d.grantee, __h('It matches'), false)}</div>
       <div class="row"><button class="btn p" data-approvephone="${esc(d.grantee)}">${__h('Approve phone')}</button></div></div>`).join('')}` : '';
     const thisId = E2EE.device && E2EE.device.id;
     const encCard = `<h2>${__h('Encryption')}</h2><div class="card">
       <p class="note" style="margin-top:0">🔒 ${folderMode() ? __h("Everything in this log is end-to-end encrypted. Your cloud only stores scrambled files and can't read the baby's name, entries or notes.") : __h("Everything in this log is end-to-end encrypted. The server only stores scrambled data and can't read the baby's name, entries or notes.")}</p>
-      ${db.meta.unverified ? `<div class="card alert"><b>${__h('Check this security code')}</b><p class="note">${__h("You joined without scanning a QR code. Make sure this code matches the one on a parent's phone. If it doesn't, tell them straight away.")}</p><div class="code mono">${esc(F.secCode)}</div><button class="btn" id="unvOk">${__h('It matches')}</button></div>` : ''}
+      ${db.meta.unverified ? `<div class="card alert"><b>${__h('Check this security code')}</b><p class="note">${folderMode() ? __h("You joined without a join code. Make sure this code matches the one on a parent's phone. If it doesn't, tell them straight away.") : __h("You joined without scanning a QR code. Make sure this code matches the one on a parent's phone. If it doesn't, tell them straight away.")}</p><div class="code mono">${esc(F.secCode)}</div><button class="btn" id="unvOk">${__h('It matches')}</button></div>` : ''}
       ${parent && db.meta.recoveryAck === false ? `<div class="card alert"><b>${__h('No recovery code confirmed')}</b><p class="note">${__h('If you lose your only phone you could lose access for good. Create a recovery code and keep it somewhere safe.')}</p></div>` : ''}
       <div class="stat"><span>${__h('Log security code')}<br><small>${__h('Everyone sharing the log sees the same code')}</small><div class="code mono" style="text-align:start">${esc(F.secCode)}</div></span></div>
       <div class="stat"><span>${__h('My phones')}<br><small>${__h("Remove a lost phone: its keys are deleted and the log's keys are changed")}</small></span></div>
@@ -1180,6 +1186,7 @@ const Acct = (() => {
     <div class="card"><b>${db.baby.name ? __h("{name}'s shared log", { name: db.baby.name }) : __h("Baby's shared log")}</b>
       <div class="stat"><span>${esc(syncLine())}${s.err && s.state === 'error' ? `<br><small>${esc(__(s.err))}</small>` : ''}</span><button class="btn" id="syncNow" style="padding:6px 12px">${__h('Sync now')}</button></div>${reconnectHtml()}
       ${s.denied ? `<div class="note" style="margin-top:6px">⚠️ ${__hn('{n} change was not allowed with your access and was undone.', '{n} changes were not allowed with your access and were undone.', s.denied)}</div>` : ''}
+      ${s.warn ? `<div class="note" style="margin-top:6px">⚠️ ${esc(__(s.warn))}</div>` : ''}${s.repaired ? `<div class="note" style="margin-top:6px">🛠 ${__hn('{n} file in the folder was put back by this phone.', '{n} files in the folder were put back by this phone.', s.repaired)}</div>` : ''}
       <div class="note" style="margin-top:6px">${folderMode() ? __h('{service} · {email} · {role}', { service: Folder.label(Folder.provider), email: Auth.email, role: roleName(db.meta.role) }) : __h('Signed in as {email} · {role}', { email: Auth.email, role: roleName(db.meta.role) })}</div></div>
     ${reqs}${phonesCard}
     ${people}
@@ -1202,7 +1209,10 @@ const Acct = (() => {
       <label class="f">${__h('Their {service} email', { service })}</label><input id="shEmail" type="email" inputmode="email" autocomplete="off" placeholder="${__h('you@example.com')}">
       ${accessFormHtml('inv', invForm ? invForm.role : 'caregiver', invForm && invForm.perms)}
       <button class="btn p" id="shGo" style="width:100%;margin-top:12px">${__h('Share the folder')}</button>
-      ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Shared, not joined yet')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(i.email)}<br><small>${esc(roleName(i.role))}</small></span><span class="btns"><button class="btn d" data-rescind="${esc(i.email)}" style="padding:6px 10px">${__h('Stop')}</button></span></div>`).join('')}` : ''}</div>`;
+      <p class="note">${__h('You get a join code for them: tell it to them (not by the same channel as the folder, if you can). Typed on their phone, it proves their request is theirs, and their phone that the keys came from you.')}</p>
+      <p class="note">🔐 ${__h('Everyone you share with should have 2-step verification on their {service} account: it is their key to the folder.', { service })}</p>
+      ${s.policy && s.policy.owner ? `<div class="stat" style="margin-top:8px"><span>${__h('Only my phone can share this folder')}<br><small>${__h('Other parents still approve requests; only this account can share the folder on in {service}.', { service })}</small></span><label class="chip"><input type="checkbox" id="ownerShare" ${s.policy.ownerOnly ? 'checked' : ''}> ${__h('On')}</label></div>` : s.policy && s.policy.ownerOnly ? `<p class="note">${__h("Only the folder's owner can share it (their setting): ask them to share it from their phone.")}</p>` : ''}
+      ${s.invites.length ? `<h2 style="margin-top:16px">${__h('Shared, not joined yet')}</h2>${s.invites.map(i => `<div class="stat"><span>${esc(i.email)}<br><small>${esc(roleName(i.role))}${Sync.joinCodeFor(i.email) ? ` · ${__h('join code')} <b class="mono sel">${esc(Sync.joinCodeFor(i.email))}</b>` : ''}</small></span><span class="btns"><button class="btn d" data-rescind="${esc(i.email)}" style="padding:6px 10px">${__h('Stop')}</button></span></div>`).join('')}` : ''}</div>`;
   }
   function inviteHtml() {
     let svg = ''; try { svg = qrSvg(invite.url); } catch (e) { svg = `<p class="note">${__h('Could not draw the QR code – use the code instead.')}</p>`; }
@@ -1249,8 +1259,9 @@ const Acct = (() => {
     if (el('shGo')) el('shGo').onclick = async () => {
       const a = read(), email = $('#shEmail').value.trim().toLowerCase();
       if (!/^\S+@\S+\.\S+$/.test(email)) return toast(__('Enter a valid email address'));
-      try { await Sync.shareWith([email], a.role, a.perms, db.baby.name ? __("{name}'s log in Little Log", { name: db.baby.name }) : ''); toast(__('Shared with {email}', { email })); render(); } catch (e) { toast(err(e)); }
+      try { const codes = await Sync.shareWith([email], a.role, a.perms, db.baby.name ? __("{name}'s log in Little Log", { name: db.baby.name }) : ''); toast(codes && codes[0] ? __('Shared with {email}. Their join code: {code}', { email, code: codes[0] }) : __('Shared with {email}', { email })); render(); } catch (e) { toast(err(e)); }
     };
+    if (el('ownerShare')) el('ownerShare').onchange = async () => { const v = el('ownerShare').checked; try { await Sync.setOwnerOnly(v); toast(v ? __('Only this phone can share the folder now') : __('Every parent can share the folder again')); } catch (e) { toast(err(e)); } render(); };
     if (el('mkInvite')) el('mkInvite').onclick = async () => {
       const a = read();
       try { const { code, secret } = await Sync.createInvite(a.role, a.perms); invite = { code, role: a.role, secret, url: Sync.inviteUrl(code, secret) }; render(); } catch (e) { toast(err(e)); }

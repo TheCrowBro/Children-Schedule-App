@@ -70,10 +70,10 @@ const ServerSync = (() => {
   async function decode(rows) {
     const b = db.meta.babyId, out = [], stash = db.meta.stash || (db.meta.stash = {});
     for (const r of rows) {
-      if (r.deleted) { out.push({ id: r.id, deleted: true, updated: +r.updated }); delete stash[r.id]; continue; }
+      if (r.deleted) { out.push({ id: r.id, deleted: true, updated: +r.updated, dev: r.dev }); delete stash[r.id]; continue; }
       const d = await E2EE.decryptRow(b, r);
-      if (d.entry) { out.push({ ...d.entry, deleted: false }); delete stash[r.id]; }
-      else if (d.locked) { if (Object.keys(stash).length < 5000) stash[r.id] = { id: r.id, blob: r.blob, epoch: r.epoch, sensitive: r.sensitive, updated: r.updated, deleted: false, created_by: r.created_by }; }
+      if (d.entry) { out.push({ ...d.entry, deleted: false, dev: r.dev }); delete stash[r.id]; }   // (dev: the phone whose file it came from, for the family folder's author check)
+      else if (d.locked) { if (Object.keys(stash).length < 5000) stash[r.id] = { id: r.id, blob: r.blob, epoch: r.epoch, sensitive: r.sensitive, updated: r.updated, deleted: false, created_by: r.created_by, ...(r.dev ? { dev: r.dev } : {}) }; }
       else st.bad++;   // failed authentication: tampered with, moved, or planted by someone without the right key – ignored
     }
     return out;

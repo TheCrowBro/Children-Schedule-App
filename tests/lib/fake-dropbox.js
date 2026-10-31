@@ -1,6 +1,7 @@
 // A stand-in for the Dropbox API, as far as the family folder (folder.js) uses it: shared folders addressed as ns:<id>, files with
-// revisions and the add / overwrite / update upload modes, a delta cursor, sharing by email (invite, accept, remove, leave), the
-// account. In memory, shared by every phone in a test; each phone's Playwright context gets its own routes, bound to the Dropbox
+// revisions and the add / overwrite / update upload modes, a delta cursor, sharing by email (invite, accept, remove, leave), who
+// last wrote a file (sharing_info.modified_by) and accounts by id, the folder's policy (whether only its owner may share it on),
+// the account. In memory, shared by every phone in a test; each phone's Playwright context gets its own routes, bound to the Dropbox
 // account it signed in with, so three phones are three accounts sharing one folder, as in life.
 function createFakeDropbox() {
   const users = {}, folders = {}, calls = [], offline = new Set(), expired = new Set();   // offline: accounts whose phone has no connection right now; expired: whose token Dropbox rejects
@@ -17,6 +18,14 @@ function createFakeDropbox() {
     switch (ep) {
       case 'oauth2/token': return J(200, { access_token: 'tok-' + email, refresh_token: 'rt-' + email, expires_in: 14400, token_type: 'bearer' });
       case 'users/get_current_account': return J(200, { account_id: u.account_id, email: u.email, name: { display_name: u.name, given_name: u.name } });
+      case 'users/get_account': { const x = Object.values(users).find(v => v.account_id === arg.account_id); return x ? J(200, { account_id: x.account_id, email: x.email, name: { display_name: x.name, given_name: x.name } }) : fail(409, 'no_account'); }
+      case 'files/get_metadata': {
+        const p = parse(arg.path), fo = p && folders[p.id]; if (!access(fo, email)) return fail(409, 'path/not_found');
+        const f = fo.files.get(p.rel.toLowerCase()); if (!f) return fail(409, 'path/not_found');
+        return J(200, { ...meta(f, f.path), sharing_info: { modified_by: user(f.by).account_id, parent_shared_folder_id: fo.id } });
+      }
+      case 'sharing/get_folder_metadata': { const fo = folders[arg.shared_folder_id]; if (!access(fo, email)) return fail(409, 'no_permission'); return J(200, { shared_folder_id: fo.id, name: fo.name, access_type: { '.tag': fo.owner === email ? 'owner' : 'editor' }, policy: { acl_update_policy: { '.tag': fo.acl || 'editors' } } }); }
+      case 'sharing/update_folder_policy': { const fo = folders[arg.shared_folder_id]; if (!access(fo, email)) return fail(409, 'no_permission'); if (fo.owner !== email) return fail(409, 'not_on_team/..'); if (arg.acl_update_policy) fo.acl = String(arg.acl_update_policy); return J(200, { shared_folder_id: fo.id, name: fo.name }); }
       case 'files/create_folder_v2': {
         let name = arg.path.replace(/^\//, ''), n = 1; const base = name;
         while (u.personal.has(name.toLowerCase())) name = `${base} (${n++})`;
@@ -31,6 +40,7 @@ function createFakeDropbox() {
       }
       case 'sharing/add_folder_member': {
         const fo = folders[arg.shared_folder_id]; if (!access(fo, email)) return fail(409, 'no_permission');
+        if (fo.acl === 'owner' && fo.owner !== email) return fail(409, 'no_permission');   // (the owner's setting: only they share it on)
         for (const m of arg.members) { const e = m.member.email.toLowerCase(); if (!fo.members.has(e)) { fo.members.set(e, 'editor'); fo.pending.add(e); } }
         return J(200, null);
       }
@@ -127,6 +137,14 @@ function createFakeDropbox() {
     text: (p, fo) => { const f = (fo || only()).files.get(p.toLowerCase()); return f ? f.bytes.toString('utf8') : null; },
     /** Who wrote a file. */
     by: (p, fo) => { const f = (fo || only()).files.get(p.toLowerCase()); return f ? f.by : null; },
+    /** An account's id, as Dropbox names it (what the app derives a person's id from). */
+    account: email => user(email.toLowerCase()).account_id,
+    /** A file deleted by someone with edit access. */
+    damage: p => { const fo = only(), k = p.toLowerCase(), f = fo.files.get(k); if (!f) throw new Error('no ' + p); fo.files.delete(k); fo.log.push({ seq: ++fo.seq, path: f.path, deleted: true }); },
+    /** The folder as an app from before signing left it: no signatures, no root, no signing keys, no ext on the grants. */
+    strip: () => { const fo = only(); for (const [k, f] of fo.files) { if (!/\.json$/.test(k)) continue; let j; try { j = JSON.parse(f.bytes.toString('utf8')); } catch (e) { continue; } delete j.s; if (k === 'littlelog.json') delete j.root; if (/^keys\//.test(k)) delete j.ext; if (/^devices\//.test(k)) delete j.sig; if (k === 'recovery.json') { delete j.recovery_spub; delete j.recovery_spriv_wrapped; } f.bytes = Buffer.from(JSON.stringify(j)); f.by = fo.owner; f.rev = 'r' + (++revs); fo.log.push({ seq: ++fo.seq, path: f.path, deleted: false }); } },
+    /** Whether only the owner may share the folder on. */
+    ownerOnly: () => only().acl === 'owner',
   };
 }
 module.exports = { createFakeDropbox };
