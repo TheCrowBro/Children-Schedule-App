@@ -2719,5 +2719,11 @@
  "l4fqjc": "Cây gia đình trong thư mục bị một điện thoại không có quyền thay đổi, nên đã bị bỏ qua.",
  "x5r2si": "Yêu cầu này được viết bởi một tài khoản khác với tài khoản nó tự nhận. Hãy từ chối.",
  "1qupttp": "Mã tham gia gồm 8 chữ cái hoặc chữ số",
- "9tfnuo": "Thư mục ghi một điện thoại gốc không phải của phụ huynh. Điện thoại của một phụ huynh nên mở Little Log trước."
+ "9tfnuo": "Thư mục ghi một điện thoại gốc không phải của phụ huynh. Điện thoại của một phụ huynh nên mở Little Log trước.",
+ "cx5yew": "Little Log – xin hãy đọc",
+ "uledfo": "Thư mục này chứa Little Log của gia đình bạn. Mọi thứ trong đó đều được mã hóa: chỉ điện thoại của gia đình mới đọc được.",
+ "zmfqxo": "Bạn có thể dời thư mục này đến bất cứ đâu trong đám mây của mình và đổi tên nó, miễn là tên vẫn bắt đầu bằng \"Little Log\": điện thoại của người thân tìm thấy nó theo cách đó khi tham gia.",
+ "1vkr76e": "Xin đừng đổi tên, di chuyển hay xóa bất cứ thứ gì bên trong thư mục này: cả các tệp lẫn các thư mục tên devices, events, join, keys và media. Các điện thoại tìm chúng theo tên. Một thư mục bị đổi tên làm các mục biến mất khỏi điện thoại của mọi người, và tệp bị xóa có thể làm mất nhật ký vĩnh viễn.",
+ "znfob5": "Đừng chia sẻ thư mục này từ đám mây của bạn: hãy chia sẻ từ thẻ Gia đình trong Little Log, nơi cũng cấp cho người đó mã tham gia.",
+ "17g4d1m": "Nếu có gì bị thay đổi nhầm, hãy đặt lại như cũ (thùng rác hoặc lịch sử phiên bản của đám mây có thể giúp): điện thoại của một phụ huynh sẽ sửa những gì có thể ở lần đồng bộ kế tiếp."
 }

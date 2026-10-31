@@ -2831,5 +2831,11 @@
  "l4fqjc": "El árbol familiar de la carpeta fue cambiado por un teléfono que no puede hacerlo, así que se ignoró.",
  "x5r2si": "Esta solicitud fue escrita por una cuenta distinta de la que dice ser. Recházala.",
  "1qupttp": "Un código de unión tiene 8 letras o números",
- "9tfnuo": "La carpeta nombra un teléfono raíz que no es de una madre o un padre. El teléfono de una madre o un padre debería abrir Little Log primero."
+ "9tfnuo": "La carpeta nombra un teléfono raíz que no es de una madre o un padre. El teléfono de una madre o un padre debería abrir Little Log primero.",
+ "cx5yew": "Little Log: por favor, lee esto",
+ "uledfo": "Esta carpeta contiene el Little Log de tu familia. Todo lo que hay dentro está cifrado: solo los teléfonos de la familia pueden leerlo.",
+ "zmfqxo": "Puedes mover esta carpeta a cualquier lugar de tu nube y cambiarle el nombre, siempre que su nombre siga empezando por «Little Log»: así la encuentra el teléfono de un familiar cuando se une.",
+ "1vkr76e": "Por favor, no cambies el nombre, muevas ni borres nada dentro de esta carpeta: ni los archivos ni las carpetas llamadas devices, events, join, keys y media. Los teléfonos las encuentran por su nombre. Una carpeta renombrada hace desaparecer entradas de todos los teléfonos, y los archivos borrados pueden perder el registro para siempre.",
+ "znfob5": "No compartas esta carpeta desde tu nube: compártela desde la pestaña Familia de Little Log, que además da a la persona su código de unión.",
+ "17g4d1m": "Si algo se cambió por error, vuelve a ponerlo (la papelera o el historial de versiones de tu nube pueden ayudar): el teléfono de una madre o un padre repara lo que puede en su siguiente sincronización."
 }

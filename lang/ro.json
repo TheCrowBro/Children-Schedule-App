@@ -2831,5 +2831,11 @@
  "l4fqjc": "Arborele familiei din folder a fost schimbat de un telefon care nu are voie, așa că a fost ignorat.",
  "x5r2si": "Această cerere a fost scrisă de alt cont decât cel pe care îl pretinde. Respinge-o.",
  "1qupttp": "Un cod de alăturare are 8 litere sau cifre",
- "9tfnuo": "Folderul numește un telefon rădăcină care nu este al unui părinte. Telefonul unui părinte ar trebui să deschidă Little Log primul."
+ "9tfnuo": "Folderul numește un telefon rădăcină care nu este al unui părinte. Telefonul unui părinte ar trebui să deschidă Little Log primul.",
+ "cx5yew": "Little Log – vă rugăm să citiți",
+ "uledfo": "Acest folder conține Little Log-ul familiei voastre. Tot ce e în el este criptat: doar telefoanele familiei îl pot citi.",
+ "zmfqxo": "Puteți muta acest folder oriunde în cloudul vostru și îl puteți redenumi, atâta timp cât numele lui începe în continuare cu „Little Log”: așa îl găsește telefonul unei rude când se alătură.",
+ "1vkr76e": "Vă rugăm să nu redenumiți, mutați sau ștergeți nimic din interiorul acestui folder: nici fișierele, nici folderele numite devices, events, join, keys și media. Telefoanele le găsesc după nume. Un folder redenumit face ca înregistrările să dispară de pe toate telefoanele, iar fișierele șterse pot pierde jurnalul pentru totdeauna.",
+ "znfob5": "Nu partajați acest folder din cloud: partajați-l din fila Familie din Little Log, care îi dă persoanei și codul de alăturare.",
+ "17g4d1m": "Dacă ceva a fost schimbat din greșeală, puneți la loc (coșul sau istoricul versiunilor din cloud pot ajuta): telefonul unui părinte repară ce poate la următoarea sincronizare."
 }

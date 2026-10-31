@@ -906,6 +906,12 @@
     "The folder's keys were changed by a phone that may not, so this phone keeps its keys; a parent's phone sets new ones.": "Same warning when the phone that did it is not known by name.",
     "The family tree in the folder was changed by a phone that may not, so it was ignored.": "Family tab warning, like the family-list one but for the family tree file.",
     "This request was written by another account than the one it claims. Deny it.": "Error when a parent tries to approve a join request the cloud says was written by a different account than it claims.",
-    "The folder names a root phone that is not a parent's. A parent's phone should open Little Log first.": "Family tab warning on a folder from before signing: littlelog.json names a root phone whose person is not a parent in the family list, so this phone did not adopt it."
+    "The folder names a root phone that is not a parent's. A parent's phone should open Little Log first.": "Family tab warning on a folder from before signing: littlelog.json names a root phone whose person is not a parent in the family list, so this phone did not adopt it.",
+    "Little Log \u2013 please read": "Title line of README.txt, a plain-text note the app writes into the family folder in the family's cloud drive (people see it in Google Drive / Dropbox, not in the app). The other README lines follow it.",
+    "This folder holds your family's Little Log. Everything in it is encrypted: only the family's phones can read it.": "README.txt in the family folder, line 2.",
+    "You may move this folder anywhere in your drive, and rename it, as long as its name still starts with \"Little Log\": that is how a relative's phone finds it when they join.": "README.txt, line 3. Keep \"Little Log\" in Latin letters, untranslated: the app looks for folders whose name starts with exactly that.",
+    "Please do not rename, move or delete anything inside this folder: the files, and the folders named devices, events, join, keys and media. The phones find them by name. A renamed folder makes entries vanish from everyone's phones, and deleted files can lose the log for good.": "README.txt, line 4. The five folder names (devices, events, join, keys, media) are real folder names: keep them in English, lowercase.",
+    "Do not share this folder from your drive: share it from the Family tab in Little Log, which also gives the person their join code.": "README.txt, line 5. 'Family tab' is the app's tab named Family.",
+    "If something was changed by mistake, put it back (your drive's trash or version history can help): a parent's phone repairs what it can at its next sync.": "README.txt, line 6."
   }
 }

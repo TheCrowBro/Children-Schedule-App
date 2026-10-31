@@ -13832,83 +13832,119 @@
   {
    "id": "18gdels",
    "en": "Request failed ({status})",
-   "where": "folder.js:45"
+   "where": "folder.js:46"
   },
   {
    "id": "2c2zd8",
    "en": "Dropbox could not share the folder. Please try again.",
-   "where": "folder.js:90"
+   "where": "folder.js:91"
   },
   {
    "id": "1enqvy8",
    "en": "The family folder is no longer shared with this account.",
-   "where": "folder.js:143",
+   "where": "folder.js:144",
    "note": "Error shown when a phone's sync finds the family folder gone from its cloud account (unshared or deleted); the phone then clears the log."
+  },
+  {
+   "id": "cx5yew",
+   "en": "Little Log – please read",
+   "where": "folder.js:321",
+   "note": "Title line of README.txt, a plain-text note the app writes into the family folder in the family's cloud drive (people see it in Google Drive / Dropbox, not in the app). The other README lines follow it."
+  },
+  {
+   "id": "uledfo",
+   "en": "This folder holds your family's Little Log. Everything in it is encrypted: only the family's phones can read it.",
+   "where": "folder.js:322",
+   "note": "README.txt in the family folder, line 2."
+  },
+  {
+   "id": "zmfqxo",
+   "en": "You may move this folder anywhere in your drive, and rename it, as long as its name still starts with \"Little Log\": that is how a relative's phone finds it when they join.",
+   "where": "folder.js:323",
+   "note": "README.txt, line 3. Keep \"Little Log\" in Latin letters, untranslated: the app looks for folders whose name starts with exactly that."
+  },
+  {
+   "id": "1vkr76e",
+   "en": "Please do not rename, move or delete anything inside this folder: the files, and the folders named devices, events, join, keys and media. The phones find them by name. A renamed folder makes entries vanish from everyone's phones, and deleted files can lose the log for good.",
+   "where": "folder.js:324",
+   "note": "README.txt, line 4. The five folder names (devices, events, join, keys, media) are real folder names: keep them in English, lowercase."
+  },
+  {
+   "id": "znfob5",
+   "en": "Do not share this folder from your drive: share it from the Family tab in Little Log, which also gives the person their join code.",
+   "where": "folder.js:325",
+   "note": "README.txt, line 5. 'Family tab' is the app's tab named Family."
+  },
+  {
+   "id": "17g4d1m",
+   "en": "If something was changed by mistake, put it back (your drive's trash or version history can help): a parent's phone repairs what it can at its next sync.",
+   "where": "folder.js:326",
+   "note": "README.txt, line 6."
   },
   {
    "id": "10iq3zx",
    "en": "That folder is not a Little Log family folder (yet). Ask the parent to open their Little Log once.",
-   "where": "folder.js:424"
+   "where": "folder.js:440"
   },
   {
    "id": "73rxz4",
    "en": "The family list in the folder was changed by a phone that may not, so it was ignored.",
-   "where": "folder.js:603",
+   "where": "folder.js:621",
    "note": "Family tab warning: the family list file was written by a phone the chain of approvals does not allow to (not a parent's), so this phone ignored it. 'May not' = is not allowed to."
   },
   {
    "id": "c6n7ht",
    "en": "The family list changed meanwhile: try again",
-   "where": "folder.js:643"
+   "where": "folder.js:661"
   },
   {
    "id": "7wo4yx",
    "en": "The folder's keys were changed by {who}'s phone, which may not. This phone keeps its keys; a parent's phone sets new ones.",
-   "where": "folder.js:667",
+   "where": "folder.js:685",
    "note": "Family tab warning: the folder's keys were changed by a known member's phone that is not a parent's. {who}: that person's name. The parent's phone replaces the keys by itself."
   },
   {
    "id": "q4bhwk",
    "en": "The folder's keys were changed by a phone that may not, so this phone keeps its keys; a parent's phone sets new ones.",
-   "where": "folder.js:667",
+   "where": "folder.js:685",
    "note": "Same warning when the phone that did it is not known by name."
   },
   {
    "id": "l4fqjc",
    "en": "The family tree in the folder was changed by a phone that may not, so it was ignored.",
-   "where": "folder.js:749",
+   "where": "folder.js:767",
    "note": "Family tab warning, like the family-list one but for the family tree file."
   },
   {
    "id": "x5r2si",
    "en": "This request was written by another account than the one it claims. Deny it.",
-   "where": "folder.js:830",
+   "where": "folder.js:848",
    "note": "Error when a parent tries to approve a join request the cloud says was written by a different account than it claims."
   },
   {
    "id": "he01pb",
    "en": "Connect your cloud first",
-   "where": "folder.js:910"
+   "where": "folder.js:928"
   },
   {
    "id": "1qupttp",
    "en": "A join code is 8 letters or numbers",
-   "where": "folder.js:950"
+   "where": "folder.js:968"
   },
   {
    "id": "e5jota",
    "en": "Your request was turned down.",
-   "where": "folder.js:966"
+   "where": "folder.js:984"
   },
   {
    "id": "u8f21p",
    "en": "Share the family folder instead (Family tab).",
-   "where": "folder.js:987"
+   "where": "folder.js:1005"
   },
   {
    "id": "9tfnuo",
    "en": "The folder names a root phone that is not a parent's. A parent's phone should open Little Log first.",
-   "where": "folder.js:1047",
+   "where": "folder.js:1065",
    "note": "Family tab warning on a folder from before signing: littlelog.json names a root phone whose person is not a parent in the family list, so this phone did not adopt it."
   },
   {

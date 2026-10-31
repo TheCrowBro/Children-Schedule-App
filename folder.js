@@ -14,6 +14,7 @@
      tree.json                   the family tree (sealed)
      events/<phone>/<n>.json     the entries each phone wrote, in order: a phone appends only its own files, so nothing conflicts
      media/<id>, media/<id>.t    pictures and videos (sealed)
+     README.txt                  a note for the family, in plain words: what the folder is, and not to rename or delete what is in it
 
    Each phone merges what the others wrote (the newest edit wins, as in server mode), writes its own, and asks the cloud only for
    what changed since last time (a delta cursor), so a sync with nothing new is one small call. Roles and permissions live in
@@ -39,7 +40,11 @@ const Folder = (() => {
     return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
   }
 
-  // ---- Dropbox: full-Dropbox access, the family folder a shared folder addressed by its namespace (ns:<id>), the same for everyone ----
+  // ---- Dropbox: full-Dropbox access, the family folder a shared folder addressed by its namespace, the same for everyone ----
+  // Every files call carries the Dropbox-API-Path-Root header naming the shared folder's namespace, so paths are relative to the
+  // family folder itself ("/littlelog.json"): where a member mounts it, what they call it and what the folders around it are named
+  // never enter into it. (Should Dropbox ever refuse the namespace, the older addressing, ns:<id>/path with paths worked out from
+  // the member's own listing, is used instead: c.legacy.)
   const SCOPES = { dropbox: 'account_info.read files.metadata.read files.content.read files.content.write sharing.read sharing.write', google: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.appdata' };
   const fail = (status, j, text) => {
     const e = new Error((j && (j.error_summary || j.error_description || (typeof j.error === 'string' && j.error))) || (text || '').slice(0, 200) || __('Request failed ({status})', { status }));
@@ -47,8 +52,10 @@ const Folder = (() => {
     return e;
   };
   const ascii = s => s.replace(/[\u007f-￿]/g, ch => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));   // (HTTP headers carry ASCII only)
-  async function call(url, { arg, body, json } = {}) {
+  const nsRoot = () => !!(c && c.id && !c.legacy);   // (files calls rooted at the family folder's namespace)
+  async function call(url, { arg, body, json, files } = {}) {
     const h = { Authorization: 'Bearer ' + await Cloud.token('dropbox') };
+    if (files && nsRoot()) h['Dropbox-API-Path-Root'] = JSON.stringify({ '.tag': 'namespace_id', namespace_id: String(c.id) });
     let b;
     if (arg) { h['Dropbox-API-Arg'] = ascii(JSON.stringify(arg)); if (body) { h['Content-Type'] = 'application/octet-stream'; b = body; } }
     else { h['Content-Type'] = 'application/json'; b = JSON.stringify(json === undefined ? null : json); }
@@ -56,29 +63,35 @@ const Folder = (() => {
     if (!r.ok) { const text = await r.text(); let j = null; try { j = JSON.parse(text); } catch (e) { /* plain text */ } throw fail(r.status, j, text); }
     return r;
   }
-  const rpc = async (ep, json) => (await call('https://api.dropboxapi.com/2/' + ep, { json })).json();
-  const full = p => `${c.root}/${p}`;
-  /** A listing entry's path inside the family folder (the cloud reports it under the folder's name, which differs per phone). */
-  const rel = p => { const seg = String(p || '').split('/').filter(Boolean); const i = seg.findIndex(s => TOP.includes(s.toLowerCase())); return i < 0 ? null : seg.slice(i).join('/'); };
+  const rpc = async (ep, json) => (await call('https://api.dropboxapi.com/2/' + ep, { json, files: ep.startsWith('files/') })).json();
+  const full = p => (nsRoot() ? (p ? '/' + p : '') : (p ? `${c.root}/${p}` : c.root));
+  /** A listing entry's path inside the family folder: relative to the folder's namespace (or, the older addressing, worked out from where
+      the member mounted it: the cloud reports it under the folder's name, which differs per phone). */
+  const rel = p => { if (nsRoot()) return String(p || '').replace(/^\/+/, '') || null; const seg = String(p || '').split('/').filter(Boolean); const i = seg.findIndex(s => TOP.includes(s.toLowerCase())); return i < 0 ? null : seg.slice(i).join('/'); };
   const DBX = {
     root: id => 'ns:' + id,
     async account() { const j = await rpc('users/get_current_account', null); return { account: j.account_id, email: String(j.email || '').toLowerCase(), name: (j.name && (j.name.display_name || j.name.given_name)) || '' }; },
     /** Everything in the folder (cursor null), or only what changed since `cursor`: { entries: [{ path, rev, deleted, folder }], cursor }, or { reset: true }. */
     async list(cursor) {
-      let j; const entries = [];
-      try { j = cursor ? await rpc('files/list_folder/continue', { cursor }) : await rpc('files/list_folder', { path: c.root, recursive: true, include_deleted: true, limit: 2000 }); }
-      catch (e) { if (cursor && e.status === 409 && !e.denied && !e.missing) return { reset: true }; throw e; }   // (a cursor the cloud no longer knows: start over)
+      let j; const entries = [], x0 = db.meta.fidx;
+      if (cursor && x0 && !!x0.pr !== nsRoot()) return { reset: true };   // (a cursor from the other addressing: list everything again)
+      try { j = cursor ? await rpc('files/list_folder/continue', { cursor }) : await rpc('files/list_folder', { path: full(''), recursive: true, include_deleted: true, limit: 2000 }); }
+      catch (e) {
+        if (cursor && e.status === 409 && !e.denied && !e.missing) return { reset: true };   // (a cursor the cloud no longer knows: start over)
+        if (!cursor && e.status === 422 && nsRoot()) { c.legacy = true; await persist(); return DBX.list(null); }   // (the namespace refused: the older addressing from now on)
+        throw e;
+      }
       for (;;) {
         for (const x of j.entries || []) { const p = rel(x.path_display || x.path_lower); if (p) entries.push({ path: p, rev: x.rev || null, deleted: x['.tag'] === 'deleted', folder: x['.tag'] === 'folder' }); }
-        if (!j.has_more) return { entries, cursor: j.cursor };
+        if (!j.has_more) { if (x0) x0.pr = nsRoot() ? 1 : 0; return { entries, cursor: j.cursor }; }
         j = await rpc('files/list_folder/continue', { cursor: j.cursor });
       }
     },
-    async get(p) { try { const r = await call('https://content.dropboxapi.com/2/files/download', { arg: { path: full(p) } }); return new Uint8Array(await r.arrayBuffer()); } catch (e) { if (e.missing) return null; throw e; } },
+    async get(p) { try { const r = await call('https://content.dropboxapi.com/2/files/download', { arg: { path: full(p) }, files: true }); return new Uint8Array(await r.arrayBuffer()); } catch (e) { if (e.missing) return null; throw e; } },
     /** mode: 'add' (fails when the file exists), 'overwrite', or { update: rev } (fails when someone wrote it since). */
     async put(p, bytes, mode = 'overwrite') {
       const m = typeof mode === 'string' ? mode : { '.tag': 'update', update: mode.update };
-      const r = await call('https://content.dropboxapi.com/2/files/upload', { arg: { path: full(p), mode: m, autorename: false, mute: true }, body: bytes });
+      const r = await call('https://content.dropboxapi.com/2/files/upload', { arg: { path: full(p), mode: m, autorename: false, mute: true }, body: bytes, files: true });
       return { rev: (await r.json()).rev };
     },
     async del(p) { try { await rpc('files/delete_v2', { path: full(p) }); } catch (e) { if (!e.missing) throw e; } },
@@ -316,6 +329,20 @@ const Folder = (() => {
   const paths = prefix => (typeof FolderSync !== 'undefined' ? FolderSync.paths(prefix) : []);
   async function readAll(prefix) { const out = []; for (const p of paths(prefix)) { const j = await read(p); if (j) out.push(j); } return out; }
 
+  // ---- a note for the family, in the folder itself: people open their drive and see it before they rename anything ----
+  const README = [N_('Little Log – please read'),
+    N_("This folder holds your family's Little Log. Everything in it is encrypted: only the family's phones can read it."),
+    N_('You may move this folder anywhere in your drive, and rename it, as long as its name still starts with "Little Log": that is how a relative\'s phone finds it when they join.'),
+    N_('Please do not rename, move or delete anything inside this folder: the files, and the folders named devices, events, join, keys and media. The phones find them by name. A renamed folder makes entries vanish from everyone\'s phones, and deleted files can lose the log for good.'),
+    N_('Do not share this folder from your drive: share it from the Family tab in Little Log, which also gives the person their join code.'),
+    N_("If something was changed by mistake, put it back (your drive's trash or version history can help): a parent's phone repairs what it can at its next sync.")];
+  const readmeText = () => { const own = README.map(s => __(s)), en = README; return (own.join('\n\n') + (own[0] === en[0] && own[3] === en[3] ? '' : '\n\n— ' + en.join('\n\n')) + '\n').replace(/\n/g, '\r\n'); };   // (the family's language, then English for the relative who reads that)
+  /** Writes README.txt unless it is there (`add`: a copy someone kept is not touched). */
+  async function writeReadme() {
+    try { const r = await B().put('README.txt', enc.encode(readmeText()), 'add'); if (typeof FolderSync !== 'undefined') FolderSync.noteRev('README.txt', r.rev); return true; }
+    catch (e) { if (e.conflict) return false; throw e; }
+  }
+
   // ---- signatures: a shared file says which phone wrote it, provably (e2ee.js's signing keys; who is believed: FolderSync's trust) ----
   const sigMsg = (baby, kind, p, body) => `ll1|sig|${baby}|${kind}|${p.toLowerCase()}|${JSON.stringify(body)}`;
   const bodyOf = j => { const b = {}; for (const [k, v] of Object.entries(j)) if (k !== 's') b[k] = v; return b; };
@@ -361,6 +388,7 @@ const Folder = (() => {
       await write('recovery.json', await signed(a.baby, 'recovery', 'recovery.json', { v: 2, epoch: 1, recovery_pub: a.recovery_pub, recovery_priv_wrapped: a.recovery_priv_wrapped, recovery_spub: a.recovery_spub || null, recovery_spriv_wrapped: a.recovery_spriv_wrapped || null, wrap_main: a.recovery_grant.wrap_main, wrap_health: a.recovery_grant.wrap_health, tag: a.recovery_grant.tag }));
       await write(`keys/${a.device}.json`, await signed(a.baby, 'grant', `keys/${a.device}.json`, { v: 2, epoch: 1, wrap_main: a.grant.wrap_main, wrap_health: a.grant.wrap_health, auth: null, tag: a.grant.tag, ext: a.grant.ext || null }));
       await write('profile.json', { epoch: 1, blob: a.profile, updated: Date.now() });
+      await writeReadme().catch(() => {});   // (the note for the family: not worth failing the log over)
       return a.baby;
     },
     async listDevices() {
@@ -396,7 +424,7 @@ const Folder = (() => {
   const media = { up: (b, name, bytes) => B().put('media/' + name, bytes, 'overwrite'), down: (b, name) => B().get('media/' + name), del: (b, name) => B().del('media/' + name) };
 
   return {
-    NAMES, SCOPES, available, label: p => NAMES[p] || p, dir, media, read, write, readAll, backend, safeName, memberId, signed, checkSig, extOf, rootNow,
+    NAMES, SCOPES, available, label: p => NAMES[p] || p, dir, media, read, write, readAll, backend, safeName, memberId, signed, checkSig, extOf, rootNow, writeReadme, readmeText,
     async init() { try { const v = await Native.Secure.get(K); c = v ? JSON.parse(v) : null; } catch (e) { c = null; } if (c) E2EE.setDir(dir); },
     /** In a family folder (or waiting to be let into one). */
     get on() { return !!(c && c.root); },
@@ -545,10 +573,12 @@ const FolderSync = (() => {
   }
   /** The last good copy of a file that matters, kept on a parent's phone to put back (repair()). */
   const good = (p, j) => { if (!isParent()) return; (db.meta.fgood || (db.meta.fgood = {}))[p] = j; };
+  let readmeTried = false;
   /** A parent's phone puts back the files the folder cannot do without when one is gone, unreadable or rolled back. */
   async function repair() {
     const b = db.meta.babyId, g = db.meta.fgood; if (!isParent() || !g || !E2EE.hasKeys(b)) return;
     if (!g['littlelog.json']) { const j = revOf('littlelog.json') ? await Folder.read('littlelog.json') : null; if (j && j.family === b && (!trust() || (j.root && j.root.d === trust().root.d))) good('littlelog.json', j); }
+    if (!revOf('README.txt') && !readmeTried) { readmeTried = true; await Folder.writeReadme().catch(() => {}); }   // (a folder from before the note, or one whose note was deleted: once per run of the app)
     for (const p of ['littlelog.json', 'keyring.json', 'recovery.json']) {
       if (!g[p]) continue;
       const j = revOf(p) ? await Folder.read(p) : null;

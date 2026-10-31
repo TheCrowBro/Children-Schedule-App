@@ -2831,5 +2831,11 @@
  "l4fqjc": "L'albero di famiglia nella cartella è stato cambiato da un telefono che non può farlo, quindi è stato ignorato.",
  "x5r2si": "Questa richiesta è stata scritta da un account diverso da quello che dichiara. Rifiutala.",
  "1qupttp": "Un codice di adesione ha 8 lettere o numeri",
- "9tfnuo": "La cartella indica un telefono radice che non è di un genitore. Il telefono di un genitore dovrebbe aprire Little Log per primo."
+ "9tfnuo": "La cartella indica un telefono radice che non è di un genitore. Il telefono di un genitore dovrebbe aprire Little Log per primo.",
+ "cx5yew": "Little Log – da leggere",
+ "uledfo": "Questa cartella contiene il Little Log della tua famiglia. Tutto ciò che contiene è cifrato: solo i telefoni della famiglia possono leggerlo.",
+ "zmfqxo": "Puoi spostare questa cartella ovunque nel tuo cloud e rinominarla, purché il suo nome inizi ancora con «Little Log»: è così che il telefono di un parente la trova quando si unisce.",
+ "1vkr76e": "Per favore non rinominare, spostare o eliminare nulla dentro questa cartella: né i file, né le cartelle chiamate devices, events, join, keys e media. I telefoni le trovano dal nome. Una cartella rinominata fa sparire le voci dai telefoni di tutti, e i file eliminati possono far perdere il diario per sempre.",
+ "znfob5": "Non condividere questa cartella dal tuo cloud: condividila dalla scheda Famiglia di Little Log, che dà anche alla persona il suo codice di adesione.",
+ "17g4d1m": "Se qualcosa è stato cambiato per sbaglio, rimettilo a posto (il cestino o la cronologia delle versioni del tuo cloud possono aiutare): il telefono di un genitore ripara ciò che può alla sincronizzazione successiva."
 }

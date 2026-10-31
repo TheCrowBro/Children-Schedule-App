@@ -2719,5 +2719,11 @@
  "l4fqjc": "Pohon keluarga di folder diubah oleh ponsel yang tidak berhak, jadi diabaikan.",
  "x5r2si": "Permintaan ini ditulis oleh akun lain dari yang diakuinya. Tolak.",
  "1qupttp": "Kode gabung terdiri dari 8 huruf atau angka",
- "9tfnuo": "Folder menyebut ponsel akar yang bukan milik orang tua. Ponsel orang tua sebaiknya membuka Little Log lebih dulu."
+ "9tfnuo": "Folder menyebut ponsel akar yang bukan milik orang tua. Ponsel orang tua sebaiknya membuka Little Log lebih dulu.",
+ "cx5yew": "Little Log – harap dibaca",
+ "uledfo": "Folder ini berisi Little Log keluarga Anda. Semua isinya terenkripsi: hanya ponsel keluarga yang dapat membacanya.",
+ "zmfqxo": "Anda boleh memindahkan folder ini ke mana saja di cloud Anda dan mengganti namanya, selama namanya tetap diawali \"Little Log\": begitulah ponsel kerabat menemukannya saat bergabung.",
+ "1vkr76e": "Mohon jangan mengganti nama, memindahkan, atau menghapus apa pun di dalam folder ini: baik berkas-berkasnya maupun folder bernama devices, events, join, keys, dan media. Ponsel menemukannya berdasarkan nama. Folder yang diganti namanya membuat catatan hilang dari ponsel semua orang, dan berkas yang dihapus bisa menghilangkan catatan untuk selamanya.",
+ "znfob5": "Jangan bagikan folder ini dari cloud Anda: bagikan dari tab Keluarga di Little Log, yang juga memberi orang itu kode gabungnya.",
+ "17g4d1m": "Jika ada yang berubah tanpa sengaja, kembalikan (tempat sampah atau riwayat versi cloud Anda bisa membantu): ponsel orang tua memperbaiki apa yang bisa pada sinkronisasi berikutnya."
 }

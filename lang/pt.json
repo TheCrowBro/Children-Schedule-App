@@ -2831,5 +2831,11 @@
  "l4fqjc": "A árvore da família na pasta foi alterada por um telefone que não pode fazer isso, por isso foi ignorada.",
  "x5r2si": "Este pedido foi escrito por uma conta diferente da que ele afirma. Recuse-o.",
  "1qupttp": "Um código de entrada tem 8 letras ou números",
- "9tfnuo": "A pasta aponta um telefone raiz que não é de uma mãe ou de um pai. O telefone de uma mãe ou de um pai deveria abrir o Little Log primeiro."
+ "9tfnuo": "A pasta aponta um telefone raiz que não é de uma mãe ou de um pai. O telefone de uma mãe ou de um pai deveria abrir o Little Log primeiro.",
+ "cx5yew": "Little Log – leia, por favor",
+ "uledfo": "Esta pasta contém o Little Log da sua família. Tudo o que está nela é criptografado: só os telefones da família conseguem ler.",
+ "zmfqxo": "Você pode mover esta pasta para qualquer lugar da sua nuvem e renomeá-la, desde que o nome continue começando com “Little Log”: é assim que o telefone de um parente a encontra ao entrar.",
+ "1vkr76e": "Por favor, não renomeie, mova nem apague nada dentro desta pasta: nem os arquivos, nem as pastas chamadas devices, events, join, keys e media. Os telefones as encontram pelo nome. Uma pasta renomeada faz registros sumirem dos telefones de todos, e arquivos apagados podem perder o registro de vez.",
+ "znfob5": "Não compartilhe esta pasta pela sua nuvem: compartilhe pela aba Família do Little Log, que também dá à pessoa o seu código de entrada.",
+ "17g4d1m": "Se algo foi alterado por engano, coloque de volta (a lixeira ou o histórico de versões da sua nuvem podem ajudar): o telefone de uma mãe ou de um pai conserta o que puder na próxima sincronização."
 }

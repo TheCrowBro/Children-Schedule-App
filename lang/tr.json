@@ -2775,5 +2775,11 @@
  "l4fqjc": "Klasördeki aile ağacı buna yetkisi olmayan bir telefon tarafından değiştirildi, bu yüzden yok sayıldı.",
  "x5r2si": "Bu istek, iddia ettiğinden başka bir hesap tarafından yazıldı. Reddedin.",
  "1qupttp": "Katılım kodu 8 harf veya rakamdır",
- "9tfnuo": "Klasör, bir ebeveyne ait olmayan bir kök telefon belirtiyor. Little Log'u önce bir ebeveynin telefonu açmalı."
+ "9tfnuo": "Klasör, bir ebeveyne ait olmayan bir kök telefon belirtiyor. Little Log'u önce bir ebeveynin telefonu açmalı.",
+ "cx5yew": "Little Log – lütfen okuyun",
+ "uledfo": "Bu klasörde ailenizin Little Log'u var. İçindeki her şey şifrelidir: yalnızca ailenin telefonları okuyabilir.",
+ "zmfqxo": "Bu klasörü bulutunuzda istediğiniz yere taşıyabilir ve adını değiştirebilirsiniz; yeter ki adı hâlâ \"Little Log\" ile başlasın: bir akrabanın telefonu katılırken onu böyle bulur.",
+ "1vkr76e": "Lütfen bu klasörün içindeki hiçbir şeyin adını değiştirmeyin, taşımayın ya da silmeyin: ne dosyaları ne de devices, events, join, keys ve media adlı klasörleri. Telefonlar onları adlarıyla bulur. Adı değiştirilen bir klasör kayıtları herkesin telefonundan kaybettirir; silinen dosyalar günlüğü tamamen yok edebilir.",
+ "znfob5": "Bu klasörü bulutunuzdan paylaşmayın: Little Log'daki Aile sekmesinden paylaşın; orası kişiye katılım kodunu da verir.",
+ "17g4d1m": "Yanlışlıkla bir şey değiştirildiyse geri koyun (bulutunuzun çöp kutusu veya sürüm geçmişi yardımcı olabilir): bir ebeveynin telefonu sonraki eşitlemede elinden geleni onarır."
 }

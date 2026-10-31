@@ -2775,5 +2775,11 @@
  "l4fqjc": "Der Stammbaum im Ordner wurde von einem Telefon geändert, das das nicht darf; er wurde daher ignoriert.",
  "x5r2si": "Diese Anfrage wurde von einem anderen Konto geschrieben als dem, für das sie sich ausgibt. Lehnen Sie sie ab.",
  "1qupttp": "Ein Beitrittscode hat 8 Buchstaben oder Ziffern",
- "9tfnuo": "Der Ordner nennt ein Stammtelefon, das keinem Elternteil gehört. Das Telefon eines Elternteils sollte Little Log zuerst öffnen."
+ "9tfnuo": "Der Ordner nennt ein Stammtelefon, das keinem Elternteil gehört. Das Telefon eines Elternteils sollte Little Log zuerst öffnen.",
+ "cx5yew": "Little Log – bitte lesen",
+ "uledfo": "Dieser Ordner enthält das Little Log Ihrer Familie. Alles darin ist verschlüsselt: Nur die Telefone der Familie können es lesen.",
+ "zmfqxo": "Sie dürfen diesen Ordner an eine beliebige Stelle Ihrer Cloud verschieben und ihn umbenennen, solange sein Name weiterhin mit „Little Log“ beginnt: Daran findet ihn das Telefon eines Angehörigen beim Beitreten.",
+ "1vkr76e": "Bitte benennen Sie nichts in diesem Ordner um, verschieben oder löschen Sie nichts darin: weder die Dateien noch die Ordner namens devices, events, join, keys und media. Die Telefone finden sie über ihren Namen. Ein umbenannter Ordner lässt Einträge auf allen Telefonen verschwinden, und gelöschte Dateien können das Protokoll für immer verlieren.",
+ "znfob5": "Teilen Sie diesen Ordner nicht über Ihre Cloud: Teilen Sie ihn über den Reiter Familie in Little Log, der der Person auch ihren Beitrittscode gibt.",
+ "17g4d1m": "Wurde etwas versehentlich geändert, stellen Sie es wieder her (Papierkorb oder Versionsverlauf Ihrer Cloud helfen dabei): Das Telefon eines Elternteils repariert bei der nächsten Synchronisierung, was es kann."
 }

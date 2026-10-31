@@ -44,7 +44,7 @@ async function suite(cloud) {
   const userOf = p => p.evaluate(() => Auth.id);
   const signerOf = path => (JSON.parse(fake.text(path)).s || {}).d;
 
-  await step(`the first screen offers the family's own cloud; ${name} connects through the browser and comes back; a parent starts the log: a Little Log folder is made, with the keys, the recovery key, the children and the family list in it, all scrambled`, async () => {
+  await step(`the first screen offers the family's own cloud; ${name} connects through the browser and comes back; a parent starts the log: a Little Log folder is made, with the keys, the recovery key, the children and the family list in it, all scrambled, and a README for the family`, async () => {
     mum = await phone('mum@x.com');
     await mum.waitForSelector('#wShare'); await mum.click('#wShare'); await mum.waitForSelector(`[data-fconnect=${cloud}]`);
     assert(/own cloud/i.test(await mum.textContent('#view')), 'the cloud screen');
@@ -59,6 +59,7 @@ async function suite(cloud) {
     for (const p of ['littlelog.json', 'keyring.json', 'recovery.json', 'profile.json', 'members.json']) assert(paths.includes(p), p + ' in ' + paths.join(' '));
     assert(paths.some(p => /^devices\/[^/]+\.json$/.test(p)) && paths.some(p => /^keys\/[^/]+\.json$/.test(p)), 'this phone and its keys');
     for (const p of ['profile.json', 'members.json', 'recovery.json', 'keyring.json']) assert(sealed(fake.text(p), ['Leo', 'Mum', 'mum@x.com']), p + ' holds no plain names');
+    const note = fake.text('README.txt'); assert(note && /Little Log – please read/.test(note) && /devices, events, join, keys and media/.test(note), 'the note for the family is in the folder: ' + String(note).slice(0, 80));
     await syncNow(mum); assert.equal(await mum.evaluate(() => Sync.st.state), 'ok');
     assert.equal(await mum.evaluate(() => Sync.isParent() && db.meta.role), 'parent');
   });
@@ -238,6 +239,17 @@ async function suite(cloud) {
     assert(/^refused/.test(r), r); assert(!fake.access('aunt@x.com'));
     await goTab(mum, 'family'); await openShare(mum); await mum.waitForSelector('#ownerShare'); await mum.click('#ownerShare'); await mum.waitForFunction(() => /Every parent can share/.test(document.querySelector('#toast').textContent));
     assert(!fake.ownerOnly());
+  });
+
+  await step(`the family folder moved: ${cloud === 'google' ? 'Mum moves it into another folder of her Drive' : 'Dad moves the shared folder into a folder of his named Media'}; every phone carries on, and what each writes still reaches the others`, async () => {
+    fake.relocate(cloud === 'google' ? 'mum@x.com' : 'dad@x.com');
+    await syncNow(mum); await syncNow(dad);
+    assert.equal(await mum.evaluate(() => Sync.st.state), 'ok'); assert.equal(await dad.evaluate(() => Sync.st.state), 'ok');
+    await add(dad, { id: 'd-feed-moved', type: 'feed', ts: Date.now() - 85e3, data: { kind: 'bottle', ml: 40 } }); await syncNow(dad); await syncNow(mum);
+    assert((await entries(mum)).some(e => e.id === 'd-feed-moved'), "Dad's entry reached Mum");
+    await add(mum, { id: 'm-feed-moved', type: 'feed', ts: Date.now() - 84e3, data: { kind: 'bottle', ml: 45 } }); await syncNow(mum); await syncNow(dad);
+    assert((await entries(dad)).some(e => e.id === 'm-feed-moved'), "Mum's entry reached Dad");
+    assert.equal(await dad.evaluate(() => Sync.st.warn), ''); assert(fake.paths().includes('README.txt') && !fake.paths().some(p => /^media\/little log/i.test(p)), 'the folder reads as itself: ' + fake.paths().filter(p => !/^(events|keys|devices)\//.test(p)).join(' '));
   });
 
   await step('pictures: a photo with a big moment goes into the folder sealed, and shows on the other phones', async () => {

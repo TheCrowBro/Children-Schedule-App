@@ -2887,5 +2887,11 @@
  "l4fqjc": "Drzewo rodziny w folderze zostało zmienione przez telefon, który nie ma do tego prawa, więc je zignorowano.",
  "x5r2si": "Ta prośba została napisana przez inne konto niż to, za które się podaje. Odrzuć ją.",
  "1qupttp": "Kod dołączenia ma 8 liter lub cyfr",
- "9tfnuo": "Folder wskazuje telefon główny, który nie należy do rodzica. Telefon rodzica powinien otworzyć Little Log jako pierwszy."
+ "9tfnuo": "Folder wskazuje telefon główny, który nie należy do rodzica. Telefon rodzica powinien otworzyć Little Log jako pierwszy.",
+ "cx5yew": "Little Log – proszę przeczytać",
+ "uledfo": "Ten folder zawiera Little Log Twojej rodziny. Wszystko w nim jest zaszyfrowane: odczytać to mogą tylko telefony rodziny.",
+ "zmfqxo": "Możesz przenieść ten folder w dowolne miejsce w swojej chmurze i zmienić jego nazwę, o ile nadal zaczyna się od „Little Log”: tak znajduje go telefon krewnego, który dołącza.",
+ "1vkr76e": "Proszę niczego w tym folderze nie zmieniać, nie przenosić ani nie usuwać: ani plików, ani folderów o nazwach devices, events, join, keys i media. Telefony znajdują je po nazwie. Folder o zmienionej nazwie sprawia, że wpisy znikają ze wszystkich telefonów, a usunięte pliki mogą bezpowrotnie zgubić dziennik.",
+ "znfob5": "Nie udostępniaj tego folderu z chmury: udostępniaj go z zakładki Rodzina w Little Log, która daje też tej osobie jej kod dołączenia.",
+ "17g4d1m": "Jeśli coś zmieniono przez pomyłkę, przywróć to (pomoże kosz lub historia wersji w chmurze): telefon rodzica naprawi, co może, przy następnej synchronizacji."
 }

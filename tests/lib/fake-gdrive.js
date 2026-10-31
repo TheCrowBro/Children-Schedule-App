@@ -11,8 +11,13 @@ function createFakeGoogleDrive() {
   const J = (status, body) => ({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: body === null ? '' : JSON.stringify(body) });
   const fail = (status, reason, message) => J(status, { error: { code: status, message: message || reason, errors: [{ reason, message: message || reason }] } });
   const user = email => users[email] || (users[email] = { email, permissionId: 'p' + Buffer.from(email).toString('hex').slice(0, 16), name: email.split('@')[0].replace(/^./, c => c.toUpperCase()) });
-  const top = f => { while (f.parents[0] && files[f.parents[0]]) f = files[f.parents[0]]; return f; };
-  const role = (f, email) => { if (!f) return null; if (f.owner === email) return 'owner'; const t = top(f); if (t.owner === email) return 'writer'; const p = t.perms && t.perms.get(email); return p ? p.role : null; };   // (the folder's owner may edit what others put in it, not delete it)
+  const chain = f => { const out = [f]; while (f.parents[0] && files[f.parents[0]]) { f = files[f.parents[0]]; out.push(f); } return out; };   // (the file, its folder, that folder's folder…)
+  const role = (f, email) => {   // (a folder's permissions reach everything in it, wherever the folder is moved; the folder's owner may edit what others put in it, not delete it)
+    if (!f) return null; if (f.owner === email) return 'owner';
+    if (chain(f).slice(1).some(a => a.owner === email)) return 'writer';
+    for (const a of chain(f)) { const p = a.perms && a.perms.get(email); if (p) return p.role; }
+    return null;
+  };
   const canWrite = (f, email) => ['owner', 'writer'].includes(role(f, email));
   const who = e => ({ emailAddress: e, permissionId: user(e).permissionId });
   const meta = (f, email) => ({ id: f.id, name: f.name, mimeType: f.mime, size: String(f.bytes.length), headRevisionId: f.head || undefined, md5Checksum: f.head ? 'md5-' + f.head : undefined, parents: f.parents.slice(), trashed: f.trashed, capabilities: { canDelete: f.owner === email, canTrash: f.owner === email },
@@ -128,7 +133,7 @@ function createFakeGoogleDrive() {
       if (method === 'DELETE') {
         calls.push('files.delete');
         if (f.owner !== email) return fail(403, 'insufficientFilePermissions');
-        for (const x of subtree(f)) { const seen = new Set([x.owner, ...(top(x).perms ? top(x).perms.keys() : [])]); delete files[x.id]; log.push({ seq: ++seq, fileId: x.id, seen }); }
+        for (const x of subtree(f)) { const seen = new Set([x.owner, ...chain(x).flatMap(a => (a.perms ? [...a.perms.keys()] : []))]); delete files[x.id]; log.push({ seq: ++seq, fileId: x.id, seen }); }
         return J(204, null);
       }
     }
@@ -146,7 +151,7 @@ function createFakeGoogleDrive() {
     await ctx.route('https://www.googleapis.com/**', handle);
     await ctx.route('https://oauth2.googleapis.com/**', handle);
   }
-  const only = () => { const ks = Object.values(files).filter(f => f.mime === FOLDER && !f.parents.length); if (ks.length !== 1) throw new Error(`${ks.length} folders`); return ks[0]; };
+  const only = () => { const ks = Object.values(files).filter(f => f.mime === FOLDER && Object.values(files).some(x => x.parents[0] === f.id && x.name === 'littlelog.json')); if (ks.length !== 1) throw new Error(`${ks.length} folders`); return ks[0]; };   // (the family folder: the one with the marker in it, wherever it was moved)
   const walk = (f, d, out) => { for (const x of Object.values(files)) { if (x.parents[0] !== f.id || x.trashed) continue; const p = d ? d + '/' + x.name : x.name; if (x.mime === FOLDER) walk(x, p, out); else if (x.bytes.length) out.push({ path: p, file: x }); } return out; };
   const find = p => (walk(only(), '', []).find(x => x.path.toLowerCase() === p.toLowerCase()) || {}).file || null;
   return {
@@ -167,6 +172,8 @@ function createFakeGoogleDrive() {
     strip: () => { for (const { path: p, file: f } of walk(only(), '', [])) { if (!/\.json$/.test(p)) continue; let j; try { j = JSON.parse(f.bytes.toString('utf8')); } catch (e) { continue; } delete j.s; if (p === 'littlelog.json') delete j.root; if (/^keys\//.test(p)) delete j.ext; if (/^devices\//.test(p)) delete j.sig; if (p === 'recovery.json') { delete j.recovery_spub; delete j.recovery_spriv_wrapped; } f.bytes = Buffer.from(JSON.stringify(j)); f.by = f.owner; f.head = 'r' + (++revs); f.revisions.push({ id: f.head, bytes: f.bytes, time: new Date(clock += 7).toISOString() }); log.push({ seq: ++seq, fileId: f.id, seen: new Set([f.owner]) }); } },
     /** Whether only the owner may share the folder on. */
     ownerOnly: () => only().writersCanShare === false,
+    /** The owner moves the family folder into a new folder of theirs (its id, and its sharing, stay). */
+    relocate: email => { email = email.toLowerCase(); const fo = only(); const nf = { id: 'f' + (++ids), name: 'Family stuff', mime: FOLDER, parents: [], owner: email, by: email, trashed: false, bytes: Buffer.alloc(0), head: null, revisions: [], perms: new Map() }; files[nf.id] = nf; fo.parents = [nf.id]; log.push({ seq: ++seq, fileId: nf.id, seen: new Set([email]) }); log.push({ seq: ++seq, fileId: fo.id, seen: new Set([email]) }); },
     /** Whether this account can open the family folder. */
     access: email => !!role(only(), email.toLowerCase()),
     /** Drive shares at once: nobody is "invited but not in". */

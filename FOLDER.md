@@ -28,6 +28,7 @@ names, sizes and who wrote what, nothing else. The folder plays the server's par
 | `tree.json` | the family tree; a sequence number | yes; signed by a parent's phone |
 | `events/<phone>/<n>.json` | the entries each phone wrote, in order | yes, entry by entry; each file signed by its phone |
 | `media/<id>`, `media/<id>.t` | pictures and videos, and their thumbnails | yes |
+| `README.txt` | a note for the family in plain words, in the family's language (and English): what the folder is, that it may be moved or renamed as long as its name starts with *Little Log*, and not to rename, move or delete anything inside it; written with the folder, and added to an older folder by a parent's phone | no |
 
 Every phone **appends only its own** `events/<phone>/` files, numbered in order, so two phones never write the same file and nothing
 conflicts. The documents that are shared (`members.json`, `tree.json`) are written with the cloud's "update only if unchanged"
@@ -151,7 +152,18 @@ addressed by an id that is the same from every account: Dropbox's shared-folder 
 
 - **Dropbox** needs *Full Dropbox* access (the family folder is a shared folder, which each member's Dropbox mounts wherever they
   like) and the permissions `files.metadata.read`, `files.content.read`, `files.content.write`, `sharing.read`, `sharing.write`
-  and `account_info.read`. Sharing invites people; they accept, and the app mounts the folder for them.
+  and `account_info.read`. Sharing invites people; they accept, and the app mounts the folder for them. Every files call carries the
+  `Dropbox-API-Path-Root` header naming the shared folder's namespace, so paths are relative to the family folder itself: where a
+  member mounts it, what they call it and what the folders around it are named never enter into it.
+
+**Moving or renaming the folder.** Both clouds address the folder by an id that a move or a rename does not change (Drive's folder
+id, Dropbox's shared-folder id), so the family can move it anywhere in their drive and the phones carry on. A phone that is joining
+finds the folder by its name, which must still start with *Little Log*. Renaming or moving the files and folders *inside* it does
+break things: entries under a renamed subfolder vanish from the other phones and new ones go into a new subfolder; the README.txt
+in the folder says so to whoever opens it in their drive. Trashing, deleting or unsharing the folder clears every phone at its next
+sync (the log stays in the cloud's trash for 30 days; after a restore, phones get back in with the recovery code). A copy of the folder
+is a different folder: the phones stay with the original, and adopt a copy only when they connect again and join it with the
+recovery code, which is also the way to restore the log from a backup copy.
 - **Google Drive** needs the full Drive scope: the narrower per-file scope only reaches files the app made or the user picked, never
   a folder someone else shared. The app still only touches the family folder. Drive differs in three ways the backend absorbs:
   there is no "write only if unchanged", so a shared document is checked against the file's revision list after writing (above);
