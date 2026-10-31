@@ -185,7 +185,8 @@ const monthsAgo = (m, d = 2) => { const t = new Date(); t.setMonth(t.getMonth() 
 
     await step('the PDF for the doctor lists the allergies (with the first reaction) and the foods tried, with the day each was first given', async () => {
       const t = await P.evaluate(async () => (await doctorPdf(kids()[0].id, { days: 14, every: false, notes: '' })).text.flat());
-      const al = t[t.indexOf('Allergies') + 1], tried = t[t.indexOf('Foods tried (first time)') + 1];
+      const from = h => { const i = t.indexOf(h); return t.slice(i + 1, i + 4).join(' '); };   // (the next few lines: with other fonts the PDF wraps a line elsewhere)
+      const al = from('Allergies'), tried = from('Foods tried (first time)');
       assert(/^Peanut \(first reaction \w+ \d+, \d{4}\); Kiwi purée \(first reaction/.test(al), al);
       assert(/^Peanut \(\w{3}, \w{3} \d+\), Banana \(.*\), Kiwi purée \(/.test(tried), tried);
     });

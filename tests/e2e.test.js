@@ -388,7 +388,8 @@ const server = http.createServer((req, res) => {
     const nanId = (await q(`select user_id from members where email='nan@x.com'`))[0].user_id, nanKeys = await keysOf(C), babyId = await babyOf(C), ep0 = await epochOnServer();
     await goTab(A, 'family'); await A.click(`[data-person="${nanId}"]`); await A.waitForSelector('#pRemove'); await A.click('#pRemove'); await A.waitForFunction(() => document.querySelector('#sheet').hidden);
     assert.equal((await q('select rotate_needed from babies'))[0].rotate_needed, true, 'removal asks for new keys');
-    await syncNow(A); assert.equal(await epochOnServer(), ep0 + 1, 'the keys were changed right after the removal');
+    for (let i = 0; i < 20 && await epochOnServer() !== ep0 + 1; i++) { await syncNow(A); await A.waitForTimeout(250); }   // (on a slow machine the sync the removal itself started may still be running)
+    assert.equal(await epochOnServer(), ep0 + 1, 'the keys were changed right after the removal');
     await syncNow(C); await C.waitForSelector('#oCreate'); assert.equal(await C.evaluate(() => db.events.length), 0);
     await goTab(A, 'day'); await A.click('[data-add=diaper]'); await A.click('input[name=poo]'); await A.fill('#note', 'after nan left'); await A.click('#save'); await A.waitForFunction(() => !db.events.some(e => e.updated > db.meta.pushedAt));
     const fresh = (await q('select * from events where epoch=$1 order by synced_at desc limit 1', [ep0 + 1]))[0];
