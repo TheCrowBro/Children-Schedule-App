@@ -3,6 +3,7 @@
 //   node tests/e2e.test.js
 const assert = require('assert'), fs = require('fs'), os = require('os'), path = require('path'), http = require('http'), { execSync } = require('child_process');
 const { chromium } = require('playwright');
+const EXE = process.env.LL_CHROMIUM || (require('fs').existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : '');   // (the dev sandbox's browser; elsewhere, as on GitHub's runner, Playwright's own)
 const { startCluster, freshDb } = require('./lib/pg');
 const { createShim, totp } = require('./lib/shim');
 const { installFakeNative } = require('./lib/fake-native');
@@ -28,7 +29,7 @@ const server = http.createServer((req, res) => {
   await new Promise(r => server.listen(8124, r));
   const adminUrl = startCluster(), { url, su } = await freshDb(adminUrl);
   const shim = createShim(url, { captcha: true });
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
+  const browser = await chromium.launch({ ...(EXE ? { executablePath: EXE } : {}), args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const all = [];
   const turnstile = `window.turnstile={render:(sel,o)=>{setTimeout(()=>o.callback('captcha-ok'),30);return 1}}`;
 
@@ -279,7 +280,7 @@ const server = http.createServer((req, res) => {
     await (await A.$('.invite .qr')).screenshot({ path: path.join(tmp, 'qr.png') });
     execSync(`ffmpeg -y -loglevel error -loop 1 -i ${tmp}/qr.png -vf "scale=400:400,pad=640:480:120:40:white,format=yuv420p" -t 3 -r 10 ${tmp}/cam.y4m`);
     await A.evaluate(() => { document.querySelector('#tabs').style.display = ''; });
-    b2 = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--use-file-for-fake-video-capture=' + tmp + '/cam.y4m'] });
+    b2 = await chromium.launch({ ...(EXE ? { executablePath: EXE } : {}), args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--use-file-for-fake-video-capture=' + tmp + '/cam.y4m'] });
     C = await device({ br: b2 }); await signIn(C, 'nan@x.com'); await C.waitForSelector('#oScan');
     await C.fill('#oMine', 'Nan'); await C.click('#oScan'); await C.waitForSelector('#wCheck', { timeout: 20000 });
     assert.equal((await pendingFor('nan@x.com')).length, 1); assert.equal((await q('select used_by from invites where code=$1', [inviteC]))[0].used_by !== null, true, 'invite is single-use');
