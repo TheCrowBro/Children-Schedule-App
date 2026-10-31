@@ -78,8 +78,9 @@ const step = async (name, fn) => { try { await fn(); ok++; console.log('✓', na
       assert(new RegExp(`2 of ${n} packed`).test(await P.textContent(`${bag} summary`)));
       assert.deepEqual(await P.$$eval(`${bag} [data-bag]:checked`, c => c.map(x => x.dataset.bag)), ['Birth plan', 'A blanket']);
       await P.click(`${bag} [data-bag="Birth plan"]`); assert(new RegExp(`1 of ${n} packed`).test(await P.textContent(`${bag} summary`)));
-      await P.evaluate(() => save(true));   // (written now rather than on the debounce, which a slow machine may not reach before the reload)
+      await P.evaluate(async () => { save(true); await Store.whenSaved(); });   // (on disk before the reload: the store writes in the background)
       await P.reload(); await P.waitForSelector('.expect');
+      await P.waitForFunction(() => [...document.querySelectorAll('details[data-grp=bag] [data-bag]:checked')].map(x => x.dataset.bag).join() === 'A blanket', null, { timeout: 5000 }).catch(() => {});
       assert.deepEqual(await P.$$eval(`${bag} [data-bag]:checked`, c => c.map(x => x.dataset.bag)), ['A blanket'], 'kept on the phone');
       await H.syncNow(D); await D.evaluate(() => render());
       assert.equal(await D.$$eval(`${bag} [data-bag]:checked`, c => c.length), 0, 'each phone packs its own');
